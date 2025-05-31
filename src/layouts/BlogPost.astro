@@ -29,11 +29,14 @@ const { title, description, pubDate, updatedDate, heroImage } = Astro.props;
         box-shadow: var(--box-shadow);
       }
       .prose {
-        width: 720px;
-        max-width: calc(100% - 2em);
         margin: auto;
         padding: 1em;
         color: rgb(var(--gray-dark));
+        display: grid;
+        grid-template-columns: 1fr min(72ch, 100%) 1fr;
+      }
+      .prose > :global(*) {
+        grid-column: 2;
       }
       .title {
         margin-bottom: 1em;

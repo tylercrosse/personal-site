@@ -1,0 +1,13 @@
+## WIP
+
+How do we turn words into vectors (remember vectors are just numbers)? First, we start by creating a vocabulary of all the words we care about. Then we assign each word a unique number. Then we create a vector for each word by setting the number at the index of the word to 1 and all other numbers to 0. This creates a vector called one-hot encoding.
+
+![PLACEHOLDER vector representation of words](https://miro.medium.com/v2/resize:fit:1400/format:webp/1*Q63oC7lJmGPSgpKexs1YMg.png)
+
+The one hot-encoding is a good start, but it's not very useful. It doesn't capture any information about the meaning of the words. The one hot-encoding is also very sparse, which means that most of the numbers in the vector are 0. This makes it hard to compare vectors to one another. What we really want is a way to represent words as vectors that capture their meaning and are dense (i.e., most of the numbers are not 0).
+
+#### What are embeddings?
+
+To solve this problem, we can use embedding vectors. The ways to create embeddings have evolved and the latest and most effective approach is to use a large language model - a neural network on a large corpus of text. The neural network learns to predict the context of each word, and the resulting vectors are used to represent the words. This allows us to compare words based on their meaning, rather than just their spelling.
+
+![PLACEHOLDER](https://miro.medium.com/v2/resize:fit:2000/format:webp/1*HOvcH2lZXWyOtmcqwniahQ.png)

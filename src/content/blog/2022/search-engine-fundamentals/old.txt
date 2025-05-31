@@ -1,0 +1,99 @@
+---
+
+## Old WIP
+
+To help understand how they work it's helpful to walk through some of the steps of creating an index and quering it. Frist we'll needs some documents:
+
+1. The quick brown fox ran around the lazy dog.
+2. The rain in Spain falls mostly on the plain.
+3. Rain, rain, go away. Come again another day.
+4. Today is a day that will live in emfamy.
+
+### Building an Index
+
+Indexes all try to solve the problem of finding needles in haystacks. Indexes typically contain mountains of documents and users usually are only looking for just the first one or two.
+
+#### Boolean
+
+One of the simplest ways of constructing an index is to list all the words in all the documents. Looking up a word in the index returns a list of documents that contain that word. This approach is called a boolean index because it only returns documents that contain all the words in the query. Essentially, when it's `true` that the documents contain a word.
+
+Once we construct a boolean index from our initial document we wind up with something that looks vary familiar to the back of a book:
+
+```
+Come {3}
+Rain, {3}
+Spain {2}
+The {1, 2}
+Today {4}
+a {4}
+again {3}
+another {3}
+...
+that {4}
+the {1, 2}
+will {4}
+```
+
+Boolean indexes are simple and fast but have a lot of problems. The most obvious is that they don't take into account how often a word appears in a document. As a result, the results may not be very relevant to a user. It also doesn't take into account the order of words in a document.
+
+#### Inverted Index
+
+The most common ways to solve for the ills of boolean indexes is to build the index by weighing words based on how frequently they appear in the documents. This is called term frequency. The more frequently a word appears in a document, the more important it is to that document. The more frequently a word appears in the index, the less important it is. This is called inverse document frequency and the approach when combined is called term frequency-inverse document frequency or TF-IDF.
+
+As an example, given a user searching for "the green turtles", the word "the" appears frequently in every document and is not very important. The word "turtles" appears less frequently and is more important. Additionally, documents that mention "green" and "turtles" together are more important than documents that mention "green" or "turtles" by themselves. And documents that mention "green" and "turtles" together more frequently are even more important.
+
+#### Postional Information
+
+```
+What is the objective of this post?
+- introduce topics & concepts with a bit of ontology
+What is the best way to introduce the different approaches used in search?
+-
+
+```
+
+- What information they contain is contextalized by their size and how they are accessed.
+- Google's mission is "to organize the world’s information and make it universally accessible and useful."
+- The capabilities of search engines are informed by user desires.
+- how tools are designed to be used - users _I feel like I'm lacking some basic voabulary here that could make this more succint_
+- information seeking behavior
+- relationship between seeking and retrieval
+- Wilson's model of conceptual areas `Information Behaviour > Information Seeking Behaviour > Infromation Search Behaviour`
+- search engines are tools for information retrieval. They allow access to all of the information in an index
+- One taxonmy for understanding the relevance of search results is to think in terms of Rumsfeld matrix.
+
+### Approaches for indexing
+
+#### Vector Space Model
+
+#### Pro
+
+- probablistic - bm25
+- knn
+- language model
+
+### Approaches for parsing queries
+
+The way a search engine parses a query is a big part of how it decides what documents to return. There are many different approaches to parsing queries and they all have their pros and cons.
+
+It helps to frame query parsing by thinking more critically about how we as users interact with search. We
+
+Exlploration
+
+- What am I looking for?
+- What information exisits
+- What did I mean to type?
+- What's related to what I entered?
+
+#### How do search engines handle typos?
+
+- stemming, lemmeization, stop words
+- soundex, metaphone
+
+- Give me results using similarly spelled words
+- Give me results using similar-sounding words
+- Give me results using similar meaning words
+
+- phonetic
+- synonyms
+- language model
