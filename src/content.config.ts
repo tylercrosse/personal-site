@@ -9,7 +9,7 @@ const blog = defineCollection({
     // This allows loading from subdirectories
   }),
   // Type-check frontmatter using a schema that handles both Astro and Gatsby formats
-  schema: z.object({
+  schema: ({ image }) => z.object({
     title: z.string(),
     description: z.string(),
     // Handle both 'pubDate' (Astro) and 'date' (Gatsby) fields
@@ -24,10 +24,10 @@ const blog = defineCollection({
     audience: z.string().optional(),
     hero: z.object({
       alt: z.string(),
-      src: z.string(),
+      src: image().optional(),
     }).optional(),
     image: z.object({
-      path: z.string(),
+      path: image().optional(),
       alt: z.string(),
     }).optional(),
     media_subpath: z.string().optional(),

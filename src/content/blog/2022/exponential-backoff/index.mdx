@@ -8,9 +8,13 @@ media_subpath: '/ideas/exponential-backoff/'
 draft: false
 audience: 'Developers'
 image:
-  path: /the-persistence-of-memory-1931.jpg
+  path: './the-persistence-of-memory-1931.jpg'
   alt: The Persistence of Memory by Salvador Dalí
 ---
+
+import { Image } from "astro:assets";
+import fixedIntervalRetry from "./fixed-interval-retry.png";
+import simpleExponentialBackoff from "./simple-exponential-backoff.png";
 
 ## If at first you don't succeed
 
@@ -18,8 +22,8 @@ You know the drill. A service makes a request that fails. You've determined that
 
 Trying again immediately might work or it could make things worse by bogging down the service you are requesting with a lot of unecessary requests. So you wait a bit and try again. The simpilest way to do this is to wait a fixed amount of time before trying again.
 
-<div style="max-width: 480px">
-  <img src="./fixed-interval-retry.png" alt="Retrying a request with a fixed interval" />
+<div style="max-width: 480px; margin: 0 auto;">
+  <Image src={fixedIntervalRetry} alt="Retrying a request with a fixed interval" />
 </div>
 
 Here's an example implementation in TypeScript:
@@ -60,8 +64,8 @@ const response = requestWithRetry()('https://example.com/')
 
 Unfortunately, adding a fixed delay only helps if it allows the service enough time to catch up. This is where [exponential backoff](https://en.wikipedia.org/wiki/Exponential_backoff) comes in. A simple approach is to increase the length of the delay for each subsequent attempt. The constant used for the delay may need to be adjusted depending on the service you're calling.
 
-<div style="max-width: 500px">
-  <img src="./simple-exponential-backoff.png" alt="Backing off the frequency of the retries" />
+<div style="max-width: 500px; margin: 0 auto;">
+  <Image src={simpleExponentialBackoff} alt="Backing off the frequency of the retries" />
 </div>
 
 ```ts
