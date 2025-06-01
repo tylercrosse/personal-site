@@ -1,0 +1,158 @@
+---
+// ThemeToggle component for switching between light, dark, and system themes
+---
+
+<button id="theme-toggle" aria-label="Toggle theme" title="Toggle theme">
+  <svg id="theme-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Sun icon (light theme) -->
+    <circle cx="12" cy="12" r="5" class="sun"></circle>
+    <line x1="12" y1="1" x2="12" y2="3" class="sun"></line>
+    <line x1="12" y1="21" x2="12" y2="23" class="sun"></line>
+    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" class="sun"></line>
+    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" class="sun"></line>
+    <line x1="1" y1="12" x2="3" y2="12" class="sun"></line>
+    <line x1="21" y1="12" x2="23" y2="12" class="sun"></line>
+    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" class="sun"></line>
+    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" class="sun"></line>
+    
+    <!-- Moon icon (dark theme) -->
+    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" class="moon"></path>
+    
+    <!-- System icon (auto theme) -->
+    <rect x="2" y="3" width="20" height="14" rx="2" ry="2" class="system"></rect>
+    <line x1="8" y1="21" x2="16" y2="21" class="system"></line>
+    <line x1="12" y1="17" x2="12" y2="21" class="system"></line>
+  </svg>
+</button>
+
+<style>
+  #theme-toggle {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 0.375rem;
+    color: rgb(var(--gray-dark));
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  #theme-toggle:hover {
+    background-color: rgba(var(--gray), 0.1);
+  }
+
+  #theme-toggle:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  /* Hide all icons by default */
+  .sun, .moon, .system {
+    display: none;
+  }
+
+  /* Show appropriate icon based on theme */
+  :global([data-theme="light"]) .sun {
+    display: block;
+  }
+
+  :global([data-theme="dark"]) .moon {
+    display: block;
+  }
+
+  :global([data-theme="system"]) .system {
+    display: block;
+  }
+
+  /* Dark theme styles */
+  :global([data-theme="dark"]) #theme-toggle {
+    color: rgb(var(--gray-light));
+  }
+
+  :global([data-theme="dark"]) #theme-toggle:hover {
+    background-color: rgba(var(--gray-light), 0.1);
+  }
+</style>
+
+<script>
+  // Theme management
+  const themes = ['light', 'dark', 'system'] as const;
+  type Theme = typeof themes[number];
+
+  function getStoredTheme(): Theme {
+    if (typeof localStorage !== 'undefined') {
+      const stored = localStorage.getItem('theme') as Theme;
+      if (themes.includes(stored)) {
+        return stored;
+      }
+    }
+    return 'system';
+  }
+
+  function getSystemTheme(): 'light' | 'dark' {
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  }
+
+  function getEffectiveTheme(theme: Theme): 'light' | 'dark' {
+    return theme === 'system' ? getSystemTheme() : theme;
+  }
+
+  function applyTheme(theme: Theme) {
+    const effectiveTheme = getEffectiveTheme(theme);
+    document.documentElement.setAttribute('data-theme', theme);
+    document.documentElement.setAttribute('data-effective-theme', effectiveTheme);
+    
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('theme', theme);
+    }
+  }
+
+  function cycleTheme() {
+    const currentTheme = getStoredTheme();
+    const currentIndex = themes.indexOf(currentTheme);
+    const nextIndex = (currentIndex + 1) % themes.length;
+    const nextTheme = themes[nextIndex];
+    applyTheme(nextTheme);
+  }
+
+  // Initialize theme on page load
+  function initTheme() {
+    const theme = getStoredTheme();
+    applyTheme(theme);
+  }
+
+  // Set up event listeners
+  function setupThemeToggle() {
+    const button = document.getElementById('theme-toggle');
+    if (button) {
+      button.addEventListener('click', cycleTheme);
+    }
+
+    // Listen for system theme changes
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+      const currentTheme = getStoredTheme();
+      if (currentTheme === 'system') {
+        applyTheme('system');
+      }
+    });
+  }
+
+  // Initialize on DOM content loaded
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      initTheme();
+      setupThemeToggle();
+    });
+  } else {
+    initTheme();
+    setupThemeToggle();
+  }
+
+  // Re-initialize on navigation (for SPA-like behavior)
+  document.addEventListener('astro:page-load', () => {
+    initTheme();
+    setupThemeToggle();
+  });
+</script> 

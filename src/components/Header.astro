@@ -1,5 +1,6 @@
 ---
 import HeaderLink from "./HeaderLink.astro";
+import ThemeToggle from "./ThemeToggle.astro";
 import { SITE_TITLE } from "../consts";
 ---
 
@@ -10,6 +11,9 @@ import { SITE_TITLE } from "../consts";
       <HeaderLink href="/">Home</HeaderLink>
       <HeaderLink href="/blog">Blog</HeaderLink>
       <HeaderLink href="/about">About</HeaderLink>
+      <div class="theme-toggle-wrapper">
+        <ThemeToggle />
+      </div>
     </div>
   </nav>
 </header>
@@ -19,7 +23,15 @@ import { SITE_TITLE } from "../consts";
     padding: 0 1em;
     background: white;
     box-shadow: 0 2px 8px rgba(var(--black), 5%);
+    transition: background-color 0.2s ease, box-shadow 0.2s ease;
   }
+
+  /* Dark theme header */
+  :global([data-effective-theme="dark"]) header {
+    background: #1f2937;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 20%);
+  }
+
   h2 {
     margin: 0;
     font-size: 1em;
@@ -33,16 +45,26 @@ import { SITE_TITLE } from "../consts";
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 1rem;
   }
   nav a {
     padding: 1em 0.5em;
-    color: var(--black);
+    color: rgb(var(--black));
     border-bottom: 4px solid transparent;
     text-decoration: none;
   }
   nav a.active {
     text-decoration: none;
     border-bottom-color: var(--accent);
+  }
+  .internal-links {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .theme-toggle-wrapper {
+    display: flex;
+    align-items: center;
   }
   .social-links,
   .social-links a {
@@ -51,6 +73,12 @@ import { SITE_TITLE } from "../consts";
   @media (max-width: 720px) {
     .social-links {
       display: none;
+    }
+    nav {
+      gap: 0.5rem;
+    }
+    .internal-links {
+      gap: 0.25rem;
     }
   }
 </style>

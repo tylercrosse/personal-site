@@ -15,6 +15,35 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
 const { title, description, image = "/blog-placeholder-1.jpg" } = Astro.props;
 ---
 
+<!-- Theme script to prevent FOUC -->
+<script is:inline>
+  // This script runs before the page renders to prevent flash of unstyled content
+  (function() {
+    function getStoredTheme() {
+      if (typeof localStorage !== 'undefined') {
+        const stored = localStorage.getItem('theme');
+        if (['light', 'dark', 'system'].includes(stored)) {
+          return stored;
+        }
+      }
+      return 'system';
+    }
+
+    function getSystemTheme() {
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+
+    function getEffectiveTheme(theme) {
+      return theme === 'system' ? getSystemTheme() : theme;
+    }
+
+    const theme = getStoredTheme();
+    const effectiveTheme = getEffectiveTheme(theme);
+    document.documentElement.setAttribute('data-theme', theme);
+    document.documentElement.setAttribute('data-effective-theme', effectiveTheme);
+  })();
+</script>
+
 <!-- Global Metadata -->
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
