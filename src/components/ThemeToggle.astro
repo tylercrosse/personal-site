@@ -43,10 +43,10 @@
     background-color: rgba(var(--gray), 0.1);
   }
 
-  #theme-toggle:focus {
+  /* #theme-toggle:focus {
     outline: 2px solid var(--accent);
     outline-offset: 2px;
-  }
+  } */
 
   /* Hide all icons by default */
   .sun, .moon, .system {
@@ -68,11 +68,11 @@
 
   /* Dark theme styles */
   :global([data-theme="dark"]) #theme-toggle {
-    color: rgb(var(--gray-light));
+    color: rgb(var(--gray-dark));
   }
 
   :global([data-theme="dark"]) #theme-toggle:hover {
-    background-color: rgba(var(--gray-light), 0.1);
+    background-color: rgba(var(--gray-dark), 0.1);
   }
 </style>
 

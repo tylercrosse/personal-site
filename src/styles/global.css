@@ -18,22 +18,22 @@
 
 /* Dark theme variables */
 [data-effective-theme="dark"] {
-  --accent: #4f8fff;
-  --accent-dark: #2563eb;
+  --accent: #268bd2; /* Solarized blue */
+  --accent-dark: #2aa198; /* Solarized cyan */
   --black: 255, 255, 255;
   --gray: 156, 163, 175;
-  --gray-light: 55, 65, 81;
-  --gray-dark: 229, 231, 235;
-  --gray-gradient: rgba(var(--gray-light), 50%), #111827;
-  --box-shadow: 0 2px 6px rgba(0, 0, 0, 25%),
-    0 8px 24px rgba(0, 0, 0, 33%), 0 16px 32px rgba(0, 0, 0, 33%);
+  --gray-light: 7, 54, 66; /* Solarized base02 (dark background highlights) */
+  --gray-dark: 229, 231, 235; /* Prose text */
+  --gray-gradient: rgba(0, 43, 54, 0.8), #002b36; /* Solarized base03 gradient */
+  --box-shadow: 0 2px 6px rgba(0, 0, 0, 40%),
+    0 8px 24px rgba(0, 0, 0, 50%), 0 16px 32px rgba(0, 0, 0, 50%);
 }
 
 [data-effective-theme="dark"] {
   .astro-code,
   .astro-code span {
     color: var(--shiki-dark) !important;
-    background-color: var(--shiki-dark-bg) !important;
+    background-color: #00212b !important;
     /* Optional, if you also want font styles */
     font-style: var(--shiki-dark-font-style) !important;
     font-weight: var(--shiki-dark-font-weight) !important;
@@ -73,7 +73,7 @@ body {
 
 /* Dark theme body background */
 [data-effective-theme="dark"] body {
-  background: linear-gradient(var(--gray-gradient)) no-repeat, #111827;
+  background: linear-gradient(var(--gray-gradient)) no-repeat, #002b36; /* Solarized base03 */
   background-size: 100% 600px;
 }
 
