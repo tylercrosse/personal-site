@@ -12,6 +12,10 @@ image:
   alt: Galatea of the Spheres by Salvador Dalí
 ---
 
+import { Image } from "astro:assets";
+
+import sets from "./sets.png";
+
 As journeyman python developer, I was surprised to find that Python allows bitwise operators to be used on sets. I was even more surprised to find that they work on dicts as well. So, here's a quick post on how to use them.
 
 ## Bitwise Operations on sets
@@ -47,8 +51,8 @@ print(a > b) # False
 # NOTE: |, &, ^ are commutative, while -, >, < is not
 ``` 
 
-<div style="max-width: 560px">
-  <img src="./sets.png" alt="Operations on sets" />
+<div style="max-width: 560px; margin: 0 auto;">
+  <Image src={sets} alt="Operations on sets" />
 </div>
 
 One pontential gotcha is that the methods accept iterables, so if you pass a list or tuple, you will get a set back. There isn't an equivalent approach for itererables using the bitwise assignment operators. For more details see the [Python API docs for Set](https://docs.python.org/3/library/stdtypes.html#set-types-set-frozenset). 

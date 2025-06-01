@@ -12,6 +12,13 @@ image:
   alt: Low cost air lines by Jacek Yerka
 ---
 
+import { Image } from "astro:assets";
+
+import relevanceResults from "./relevance-results.png";
+import relevanceRatios from "./relevance-ratios.png";
+import indexConstruction from "./index-construction.png";
+
+
 The use of search has become ubiquitous. It's been more than twenty years since the American Dialect Society chose the verb "Google" as the most useful word of 2002. Yet I've found in practice that the fundamental vocabulary of search lacks a shared understanding of how it is expected to function.
 
 Users want to enter a vague bit of text into a search box and get back a list of relevant results. But what does "relevant" mean? How does the search engine decide what is relevant? How does the user decide what is relevant? How does a user even know what they are looking for or decide what text to put in the search box in the first place?
@@ -46,14 +53,14 @@ The more a document matches what you were looking for the more relevant it is. A
 
 To help quantify this search practitioners call any document that is relevant and returned by a search a true positive. If it is returned and not relevant it is a false positive. Relevant documents not returned are called false negatives - they were missed. Non-relevant docs not returned are true negatives.
 
-<div style="max-width: 680px">
-  <img src="./relevance-results.png" alt="A bunch of animals, including a daschund" />
+<div style="max-width: 680px; margin: 0 auto;">
+  <Image src={relevanceResults} alt="A bunch of animals, including a daschund" />
 </div>
 
 Precision helps explain how many of the results returned are relevant. Recall describes how many of all the possible relevant documents that exist were returned.
 
-<div style="max-width: 680px">
-  <img src="./relevance-ratios.png" alt="A bunch of animals, including a daschund" />
+<div style="max-width: 680px; margin: 0 auto;">
+  <Image src={relevanceRatios} alt="A bunch of animals, including a daschund" />
 </div>
 
 Search engines can be tuned to improve the relevance of results and try to improve these metrics. Sadly, precision and recall are sometimes at odds with each other. Improving the precision can cause fewer total docs to be returned and thus can lower the recall. Conversely, methods to result in more of the total relevant being returned often reduce the overall precision of the search.
@@ -100,8 +107,8 @@ Search engines are dumb machines and all of the functionality they are capable o
 
 Once all the matches are found they are ranked using a formula that tries to intuit which documents are the closest of most valuable matches to the user's query. This ranking process can vary a lot between search engines.
 
-<div style="max-width: 680px">
-  <img src="./index-construction.png" alt="Index Construction & Searching" />
+<div style="max-width: 680px; margin: 0 auto;">
+  <Image src={indexConstruction} alt="Index Construction & Searching" />
 </div>
 
 To summarize, constructing the index is slow, which allows searching to be fast. Documents are analyzed as they are added to the index. Queries are analyzed in a similar manner to help match them against documents in the index. Matches in the index are ranked by the search engine and returned as results.

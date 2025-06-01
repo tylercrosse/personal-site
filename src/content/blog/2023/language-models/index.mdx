@@ -14,6 +14,16 @@ image:
     Springer, 2014.
 ---
 
+import { Image } from "astro:assets";
+
+import googleAutocomplete from "./google-autocomplete-screenshot.png";
+import fairDice from "./fair_dice.webp";
+import iSawACatProb from "./i_saw_a_cat_prob.gif";
+import generationExample from "./generation_example.mp4";
+import iphonePredictiveText from "./iphone-predictive-text-dave-smith-bi.webp";
+import modelSizeOverTime from "./model-size-over-time2.png";
+
+
 ChatGPT has had runaway success since it was released on November 30th, 2022. It's a great example of how language models can be used to solve real-world problems. It seems like every tech company is rushing to build their own models or add features that use language models in their products. Yet outside of AI practitioners the level of understanding of how they work is slow coming. In this article, we'll take a look at what language models are, how they work, and how they can be used to solve real-world problems.
 
 ## What are language models?
@@ -26,8 +36,8 @@ Language modeling predates ChatGPT by a long time and before large-language mode
 
 You're likely already familiar with a few uses of language models like autocomplete suggestions in search engines and next-word suggestions on your phone. These are examples of language models that are used to make predictions about text.
 
-<div style="max-width: 500px;">
-  <img src="./google-autocomplete-screenshot.png" alt="Google Autocomplete by Google" />
+<div style="max-width: 500px; margin: 0 auto;">
+  <Image src={googleAutocomplete} alt="Google Autocomplete by Google" />
 </div>
 
 ## N-gram models
@@ -47,28 +57,28 @@ The idea is that the more often certain word combinations appear together, the m
 
 What is often referred to as training or building a model involves running a large collection of sentences through this process to build up these probabilities. As each sentence is fed in the probabilities shift slightly as words get repeated in different orders and proportions - it 'learns' and refines the statistical relationships of the training data. The more sentences that are used to train the model, the more accurate it will be.
 
-<div style="max-width: 500px;">
-  <img src="./fair_dice.webp" alt="Probabilties of dice" />
+<div style="max-width: 500px; margin: 0 auto;">
+  <Image src={fairDice} alt="Probabilties of dice" />
 </div>
 
 We're all familiar with the basics of probability, you throw a die and you've got a 1 in 6 chance of getting any of the sides. Extending that, the language model can determine the probabilities for each word given the words before it. Almost as if there were a special die for each situation. Here's an illustration from [Lena Voita's Language Modeling course](https://lena-voita.github.io/nlp_course/language_modeling.html) that uses the formal math notation for probability.
 
-<div style="padding: 30px 0">
-  <img src="./i_saw_a_cat_prob.gif" alt="N-gram probability by Lena Voita" />
+<div style="padding: 30px 0; margin: 0 auto;">
+  <Image src={iSawACatProb} alt="N-gram probability by Lena Voita" />
 </div>
 
 Once the model has been built you can give it a starting word or phrase, it uses these probabilities to predict the most likely next word or phrase. So if you start with "The quick," the model would guess that the next word might be "brown" or "fox" because those combinations have been seen frequently before.
 
 Another illustration by [Lena Voita](https://lena-voita.github.io/nlp_course/language_modeling.html) shows how a model can be used to predict the next word:
 
-<div style="padding: 30px 0">
-<video src='./generation_example.mp4' loop autoplay muted />
+<div style="padding: 30px 0; margin: 0 auto;">
+  <video src={generationExample} loop autoplay muted />
 </div>
 
 And with some relatively simple math, voila! You have a language model that can be used for real-world problems. 
 
-<div style="max-width: 360px;">
-  <img src="./iphone-predictive-text-dave-smith-bi.webp" alt="Predictive Text by Dave Smith for Business Insider" />
+<div style="max-width: 360px; margin: 0 auto;">
+  <Image src={iphonePredictiveText} alt="Predictive Text by Dave Smith for Business Insider" />
 </div>
 
 It's worth mentioning that the "n" in n-gram models represents the number of words that are considered together. So a 1-gram model considers each word individually. A 2-gram model considers pairs of words. A 3-gram model considers triplets of words. And so on. As the n increases, the model becomes more complex and can make more accurate predictions. But it also requires more data to train the model.
@@ -83,8 +93,8 @@ Indeed, the complexity of language goes much deeper than homophones and word ord
 
 Many generations of language models have been developed to better model all of the complexities and nuances of language. Over time as the approaches used to create models have gotten more sophisticated the amount data stored in the models has grown. The size of the model is a good proxy for how complex it is. Size alone doesn't gauge how accurate a model is, but it's a good starting point.
 
-<div style="max-width: 860px;">
-  <img src="./model-size-over-time2.png" alt="Model Size Over Time" />
+<div style="max-width: 860px; margin: 0 auto;">
+  <Image src={modelSizeOverTime} alt="Model Size Over Time" />
 </div>
 
 - **Simple statistical models like n-grams** have been around since the 1950s. Simple bigram models like the ones that have been used in phone keyboards can be stored in less space than a single mp3 (~1 MB) and can run on almost any device.
