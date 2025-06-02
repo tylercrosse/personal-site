@@ -43,7 +43,7 @@
       />
     </div>
     <div id="omnibar-results" class="omnibar-results">
-      <div class="results-section">
+      <div class="results-section" id="pages-default-section">
         <div class="section-title">Pages</div>
         <div class="result-item" data-href="/" data-index="0">
           <div class="result-title">Home</div>
@@ -96,23 +96,26 @@
     private results: HTMLElement;
     private trigger: HTMLElement;
     private selectedIndex: number = 0;
-    private resultItems: NodeListOf<HTMLElement>;
+    private resultItems: HTMLElement[] = [];
     private searchTimeout: number | null = null;
+    private isSearching: boolean = false;
 
     constructor() {
       this.overlay = document.getElementById("omnibar-overlay")!;
       this.input = document.getElementById("omnibar-input") as HTMLInputElement;
       this.results = document.getElementById("omnibar-results")!;
       this.trigger = document.getElementById("omnibar-trigger")!;
-      this.resultItems = this.results.querySelectorAll(".result-item");
-
+      this.resultItems = Array.from(this.results.querySelectorAll("#pages-default-section .result-item, #recent-posts-section .result-item")) as HTMLElement[];
       this.init();
     }
 
     private async init() {
       this.setupEventListeners();
       await this.loadRecentPosts();
+      this.isSearching = false;
       this.updateResultItems();
+      this.selectedIndex = 0;
+      this.updateSelection();
     }
 
     private setupEventListeners() {
@@ -210,120 +213,113 @@
 
     private handleSearch() {
       const query = this.input.value.trim();
+      if (this.searchTimeout) clearTimeout(this.searchTimeout);
 
-      if (this.searchTimeout) {
-        clearTimeout(this.searchTimeout);
-      }
-
-      this.searchTimeout = window.setTimeout(() => {
+      this.searchTimeout = window.setTimeout(async () => {
         if (query.length > 0) {
-          this.showSearchResults();
-          this.performSearch(query);
+          this.isSearching = true;
+          this.showSearchResults();         // Hide defaults, show search area
+          await this.performSearch(query);  // Fill search area with results (updates DOM)
         } else {
-          this.showDefaultResults();
+          this.isSearching = false;
+          this.showDefaultResults();        // Hide search area, show defaults (updates DOM)
         }
-        this.updateResultItems();
-        this.selectedIndex = 0;
-        this.updateSelection();
+        // AFTER DOM is definitively updated by either performSearch or showDefaultResults:
+        this.updateResultItems();         // Rebuild this.resultItems from the current DOM state
+        this.selectedIndex = 0;           // Reset index to point to the first item in the new list
+        this.updateSelection();           // Visually select that first item
       }, 150);
     }
 
     private async performSearch(query: string) {
+      const container = document.getElementById("search-results-container")!;
+      container.innerHTML = ""; // Clear previous results
       try {
-        const container = document.getElementById("search-results-container")!;
-        container.innerHTML = "";
-
-        // Use Pagefind's search functionality if available
+        let resultsGenerated = false;
         if ((window as any).pagefind) {
           const search = await (window as any).pagefind.search(query);
-
-          for (const result of search.results.slice(0, 8)) {
-            const data = await result.data();
-            const item = document.createElement("div");
-            item.className = "result-item";
-            item.dataset.href = data.url;
-            item.innerHTML = `
-              <div class="result-title">${data.meta.title || "Untitled"}</div>
-              <div class="result-description">${data.excerpt}</div>
-            `;
-            container.appendChild(item);
+          if (search.results.length > 0) {
+            // Use Promise.all to wait for all individual result data fetching and DOM appending
+            await Promise.all(search.results.slice(0, 8).map(async (result: any) => {
+              const data = await result.data();
+              const item = document.createElement("div");
+              item.className = "result-item";
+              item.dataset.href = data.url;
+              item.innerHTML = `
+                <div class="result-title">${data.meta.title || "Untitled"}</div>
+                <div class="result-description">${data.excerpt}</div>
+              `;
+              container.appendChild(item);
+            }));
+            resultsGenerated = true;
           }
         } else {
-          // Fallback: simple text matching on page titles
-          const fallbackResults = [
-            {
-              title: "Home",
-              href: "/",
-              description: "Welcome to my personal site",
-            },
-            {
-              title: "Blog",
-              href: "/blog",
-              description: "My thoughts and writings",
-            },
-            {
-              title: "About",
-              href: "/about",
-              description: "Learn more about me",
-            },
-          ].filter(
-            (item) =>
-              item.title.toLowerCase().includes(query.toLowerCase()) ||
-              item.description.toLowerCase().includes(query.toLowerCase())
+          // Fallback logic
+          const fallbackResults = (
+            [
+              { title: "Home", href: "/", description: "Welcome to my personal site" },
+              { title: "Blog", href: "/blog", description: "My thoughts and writings" },
+              { title: "About", href: "/about", description: "Learn more about me" },
+            ] as { title: string; href: string; description: string }[]
+          ).filter((f) =>
+            f.title.toLowerCase().includes(query.toLowerCase()) ||
+            f.description.toLowerCase().includes(query.toLowerCase())
           );
-
-          fallbackResults.forEach((result) => {
-            const item = document.createElement("div");
-            item.className = "result-item";
-            item.dataset.href = result.href;
-            item.innerHTML = `
-              <div class="result-title">${result.title}</div>
-              <div class="result-description">${result.description}</div>
-            `;
-            container.appendChild(item);
-          });
+          if (fallbackResults.length > 0) {
+            fallbackResults.forEach(r => {
+              const item = document.createElement("div");
+              item.className = "result-item";
+              item.dataset.href = r.href;
+              item.innerHTML = `<div class="result-title">${r.title}</div><div class="result-description">${r.description}</div>`;
+              container.appendChild(item);
+            });
+            resultsGenerated = true;
+          }
+        }
+        if (!resultsGenerated) {
+          container.innerHTML = '<p class="no-results">No results found.</p>';
         }
       } catch (error) {
         console.error("Search failed:", error);
+        container.innerHTML = '<p class="no-results">Search error. Please try again.</p>';
       }
     }
 
     private showSearchResults() {
-      const recentPostsSection = document.getElementById(
-        "recent-posts-section"
-      )! as HTMLElement;
-      const pagesSection = document.querySelector(
-        ".results-section"
-      )! as HTMLElement;
-      const searchSection = document.getElementById(
-        "search-results-section"
-      )! as HTMLElement;
-
-      recentPostsSection.style.display = "none";
+      const pagesSection = document.getElementById("pages-default-section")! as HTMLElement;
+      const recentPostsSection = document.getElementById("recent-posts-section")! as HTMLElement;
+      const searchSection = document.getElementById("search-results-section")! as HTMLElement;
+      
       pagesSection.style.display = "none";
+      recentPostsSection.style.display = "none";
       searchSection.style.display = "block";
     }
 
     private showDefaultResults() {
-      const recentPostsSection = document.getElementById(
-        "recent-posts-section"
-      )! as HTMLElement;
-      const pagesSection = document.querySelector(
-        ".results-section"
-      )! as HTMLElement;
-      const searchSection = document.getElementById(
-        "search-results-section"
-      )! as HTMLElement;
-
+      const pagesSection = document.getElementById("pages-default-section")! as HTMLElement;
+      const recentPostsSection = document.getElementById("recent-posts-section")! as HTMLElement;
+      const searchSection = document.getElementById("search-results-section")! as HTMLElement;
+      
       searchSection.style.display = "none";
       pagesSection.style.display = "block";
       recentPostsSection.style.display = "block";
     }
 
     private updateResultItems() {
-      this.resultItems = this.results.querySelectorAll(
-        '.result-item:not([style*="display: none"])'
-      );
+      this.resultItems = []; // Clear previous items
+      if (this.isSearching) {
+        // When searching, only items in search-results-container are relevant
+        const searchItems = document.querySelectorAll("#search-results-container .result-item");
+        this.resultItems = Array.from(searchItems) as HTMLElement[];
+      } else {
+        // When not searching, items from default sections are relevant
+        const pageItems = document.querySelectorAll("#pages-default-section .result-item");
+        const recentItems = document.querySelectorAll("#recent-posts-section .result-item");
+        this.resultItems = [
+          ...Array.from(pageItems) as HTMLElement[], 
+          ...Array.from(recentItems) as HTMLElement[]
+        ];
+      }
     }
 
     private selectNext() {
@@ -363,16 +359,23 @@
     private open() {
       this.overlay.style.display = "flex";
       this.input.focus();
-      this.selectedIndex = 0;
-      this.updateSelection();
+      this.input.value = "";          // Clear input
+      this.isSearching = false;      // Set to default mode
+      this.showDefaultResults();     // Show default sections
+      this.updateResultItems();      // Update item list from default sections
+      this.selectedIndex = 0;        // Select first default item
+      this.updateSelection();        // Visually mark it
       document.body.style.overflow = "hidden";
     }
 
     private close() {
       this.overlay.style.display = "none";
-      this.input.value = "";
-      this.showDefaultResults();
-      this.updateResultItems();
+      this.input.value = "";          // Clear input
+      this.isSearching = false;      // Reset search state
+      // Clear visual selection from any items that might have had it
+      this.resultItems.forEach(item => item.classList.remove('selected'));
+      this.selectedIndex = 0;        // Reset index for the next open
+      // this.resultItems will be rebuilt on next open, so no need to clear it here
       document.body.style.overflow = "";
     }
 
@@ -623,6 +626,12 @@
     .omnibar-overlay {
       padding-top: 5vh;
     }
+  }
+
+  .no-results {
+    padding: 1rem;
+    text-align: center;
+    color: rgb(var(--gray));
   }
 </style>
 
