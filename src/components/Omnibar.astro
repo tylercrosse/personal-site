@@ -1,0 +1,574 @@
+<div id="omnibar-trigger" class="search-trigger">
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <circle cx="11" cy="11" r="8"></circle>
+    <path d="m21 21-4.35-4.35"></path>
+  </svg>
+  <span class="search-placeholder">Search...</span>
+  <kbd class="search-kbd">⌘K</kbd>
+</div>
+
+<div id="omnibar-overlay" class="omnibar-overlay" style="display: none;">
+  <div class="omnibar-container">
+    <div class="omnibar-input-container">
+      <svg
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        class="search-icon"
+      >
+        <circle cx="11" cy="11" r="8"></circle>
+        <path d="m21 21-4.35-4.35"></path>
+      </svg>
+      <input
+        id="omnibar-input"
+        type="text"
+        placeholder="Search pages and posts..."
+        class="omnibar-input"
+        autocomplete="off"
+        spellcheck="false"
+      />
+    </div>
+    <div id="omnibar-results" class="omnibar-results">
+      <div class="results-section">
+        <div class="section-title">Pages</div>
+        <div class="result-item" data-href="/" data-index="0">
+          <div class="result-title">Home</div>
+          <div class="result-description">Welcome to my personal site</div>
+        </div>
+        <div class="result-item" data-href="/blog" data-index="1">
+          <div class="result-title">Blog</div>
+          <div class="result-description">My thoughts and writings</div>
+        </div>
+        <div class="result-item" data-href="/about" data-index="2">
+          <div class="result-title">About</div>
+          <div class="result-description">Learn more about me</div>
+        </div>
+      </div>
+      <div class="results-section" id="recent-posts-section">
+        <div class="section-title">Recent Posts</div>
+        <!-- Recent posts will be populated by JavaScript -->
+      </div>
+      <div
+        class="results-section"
+        id="search-results-section"
+        style="display: none;"
+      >
+        <div class="section-title">Search Results</div>
+        <div id="search-results-container"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  class Omnibar {
+    private overlay: HTMLElement;
+    private input: HTMLInputElement;
+    private results: HTMLElement;
+    private trigger: HTMLElement;
+    private selectedIndex: number = 0;
+    private resultItems: NodeListOf<HTMLElement>;
+    private searchTimeout: number | null = null;
+
+    constructor() {
+      this.overlay = document.getElementById("omnibar-overlay")!;
+      this.input = document.getElementById("omnibar-input") as HTMLInputElement;
+      this.results = document.getElementById("omnibar-results")!;
+      this.trigger = document.getElementById("omnibar-trigger")!;
+      this.resultItems = this.results.querySelectorAll(".result-item");
+
+      this.init();
+    }
+
+    private async init() {
+      this.setupEventListeners();
+      await this.loadRecentPosts();
+      this.updateResultItems();
+    }
+
+    private setupEventListeners() {
+      // Trigger click
+      this.trigger.addEventListener("click", () => this.open());
+
+      // Keyboard shortcuts
+      document.addEventListener("keydown", (e) => {
+        if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+          e.preventDefault();
+          this.open();
+        }
+
+        if (this.isOpen()) {
+          if (e.key === "Escape") {
+            this.close();
+          } else if (e.key === "ArrowDown") {
+            e.preventDefault();
+            this.selectNext();
+          } else if (e.key === "ArrowUp") {
+            e.preventDefault();
+            this.selectPrevious();
+          } else if (e.key === "Enter") {
+            e.preventDefault();
+            this.navigateToSelected();
+          }
+        }
+      });
+
+      // Click outside to close
+      this.overlay.addEventListener("click", (e) => {
+        if (e.target === this.overlay) {
+          this.close();
+        }
+      });
+
+      // Search input
+      this.input.addEventListener("input", () => {
+        this.handleSearch();
+      });
+
+      // Result item clicks
+      this.results.addEventListener("click", (e) => {
+        const resultItem = (e.target as HTMLElement).closest(
+          ".result-item"
+        ) as HTMLElement;
+        if (resultItem && resultItem.dataset.href) {
+          window.location.href = resultItem.dataset.href;
+        }
+      });
+    }
+
+    private async loadRecentPosts() {
+      try {
+        const recentPostsSection = document.getElementById(
+          "recent-posts-section"
+        )!;
+
+        // Use real recent posts data if available, otherwise fallback
+        const recentPosts = (window as any).recentPosts || [
+          {
+            title: "Anchoring To Text Fragment",
+            href: "/blog/anchoring-to-text-fragment",
+            description: "Web standards for linking to text",
+          },
+          {
+            title: "Reflections on My 2024",
+            href: "/blog/reflections-on-my-2024",
+            description: "Looking back at the year",
+          },
+          {
+            title: "Upgrading Astro Code Snippets",
+            href: "/blog/upgrading-astro-code-snippets",
+            description: "Improving syntax highlighting",
+          },
+        ];
+
+        let index = 3; // Continue from pages
+        recentPosts.forEach((post: any) => {
+          const item = document.createElement("div");
+          item.className = "result-item";
+          item.dataset.href = post.href;
+          item.dataset.index = index.toString();
+          item.innerHTML = `
+            <div class="result-title">${post.title}</div>
+            <div class="result-description">${post.description}</div>
+          `;
+          recentPostsSection.appendChild(item);
+          index++;
+        });
+      } catch (error) {
+        console.error("Failed to load recent posts:", error);
+      }
+    }
+
+    private handleSearch() {
+      const query = this.input.value.trim();
+
+      if (this.searchTimeout) {
+        clearTimeout(this.searchTimeout);
+      }
+
+      this.searchTimeout = window.setTimeout(() => {
+        if (query.length > 0) {
+          this.showSearchResults();
+          this.performSearch(query);
+        } else {
+          this.showDefaultResults();
+        }
+        this.updateResultItems();
+        this.selectedIndex = 0;
+        this.updateSelection();
+      }, 150);
+    }
+
+    private async performSearch(query: string) {
+      try {
+        const container = document.getElementById("search-results-container")!;
+        container.innerHTML = "";
+
+        // Use Pagefind's search functionality if available
+        if ((window as any).pagefind) {
+          const search = await (window as any).pagefind.search(query);
+
+          for (const result of search.results.slice(0, 8)) {
+            const data = await result.data();
+            const item = document.createElement("div");
+            item.className = "result-item";
+            item.dataset.href = data.url;
+            item.innerHTML = `
+              <div class="result-title">${data.meta.title || "Untitled"}</div>
+              <div class="result-description">${data.excerpt}</div>
+            `;
+            container.appendChild(item);
+          }
+        } else {
+          // Fallback: simple text matching on page titles
+          const fallbackResults = [
+            {
+              title: "Home",
+              href: "/",
+              description: "Welcome to my personal site",
+            },
+            {
+              title: "Blog",
+              href: "/blog",
+              description: "My thoughts and writings",
+            },
+            {
+              title: "About",
+              href: "/about",
+              description: "Learn more about me",
+            },
+          ].filter(
+            (item) =>
+              item.title.toLowerCase().includes(query.toLowerCase()) ||
+              item.description.toLowerCase().includes(query.toLowerCase())
+          );
+
+          fallbackResults.forEach((result) => {
+            const item = document.createElement("div");
+            item.className = "result-item";
+            item.dataset.href = result.href;
+            item.innerHTML = `
+              <div class="result-title">${result.title}</div>
+              <div class="result-description">${result.description}</div>
+            `;
+            container.appendChild(item);
+          });
+        }
+      } catch (error) {
+        console.error("Search failed:", error);
+      }
+    }
+
+    private showSearchResults() {
+      const recentPostsSection = document.getElementById(
+        "recent-posts-section"
+      )! as HTMLElement;
+      const pagesSection = document.querySelector(
+        ".results-section"
+      )! as HTMLElement;
+      const searchSection = document.getElementById(
+        "search-results-section"
+      )! as HTMLElement;
+
+      recentPostsSection.style.display = "none";
+      pagesSection.style.display = "none";
+      searchSection.style.display = "block";
+    }
+
+    private showDefaultResults() {
+      const recentPostsSection = document.getElementById(
+        "recent-posts-section"
+      )! as HTMLElement;
+      const pagesSection = document.querySelector(
+        ".results-section"
+      )! as HTMLElement;
+      const searchSection = document.getElementById(
+        "search-results-section"
+      )! as HTMLElement;
+
+      searchSection.style.display = "none";
+      pagesSection.style.display = "block";
+      recentPostsSection.style.display = "block";
+    }
+
+    private updateResultItems() {
+      this.resultItems = this.results.querySelectorAll(
+        '.result-item:not([style*="display: none"])'
+      );
+    }
+
+    private selectNext() {
+      this.selectedIndex = Math.min(
+        this.selectedIndex + 1,
+        this.resultItems.length - 1
+      );
+      this.updateSelection();
+    }
+
+    private selectPrevious() {
+      this.selectedIndex = Math.max(this.selectedIndex - 1, 0);
+      this.updateSelection();
+    }
+
+    private updateSelection() {
+      this.resultItems.forEach((item, index) => {
+        item.classList.toggle("selected", index === this.selectedIndex);
+      });
+
+      // Scroll selected item into view
+      if (this.resultItems[this.selectedIndex]) {
+        this.resultItems[this.selectedIndex].scrollIntoView({
+          block: "nearest",
+          behavior: "smooth",
+        });
+      }
+    }
+
+    private navigateToSelected() {
+      const selectedItem = this.resultItems[this.selectedIndex];
+      if (selectedItem && selectedItem.dataset.href) {
+        window.location.href = selectedItem.dataset.href;
+      }
+    }
+
+    private open() {
+      this.overlay.style.display = "flex";
+      this.input.focus();
+      this.selectedIndex = 0;
+      this.updateSelection();
+      document.body.style.overflow = "hidden";
+    }
+
+    private close() {
+      this.overlay.style.display = "none";
+      this.input.value = "";
+      this.showDefaultResults();
+      this.updateResultItems();
+      document.body.style.overflow = "";
+    }
+
+    private isOpen(): boolean {
+      return this.overlay.style.display !== "none";
+    }
+  }
+
+  // Initialize when DOM is loaded
+  document.addEventListener("DOMContentLoaded", () => {
+    new Omnibar();
+  });
+</script>
+
+<style>
+  .search-trigger {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    background: rgba(var(--gray-light), 0.1);
+    border: 1px solid rgba(var(--gray-light), 0.2);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.875rem;
+    color: rgb(var(--gray-dark));
+    min-width: 200px;
+  }
+
+  .search-trigger:hover {
+    background: rgba(var(--black), 0.15);
+    border-color: rgba(var(--black), 0.3);
+  }
+
+  .search-placeholder {
+    flex: 1;
+    text-align: left;
+  }
+
+  .search-kbd {
+    background: rgba(var(--black), 0.2);
+    border: 1px solid rgba(var(--black), 0.3);
+    border-radius: 3px;
+    padding: 0.125rem 0.375rem;
+    font-size: 0.75rem;
+    font-family: ui-monospace, "SF Mono", Monaco, "Cascadia Code", "Roboto Mono",
+      Consolas, "Courier New", monospace;
+  }
+
+  .omnibar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    z-index: 1000;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: 10vh;
+  }
+
+  .omnibar-container {
+    background: white;
+    border-radius: 12px;
+    box-shadow:
+      0 20px 25px -5px rgba(0, 0, 0, 0.1),
+      0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    width: 90%;
+    max-width: 600px;
+    max-height: 70vh;
+    overflow: hidden;
+    border: 1px solid rgba(var(--gray-light), 0.2);
+  }
+
+  :global([data-effective-theme="dark"]) .omnibar-container {
+    background: #073642;
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .omnibar-input-container {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem;
+    border-bottom: 1px solid rgba(var(--gray-light), 0.2);
+  }
+
+  :global([data-effective-theme="dark"]) .omnibar-input-container {
+    border-bottom-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .search-icon {
+    color: rgb(var(--gray));
+    flex-shrink: 0;
+  }
+
+  .omnibar-input {
+    flex: 1;
+    border: none;
+    outline: none;
+    font-size: 1rem;
+    background: transparent;
+    color: rgb(var(--black));
+  }
+
+  :global([data-effective-theme="dark"]) .omnibar-input {
+    color: rgb(var(--black));
+  }
+
+  .omnibar-input::placeholder {
+    color: rgb(var(--gray));
+  }
+
+  .omnibar-results {
+    max-height: 50vh;
+    overflow-y: auto;
+    padding: 0.5rem 0;
+  }
+
+  .results-section {
+    margin-bottom: 1rem;
+  }
+
+  .results-section:last-child {
+    margin-bottom: 0;
+  }
+
+  .section-title {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: rgb(var(--gray));
+    padding: 0.5rem 1rem;
+    margin-bottom: 0.25rem;
+  }
+
+  :global(mark) {
+    background: transparent;
+    color: var(--accent-dark);
+  }
+
+  :global(.result-item) {
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    border-left: 3px solid transparent;
+    transition: all 0.15s ease;
+  }
+
+  :global(.result-item:hover) {
+    background: color-mix(in srgb, var(--accent) 10%, transparent);
+    border-left-color: var(--accent);
+  }
+
+  :global(.result-item.selected) {
+    background: color-mix(in srgb, var(--accent) 20%, transparent);
+    border-left-color: var(--accent);
+  }
+
+  :global(.result-title) {
+    font-weight: 500;
+    color: rgb(var(--black));
+    margin-bottom: 0.25rem;
+  }
+
+  :global(.result-description) {
+    font-size: 0.875rem;
+    color: rgb(var(--gray));
+    line-height: 1.4;
+  }
+
+  /* Dark theme adjustments */
+  :global([data-effective-theme="dark"]) .search-trigger {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.1);
+    color: rgb(var(--gray-dark));
+  }
+
+  :global([data-effective-theme="dark"]) .search-trigger:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.15);
+  }
+
+  :global([data-effective-theme="dark"]) .search-kbd {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+
+  /* Responsive */
+  @media (max-width: 640px) {
+    .search-trigger {
+      min-width: auto;
+      padding: 0.5rem;
+    }
+
+    .search-placeholder {
+      display: none;
+    }
+
+    .omnibar-container {
+      width: 95%;
+      margin: 0 auto;
+    }
+
+    .omnibar-overlay {
+      padding-top: 5vh;
+    }
+  }
+</style>
+

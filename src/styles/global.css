@@ -5,8 +5,8 @@
  */
 
 :root {
-  --accent: #2337ff;
-  --accent-dark: #000d8a;
+  --accent: #268bd2; /* Solarized blue */
+  --accent-dark: #2aa198; /* Solarized cyan */
   --black: 15, 18, 25;
   --gray: 96, 115, 159;
   --gray-light: 229, 233, 240;
@@ -147,6 +147,7 @@ code {
 pre {
   padding: 1.5em;
   border-radius: 8px;
+  font-size: 0.8em;
 }
 pre > code {
   all: unset;

@@ -3,6 +3,7 @@
 // all pages through the use of the <BaseHead /> component.
 import "../styles/global.css";
 import { SITE_TITLE } from "../consts";
+import RecentPostsScript from "./RecentPostsScript.astro";
 
 interface Props {
   title: string;
@@ -41,6 +42,24 @@ const { title, description, image = "/blog-placeholder-1.jpg" } = Astro.props;
     const effectiveTheme = getEffectiveTheme(theme);
     document.documentElement.setAttribute('data-theme', theme);
     document.documentElement.setAttribute('data-effective-theme', effectiveTheme);
+  })();
+</script>
+
+<!-- Recent Posts Data -->
+<RecentPostsScript />
+
+<!-- Pagefind Search -->
+<script is:inline>
+  // Load Pagefind search functionality
+  (async function() {
+    try {
+      if (typeof window !== 'undefined') {
+        const pagefind = await import('/pagefind/pagefind.js');
+        window.pagefind = pagefind;
+      }
+    } catch (error) {
+      console.log('Pagefind not available:', error);
+    }
   })();
 </script>
 

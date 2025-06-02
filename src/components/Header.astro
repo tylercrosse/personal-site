@@ -1,6 +1,7 @@
 ---
 import HeaderLink from "./HeaderLink.astro";
 import ThemeToggle from "./ThemeToggle.astro";
+import Omnibar from "./Omnibar.astro";
 import { SITE_TITLE } from "../consts";
 ---
 
@@ -11,6 +12,9 @@ import { SITE_TITLE } from "../consts";
       <HeaderLink href="/">Home</HeaderLink>
       <HeaderLink href="/blog">Blog</HeaderLink>
       <HeaderLink href="/about">About</HeaderLink>
+      <div class="search-wrapper">
+        <Omnibar />
+      </div>
       <div class="theme-toggle-wrapper">
         <ThemeToggle />
       </div>
@@ -61,6 +65,10 @@ import { SITE_TITLE } from "../consts";
     display: flex;
     align-items: center;
     gap: 0.5rem;
+  }
+  .search-wrapper {
+    display: flex;
+    align-items: center;
   }
   .theme-toggle-wrapper {
     display: flex;
