@@ -19,29 +19,34 @@ const { title, description, image = "/blog-placeholder-1.jpg" } = Astro.props;
 <!-- Theme script to prevent FOUC -->
 <script is:inline>
   // This script runs before the page renders to prevent flash of unstyled content
-  (function() {
+  (function () {
     function getStoredTheme() {
-      if (typeof localStorage !== 'undefined') {
-        const stored = localStorage.getItem('theme');
-        if (['light', 'dark', 'system'].includes(stored)) {
+      if (typeof localStorage !== "undefined") {
+        const stored = localStorage.getItem("theme");
+        if (["light", "dark", "system"].includes(stored)) {
           return stored;
         }
       }
-      return 'system';
+      return "system";
     }
 
     function getSystemTheme() {
-      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      return window.matchMedia("(prefers-color-scheme: dark)").matches
+        ? "dark"
+        : "light";
     }
 
     function getEffectiveTheme(theme) {
-      return theme === 'system' ? getSystemTheme() : theme;
+      return theme === "system" ? getSystemTheme() : theme;
     }
 
     const theme = getStoredTheme();
     const effectiveTheme = getEffectiveTheme(theme);
-    document.documentElement.setAttribute('data-theme', theme);
-    document.documentElement.setAttribute('data-effective-theme', effectiveTheme);
+    document.documentElement.setAttribute("data-theme", theme);
+    document.documentElement.setAttribute(
+      "data-effective-theme",
+      effectiveTheme
+    );
   })();
 </script>
 
@@ -51,14 +56,14 @@ const { title, description, image = "/blog-placeholder-1.jpg" } = Astro.props;
 <!-- Pagefind Search -->
 <script is:inline>
   // Load Pagefind search functionality
-  (async function() {
+  (async function () {
     try {
-      if (typeof window !== 'undefined') {
-        const pagefind = await import('/pagefind/pagefind.js');
+      if (typeof window !== "undefined") {
+        const pagefind = await import("/pagefind/pagefind.js");
         window.pagefind = pagefind;
       }
     } catch (error) {
-      console.log('Pagefind not available:', error);
+      console.log("Pagefind not available:", error);
     }
   })();
 </script>
@@ -90,6 +95,13 @@ const { title, description, image = "/blog-placeholder-1.jpg" } = Astro.props;
   as="font"
   type="font/woff"
   crossorigin
+/>
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,100..700;1,100..700&family=Source+Serif+4:ital,opsz,wght@0,8..60,200..900;1,8..60,200..900&display=swap"
+  rel="stylesheet"
 />
 
 <!-- Canonical URL -->

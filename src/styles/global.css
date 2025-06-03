@@ -15,9 +15,55 @@
   --box-shadow: 0 2px 6px rgba(var(--gray), 25%),
     0 8px 24px rgba(var(--gray), 33%), 0 16px 32px rgba(var(--gray), 33%);
 
-  --font-heading: "Atkinson", sans-serif;
-  --font-body: "Atkinson", sans-serif;
-  --font-mono: "Atkinson", sans-serif;
+  --sol-0: #657b83;
+  --sol-1: #586e75;
+  --sol-2: #004052;
+  --sol-3: #003847;
+  --sol-3-5: #053744;
+  --sol-4: #073642;
+  --sol-5: #002b36;
+  --sol-6: #00212b;
+  --sol-7: rgba(0, 0, 0, 0.38);
+  --sol-8: rgba(0, 0, 0, 0.639);
+  --sol-9: rgba(0, 0, 0, 0.8);
+  --sol-10: #000;
+  
+  --base03: #002b36;
+  --base02: #073642;
+  --base01: #586e75;
+  --base00: #657b83;
+  --base0: #839496;
+  --base1: #93a1a1;
+  --base2: #eee8d5;
+  --base3: #fdf6e3;
+  --yellow: #b58900;
+  --yellow-muted: #8a6700;
+  --yellow-muted2: #6b5000;
+  --orange: #cb4b16;
+  --orange-muted: #9e3a11;
+  --orange-muted2: #7e2e0e;
+  --red: #dc322f;
+  --red-muted: #b32724;
+  --red-muted2: #8f1f1d;
+  --magenta: #d33682;
+  --magenta-muted: #a82a68;
+  --magenta-muted2: #862153;
+  --violet: #6c71c4;
+  --violet-muted: #565a9d;
+  --violet-muted2: #44477d;
+  --blue: #268bd2;
+  --blue-muted: #1e6fa8;
+  --blue-muted2: #185886;
+  --cyan: #2aa198;
+  --cyan-muted: #217f79;
+  --cyan-muted2: #1a6560;
+  --green: #859900;
+  --green-muted: #677600;
+  --green-muted2: #515e00;
+
+  --font-heading: "Source Serif 4", serif;
+  --font-body: "IBM Plex Sans", sans-serif;
+  --font-mono: "IBM Plex Mono", monospace;
 }
 
 /* Dark theme variables */
@@ -31,6 +77,18 @@
   --gray-gradient: rgba(0, 43, 54, 0.8), #002b36; /* Solarized base03 gradient */
   --box-shadow: 0 2px 6px rgba(0, 0, 0, 40%),
     0 8px 24px rgba(0, 0, 0, 50%), 0 16px 32px rgba(0, 0, 0, 50%);
+
+  --sol-0: #839496;
+  --sol-1: #93a1a1;
+  --sol-2: #ccc4b0;
+  --sol-3: #ddd6c1;
+  --sol-4: #eee8d5;
+  --sol-5: #fdf6e3;
+  --sol-6: #fffbf2;
+  --sol-7: hsla(0, 0%, 100%, 0.38);
+  --sol-8: hsla(0, 0%, 100%, 0.639);
+  --sol-9: hsla(0, 0%, 100%, 0.8);
+  --sol-10: #fff;
 }
 
 [data-effective-theme="dark"] {
@@ -69,7 +127,7 @@ body {
   background-size: 100% 600px;
   word-wrap: break-word;
   overflow-wrap: break-word;
-  color: rgb(var(--gray-dark));
+  color: rgb(var(--gray));
   font-size: 20px;
   line-height: 1.7;
   transition: background-color 0.2s ease, color 0.2s ease;
@@ -94,7 +152,7 @@ h4,
 h5,
 h6 {
   margin: 0 0 0.5rem 0;
-  color: rgb(var(--black));
+  color: rgb(var(--gray-dark));
   line-height: 1.2;
   font-family: var(--font-heading);
 }
@@ -126,9 +184,9 @@ a:hover {
 p {
   margin-bottom: 1em;
 }
-.prose p {
+/* .prose p {
   margin-bottom: 2em;
-}
+} */
 textarea {
   width: 100%;
   font-size: 16px;

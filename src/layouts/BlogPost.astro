@@ -49,9 +49,9 @@ const imageData = getImageData();
       .prose {
         margin: auto;
         padding: 1em;
-        color: rgb(var(--gray-dark));
+        /* color: rgb(var(--gray-dark)); */
         display: grid;
-        grid-template-columns: 1fr min(72ch, 100%) 1fr;
+        grid-template-columns: 1fr min(66ch, 100%) 1fr;
       }
       .prose > :global(*) {
         grid-column: 2;
@@ -61,6 +61,7 @@ const imageData = getImageData();
         padding: 1em 0;
         text-align: center;
         line-height: 1;
+        grid-column: 1 / 4 !important;
       }
       .title h1 {
         margin: 0 0 0.5em 0;
