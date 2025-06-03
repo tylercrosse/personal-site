@@ -1,0 +1,665 @@
+---
+import type { MarkdownHeading } from "astro";
+
+interface Props {
+  headings: MarkdownHeading[];
+}
+
+const { headings } = Astro.props;
+
+// Filter headings to only include H2-H4
+const filteredHeadings = headings.filter(({ depth }) => depth >= 2 && depth <= 4);
+
+// Build hierarchical structure
+function buildHierarchy(headings: MarkdownHeading[]) {
+  const toc: any[] = [];
+  const parentHeadings = new Map();
+  
+  if (!headings) return toc;
+  
+  headings.forEach((h) => {
+    const heading = { ...h, subheadings: [] };
+    parentHeadings.set(heading.depth, heading);
+    
+    if (heading.depth === 2) {
+      toc.push(heading);
+    } else {
+      const parent = parentHeadings.get(heading.depth - 1);
+      if (parent) {
+        parent.subheadings.push(heading);
+      }
+    }
+  });
+  
+  return toc;
+}
+
+const toc = buildHierarchy(filteredHeadings);
+---
+
+{toc.length > 0 && (
+  <>
+    <!-- Desktop Table of Contents -->
+    <nav class="desktop-toc" aria-label="Table of Contents">
+      <div class="toc-header">
+        <h4>Contents</h4>
+      </div>
+      <ul class="toc-list">
+        {toc.map((heading) => (
+          <li class="toc-item" data-level={heading.depth}>
+            <a href={`#${heading.slug}`} class="toc-link" data-heading={heading.slug}>
+              {heading.text}
+            </a>
+            {heading.subheadings.length > 0 && (
+              <ul class="toc-sublist">
+                {heading.subheadings.map((subheading: any) => (
+                  <li class="toc-item" data-level={subheading.depth}>
+                    <a href={`#${subheading.slug}`} class="toc-link" data-heading={subheading.slug}>
+                      {subheading.text}
+                    </a>
+                    {subheading.subheadings && subheading.subheadings.length > 0 && (
+                      <ul class="toc-sublist">
+                        {subheading.subheadings.map((subsubheading: any) => (
+                          <li class="toc-item" data-level={subsubheading.depth}>
+                            <a href={`#${subsubheading.slug}`} class="toc-link" data-heading={subsubheading.slug}>
+                              {subsubheading.text}
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </li>
+        ))}
+      </ul>
+    </nav>
+
+    <!-- Mobile Table of Contents -->
+    <div class="mobile-toc-container">
+      <!-- Sticky header that appears when scrolling -->
+      <div class="mobile-toc-header" id="mobile-toc-header">
+        <span class="current-heading" id="current-heading">Table of Contents</span>
+        <button class="toc-toggle" id="toc-toggle" aria-label="Toggle table of contents">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 12h18M3 6h18M3 18h18"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Full mobile ToC overlay -->
+      <div class="mobile-toc-overlay" id="mobile-toc-overlay">
+        <div class="mobile-toc-content">
+          <div class="mobile-toc-header-full">
+            <h4>Table of Contents</h4>
+            <button class="toc-close" id="toc-close" aria-label="Close table of contents">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M18 6L6 18M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+          <ul class="mobile-toc-list">
+            {toc.map((heading) => (
+              <li class="mobile-toc-item" data-level={heading.depth}>
+                <a href={`#${heading.slug}`} class="mobile-toc-link" data-heading={heading.slug}>
+                  {heading.text}
+                </a>
+                {heading.subheadings.length > 0 && (
+                  <ul class="mobile-toc-sublist">
+                    {heading.subheadings.map((subheading: any) => (
+                      <li class="mobile-toc-item" data-level={subheading.depth}>
+                        <a href={`#${subheading.slug}`} class="mobile-toc-link" data-heading={subheading.slug}>
+                          {subheading.text}
+                        </a>
+                        {subheading.subheadings && subheading.subheadings.length > 0 && (
+                          <ul class="mobile-toc-sublist">
+                            {subheading.subheadings.map((subsubheading: any) => (
+                              <li class="mobile-toc-item" data-level={subsubheading.depth}>
+                                <a href={`#${subsubheading.slug}`} class="mobile-toc-link" data-heading={subsubheading.slug}>
+                                  {subsubheading.text}
+                                </a>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </div>
+  </>
+)}
+
+<style>
+  /* Desktop Table of Contents */
+  .desktop-toc {
+    position: sticky;
+    top: 2rem;
+    grid-column: 3 !important;
+    right: calc(-260px - 2rem);
+    width: 240px;
+    min-width: 240px;
+    max-height: calc(100vh - 5rem);
+    overflow-y: auto;
+    padding: 1rem;
+    /* background: rgba(var(--gray-light), 0.5);
+    border-radius: 8px;
+    border: 1px solid rgba(var(--gray), 0.2);
+    backdrop-filter: blur(10px); */
+    margin-top: 0;
+  }
+
+  [data-effective-theme="dark"] .desktop-toc {
+    background: rgba(var(--base02), 0.8);
+    border-color: rgba(var(--gray), 0.3);
+  }
+
+  .toc-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid rgba(var(--gray), 0.2);
+  }
+
+  .toc-header h4 {
+    margin: 0;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: rgb(var(--gray-dark));
+  }
+
+  .toc-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .toc-item {
+    margin: 0;
+  }
+
+  .toc-link {
+    display: block;
+    padding: 0.25rem 0;
+    font-size: 0.85rem;
+    line-height: 1.4;
+    color: rgb(var(--gray));
+    text-decoration: none;
+    border-left: 2px solid transparent;
+    padding-left: 0.5rem;
+    margin-left: -0.5rem;
+    transition: all 0.2s ease;
+  }
+
+  .toc-link:hover {
+    color: var(--accent);
+    border-left-color: var(--accent);
+  }
+
+  .toc-link.active {
+    color: var(--accent);
+    border-left-color: var(--accent);
+    font-weight: 500;
+  }
+
+  .toc-sublist {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    margin-left: 1rem;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+  }
+
+  .toc-sublist.expanded {
+    max-height: 500px;
+  }
+
+  .toc-item[data-level="3"] .toc-link {
+    font-size: 0.8rem;
+    opacity: 0.8;
+  }
+
+  .toc-item[data-level="4"] .toc-link {
+    font-size: 0.75rem;
+    opacity: 0.7;
+    margin-left: 1rem;
+  }
+
+  /* Mobile Table of Contents */
+  .mobile-toc-container {
+    display: none;
+  }
+
+  .mobile-toc-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(var(--gray), 0.2);
+    padding: 0.75rem 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 100;
+    transform: translateY(-100%);
+    transition: transform 0.3s ease;
+  }
+
+  :global([data-effective-theme="dark"] .mobile-toc-header) {
+    background: var(--base02);
+    border-bottom-color: rgba(var(--gray), 0.3);
+  }
+
+  .mobile-toc-header.visible {
+    transform: translateY(0);
+  }
+
+  .current-heading {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: rgb(var(--gray-dark));
+    max-width: calc(100% - 3rem);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  [data-effective-theme="dark"] .current-heading {
+    color: rgb(var(--gray-dark));
+  }
+
+  .toc-toggle {
+    background: none;
+    border: none;
+    color: rgb(var(--gray-dark));
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+  }
+
+  [data-effective-theme="dark"] .toc-toggle {
+    color: rgb(var(--gray-dark));
+  }
+
+  .toc-toggle:hover {
+    background: rgba(var(--gray), 0.1);
+  }
+
+  [data-effective-theme="dark"] .toc-toggle:hover {
+    background: rgba(var(--gray), 0.2);
+  }
+
+  .mobile-toc-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 200;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+  }
+
+  [data-effective-theme="dark"] .mobile-toc-overlay {
+    background: rgba(0, 0, 0, 0.7);
+  }
+
+  .mobile-toc-overlay.visible {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .mobile-toc-content {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 80%;
+    max-width: 320px;
+    height: 100%;
+    background: white;
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+    overflow-y: auto;
+  }
+
+  :global([data-effective-theme="dark"] .mobile-toc-content) {
+    background: var(--base02);
+    border-left: 1px solid rgba(var(--gray), 0.2);
+  }
+
+  .mobile-toc-overlay.visible .mobile-toc-content {
+    transform: translateX(0);
+  }
+
+  .mobile-toc-header-full {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid rgba(var(--gray), 0.2);
+  }
+
+  [data-effective-theme="dark"] .mobile-toc-header-full {
+    border-bottom-color: rgba(var(--gray), 0.3);
+  }
+
+  .mobile-toc-header-full h4 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: rgb(var(--gray-dark));
+  }
+
+  [data-effective-theme="dark"] .mobile-toc-header-full h4 {
+    color: rgb(var(--gray-dark));
+  }
+
+  .toc-close {
+    background: none;
+    border: none;
+    color: rgb(var(--gray-dark));
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+  }
+
+  [data-effective-theme="dark"] .toc-close {
+    color: rgb(var(--gray-dark));
+  }
+
+  .toc-close:hover {
+    background: rgba(var(--gray), 0.1);
+  }
+
+  [data-effective-theme="dark"] .toc-close:hover {
+    background: rgba(var(--gray), 0.2);
+  }
+
+  .mobile-toc-list {
+    list-style: none;
+    margin: 0;
+    padding: 1rem;
+  }
+
+  .mobile-toc-item {
+    margin: 0;
+  }
+
+  .mobile-toc-link {
+    display: block;
+    padding: 0.5rem 0;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    color: rgb(var(--gray));
+    text-decoration: none;
+    border-left: 2px solid transparent;
+    padding-left: 0.5rem;
+    margin-left: -0.5rem;
+    transition: all 0.2s ease;
+  }
+
+  [data-effective-theme="dark"] .mobile-toc-link {
+    color: rgb(var(--gray));
+  }
+
+  .mobile-toc-link:hover,
+  .mobile-toc-link.active {
+    color: var(--accent);
+    border-left-color: var(--accent);
+  }
+
+  [data-effective-theme="dark"] .mobile-toc-link:hover,
+  [data-effective-theme="dark"] .mobile-toc-link.active {
+    color: var(--accent);
+    border-left-color: var(--accent);
+  }
+
+  .mobile-toc-sublist {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    margin-left: 1rem;
+  }
+
+  .mobile-toc-item[data-level="3"] .mobile-toc-link {
+    font-size: 0.85rem;
+    opacity: 0.8;
+  }
+
+  .mobile-toc-item[data-level="4"] .mobile-toc-link {
+    font-size: 0.8rem;
+    opacity: 0.7;
+    margin-left: 1rem;
+  }
+
+  /* Responsive breakpoints */
+  @media (max-width: 1279px) {
+    .desktop-toc {
+      display: none;
+    }
+    
+    .mobile-toc-container {
+      display: block;
+    }
+  }
+
+  @media (min-width: 1280px) {
+    .mobile-toc-container {
+      display: none;
+    }
+  }
+
+  /* Hide ToC if there's not enough space */
+  @media (max-width: calc(66ch + 280px + 8rem)) {
+    .desktop-toc {
+      display: none;
+    }
+  }
+</style>
+
+<script>
+  class TableOfContents {
+    private observer!: IntersectionObserver;
+    private headings: NodeListOf<Element>;
+    private tocLinks: NodeListOf<HTMLAnchorElement>;
+    private mobileTocLinks: NodeListOf<HTMLAnchorElement>;
+    private mobileHeader: HTMLElement | null;
+    private currentHeadingSpan: HTMLElement | null;
+    private tocToggle: HTMLElement | null;
+    private tocClose: HTMLElement | null;
+    private mobileOverlay: HTMLElement | null;
+    private activeHeading: string = '';
+    private isDesktop: boolean = window.innerWidth >= 1280;
+
+    constructor() {
+      this.headings = document.querySelectorAll('h2[id], h3[id], h4[id]');
+      this.tocLinks = document.querySelectorAll('.toc-link');
+      this.mobileTocLinks = document.querySelectorAll('.mobile-toc-link');
+      this.mobileHeader = document.getElementById('mobile-toc-header');
+      this.currentHeadingSpan = document.getElementById('current-heading');
+      this.tocToggle = document.getElementById('toc-toggle');
+      this.tocClose = document.getElementById('toc-close');
+      this.mobileOverlay = document.getElementById('mobile-toc-overlay');
+
+      this.init();
+    }
+
+    private init() {
+      this.setupIntersectionObserver();
+      this.setupMobileToggle();
+      this.setupClickHandlers();
+      this.handleResize();
+      
+      window.addEventListener('resize', () => this.handleResize());
+    }
+
+    private setupIntersectionObserver() {
+      const options = {
+        rootMargin: '-20% 0px -70% 0px',
+        threshold: 0
+      };
+
+      this.observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          const id = entry.target.getAttribute('id');
+          if (!id) return;
+
+          if (entry.isIntersecting) {
+            this.setActiveHeading(id);
+          }
+        });
+      }, options);
+
+      this.headings.forEach((heading) => {
+        this.observer.observe(heading);
+      });
+    }
+
+    private setActiveHeading(id: string) {
+      this.activeHeading = id;
+      
+      // Update desktop ToC
+      this.tocLinks.forEach((link) => {
+        link.classList.remove('active');
+        if (link.getAttribute('data-heading') === id) {
+          link.classList.add('active');
+          this.expandParentSublists(link);
+        }
+      });
+
+      // Update mobile ToC
+      this.mobileTocLinks.forEach((link) => {
+        link.classList.remove('active');
+        if (link.getAttribute('data-heading') === id) {
+          link.classList.add('active');
+        }
+      });
+
+      // Update mobile header
+      if (this.currentHeadingSpan) {
+        const activeHeading = document.getElementById(id);
+        if (activeHeading) {
+          this.currentHeadingSpan.textContent = activeHeading.textContent || 'Table of Contents';
+        }
+      }
+
+      // Show/hide mobile header based on scroll position
+      if (!this.isDesktop) {
+        const firstHeading = this.headings[0];
+        if (firstHeading) {
+          const rect = firstHeading.getBoundingClientRect();
+          const shouldShow = rect.bottom < 0;
+          
+          if (this.mobileHeader) {
+            this.mobileHeader.classList.toggle('visible', shouldShow);
+          }
+        }
+      }
+    }
+
+    private expandParentSublists(activeLink: HTMLAnchorElement) {
+      // Expand sublists for active heading and its children
+      const parentItem = activeLink.closest('.toc-item');
+      if (parentItem) {
+        const sublist = parentItem.querySelector('.toc-sublist');
+        if (sublist) {
+          sublist.classList.add('expanded');
+        }
+      }
+
+      // Collapse other sublists at the same level
+      const allSublists = document.querySelectorAll('.toc-sublist');
+      allSublists.forEach((sublist) => {
+        const parentLink = sublist.parentElement?.querySelector('.toc-link') as HTMLAnchorElement;
+        if (parentLink && !this.isParentOfActive(parentLink, activeLink)) {
+          sublist.classList.remove('expanded');
+        }
+      });
+    }
+
+    private isParentOfActive(parentLink: HTMLAnchorElement, activeLink: HTMLAnchorElement): boolean {
+      const parentId = parentLink.getAttribute('data-heading');
+      const activeId = activeLink.getAttribute('data-heading');
+      
+      if (!parentId || !activeId) return false;
+      
+      const parentHeading = document.getElementById(parentId);
+      const activeHeading = document.getElementById(activeId);
+      
+      if (!parentHeading || !activeHeading) return false;
+      
+      // Check if active heading comes after parent heading in DOM
+      const position = parentHeading.compareDocumentPosition(activeHeading);
+      return (position & Node.DOCUMENT_POSITION_FOLLOWING) !== 0;
+    }
+
+    private setupMobileToggle() {
+      if (this.tocToggle && this.mobileOverlay) {
+        this.tocToggle.addEventListener('click', () => {
+          if (this.mobileOverlay) {
+            this.mobileOverlay.classList.add('visible');
+          }
+        });
+      }
+
+      if (this.tocClose && this.mobileOverlay) {
+        this.tocClose.addEventListener('click', () => {
+          if (this.mobileOverlay) {
+            this.mobileOverlay.classList.remove('visible');
+          }
+        });
+      }
+
+      // Close on overlay click
+      if (this.mobileOverlay) {
+        this.mobileOverlay.addEventListener('click', (e) => {
+          if (e.target === this.mobileOverlay) {
+            if (this.mobileOverlay) {
+              this.mobileOverlay.classList.remove('visible');
+            }
+          }
+        });
+      }
+    }
+
+    private setupClickHandlers() {
+      // Close mobile overlay when clicking on a link
+      this.mobileTocLinks.forEach((link) => {
+        link.addEventListener('click', () => {
+          if (this.mobileOverlay) {
+            this.mobileOverlay.classList.remove('visible');
+          }
+        });
+      });
+    }
+
+    private handleResize() {
+      this.isDesktop = window.innerWidth >= 1280;
+      
+      if (this.isDesktop && this.mobileOverlay) {
+        this.mobileOverlay.classList.remove('visible');
+      }
+    }
+  }
+
+  // Initialize when DOM is loaded
+  document.addEventListener('DOMContentLoaded', () => {
+    new TableOfContents();
+  });
+</script> 

@@ -89,9 +89,7 @@
   --sol-8: hsla(0, 0%, 100%, 0.639);
   --sol-9: hsla(0, 0%, 100%, 0.8);
   --sol-10: #fff;
-}
 
-[data-effective-theme="dark"] {
   .astro-code,
   .astro-code span {
     color: var(--shiki-dark) !important;

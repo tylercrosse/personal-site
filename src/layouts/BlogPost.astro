@@ -2,14 +2,18 @@
 import { Image } from "astro:assets";
 
 import type { CollectionEntry } from "astro:content";
+import type { MarkdownHeading } from "astro";
 import BaseHead from "../components/BaseHead.astro";
 import Header from "../components/Header.astro";
 import Footer from "../components/Footer.astro";
 import FormattedDate from "../components/FormattedDate.astro";
+import TableOfContents from "../components/TableOfContents.astro";
 
-type Props = CollectionEntry<"blog">["data"];
+type Props = CollectionEntry<"blog">["data"] & {
+  headings: MarkdownHeading[];
+};
 
-const { title, description, pubDate, updatedDate, heroImage, image } =
+const { title, description, pubDate, updatedDate, heroImage, image, headings } =
   Astro.props;
 
 // Helper function to get image source and alt text from either format
@@ -52,6 +56,7 @@ const imageData = getImageData();
         /* color: rgb(var(--gray-dark)); */
         display: grid;
         grid-template-columns: 1fr min(66ch, 100%) 1fr;
+        gap: 2rem;
       }
       .prose > :global(*) {
         grid-column: 2;
@@ -73,6 +78,20 @@ const imageData = getImageData();
       .last-updated-on {
         font-style: italic;
       }
+
+      /* Responsive adjustments for ToC */
+      @media (max-width: 1279px) {
+        .prose {
+          grid-template-columns: 1fr;
+          gap: 1rem;
+        }
+        .prose > :global(*) {
+          grid-column: 1;
+        }
+        .title {
+          grid-column: 1 !important;
+        }
+      }
     </style>
   </head>
 
@@ -80,34 +99,37 @@ const imageData = getImageData();
     <Header />
     <main>
       <article>
-        <div class="prose">
-          <div class="title">
-            <h1>{title}</h1>
-            <div class="date">
-              <FormattedDate date={pubDate || new Date()} />
-              {
-                updatedDate && (
-                  <div class="last-updated-on">
-                    Last updated on <FormattedDate date={updatedDate} />
-                  </div>
-                )
-              }
-            </div>
-            <div class="hero-image">
-              {
-                imageData && (
-                  <Image
-                    width={1020}
-                    height={510}
-                    src={imageData.src as string}
-                    alt={imageData.alt}
-                  />
-                )
-              }
-            </div>
-            <hr />
+        <div class="title">
+          <h1>{title}</h1>
+          <div class="date">
+            <FormattedDate date={pubDate || new Date()} />
+            {
+              updatedDate && (
+                <div class="last-updated-on">
+                  Last updated on <FormattedDate date={updatedDate} />
+                </div>
+              )
+            }
           </div>
-          <slot />
+          <div class="hero-image">
+            {
+              imageData && (
+                <Image
+                  width={1020}
+                  height={510}
+                  src={imageData.src as string}
+                  alt={imageData.alt}
+                />
+              )
+            }
+          </div>
+          <hr />
+        </div>
+        <div class="prose">
+          <div class="content-with-toc" style="position: relative;">
+            <slot />
+          </div>
+          <TableOfContents headings={headings} />
         </div>
       </article>
     </main>
