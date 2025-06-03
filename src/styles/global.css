@@ -14,6 +14,10 @@
   --gray-gradient: rgba(var(--gray-light), 50%), #fff;
   --box-shadow: 0 2px 6px rgba(var(--gray), 25%),
     0 8px 24px rgba(var(--gray), 33%), 0 16px 32px rgba(var(--gray), 33%);
+
+  --font-heading: "Atkinson", sans-serif;
+  --font-body: "Atkinson", sans-serif;
+  --font-mono: "Atkinson", sans-serif;
 }
 
 /* Dark theme variables */
@@ -57,7 +61,7 @@
 }
 
 body {
-  font-family: "Atkinson", sans-serif;
+  font-family: var(--font-body);
   margin: 0;
   padding: 0;
   text-align: left;
@@ -92,6 +96,7 @@ h6 {
   margin: 0 0 0.5rem 0;
   color: rgb(var(--black));
   line-height: 1.2;
+  font-family: var(--font-heading);
 }
 h1 {
   font-size: 3.052em;
@@ -148,6 +153,7 @@ pre {
   padding: 1.5em;
   border-radius: 8px;
   font-size: 0.8em;
+  font-family: var(--font-mono);
 }
 pre > code {
   all: unset;
