@@ -5,16 +5,6 @@
  */
 
 :root {
-  --accent: #268bd2; /* Solarized blue */
-  --accent-dark: #2aa198; /* Solarized cyan */
-  --black: 15, 18, 25;
-  --gray: 96, 115, 159;
-  --gray-light: 229, 233, 240;
-  --gray-dark: 34, 41, 57;
-  --gray-gradient: rgba(var(--gray-light), 50%), #fff;
-  --box-shadow: 0 2px 6px rgba(var(--gray), 25%),
-    0 8px 24px rgba(var(--gray), 33%), 0 16px 32px rgba(var(--gray), 33%);
-
   --sol-0: #657b83;
   --sol-1: #586e75;
   --sol-2: #004052;
@@ -36,6 +26,7 @@
   --base1: #93a1a1;
   --base2: #eee8d5;
   --base3: #fdf6e3;
+  --base4: #f5f5f5;
   --yellow: #b58900;
   --yellow-muted: #8a6700;
   --yellow-muted2: #6b5000;
@@ -61,6 +52,16 @@
   --green-muted: #677600;
   --green-muted2: #515e00;
 
+  --accent: var(--blue);
+  --accent-dark: var(--cyan);
+  --black: 15, 18, 25;
+  --gray: var(--sol-1);
+  --gray-light: 229, 233, 240;
+  --gray-dark: 34, 41, 57;
+  --gray-gradient: rgba(var(--gray-light), 50%), #fff;
+  --box-shadow: 0 2px 6px rgba(var(--gray), 25%),
+    0 8px 24px rgba(var(--gray), 33%), 0 16px 32px rgba(var(--gray), 33%);
+
   --font-heading: "Source Serif 4", serif;
   --font-body: "IBM Plex Sans", sans-serif;
   --font-mono: "IBM Plex Mono", monospace;
@@ -68,16 +69,6 @@
 
 /* Dark theme variables */
 [data-effective-theme="dark"] {
-  --accent: #268bd2; /* Solarized blue */
-  --accent-dark: #2aa198; /* Solarized cyan */
-  --black: 255, 255, 255;
-  --gray: 156, 163, 175;
-  --gray-light: 7, 54, 66; /* Solarized base02 (dark background highlights) */
-  --gray-dark: 229, 231, 235; /* Prose text */
-  --gray-gradient: rgba(0, 43, 54, 0.8), #002b36; /* Solarized base03 gradient */
-  --box-shadow: 0 2px 6px rgba(0, 0, 0, 40%),
-    0 8px 24px rgba(0, 0, 0, 50%), 0 16px 32px rgba(0, 0, 0, 50%);
-
   --sol-0: #839496;
   --sol-1: #93a1a1;
   --sol-2: #ccc4b0;
@@ -89,6 +80,16 @@
   --sol-8: hsla(0, 0%, 100%, 0.639);
   --sol-9: hsla(0, 0%, 100%, 0.8);
   --sol-10: #fff;
+
+  --accent: var(--blue);
+  --accent-dark: var(--cyan);
+  --black: 255, 255, 255;
+  --gray: 156, 163, 175;
+  --gray-light: 7, 54, 66; /* Solarized base02 (dark background highlights) */
+  --gray-dark: 229, 231, 235; /* Prose text */
+  --gray-gradient: rgba(0, 43, 54, 0.8), #002b36; /* Solarized base03 gradient */
+  --box-shadow: 0 2px 6px rgba(0, 0, 0, 40%),
+    0 8px 24px rgba(0, 0, 0, 50%), 0 16px 32px rgba(0, 0, 0, 50%);
 
   .astro-code,
   .astro-code span {
@@ -125,7 +126,7 @@ body {
   background-size: 100% 600px;
   word-wrap: break-word;
   overflow-wrap: break-word;
-  color: rgb(var(--gray));
+  color: var(--sol-8);
   font-size: 20px;
   line-height: 1.7;
   transition: background-color 0.2s ease, color 0.2s ease;
@@ -150,7 +151,7 @@ h4,
 h5,
 h6 {
   margin: 0 0 0.5rem 0;
-  color: rgb(var(--gray-dark));
+  color: var(--sol-9);
   line-height: 1.2;
   font-family: var(--font-heading);
 }

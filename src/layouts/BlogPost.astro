@@ -13,8 +13,16 @@ type Props = CollectionEntry<"blog">["data"] & {
   headings?: MarkdownHeading[];
 };
 
-const { title, description, pubDate, updatedDate, heroImage, image, headings } =
-  Astro.props;
+const {
+  title,
+  description,
+  pubDate,
+  updatedDate,
+  heroImage,
+  image,
+  headings,
+  tags,
+} = Astro.props;
 
 // Helper function to get image source and alt text from either format
 const getImageData = () => {
@@ -43,6 +51,59 @@ const imageData = getImageData();
         max-width: 100%;
         margin: 0;
       }
+
+      .title {
+        margin-bottom: 1em;
+        padding-bottom: 1em;
+      }
+      .title h1 {
+        margin-bottom: 0.5em;
+        max-width: 800px;
+        text-align: start;
+      }
+      .title-container {
+        display: flex;
+        flex-direction: column;
+        max-width: 800px;
+        margin: auto;
+      }
+      .meta {
+        display: flex;
+        justify-content: space-between;
+        max-width: 800px;
+        margin: auto;
+        margin: 1em 0;
+        font-size: 0.75em;
+      }
+      .date {
+        color: rgb(var(--gray));
+        font-size: 0.8em;
+        flex-shrink: 0;
+        text-align: right;
+        padding: 0.25em 0;
+      }
+      .last-updated-on {
+        font-style: italic;
+        margin-top: 0.6em;
+      }
+      .tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5em;
+      }
+      .tag {
+        background: rgb(var(--accent));
+        color: var(--blue);
+        padding: 0.25em 0.5em;
+        padding-left: 0;
+        border-radius: 0.25em;
+        text-decoration: none;
+        transition: background-color 0.2s ease;
+      }
+      .tag:hover {
+        background: rgb(var(--accent-dark));
+      }
+
       .hero-image {
         width: 100%;
       }
@@ -50,30 +111,14 @@ const imageData = getImageData();
         display: block;
         margin: 0 auto;
       }
+
       .prose {
         margin: auto;
         display: grid;
-        grid-template-columns: 1fr min(66ch, 100%) 1fr;
+        grid-template-columns: 1fr min(800px, 100%) 1fr;
       }
       .prose > :global(*) {
         grid-column: 2;
-      }
-      .title {
-        margin-bottom: 1em;
-        padding: 1em 0;
-        text-align: center;
-        line-height: 1;
-        grid-column: 1 / 4 !important;
-      }
-      .title h1 {
-        margin: 0 0 0.5em 0;
-      }
-      .date {
-        margin-bottom: 0.5em;
-        color: rgb(var(--gray));
-      }
-      .last-updated-on {
-        font-style: italic;
       }
 
       /* Responsive adjustments for ToC */
@@ -96,17 +141,33 @@ const imageData = getImageData();
     <Header />
     <main>
       <article>
-        <div class="title">
-          <h1>{title}</h1>
-          <div class="date">
-            <FormattedDate date={pubDate || new Date()} />
-            {
-              updatedDate && (
-                <div class="last-updated-on">
-                  Last updated on <FormattedDate date={updatedDate} />
+        <header class="title">
+          <div class="title-container">
+            <h1>{title}</h1>
+            <div class="description">{description}</div>
+            <div class="meta">
+              {
+                tags && tags.length > 0 && (
+                  <div class="tags">
+                    {tags.map((tag) => (
+                      <span class="tag">{tag}</span>
+                    ))}
+                  </div>
+                )
+              }
+              <div class="date">
+                <div class="published-on">
+                  Published <FormattedDate date={pubDate || new Date()} />
                 </div>
-              )
-            }
+                {
+                  updatedDate && (
+                    <div class="last-updated-on">
+                      Updated <FormattedDate date={updatedDate} />
+                    </div>
+                  )
+                }
+              </div>
+            </div>
           </div>
           <div class="hero-image">
             {
@@ -120,8 +181,7 @@ const imageData = getImageData();
               )
             }
           </div>
-          <hr />
-        </div>
+        </header>
         <div class="prose">
           <div class="content-with-toc" style="position: relative;">
             <slot />

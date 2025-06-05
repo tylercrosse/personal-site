@@ -1,4 +1,9 @@
-<button id="omnibar-trigger" class="search-trigger" title="Search" aria-label="Search">
+<button
+  id="omnibar-trigger"
+  class="search-trigger"
+  title="Search"
+  aria-label="Search"
+>
   <svg
     width="16"
     height="16"
@@ -105,7 +110,11 @@
       this.input = document.getElementById("omnibar-input") as HTMLInputElement;
       this.results = document.getElementById("omnibar-results")!;
       this.trigger = document.getElementById("omnibar-trigger")!;
-      this.resultItems = Array.from(this.results.querySelectorAll("#pages-default-section .result-item, #recent-posts-section .result-item")) as HTMLElement[];
+      this.resultItems = Array.from(
+        this.results.querySelectorAll(
+          "#pages-default-section .result-item, #recent-posts-section .result-item"
+        )
+      ) as HTMLElement[];
       this.init();
     }
 
@@ -124,7 +133,10 @@
 
       // Keyboard shortcuts
       document.addEventListener("keydown", (e) => {
-        if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        if (
+          (e.metaKey || e.ctrlKey) &&
+          (e.key === "k" || e.key === "/")
+        ) {
           e.preventDefault();
           this.open();
         }
@@ -218,16 +230,16 @@
       this.searchTimeout = window.setTimeout(async () => {
         if (query.length > 0) {
           this.isSearching = true;
-          this.showSearchResults();         // Hide defaults, show search area
-          await this.performSearch(query);  // Fill search area with results (updates DOM)
+          this.showSearchResults(); // Hide defaults, show search area
+          await this.performSearch(query); // Fill search area with results (updates DOM)
         } else {
           this.isSearching = false;
-          this.showDefaultResults();        // Hide search area, show defaults (updates DOM)
+          this.showDefaultResults(); // Hide search area, show defaults (updates DOM)
         }
         // AFTER DOM is definitively updated by either performSearch or showDefaultResults:
-        this.updateResultItems();         // Rebuild this.resultItems from the current DOM state
-        this.selectedIndex = 0;           // Reset index to point to the first item in the new list
-        this.updateSelection();           // Visually select that first item
+        this.updateResultItems(); // Rebuild this.resultItems from the current DOM state
+        this.selectedIndex = 0; // Reset index to point to the first item in the new list
+        this.updateSelection(); // Visually select that first item
       }, 150);
     }
 
@@ -240,33 +252,48 @@
           const search = await (window as any).pagefind.search(query);
           if (search.results.length > 0) {
             // Use Promise.all to wait for all individual result data fetching and DOM appending
-            await Promise.all(search.results.slice(0, 8).map(async (result: any) => {
-              const data = await result.data();
-              const item = document.createElement("div");
-              item.className = "result-item";
-              item.dataset.href = data.url;
-              item.innerHTML = `
+            await Promise.all(
+              search.results.slice(0, 8).map(async (result: any) => {
+                const data = await result.data();
+                const item = document.createElement("div");
+                item.className = "result-item";
+                item.dataset.href = data.url;
+                item.innerHTML = `
                 <div class="result-title">${data.meta.title || "Untitled"}</div>
                 <div class="result-description">${data.excerpt}</div>
               `;
-              container.appendChild(item);
-            }));
+                container.appendChild(item);
+              })
+            );
             resultsGenerated = true;
           }
         } else {
           // Fallback logic
           const fallbackResults = (
             [
-              { title: "Home", href: "/", description: "Welcome to my personal site" },
-              { title: "Blog", href: "/blog", description: "My thoughts and writings" },
-              { title: "About", href: "/about", description: "Learn more about me" },
+              {
+                title: "Home",
+                href: "/",
+                description: "Welcome to my personal site",
+              },
+              {
+                title: "Blog",
+                href: "/blog",
+                description: "My thoughts and writings",
+              },
+              {
+                title: "About",
+                href: "/about",
+                description: "Learn more about me",
+              },
             ] as { title: string; href: string; description: string }[]
-          ).filter((f) =>
-            f.title.toLowerCase().includes(query.toLowerCase()) ||
-            f.description.toLowerCase().includes(query.toLowerCase())
+          ).filter(
+            (f) =>
+              f.title.toLowerCase().includes(query.toLowerCase()) ||
+              f.description.toLowerCase().includes(query.toLowerCase())
           );
           if (fallbackResults.length > 0) {
-            fallbackResults.forEach(r => {
+            fallbackResults.forEach((r) => {
               const item = document.createElement("div");
               item.className = "result-item";
               item.dataset.href = r.href;
@@ -281,25 +308,38 @@
         }
       } catch (error) {
         console.error("Search failed:", error);
-        container.innerHTML = '<p class="no-results">Search error. Please try again.</p>';
+        container.innerHTML =
+          '<p class="no-results">Search error. Please try again.</p>';
       }
     }
 
     private showSearchResults() {
-      const pagesSection = document.getElementById("pages-default-section")! as HTMLElement;
-      const recentPostsSection = document.getElementById("recent-posts-section")! as HTMLElement;
-      const searchSection = document.getElementById("search-results-section")! as HTMLElement;
-      
+      const pagesSection = document.getElementById(
+        "pages-default-section"
+      )! as HTMLElement;
+      const recentPostsSection = document.getElementById(
+        "recent-posts-section"
+      )! as HTMLElement;
+      const searchSection = document.getElementById(
+        "search-results-section"
+      )! as HTMLElement;
+
       pagesSection.style.display = "none";
       recentPostsSection.style.display = "none";
       searchSection.style.display = "block";
     }
 
     private showDefaultResults() {
-      const pagesSection = document.getElementById("pages-default-section")! as HTMLElement;
-      const recentPostsSection = document.getElementById("recent-posts-section")! as HTMLElement;
-      const searchSection = document.getElementById("search-results-section")! as HTMLElement;
-      
+      const pagesSection = document.getElementById(
+        "pages-default-section"
+      )! as HTMLElement;
+      const recentPostsSection = document.getElementById(
+        "recent-posts-section"
+      )! as HTMLElement;
+      const searchSection = document.getElementById(
+        "search-results-section"
+      )! as HTMLElement;
+
       searchSection.style.display = "none";
       pagesSection.style.display = "block";
       recentPostsSection.style.display = "block";
@@ -309,15 +349,21 @@
       this.resultItems = []; // Clear previous items
       if (this.isSearching) {
         // When searching, only items in search-results-container are relevant
-        const searchItems = document.querySelectorAll("#search-results-container .result-item");
+        const searchItems = document.querySelectorAll(
+          "#search-results-container .result-item"
+        );
         this.resultItems = Array.from(searchItems) as HTMLElement[];
       } else {
         // When not searching, items from default sections are relevant
-        const pageItems = document.querySelectorAll("#pages-default-section .result-item");
-        const recentItems = document.querySelectorAll("#recent-posts-section .result-item");
+        const pageItems = document.querySelectorAll(
+          "#pages-default-section .result-item"
+        );
+        const recentItems = document.querySelectorAll(
+          "#recent-posts-section .result-item"
+        );
         this.resultItems = [
-          ...Array.from(pageItems) as HTMLElement[], 
-          ...Array.from(recentItems) as HTMLElement[]
+          ...(Array.from(pageItems) as HTMLElement[]),
+          ...(Array.from(recentItems) as HTMLElement[]),
         ];
       }
     }
@@ -377,7 +423,7 @@
       this.input.value = ""; // Clear input
       this.isSearching = false; // Reset search state
       // Clear visual selection from any items that might have had it
-      this.resultItems.forEach(item => item.classList.remove('selected'));
+      this.resultItems.forEach((item) => item.classList.remove("selected"));
       this.selectedIndex = 0; // Reset index for the next open
       // this.resultItems will be rebuilt on next open, so no need to clear it here
       document.body.style.overflow = "";
@@ -400,8 +446,9 @@
     align-items: center;
     gap: 0.5rem;
     padding: 0.5rem 0.75rem;
-    background: rgba(var(--gray-light), 0.1);
-    border: 1px solid rgba(var(--gray-light), 0.2);
+    background: rgba(var(--gray-light), 0.6);
+    /* border: 1px solid var(--base4); */
+    border: none;
     border-radius: 6px;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -418,16 +465,6 @@
   .search-placeholder {
     flex: 1;
     text-align: left;
-  }
-
-  .search-kbd {
-    background: rgba(var(--black), 0.2);
-    border: 1px solid rgba(var(--black), 0.3);
-    border-radius: 3px;
-    padding: 0.125rem 0.375rem;
-    font-size: 0.75rem;
-    font-family: ui-monospace, "SF Mono", Monaco, "Cascadia Code", "Roboto Mono",
-      Consolas, "Courier New", monospace;
   }
 
   .omnibar-overlay {
@@ -584,7 +621,8 @@
     border-radius: 3px;
     padding: 0.125rem 0.25rem;
     font-size: 0.625rem;
-    font-family: ui-monospace, "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas, "Courier New", monospace;
+    font-family: ui-monospace, "SF Mono", Monaco, "Cascadia Code", "Roboto Mono",
+      Consolas, "Courier New", monospace;
     color: rgb(var(--gray-dark));
     min-width: 1.25rem;
     text-align: center;
@@ -604,11 +642,6 @@
   :global([data-effective-theme="dark"]) .search-trigger:hover {
     background: rgba(255, 255, 255, 0.08);
     border-color: rgba(255, 255, 255, 0.15);
-  }
-
-  :global([data-effective-theme="dark"]) .search-kbd {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.2);
   }
 
   /* Responsive */
@@ -638,4 +671,3 @@
     color: rgb(var(--gray));
   }
 </style>
-
