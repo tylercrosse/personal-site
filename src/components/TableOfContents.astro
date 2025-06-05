@@ -43,6 +43,11 @@ const toc = buildHierarchy(filteredHeadings);
     <nav class="desktop-toc" aria-label="Table of Contents">
       <div class="toc-header">
         <h4>Contents</h4>
+        <button class="toc-collapse-btn" id="desktop-toc-toggle" aria-label="Toggle table of contents" title="Toggle table of contents">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 18l6-6-6-6"/>
+          </svg>
+        </button>
       </div>
       <ul class="toc-list">
         {toc.map((heading) => (
@@ -141,7 +146,7 @@ const toc = buildHierarchy(filteredHeadings);
   /* Desktop Table of Contents */
   .desktop-toc {
     position: sticky;
-    top: 2rem;
+    top: 3rem;
     grid-column: 3 !important;
     right: calc(-260px - 2rem);
     width: 240px;
@@ -164,6 +169,7 @@ const toc = buildHierarchy(filteredHeadings);
   .toc-header {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 0.5rem;
     margin-bottom: 1rem;
     padding-bottom: 0.5rem;
@@ -176,6 +182,33 @@ const toc = buildHierarchy(filteredHeadings);
     font-size: 0.9rem;
     font-weight: 600;
     color: rgb(var(--gray-dark));
+  }
+
+  .toc-collapse-btn {
+    background: none;
+    border: none;
+    color: rgb(var(--gray));
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .toc-collapse-btn:hover {
+    color: var(--accent);
+    background: rgba(var(--gray), 0.1);
+  }
+
+  [data-effective-theme="dark"] .toc-collapse-btn {
+    color: rgb(var(--gray));
+  }
+
+  [data-effective-theme="dark"] .toc-collapse-btn:hover {
+    color: var(--accent);
+    background: rgba(var(--gray), 0.2);
   }
 
   .toc-list {
@@ -469,7 +502,7 @@ const toc = buildHierarchy(filteredHeadings);
   }
 
   /* Responsive breakpoints */
-  @media (max-width: 1279px) {
+  @media (max-width: 1179px) {
     .desktop-toc {
       display: none;
     }
@@ -479,7 +512,7 @@ const toc = buildHierarchy(filteredHeadings);
     }
   }
 
-  @media (min-width: 1280px) {
+  @media (min-width: 1180px) {
     .mobile-toc-container {
       display: none;
     }
@@ -490,6 +523,24 @@ const toc = buildHierarchy(filteredHeadings);
     .desktop-toc {
       display: none;
     }
+  }
+
+  .desktop-toc.collapsed {
+    width: 20px;
+    min-width: 20px;
+    justify-self: end;
+  }
+
+  .desktop-toc.collapsed .toc-header h4 {
+    display: none;
+  }
+
+  .desktop-toc.collapsed .toc-list {
+    display: none;
+  }
+
+  .desktop-toc.collapsed .toc-collapse-btn {
+    transform: rotate(180deg);
   }
 </style>
 
@@ -504,6 +555,8 @@ const toc = buildHierarchy(filteredHeadings);
     private tocToggle: HTMLElement | null;
     private tocClose: HTMLElement | null;
     private mobileOverlay: HTMLElement | null;
+    private desktopTocToggle: HTMLElement | null;
+    private desktopToc: HTMLElement | null;
     private activeHeading: string = '';
     private isDesktop: boolean = window.innerWidth >= 1280;
 
@@ -516,6 +569,8 @@ const toc = buildHierarchy(filteredHeadings);
       this.tocToggle = document.getElementById('toc-toggle');
       this.tocClose = document.getElementById('toc-close');
       this.mobileOverlay = document.getElementById('mobile-toc-overlay');
+      this.desktopTocToggle = document.getElementById('desktop-toc-toggle');
+      this.desktopToc = document.querySelector('.desktop-toc');
 
       this.init();
     }
@@ -523,6 +578,7 @@ const toc = buildHierarchy(filteredHeadings);
     private init() {
       this.setupIntersectionObserver();
       this.setupMobileToggle();
+      this.setupDesktopToggle();
       this.setupClickHandlers();
       this.handleResize();
       
@@ -536,14 +592,19 @@ const toc = buildHierarchy(filteredHeadings);
       };
 
       this.observer = new IntersectionObserver((entries) => {
-        entries.forEach((entry) => {
-          const id = entry.target.getAttribute('id');
-          if (!id) return;
+        const intersectingEntries = entries.filter(entry => entry.isIntersecting);
 
-          if (entry.isIntersecting) {
+        if (intersectingEntries.length > 0) {
+          // Sort intersecting entries by their vertical position on the screen (topmost first)
+          intersectingEntries.sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+          
+          // The first entry in the sorted list is the highest one currently intersecting
+          const id = intersectingEntries[0].target.getAttribute('id');
+          if (id) {
             this.setActiveHeading(id);
           }
-        });
+        }
+        // If no entries are intersecting, the active heading remains unchanged (current behavior).
       }, options);
 
       this.headings.forEach((heading) => {
@@ -552,6 +613,7 @@ const toc = buildHierarchy(filteredHeadings);
     }
 
     private setActiveHeading(id: string) {
+      console.log('setActiveHeading', id);
       this.activeHeading = id;
       
       // Update desktop ToC
@@ -584,7 +646,7 @@ const toc = buildHierarchy(filteredHeadings);
         const firstHeading = this.headings[0];
         if (firstHeading) {
           const rect = firstHeading.getBoundingClientRect();
-          const shouldShow = rect.bottom < 0;
+          const shouldShow = rect.top < 400;
           
           if (this.mobileHeader) {
             this.mobileHeader.classList.toggle('visible', shouldShow);
@@ -661,6 +723,16 @@ const toc = buildHierarchy(filteredHeadings);
       }
     }
 
+    private setupDesktopToggle() {
+      if (this.desktopTocToggle && this.desktopToc) {
+        this.desktopTocToggle.addEventListener('click', () => {
+          if (this.desktopToc) {
+            this.desktopToc.classList.toggle('collapsed');
+          }
+        });
+      }
+    }
+
     private setupClickHandlers() {
       // Close mobile overlay when clicking on a link
       this.mobileTocLinks.forEach((link) => {
@@ -673,7 +745,7 @@ const toc = buildHierarchy(filteredHeadings);
     }
 
     private handleResize() {
-      this.isDesktop = window.innerWidth >= 1280;
+      this.isDesktop = window.innerWidth >= 1180;
       
       if (this.isDesktop && this.mobileOverlay) {
         this.mobileOverlay.classList.remove('visible');
