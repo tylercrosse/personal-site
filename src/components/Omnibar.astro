@@ -357,24 +357,28 @@
     }
 
     private open() {
+      document.body.appendChild(this.overlay);
       this.overlay.style.display = "flex";
       this.input.focus();
-      this.input.value = "";          // Clear input
-      this.isSearching = false;      // Set to default mode
-      this.showDefaultResults();     // Show default sections
-      this.updateResultItems();      // Update item list from default sections
-      this.selectedIndex = 0;        // Select first default item
-      this.updateSelection();        // Visually mark it
+      this.input.value = ""; // Clear input
+      this.isSearching = false; // Set to default mode
+      this.showDefaultResults(); // Show default sections
+      this.updateResultItems(); // Update item list from default sections
+      this.selectedIndex = 0; // Select first default item
+      this.updateSelection(); // Visually mark it
       document.body.style.overflow = "hidden";
     }
 
     private close() {
       this.overlay.style.display = "none";
-      this.input.value = "";          // Clear input
-      this.isSearching = false;      // Reset search state
+      if (this.overlay.parentNode === document.body) {
+        document.body.removeChild(this.overlay);
+      }
+      this.input.value = ""; // Clear input
+      this.isSearching = false; // Reset search state
       // Clear visual selection from any items that might have had it
       this.resultItems.forEach(item => item.classList.remove('selected'));
-      this.selectedIndex = 0;        // Reset index for the next open
+      this.selectedIndex = 0; // Reset index for the next open
       // this.resultItems will be rebuilt on next open, so no need to clear it here
       document.body.style.overflow = "";
     }

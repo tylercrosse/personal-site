@@ -27,13 +27,33 @@ import { SITE_TITLE } from "../consts";
     padding: 0 1em;
     background: white;
     box-shadow: 0 2px 8px rgba(var(--black), 5%);
-    transition: background-color 0.2s ease, box-shadow 0.2s ease;
+    transition: background-color 0.2s ease, box-shadow 0.2s ease, transform 0.3s ease;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    transform: translateY(0);
+  }
+
+  /* Headroom states */
+  header.headroom--unpinned {
+    transform: translateY(-100%);
+  }
+
+  header.headroom--pinned {
+    transform: translateY(0);
   }
 
   /* Dark theme header */
   :global([data-effective-theme="dark"]) header {
     background: #073642; /* Solarized base02 - slightly lighter than base03 */
     box-shadow: 0 2px 8px rgba(0, 0, 0, 30%);
+  }
+
+  /* Add padding to body to account for fixed header */
+  :global(body) {
+    padding-top: 4rem; /* Adjust this value based on your header height */
   }
 
   h2 {
@@ -91,3 +111,41 @@ import { SITE_TITLE } from "../consts";
     }
   }
 </style>
+
+<script>
+  function initHeadroom() {
+    const header = document.querySelector('header');
+    if (!header) return;
+
+    let lastScrollY = window.scrollY;
+    const tolerance = { up: 5, down: 5 };
+    let lastDirection = 'up';
+    const offset = 0;
+
+    function update() {
+      const currentScrollY = window.scrollY;
+      const direction = currentScrollY > lastScrollY ? 'down' : 'up';
+      const toleranceExceeded =
+        Math.abs(currentScrollY - lastScrollY) >=
+        (direction === 'down' ? tolerance.down : tolerance.up);
+
+      if (toleranceExceeded && header) {
+        if (direction === 'down' && currentScrollY > offset) {
+          header.classList.add('headroom--unpinned');
+          header.classList.remove('headroom--pinned');
+        } else if (direction === 'up') {
+          header.classList.add('headroom--pinned');
+          header.classList.remove('headroom--unpinned');
+        }
+        lastDirection = direction;
+      }
+
+      lastScrollY = currentScrollY;
+    }
+
+    window.addEventListener('scroll', update, { passive: true });
+  }
+
+  // Initialize when DOM is loaded
+  document.addEventListener('DOMContentLoaded', initHeadroom);
+</script>
