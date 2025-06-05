@@ -7,8 +7,8 @@ interface Props {
 
 const { headings } = Astro.props;
 
-// Filter headings to only include H2-H4
-const filteredHeadings = headings.filter(({ depth }) => depth >= 2 && depth <= 4);
+// Filter headings to only include H2-H4, with safety check for undefined headings
+const filteredHeadings = headings?.filter(({ depth }) => depth >= 2 && depth <= 4) || [];
 
 // Build hierarchical structure
 function buildHierarchy(headings: MarkdownHeading[]) {
@@ -172,6 +172,7 @@ const toc = buildHierarchy(filteredHeadings);
 
   .toc-header h4 {
     margin: 0;
+    margin-left: 0.5rem;
     font-size: 0.9rem;
     font-weight: 600;
     color: rgb(var(--gray-dark));
@@ -196,7 +197,7 @@ const toc = buildHierarchy(filteredHeadings);
     text-decoration: none;
     border-left: 2px solid transparent;
     padding-left: 0.5rem;
-    margin-left: -0.5rem;
+    /* margin-left: -0.5rem; */
     transition: all 0.2s ease;
   }
 
@@ -207,18 +208,21 @@ const toc = buildHierarchy(filteredHeadings);
 
   .toc-link.active {
     color: var(--accent);
-    border-left-color: var(--accent);
-    font-weight: 500;
+    border-left-color: var(--accent); font-weight: 500;
   }
 
   .toc-sublist {
     list-style: none;
     margin: 0;
     padding: 0;
-    margin-left: 1rem;
+    /* margin-left: 1rem; */
     max-height: 0;
     overflow: hidden;
     transition: max-height 0.3s ease;
+  }
+
+  .toc-sublist a {
+    padding-left: 1rem;
   }
 
   .toc-sublist.expanded {
@@ -230,10 +234,18 @@ const toc = buildHierarchy(filteredHeadings);
     opacity: 0.8;
   }
 
+  .toc-item[data-level="3"] .toc-link.active {
+    opacity: 1;
+  }
+
   .toc-item[data-level="4"] .toc-link {
     font-size: 0.75rem;
     opacity: 0.7;
     margin-left: 1rem;
+  }
+
+  .toc-item[data-level="4"] .toc-link.active {
+    opacity: 1;
   }
 
   /* Mobile Table of Contents */
@@ -442,10 +454,18 @@ const toc = buildHierarchy(filteredHeadings);
     opacity: 0.8;
   }
 
+  .mobile-toc-item[data-level="3"] .mobile-toc-link.active {
+    opacity: 1;
+  }
+
   .mobile-toc-item[data-level="4"] .mobile-toc-link {
     font-size: 0.8rem;
     opacity: 0.7;
     margin-left: 1rem;
+  }
+
+  .mobile-toc-item[data-level="4"] .mobile-toc-link.active {
+    opacity: 1;
   }
 
   /* Responsive breakpoints */
@@ -574,39 +594,42 @@ const toc = buildHierarchy(filteredHeadings);
     }
 
     private expandParentSublists(activeLink: HTMLAnchorElement) {
-      // Expand sublists for active heading and its children
-      const parentItem = activeLink.closest('.toc-item');
-      if (parentItem) {
-        const sublist = parentItem.querySelector('.toc-sublist');
-        if (sublist) {
-          sublist.classList.add('expanded');
+      // First, collapse all sublists
+      const allSublists = document.querySelectorAll('.toc-sublist');
+      allSublists.forEach((sublist) => {
+        sublist.classList.remove('expanded');
+      });
+
+      // Get the active heading ID
+      const activeId = activeLink.getAttribute('data-heading');
+      if (!activeId) return;
+
+      // Find the active link in the ToC and expand its parent sublists
+      let currentElement = activeLink.parentElement; // Start from the li containing the active link
+      
+      while (currentElement) {
+        // If we find a sublist, expand it
+        if (currentElement.classList.contains('toc-sublist')) {
+          currentElement.classList.add('expanded');
+        }
+        
+        // Move up to the parent element
+        currentElement = currentElement.parentElement;
+        
+        // Stop when we reach the main toc-list
+        if (currentElement && currentElement.classList.contains('toc-list')) {
+          break;
         }
       }
 
-      // Collapse other sublists at the same level
-      const allSublists = document.querySelectorAll('.toc-sublist');
-      allSublists.forEach((sublist) => {
-        const parentLink = sublist.parentElement?.querySelector('.toc-link') as HTMLAnchorElement;
-        if (parentLink && !this.isParentOfActive(parentLink, activeLink)) {
-          sublist.classList.remove('expanded');
+      // Also expand any direct sublists of the active heading
+      const activeItem = activeLink.closest('.toc-item');
+      if (activeItem) {
+        const directSublist = activeItem.querySelector('.toc-sublist');
+        if (directSublist) {
+          directSublist.classList.add('expanded');
         }
-      });
-    }
-
-    private isParentOfActive(parentLink: HTMLAnchorElement, activeLink: HTMLAnchorElement): boolean {
-      const parentId = parentLink.getAttribute('data-heading');
-      const activeId = activeLink.getAttribute('data-heading');
-      
-      if (!parentId || !activeId) return false;
-      
-      const parentHeading = document.getElementById(parentId);
-      const activeHeading = document.getElementById(activeId);
-      
-      if (!parentHeading || !activeHeading) return false;
-      
-      // Check if active heading comes after parent heading in DOM
-      const position = parentHeading.compareDocumentPosition(activeHeading);
-      return (position & Node.DOCUMENT_POSITION_FOLLOWING) !== 0;
+      }
     }
 
     private setupMobileToggle() {
