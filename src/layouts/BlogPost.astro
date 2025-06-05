@@ -72,18 +72,16 @@ const imageData = getImageData();
         justify-content: space-between;
         max-width: 800px;
         margin: auto;
-        margin: 1em 0;
-        font-size: 0.75em;
+        font-size: 0.7em;
+        margin: 2em 0;
       }
-      .date {
-        color: rgb(var(--gray));
-        font-size: 0.8em;
+      .dates {
+        color: var(--sol-7);
         flex-shrink: 0;
         text-align: right;
         padding: 0.25em 0;
       }
       .last-updated-on {
-        font-style: italic;
         margin-top: 0.6em;
       }
       .tags {
@@ -99,6 +97,7 @@ const imageData = getImageData();
         border-radius: 0.25em;
         text-decoration: none;
         transition: background-color 0.2s ease;
+        text-transform: capitalize;
       }
       .tag:hover {
         background: rgb(var(--accent-dark));
@@ -155,7 +154,7 @@ const imageData = getImageData();
                   </div>
                 )
               }
-              <div class="date">
+              <div class="dates">
                 <div class="published-on">
                   Published <FormattedDate date={pubDate || new Date()} />
                 </div>
