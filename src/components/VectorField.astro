@@ -1,0 +1,531 @@
+<style>
+  .code-embed {
+    z-index: 10;
+    width: 40%;
+    height: 540px;
+    display: block;
+    position: absolute;
+    inset: auto -12px 12% auto;
+    overflow: hidden;
+  }
+
+  @media screen and (max-width: 991px) {
+    .code-embed {
+      width: 106%;
+      max-width: 740px;
+      height: 300px;
+      margin-top: 12px;
+      margin-bottom: 0;
+      position: relative;
+      inset: 8px auto 0% -24px;
+    }
+  }
+
+  .w-embed:before,
+  .w-embed:after {
+    content: " ";
+    grid-area: 1 / 1 / 2 / 2;
+    display: table;
+  }
+</style>
+
+<div class="code-embed w-embed w-script">
+  <div
+    id="vector-field-container"
+    style="width: 100%; height: 380px; overflow: hidden; cursor: pointer;"
+  >
+    <canvas
+      id="defaultCanvas0"
+      class="p5Canvas"
+      style="width: 940px; height: 621px; z-index: -1; position: absolute; top: 0px; left: 0px;"
+      width="1880"
+      height="1242"></canvas>
+  </div>
+
+  <script is:inline>
+    function initVectorField() {
+      // Insert the simplified code as a p5 instance
+      const vectorFieldSketch = function (p) {
+        // Set the renderer to maintain transparency
+        let canvas;
+        // Vector field parameters
+        let vectorField = [];
+        let originalVectors = [];
+        let persistentInfluence = [];
+        const gridSize = 40;
+        const margin = 40; // Margin to prevent edge clipping
+        let cols, rows;
+
+        // Parameters for organic movement
+        let time = 0;
+        const timeStep = 0.005;
+        const noiseScale = 0.08;
+        const windStrength = 0.6; // Keeping your value of 0.6
+
+        // Animation Parameters
+        let isTransitioning = false;
+        let startVectors = [];
+        let targetVectors = [];
+        let transitionStart = 0;
+        let transitionDuration = 600; // milliseconds - matches Figma 600ms
+
+        // Spring physics parameters (from Figma screenshot)
+        let springStiffness = 266.7; // Higher = more "snap" to target
+        let springDamping = 20; // Higher = less oscillation/bounce
+        let springMass = 1; // Higher = more inertia
+
+        // Device orientation variables
+        let isDeviceOrientation = false;
+        let deviceTiltX = 0;
+        let deviceTiltY = 0;
+        let deviceTiltStrength = 3;
+        let lastOrientation = { alpha: 0, beta: 0, gamma: 0 };
+        let orientationInitialized = false;
+
+        // Helper function to detect mobile devices
+        function isMobileDevice() {
+          return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+            navigator.userAgent
+          );
+        }
+
+        // Helper function to generate a random vector field
+        function generateRandomVectorField() {
+          const randomSeed = Math.floor(Math.random() * 10000);
+          p.noiseSeed(randomSeed);
+
+          const newVectors = [];
+          for (let y = 0; y < rows; y++) {
+            for (let x = 0; x < cols; x++) {
+              let angle = p.noise(x * 0.03, y * 0.03) * p.TWO_PI * 2;
+              let v = p5.Vector.fromAngle(angle);
+              newVectors.push(v.copy());
+            }
+          }
+          return newVectors;
+        }
+
+        // Physics-based spring easing function (based on Figma parameters but simplified for performance)
+        function springEase(t, duration) {
+          if (t >= 1) return 1; // At the end, snap to final position
+
+          // Simplified spring function optimized for performance
+          // Using pre-calculated values based on your Figma spring parameters
+
+          // Convert normalized time to seconds (for physics calculations)
+          const timeInSeconds = t * (duration / 1000);
+
+          // Pre-computed constants based on stiffness=266.7, damping=20, mass=1
+          const omega = 16.33; // sqrt(266.7)
+          const zeta = 0.61; // 20 / (2 * sqrt(266.7))
+          const omega_d = 12.9; // omega * sqrt(1 - zeta^2)
+
+          // Smooth ease-in start
+          if (t < 0.15) {
+            // Cubic ease-in for the first 15% of the animation
+            return 3 * t * t;
+          }
+
+          // Calculate the spring motion
+          const decay = Math.exp(-zeta * omega * timeInSeconds);
+          const cosArg = omega_d * timeInSeconds;
+          const adjustedCos =
+            Math.cos(cosArg) + ((zeta * omega) / omega_d) * Math.sin(cosArg);
+
+          // More efficient formula that still gives the damped spring effect
+          return 1 - decay * adjustedCos;
+        }
+
+        // Expose configuration functions to window
+        window.setTransitionDuration = function (ms) {
+          if (ms >= 200 && ms <= 5000) {
+            transitionDuration = ms;
+            console.log(`Transition duration set to ${ms}ms`);
+          } else {
+            console.log("Duration must be between 200ms and 5000ms");
+          }
+        };
+
+        window.setSpringParams = function (stiffness, damping, mass) {
+          if (stiffness > 0) springStiffness = stiffness;
+          if (damping > 0) springDamping = damping;
+          if (mass > 0) springMass = mass;
+          console.log(
+            `Spring parameters set to: stiffness=${springStiffness}, damping=${springDamping}, mass=${springMass}`
+          );
+        };
+
+        p.setup = function () {
+          // Create canvas with P2D renderer for better transparency handling
+          canvas = p.createCanvas(p.windowWidth, p.windowHeight, p.P2D);
+          // Set the canvas to have a transparent background
+          canvas.style("z-index", "-1"); // Place behind other content
+          canvas.style("position", "absolute"); // Position it absolutely
+          canvas.style("top", "0");
+          canvas.style("left", "0");
+
+          // Set a higher framerate for smoother animation
+          p.frameRate(60);
+
+          // Explicitly set to not use device orientation by default
+          isDeviceOrientation = false;
+
+          p.colorMode(p.HSB, 360, 100, 100, 255);
+
+          // Calculate grid dimensions with margins
+          cols = p.floor((p.width - 2 * margin) / gridSize) + 1;
+          rows = p.floor((p.height - 2 * margin) / gridSize) + 1;
+
+          // Initialize vector field and persistent influence
+          for (let y = 0; y < rows; y++) {
+            for (let x = 0; x < cols; x++) {
+              let angle = p.noise(x * 0.03, y * 0.03) * p.TWO_PI * 2;
+              let v = p5.Vector.fromAngle(angle);
+              vectorField.push(v.copy());
+              originalVectors.push(v.copy());
+              persistentInfluence.push(0); // Initialize with no influence
+            }
+          }
+
+          p.clear();
+
+          // Set up device orientation detection only on mobile devices
+          if (window.DeviceOrientationEvent && isMobileDevice()) {
+            window.addEventListener(
+              "deviceorientation",
+              handleOrientation,
+              true
+            );
+
+            // Attempt to request permission for device orientation on iOS 13+
+            if (typeof DeviceOrientationEvent.requestPermission === "function") {
+              // Create a button to request permission (iOS 13+ requires user gesture)
+              const permissionButton = document.createElement("button");
+              permissionButton.innerText = "Enable motion effects";
+              permissionButton.style.position = "fixed";
+              permissionButton.style.top = "10px";
+              permissionButton.style.left = "10px";
+              permissionButton.style.zIndex = "1000";
+              permissionButton.style.padding = "8px 12px";
+              permissionButton.style.borderRadius = "4px";
+              permissionButton.style.backgroundColor = "#333";
+              permissionButton.style.color = "white";
+              permissionButton.style.border = "none";
+              document.body.appendChild(permissionButton);
+
+              permissionButton.addEventListener("click", () => {
+                DeviceOrientationEvent.requestPermission()
+                  .then((response) => {
+                    if (response === "granted") {
+                      window.addEventListener(
+                        "deviceorientation",
+                        handleOrientation,
+                        true
+                      );
+                      permissionButton.style.display = "none";
+                    }
+                  })
+                  .catch(console.error);
+              });
+            }
+          }
+
+          // Add click listener to container
+          document
+            .getElementById("vector-field-container")
+            .addEventListener("click", function () {
+              if (!isTransitioning) {
+                // Store current vectors as starting point
+                startVectors = originalVectors.map((v) => v.copy());
+
+                // Generate new target vectors
+                targetVectors = generateRandomVectorField();
+
+                // Start transition
+                transitionStart = p.millis();
+                isTransitioning = true;
+              }
+            });
+
+          // Log instructions to console
+          console.log("Vector field with Figma spring animation initialized!");
+          console.log(
+            "Using Figma spring parameters: stiffness=266.7, damping=20, mass=1"
+          );
+          console.log(
+            "To adjust animation duration: setTransitionDuration(milliseconds)"
+          );
+          console.log(
+            "  Example: setTransitionDuration(800) for faster animation"
+          );
+          console.log("  Default: 600ms (matching Figma settings)");
+          console.log(
+            "To adjust spring physics: setSpringParams(stiffness, damping, mass)"
+          );
+          console.log(
+            "  Example: setSpringParams(200, 15, 1) for bouncier animation"
+          );
+          console.log("  Current values: stiffness=266.7, damping=20, mass=1");
+        };
+
+        // Handle device orientation event
+        function handleOrientation(event) {
+          // Only enable device orientation if we're on a mobile device and have valid orientation data
+          if (isMobileDevice() && event.beta !== null && event.gamma !== null) {
+            // Initialize reference orientation if this is our first reading
+            if (!orientationInitialized) {
+              lastOrientation = {
+                alpha: event.alpha || 0,
+                beta: event.beta || 0,
+                gamma: event.gamma || 0,
+              };
+              orientationInitialized = true;
+            }
+
+            isDeviceOrientation = true;
+
+            // Get device orientation data
+            deviceTiltX = event.beta; // -180 to 180 (tilting front/back)
+            deviceTiltY = event.gamma; // -90 to 90 (tilting left/right)
+
+            // Calculate deltas (changes) from the last reading to detect subtle movements
+            const deltaAlpha = normalizeDelta(
+              event.alpha - lastOrientation.alpha,
+              360
+            );
+            const deltaBeta = event.beta - lastOrientation.beta;
+            const deltaGamma = event.gamma - lastOrientation.gamma;
+
+            // Normalize values using your original method for the base values
+            deviceTiltX = p.constrain(deviceTiltX, -45, 45) / 45.0;
+            deviceTiltY = p.constrain(deviceTiltY, -45, 45) / 45.0;
+
+            // Add in a component of the delta for more responsive feel to small changes
+            deviceTiltX += deltaBeta * 0.1;
+            deviceTiltY += deltaGamma * 0.1;
+
+            // Update the last orientation values
+            lastOrientation = {
+              alpha: event.alpha || 0,
+              beta: event.beta || 0,
+              gamma: event.gamma || 0,
+            };
+          }
+        }
+
+        // Helper to normalize angle deltas (for compass direction)
+        function normalizeDelta(delta, maxValue) {
+          if (Math.abs(delta) > maxValue / 2) {
+            return delta > 0 ? delta - maxValue : delta + maxValue;
+          }
+          return delta;
+        }
+
+        // Helper to interpolate between angles (shortest path)
+        function lerpAngle(start, end, t) {
+          // Find the shortest direction to rotate
+          let diff = end - start;
+
+          // Adjust for crossing the 0/2PI boundary
+          if (diff > Math.PI) diff -= 2 * Math.PI;
+          if (diff < -Math.PI) diff += 2 * Math.PI;
+
+          // Apply spring effect
+          let springT = springEase(t, transitionDuration);
+
+          // Return the interpolated angle
+          return start + diff * springT;
+        }
+
+        p.draw = function () {
+          // Create a transparent background
+          p.clear();
+
+          // Update time for organic movement
+          time += timeStep;
+
+          // Handle animation if in progress
+          if (isTransitioning) {
+            const elapsed = p.millis() - transitionStart;
+            const progress = Math.min(elapsed / transitionDuration, 1);
+
+            // Request next frame for smoother animation
+            window.requestAnimationFrame(() => {
+              if (isTransitioning) p.redraw();
+            });
+
+            // Update original vectors based on transition progress
+            for (let i = 0; i < originalVectors.length; i++) {
+              if (progress >= 1) {
+                // Animation complete, set to final target
+                originalVectors[i] = targetVectors[i].copy();
+              } else {
+                // Get current and target angles
+                const startAngle = Math.atan2(
+                  startVectors[i].y,
+                  startVectors[i].x
+                );
+                const targetAngle = Math.atan2(
+                  targetVectors[i].y,
+                  targetVectors[i].x
+                );
+
+                // Interpolate with spring effect
+                const newAngle = lerpAngle(startAngle, targetAngle, progress);
+
+                // Update vector
+                originalVectors[i].x = Math.cos(newAngle);
+                originalVectors[i].y = Math.sin(newAngle);
+              }
+            }
+
+            // Check if transition is complete
+            if (progress >= 1) {
+              isTransitioning = false;
+            }
+          }
+
+          // Visualize vector field with small lines
+          p.stroke(0);
+          p.strokeWeight(1);
+
+          // Mouse position for reference
+          const mousePos = p.createVector(p.mouseX, p.mouseY);
+
+          for (let y = 0; y < rows; y++) {
+            for (let x = 0; x < cols; x++) {
+              let index = x + y * cols;
+              let pos = p.createVector(
+                x * gridSize + margin,
+                y * gridSize + margin
+              );
+
+              // Start with original vector
+              let v = originalVectors[index].copy();
+
+              // Apply organic wind-like movement
+              let windAngle =
+                p.noise(x * noiseScale, y * noiseScale, time) * p.TWO_PI;
+              let windVector = p5.Vector.fromAngle(windAngle).mult(
+                windStrength
+              );
+              v.add(windVector);
+
+              // Apply device tilt influence for mobile or mouse influence for desktop
+              if (isDeviceOrientation) {
+                // Device orientation influence
+                let tiltForce = p
+                  .createVector(deviceTiltY, deviceTiltX)
+                  .mult(deviceTiltStrength);
+                v.add(tiltForce);
+              } else {
+                // Mouse influence - calculate direction vector from grid point to mouse
+                let force = p5.Vector.sub(pos, mousePos);
+                let d = force.mag();
+
+                if (d < 300) {
+                  force.normalize();
+                  // Using your values for strength calculation
+                  let strength = p.map(d, 1, 200, 0.5, 0.15);
+
+                  // Update persistent influence with your value
+                  persistentInfluence[index] = p.max(
+                    persistentInfluence[index],
+                    strength * 0.9
+                  );
+
+                  // Apply immediate cursor influence
+                  force.mult(strength);
+                  v.add(force);
+                }
+
+                // Apply persistent influence that slowly decays
+                if (persistentInfluence[index] > 0) {
+                  // Get direction vector from grid point to mouse
+                  let directionToMouse = p5.Vector.sub(pos, mousePos);
+                  directionToMouse.normalize();
+
+                  // Apply the persistent force
+                  let persistentForce = directionToMouse.mult(
+                    persistentInfluence[index]
+                  );
+                  v.add(persistentForce);
+
+                  // Decay the persistent influence at your rate
+                  persistentInfluence[index] *= 0.99;
+
+                  // If it's very small, just set it to zero
+                  if (persistentInfluence[index] < 0.01) {
+                    persistentInfluence[index] = 0;
+                  }
+                }
+              }
+
+              // Update the current vector field
+              vectorField[index] = v.copy().normalize();
+
+              // Draw the vector field lines using your line length value
+              p.push();
+              p.translate(pos.x, pos.y);
+              p.stroke(0, 0, 0, 220);
+              p.line(
+                0,
+                0,
+                vectorField[index].x * gridSize * 0.3,
+                vectorField[index].y * gridSize * 0.3
+              );
+              p.pop();
+            }
+          }
+        };
+
+        p.windowResized = function () {
+          // Resize the canvas and maintain its style properties
+          p.resizeCanvas(p.windowWidth, p.windowHeight);
+          canvas.style("z-index", "-1");
+          canvas.style("position", "absolute");
+          canvas.style("top", "0");
+          canvas.style("left", "0");
+
+          // Recalculate grid dimensions
+          let newCols = p.floor((p.width - 2 * margin) / gridSize) + 1;
+          let newRows = p.floor((p.height - 2 * margin) / gridSize) + 1;
+
+          // If dimensions have changed, reinitialize arrays
+          if (newCols !== cols || newRows !== rows) {
+            cols = newCols;
+            rows = newRows;
+
+            // Reinitialize arrays
+            vectorField = [];
+            originalVectors = [];
+            persistentInfluence = [];
+
+            for (let y = 0; y < rows; y++) {
+              for (let x = 0; x < cols; x++) {
+                let angle = p.noise(x * 0.1, y * 0.1) * p.TWO_PI * 2;
+                let v = p5.Vector.fromAngle(angle);
+                vectorField.push(v.copy());
+                originalVectors.push(v.copy());
+                persistentInfluence.push(0);
+              }
+            }
+          }
+        };
+      };
+
+      new p5(vectorFieldSketch, "vector-field-container");
+    }
+
+    if (window.p5) {
+      initVectorField();
+    } else {
+      const script = document.createElement("script");
+      script.src =
+        "https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.min.js";
+      script.async = true;
+      script.onload = initVectorField;
+      document.head.appendChild(script);
+    }
+  </script>
+</div>
