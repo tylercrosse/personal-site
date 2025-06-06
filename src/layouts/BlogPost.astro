@@ -58,6 +58,16 @@ const imageData = getImageData();
         margin-bottom: 1em;
         padding-bottom: 1em;
       }
+
+      .title-meta {
+        display: flex;
+        gap: 1em;
+        font-size: 0.7em;
+        text-transform: capitalize;
+        margin-bottom: 1em;
+        color: var(--sol-7);
+      }
+
       .title h1 {
         margin-bottom: 0.5em;
         max-width: 800px;
@@ -144,6 +154,10 @@ const imageData = getImageData();
       <article>
         <header class="title">
           <div class="title-container">
+            <div class="title-meta">
+              <span>{type}</span>
+              <span>{status}</span>
+            </div>
             <h1>{title}</h1>
             <div class="description">{description}</div>
             <div class="meta">

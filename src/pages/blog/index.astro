@@ -1,134 +1,324 @@
 ---
-import { Image } from "astro:assets";
-
-import BaseHead from "../../components/BaseHead.astro";
-import Header from "../../components/Header.astro";
-import Footer from "../../components/Footer.astro";
-import { SITE_TITLE, SITE_DESCRIPTION } from "../../consts";
 import { getCollection } from "astro:content";
+import { Image } from "astro:assets";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { SITE_TITLE, SITE_DESCRIPTION } from "../../consts";
 import FormattedDate from "../../components/FormattedDate.astro";
 
-const posts = (await getCollection("blog")).sort(
-  (a, b) =>
-    (b.data.pubDate || b.data.date || new Date(0)).valueOf() -
-    (a.data.pubDate || a.data.date || new Date(0)).valueOf()
-);
+const posts = (await getCollection("blog")).sort((a, b) => {
+  const aDate = a.data.pubDate || a.data.date;
+  const bDate = b.data.pubDate || b.data.date;
+  return new Date(bDate || 0).valueOf() - new Date(aDate || 0).valueOf();
+});
 
-// Helper function to get image source and alt text from either format
-const getImageData = (post: any) => {
-  if (post.data.heroImage) {
-    return { src: post.data.heroImage, alt: "" };
-  }
-  if (post.data.image) {
-    return { src: post.data.image.path, alt: post.data.image.alt };
-  }
-  return null;
-};
+const allTags = [
+  ...new Set(posts.flatMap((post) => post.data.tags || [])),
+].sort((a, b) => a.localeCompare(b));
+const allTypes = [
+  ...new Set(posts.map((post) => post.data.type).filter(Boolean)),
+];
+const allStatuses = [
+  ...new Set(posts.map((post) => post.data.status).filter(Boolean)),
+];
+
+const allPostsData = posts.map((post) => ({
+  id: post.id,
+  slug: post.slug,
+  title: post.data.title,
+  description: post.data.description,
+  date: post.data.date?.toLocaleDateString("en-us", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  }),
+  updated: post.data.updated
+    ? post.data.updated.toLocaleDateString("en-us", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      })
+    : null,
+  type: post.data.type,
+  status: post.data.status,
+  tags: post.data.tags || [],
+  image: post.data.image,
+}));
 ---
 
-<!doctype html>
-<html lang="en">
-  <head>
-    <BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
-    <style>
-      main {
-        width: 960px;
-      }
-      ul {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 2rem;
-        list-style-type: none;
-        margin: 0;
-        padding: 0;
-      }
-      ul li {
-        width: calc(50% - 1rem);
-      }
-      ul li * {
-        text-decoration: none;
-        transition: 0.2s ease;
-      }
-      ul li:first-child {
-        width: 100%;
-        margin-bottom: 1rem;
-        text-align: center;
-      }
-      ul li:first-child img {
-        width: 100%;
-      }
-      ul li:first-child .title {
-        font-size: 2.369rem;
-      }
-      ul li img {
-        margin-bottom: 0.5rem;
-      }
-      ul li a {
-        display: block;
-      }
-      .title {
-        margin: 0;
-        /* color: rgb(var(--black)); */
-        line-height: 1;
-      }
-      .date {
-        margin: 0;
-        color: rgb(var(--gray));
-      }
-      ul li a:hover h4,
-      ul li a:hover .date {
-        color: rgb(var(--accent));
-      }
-      @media (max-width: 720px) {
-        ul {
-          gap: 0.5em;
+<BaseLayout>
+  <style>
+    .hero {
+      padding: 2rem 0;
+    }
+    .hero h1 {
+      font-size: 4rem;
+      margin-bottom: 1rem;
+    }
+    .select-filters {
+      display: flex;
+      margin-bottom: 1rem;
+    }
+
+    .select-filters select {
+      background: none;
+      border: none;
+      border-radius: 4px;
+      padding: 0.25rem 1.25rem;
+      cursor: pointer;
+      background: rgba(var(--gray-light), 0.8);
+    }
+    .tag-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.25rem;
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      margin-bottom: 2rem;
+    }
+    .tag-list button {
+      background: none;
+      border: none;
+      border-radius: 4px;
+      padding: 0.25rem 0.75rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-transform: capitalize;
+      color: var(--sol-8);
+    }
+
+    .tag-list button:hover {
+      color: var(--sol-8);
+      background-color: var(--base4);
+    }
+
+    :global([data-effective-theme="dark"]) .tag-list button:hover {
+      color: var(--black);
+      background-color: var(--base01);
+    }
+
+    .tag-list button.active {
+      background-color: var(--accent);
+      color: var(--black);
+    }
+    .select-filters {
+      display: flex;
+      gap: 1rem;
+    }
+    .select-filters select {
+      text-transform: capitalize;
+      color: var(--black);
+    }
+    .post-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 2rem;
+    }
+    .post-card {
+      border: 1px solid var(--main-border-color);
+      background-color: var(--base4);
+      border-radius: 8px;
+      overflow: hidden;
+      text-decoration: none;
+      color: inherit;
+      display: flex;
+      flex-direction: column;
+      transition: all 0.2s ease-in-out;
+      transform: scale3d(1, 1, 1);
+    }
+
+    .post-card:hover {
+      transform: scale3d(1.02, 1.02, 1.02);
+      background: var(--base4);
+      box-shadow: var(--box-shadow-sm);
+    }
+
+    :global([data-effective-theme="dark"]) .post-card {
+      border: 1px solid var(--base03);
+      background-color: var(--base02);
+    }
+
+    .post-card.hidden {
+      display: none;
+    }
+    .post-card img {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+    }
+    .post-card-content {
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      flex-grow: 1;
+    }
+    .post-card-content h3 {
+      margin: 0 0 0.5rem 0;
+      font-size: 1.25rem;
+    }
+    .post-card-content p {
+      margin: 0 0 1rem 0;
+      flex-grow: 1;
+      font-size: 1rem;
+    }
+
+    .post-card-content-header span {
+      padding-right: 1em;
+    }
+
+    .post-meta,
+    .post-card-content-header {
+      font-size: 0.75rem;
+      text-transform: capitalize;
+      color: var(--sol-7);
+      margin-bottom: 0.5rem;
+    }
+
+    .post-meta {
+      display: flex;
+      justify-content: space-between;
+    }
+  </style>
+
+  <header>
+    <div class="hero">
+      <h1>Digital Garden</h1>
+      <p>The notes, thoughts, and projects I've been working on.</p>
+    </div>
+
+    <div class="select-filters">
+      <select id="type-filter">
+        <option value="all">All types</option>
+        {allTypes.map((type) => <option value={type}>{type}</option>)}
+      </select>
+      <select id="status-filter">
+        <option value="all">All statuses</option>
+        {allStatuses.map((status) => <option value={status}>{status}</option>)}
+      </select>
+    </div>
+
+    <div class="filters">
+      <ul class="tag-list">
+        <li><button class="active" id="all-tags">All Topics</button></li>
+        {
+          allTags.map((tag) => (
+            <li>
+              <button data-tag={tag}>{tag}</button>
+            </li>
+          ))
         }
-        ul li {
-          width: 100%;
-          text-align: center;
-        }
-        ul li:first-child {
-          margin-bottom: 0;
-        }
-        ul li:first-child .title {
-          font-size: 1.563em;
-        }
-      }
-    </style>
-  </head>
-  <body>
-    <Header />
-    <main>
-      <section>
-        <ul>
-          {
-            posts.map((post) => {
-              const imageData = getImageData(post);
-              return (
-                <li>
-                  <a href={`/blog/${post.id}/`}>
-                    {imageData && (
-                      <Image
-                        width={720}
-                        height={360}
-                        src={imageData.src}
-                        alt={imageData.alt}
-                      />
-                    )}
-                    <h4 class="title">{post.data.title}</h4>
-                    <p class="date">
-                      <FormattedDate
-                        date={post.data.pubDate || post.data.date || new Date()}
-                      />
-                    </p>
-                  </a>
-                </li>
-              );
-            })
+      </ul>
+    </div>
+  </header>
+
+  <section class="post-grid" id="post-grid">
+    {
+      posts.map((post) => {
+        const slug = post.id.replace(/(\/index)?\.(md|mdx)$/, "");
+        const image = post.data.image;
+        return (
+          <a
+            href={`/blog/${slug}/`}
+            class="post-card"
+            data-tags={post.data.tags?.join(" ")}
+            data-type={post.data.type}
+            data-status={post.data.status}
+          >
+            <div class="post-card-content">
+              <div class="post-card-content-header">
+                <span>{post.data.type}</span>
+                <span>{post.data.status}</span>
+              </div>
+              <h3>{post.data.title}</h3>
+              <p>{post.data.description}</p>
+              <div class="post-meta">
+                <span>
+                  <FormattedDate date={post.data.date || new Date()} />
+                </span>
+                {post.data.updated && (
+                  <span>
+                    Updated: <FormattedDate date={post.data.updated} />
+                  </span>
+                )}
+              </div>
+            </div>
+            {image?.path && (
+              <Image
+                src={image.path}
+                alt={image.alt || ""}
+                width={400}
+                height={200}
+              />
+            )}
+          </a>
+        );
+      })
+    }
+  </section>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const postGrid = document.getElementById("post-grid");
+      if (!postGrid) return;
+
+      const posts = Array.from(postGrid.children);
+
+      let activeTag = "all";
+      let activeType = "all";
+      let activeStatus = "all";
+
+      function filterPosts() {
+        posts.forEach((post) => {
+          const p = post as HTMLElement;
+          const tags = p.dataset.tags?.split(" ") || [];
+          const type = p.dataset.type;
+          const status = p.dataset.status;
+
+          const tagMatch = activeTag === "all" || tags.includes(activeTag);
+          const typeMatch = activeType === "all" || type === activeType;
+          const statusMatch = activeStatus === "all" || status === activeStatus;
+
+          if (tagMatch && typeMatch && statusMatch) {
+            p.classList.remove("hidden");
+          } else {
+            p.classList.add("hidden");
           }
-        </ul>
-      </section>
-    </main>
-    <Footer />
-  </body>
-</html>
+        });
+      }
+
+      // Tag filtering
+      const tagButtons = document.querySelectorAll(".tag-list button");
+      tagButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          tagButtons.forEach((btn) => btn.classList.remove("active"));
+          button.classList.add("active");
+          const b = button as HTMLElement;
+          activeTag = b.id === "all-tags" ? "all" : b.dataset.tag || "all";
+          filterPosts();
+        });
+      });
+
+      // Type filter
+      const typeFilter = document.getElementById(
+        "type-filter"
+      ) as HTMLSelectElement;
+      if (typeFilter) {
+        typeFilter.addEventListener("change", (e) => {
+          activeType = (e.target as HTMLSelectElement).value;
+          filterPosts();
+        });
+      }
+
+      // Status filter
+      const statusFilter = document.getElementById(
+        "status-filter"
+      ) as HTMLSelectElement;
+      if (statusFilter) {
+        statusFilter.addEventListener("change", (e) => {
+          activeStatus = (e.target as HTMLSelectElement).value;
+          filterPosts();
+        });
+      }
+    });
+  </script>
+</BaseLayout>
