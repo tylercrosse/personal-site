@@ -7,7 +7,13 @@ import { SITE_TITLE } from "../consts";
 
 <header>
   <nav>
-    <h2><a href="/">{SITE_TITLE}</a></h2>
+    <a href="/" class="logo"
+      ><img
+        style="width: 28px; height: 28px;"
+        src="/img/favicons/favicon-96x96.png"
+        alt="Logo"
+      /></a
+    >
     <div class="internal-links">
       <HeaderLink href="/">Home</HeaderLink>
       <HeaderLink href="/blog">Blog</HeaderLink>
@@ -27,7 +33,10 @@ import { SITE_TITLE } from "../consts";
     padding: 0 1em;
     background: white;
     box-shadow: 0 2px 8px rgba(var(--black), 5%);
-    transition: background-color 0.2s ease, box-shadow 0.2s ease, transform 0.3s ease;
+    transition:
+      background-color 0.2s ease,
+      box-shadow 0.2s ease,
+      transform 0.3s ease;
     position: fixed;
     top: 0;
     left: 0;
@@ -56,7 +65,7 @@ import { SITE_TITLE } from "../consts";
     padding-top: 4rem; /* Adjust this value based on your header height */
   }
 
-  h2 {
+  /* h2 {
     margin: 0;
     font-size: 1em;
   }
@@ -64,7 +73,7 @@ import { SITE_TITLE } from "../consts";
   h2 a,
   h2 a.active {
     text-decoration: none;
-  }
+  } */
   nav {
     display: flex;
     align-items: center;
@@ -84,6 +93,15 @@ import { SITE_TITLE } from "../consts";
     text-decoration: none;
     border-bottom-color: var(--accent);
   }
+
+  nav a.logo {
+    padding: 0;
+    margin: 0;
+    border-bottom: none;
+    display: flex;
+    align-items: center;
+  }
+
   .internal-links {
     display: flex;
     align-items: center;
@@ -116,28 +134,28 @@ import { SITE_TITLE } from "../consts";
 
 <script>
   function initHeadroom() {
-    const header = document.querySelector('header');
+    const header = document.querySelector("header");
     if (!header) return;
 
     let lastScrollY = window.scrollY;
     const tolerance = { up: 5, down: 5 };
-    let lastDirection = 'up';
+    let lastDirection = "up";
     const offset = 0;
 
     function update() {
       const currentScrollY = window.scrollY;
-      const direction = currentScrollY > lastScrollY ? 'down' : 'up';
+      const direction = currentScrollY > lastScrollY ? "down" : "up";
       const toleranceExceeded =
         Math.abs(currentScrollY - lastScrollY) >=
-        (direction === 'down' ? tolerance.down : tolerance.up);
+        (direction === "down" ? tolerance.down : tolerance.up);
 
       if (toleranceExceeded && header) {
-        if (direction === 'down' && currentScrollY > offset) {
-          header.classList.add('headroom--unpinned');
-          header.classList.remove('headroom--pinned');
-        } else if (direction === 'up') {
-          header.classList.add('headroom--pinned');
-          header.classList.remove('headroom--unpinned');
+        if (direction === "down" && currentScrollY > offset) {
+          header.classList.add("headroom--unpinned");
+          header.classList.remove("headroom--pinned");
+        } else if (direction === "up") {
+          header.classList.add("headroom--pinned");
+          header.classList.remove("headroom--unpinned");
         }
         lastDirection = direction;
       }
@@ -145,9 +163,9 @@ import { SITE_TITLE } from "../consts";
       lastScrollY = currentScrollY;
     }
 
-    window.addEventListener('scroll', update, { passive: true });
+    window.addEventListener("scroll", update, { passive: true });
   }
 
   // Initialize when DOM is loaded
-  document.addEventListener('DOMContentLoaded', initHeadroom);
+  document.addEventListener("DOMContentLoaded", initHeadroom);
 </script>
