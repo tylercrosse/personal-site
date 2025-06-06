@@ -17,10 +17,12 @@ const {
   title,
   description,
   pubDate,
-  updatedDate,
+  updated,
   heroImage,
   image,
   headings,
+  status,
+  type,
   tags,
 } = Astro.props;
 
@@ -159,9 +161,9 @@ const imageData = getImageData();
                   Published <FormattedDate date={pubDate || new Date()} />
                 </div>
                 {
-                  updatedDate && (
+                  updated && (
                     <div class="last-updated-on">
-                      Updated <FormattedDate date={updatedDate} />
+                      Updated <FormattedDate date={updated} />
                     </div>
                   )
                 }

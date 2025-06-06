@@ -15,7 +15,9 @@ const blog = defineCollection({
     // Handle both 'pubDate' (Astro) and 'date' (Gatsby) fields
     pubDate: z.coerce.date().optional(),
     date: z.coerce.date().optional(),
-    updatedDate: z.coerce.date().optional(),
+    updated: z.coerce.date().optional(),
+    status: z.string().optional(),
+    type: z.string().optional(),
     heroImage: z.string().optional(),
     // Additional Gatsby fields that might be present
     tags: z.array(z.string()).optional(),
