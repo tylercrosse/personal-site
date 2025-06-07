@@ -1,0 +1,95 @@
+---
+title: 'Graduate Introduction to Operating Systems'
+description: 'What I Learned in Graduate Introduction to Operating Systems (GIOS) - A Retrospective'
+date: '2025-05-05'
+updated: '2025-06-05'
+status: 'in-progress'
+type: 'retro'
+tags: ['GIOS', 'operating-systems', 'c', 'c++', 'python', 'multithreading', 'IPC', 'socket-programming', 'distributed-systems']
+category: ['mscs']
+draft: false
+audience: 'All'
+media_subpath: "/ideas/gios-retro/"
+image:
+  path: "./affiche-moebius-arzak-mystere-montrouge.jpg"
+  alt: 'Affiche Moebius Arzak Mystere Montrouge by Jean Giraud'
+---
+
+
+## What I Learned in Graduate Introduction to Operating Systems (GIOS) - A Retrospective
+
+When I started the OMSCS program, I had a solid background in software engineering but little formal education in how operating systems work under the hood. Graduate Introduction to Operating Systems (CS 6200) was my first deep dive into the internals — and it fundamentally changed how I think about computing.
+
+My undergraduate degree is in Biomedical Engineering. To strengthen my application to Georgia Tech and improve my background to CS courses I took.
+
+- Summer 2021 Coursera NAND to Tetris
+- Fall 2021 Foothill College CS 001A Object-Oriented Programming Methods in Java
+- Winter 2022 Foothill College CS 001B Intermediate Software Design in Java
+- Spring 2022 Foothill College CS 001C Advanced Data Structures & Algorithms in Java
+- Spring 2023 Foothill College CS 032A Intro to Database Management Systems
+- Spring 2023 Foothill College CS 050A Network Basics (CCNA)
+- Summer 2023 Foothill College CS 010 Computer Architecture & Organization
+- Fall 2023 Foothill College MATH 022 Discrete Mathematics
+
+## Why I Took This Course
+
+I wanted to strengthen my systems foundation. I had worked in industry for years, but many of the concepts behind process scheduling, memory management, and low-level concurrency felt like a black box. I hoped this course would help me understand what's really happening "under the hood" when software runs.
+
+## What the Course Covered
+
+GIOS touches a lot of ground, including:
+ - Processes and threads - what they are, how they relate, how the OS schedules them.
+ - Virtual memory - address translation, page tables, TLBs, and memory protection.
+ - Synchronization - locks, condition variables, deadlock, and the classical problems.
+ - File systems - how data is organized, stored, and accessed efficiently.
+ - Networking and RPC - introducing concepts like client-server communication beyond REST.
+
+Each topic came with readings and implementation-based labs that really helped drive things home.
+
+## What I Didn't Know Going In
+
+Before this class, I had only a vague idea of:
+ - How threads differ from processes, both in memory and in scheduling.
+ - What virtual memory actually does, and how address translation works.
+ - How file systems manage things like metadata, directories, and inodes.
+ - What RPCs are, and how they relate to or differ from APIs like REST.
+
+These topics can seem intimidating or opaque if your only exposure has been through high-level abstractions. This course forced me to wrestle with them directly — and I'm grateful for that.
+
+## Projects
+
+The labs were challenging and rewarding. Some highlights:
+ - Implementing a user-level thread library from scratch — including your own scheduler.
+ - Working with xv6, a simplified Unix-based OS used to teach core concepts.
+ - RPC lab — building a remote procedure call mechanism to simulate distributed systems.
+
+Each lab forced me to confront edge cases, race conditions, and the harsh truth of debugging concurrency bugs at 2am. In hindsight: valuable, if occasionally painful.
+
+What I Took Away
+ - Systems thinking is powerful. You start to ask better questions like "What happens when I call malloc?" or "What does the OS have to do to launch a program?"
+ - There's no magic. Even high-level abstractions like Python threads or Docker containers are ultimately built on these foundational concepts.
+ - Writing is a way to solidify knowledge. Some of these concepts only fully clicked for me when I tried to explain them (which is part of why I'm writing this post!).
+
+## Would I Recommend This Course?
+
+Yes — with a few caveats:
+ - It's a real operating systems course, not an easy overview. Expect to spend time reading papers, doing tricky implementations, and debugging your own understanding.
+ - A basic understanding of C helps a lot (though I had to level this up as I went).
+ - The labs are a significant time investment, but they're where most of the learning happens.
+
+## Looking Back
+
+GIOS gave me the mental tools to better understand everything I interact with as a programmer. It helped demystify the systems stack and made me more confident tackling topics like concurrency, memory, and even distributed systems.
+
+If you're considering this course or just want to strengthen your understanding of systems, I can't recommend it enough. And if you're just beginning your journey into OS concepts — it's okay not to know it all up front. We all start somewhere.
+
+
+## Additional resources and references
+
+- [GIOS Course Website](https://omscs.gatech.edu/cs-6200-introduction-operating-systems)
+- [K&R C Programming Language](https://en.wikipedia.org/wiki/The_C_Programming_Language)
+- [Beej's Guide to C Programming](https://beej.us/guide/bgc/)
+- [Beej's Guide to Networking Concepts](https://beej.us/guide/bgnet0/)
+- [Beej's Guide to Network Programming](https://beej.us/guide/bgnet/)
+- [Linux Programming Interface](https://man7.org/tlpi/)
+- [Operating Systems: Three Easy Pieces](https://pages.cs.wisc.edu/~remzi/OSTEP/)

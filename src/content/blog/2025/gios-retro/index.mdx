@@ -5,7 +5,7 @@ date: '2025-05-05'
 updated: '2025-06-05'
 status: 'in-progress'
 type: 'retro'
-tags: ['GIOS', 'operating-systems', 'c', 'c++', 'python', 'multithreading', 'IPC', 'socket-programming', 'distributed-systems']
+tags: ['GIOS', 'operating-systems', 'c', 'c++', 'multithreading', 'IPC', 'socket-programming', 'distributed-systems']
 category: ['mscs']
 draft: false
 audience: 'All'
@@ -15,81 +15,324 @@ image:
   alt: 'Affiche Moebius Arzak Mystere Montrouge by Jean Giraud'
 ---
 
+import { Image } from "astro:assets";
+import osOverview from "./os-overview.png";
+import processThread from "./process-thread.png";
+import contextSwitch from "./context-switch.png";
+import interrupts from "./interrupts.png";
 
-## What I Learned in Graduate Introduction to Operating Systems (GIOS) - A Retrospective
+## Introduction
 
-When I started the OMSCS program, I had a solid background in software engineering but little formal education in how operating systems work under the hood. Graduate Introduction to Operating Systems (CS 6200) was my first deep dive into the internals — and it fundamentally changed how I think about computing.
+This article is part personal reflection, part technical summary. I recently completed Georgia Tech's Introduction to Graduate Operating Systems (GIOS), and I wanted to take the time to solidify what I've learned—both for myself, in the spirit of the Feynman technique, and for others who might be curious about the course or about me. This includes future OMSCS students, hiring managers, and peers who want a better sense of what this course covers and what I now know (and don't know yet).
 
-My undergraduate degree is in Biomedical Engineering. To strengthen my application to Georgia Tech and improve my background to CS courses I took.
+There's always a tension when writing something like this. I want to be honest about what I've learned and the depth of my understanding, while acknowledging that I'm still learning. This course was challenging and rewarding, and this write-up is my way of digesting the material and sharing it in a format that feels productive.
 
-- Summer 2021 Coursera NAND to Tetris
-- Fall 2021 Foothill College CS 001A Object-Oriented Programming Methods in Java
-- Winter 2022 Foothill College CS 001B Intermediate Software Design in Java
-- Spring 2022 Foothill College CS 001C Advanced Data Structures & Algorithms in Java
-- Spring 2023 Foothill College CS 032A Intro to Database Management Systems
-- Spring 2023 Foothill College CS 050A Network Basics (CCNA)
-- Summer 2023 Foothill College CS 010 Computer Architecture & Organization
-- Fall 2023 Foothill College MATH 022 Discrete Mathematics
+## Operating Systems Overview
 
-## Why I Took This Course
+At a high level, an operating system (OS) "is a special piece of software that **abstracts and arbitrates** the use of a computer system." It sits between user applications and hardware, providing the illusion of a cohesive, manageable system despite the complexity and diversity of hardware components.
 
-I wanted to strengthen my systems foundation. I had worked in industry for years, but many of the concepts behind process scheduling, memory management, and low-level concurrency felt like a black box. I hoped this course would help me understand what's really happening "under the hood" when software runs.
+<div style="max-width: 640px; margin: 0 auto;">
+  <Image src={osOverview} alt="OS Overview" />
+</div>
 
-## What the Course Covered
+This layered architecture separates **user space**, where applications run, from **kernel space**, where the OS performs core functions like managing hardware and system resources. Applications interact with the OS through **standard libraries** and **system calls**, enabling functionality like file operations or memory allocation without direct hardware access. The OS, in turn, controls and coordinates the hardware layer, which includes the CPU, memory, storage, displays, network devices, and input peripherals.
 
-GIOS touches a lot of ground, including:
- - Processes and threads - what they are, how they relate, how the OS schedules them.
- - Virtual memory - address translation, page tables, TLBs, and memory protection.
- - Synchronization - locks, condition variables, deadlock, and the classical problems.
- - File systems - how data is organized, stored, and accessed efficiently.
- - Networking and RPC - introducing concepts like client-server communication beyond REST.
+The OS fulfills several critical roles:
 
-Each topic came with readings and implementation-based labs that really helped drive things home.
+* **Controls access** to critical resources like the **CPU**, **memory**, and **I/O devices**. Without this, applications could interfere with each other or with the hardware directly.
+* **Provides abstractions** such as files, processes, and virtual memory. These simplify development and improve portability by hiding hardware-specific details behind a consistent interface exposed via **system calls**.
+* **Enforces policies** to manage limited resources—deciding which processes run when, how memory is allocated, and which users or programs can access specific files or devices. These policies balance competing goals like fairness, responsiveness, efficiency, and security.
+* **Virtualizes everything but time**, enabling multiple processes (and potentially multiple users) to share the same hardware as if each had their own isolated system. For instance, CPU virtualization creates the illusion of multiple CPUs; memory virtualization ensures processes operate within isolated memory spaces.
 
-## What I Didn't Know Going In
+In short, the OS is the software layer that turns raw, unreliable hardware into a stable, usable, and secure programming environment.
 
-Before this class, I had only a vague idea of:
- - How threads differ from processes, both in memory and in scheduling.
- - What virtual memory actually does, and how address translation works.
- - How file systems manage things like metadata, directories, and inodes.
- - What RPCs are, and how they relate to or differ from APIs like REST.
-
-These topics can seem intimidating or opaque if your only exposure has been through high-level abstractions. This course forced me to wrestle with them directly — and I'm grateful for that.
-
-## Projects
-
-The labs were challenging and rewarding. Some highlights:
- - Implementing a user-level thread library from scratch — including your own scheduler.
- - Working with xv6, a simplified Unix-based OS used to teach core concepts.
- - RPC lab — building a remote procedure call mechanism to simulate distributed systems.
-
-Each lab forced me to confront edge cases, race conditions, and the harsh truth of debugging concurrency bugs at 2am. In hindsight: valuable, if occasionally painful.
-
-What I Took Away
- - Systems thinking is powerful. You start to ask better questions like "What happens when I call malloc?" or "What does the OS have to do to launch a program?"
- - There's no magic. Even high-level abstractions like Python threads or Docker containers are ultimately built on these foundational concepts.
- - Writing is a way to solidify knowledge. Some of these concepts only fully clicked for me when I tried to explain them (which is part of why I'm writing this post!).
-
-## Would I Recommend This Course?
-
-Yes — with a few caveats:
- - It's a real operating systems course, not an easy overview. Expect to spend time reading papers, doing tricky implementations, and debugging your own understanding.
- - A basic understanding of C helps a lot (though I had to level this up as I went).
- - The labs are a significant time investment, but they're where most of the learning happens.
-
-## Looking Back
-
-GIOS gave me the mental tools to better understand everything I interact with as a programmer. It helped demystify the systems stack and made me more confident tackling topics like concurrency, memory, and even distributed systems.
-
-If you're considering this course or just want to strengthen your understanding of systems, I can't recommend it enough. And if you're just beginning your journey into OS concepts — it's okay not to know it all up front. We all start somewhere.
+<details>
+  <summary>For more details, see the <a href="https://www.youtube.com/watch?v=9l6RRmXWoLM&list=PLTsf9UeqkReZbK7xqIYn_mXmsQZIb011T&index=2" target="_blank">Introduction to Operating Systems lecture</a> which covers:</summary>
+  - Separation of Mechanism and Policy: This principle emphasizes designing flexible mechanisms that can support various policies, allowing the OS to adapt to different scenarios.
+  - Operating system Structures like monolithic, microkernel, and hybrid kernels.
+  - A brief overview of these architectures can highlight practical applications of OS concepts and design choices.
+  - Examples of major operating systems like Windows, Linux, macOS, Android, and iOS can contextualize the discussion and illustrate the diversity of OS implementations. 
+</details>
 
 
-## Additional resources and references
+## CPU Virtualization
 
-- [GIOS Course Website](https://omscs.gatech.edu/cs-6200-introduction-operating-systems)
-- [K&R C Programming Language](https://en.wikipedia.org/wiki/The_C_Programming_Language)
-- [Beej's Guide to C Programming](https://beej.us/guide/bgc/)
-- [Beej's Guide to Networking Concepts](https://beej.us/guide/bgnet0/)
-- [Beej's Guide to Network Programming](https://beej.us/guide/bgnet/)
-- [Linux Programming Interface](https://man7.org/tlpi/)
-- [Operating Systems: Three Easy Pieces](https://pages.cs.wisc.edu/~remzi/OSTEP/)
+### Processes, Threads, and Context Switching
+
+One of the central responsibilities of the operating system is to virtualize the CPU, creating the illusion that each process has its own dedicated processor. This abstraction is achieved through process management and scheduling, enabling multitasking and isolation across programs.
+
+A **process** is an instance of a running program, and the OS is responsible for managing its entire lifecycle: from creation and execution to suspension and termination. Each process is given its own private address space and a set of resources, such as open file descriptors and execution context, ensuring that it operates independently of other processes. The Process Control Block (PCB)is the data structure that OS uses manage the process's state and metadata.
+
+* A **process** is an instance of a program in execution.
+* The OS manages the lifecycle of processes: creation, execution, suspension, and termination.
+* Each process has its own memory space, file descriptors, and state.
+
+<div style="max-width: 280px; margin: 0 auto;">
+  <Image src={processThread} alt="Process Thread" />
+</div>
+
+To enable more granular concurrency within a process, modern systems use **threads**. A thread is the smallest unit of execution and shares the same address space with other threads in the same process. This shared memory model allows for lightweight context switches and efficient communication but also introduces complexity: threads must coordinate access to shared resources to avoid data races and inconsistencies.
+
+* A **thread** is a unit of execution within a process.
+* Multiple threads in a single process share the same memory space.
+* Threads introduce concurrency and require careful synchronization.
+
+<div style="max-width: 560px; margin: 0 auto;">
+  <Image src={contextSwitch} alt="Context Switch" />
+</div>
+
+A **context switch** is the process of switching the CPU from one process or thread to another. It involves saving the current state of the running process to its PCB and then loading the state of the next process to be executed from its PCB. This allows multiple processes to share a single CPU, enabling multitasking. The operating system code (in kernel mode) manages the context switch by interrupting the current process and switching to the next process.
+
+To execute a system call, like `read` or `write`, the current process has to context switch to the kernel mode. The kernel mode is a privileged mode that allows the operating system to execute code that is not allowed to be executed by the user process. The kernel mode is also used to execute system calls. The system call is a way for the user process to request a service from the operating system.
+
+- A **system call** is a way for the user process to request a service from the operating system.
+- A **kernel mode** is a privileged mode that allows the operating system to execute code that is not allowed to be executed by the user process.
+- A **user mode** is a mode that allows the user process to execute code that is not allowed to be executed by the operating system.
+
+<details>
+  <summary>For more details, see the <a href="https://www.youtube.com/watch?v=RjLYADKt5wg&list=PLTsf9UeqkReZbK7xqIYn_mXmsQZIb011T&index=3" target="_blank">Processes and Process Management
+lecture</a> and which covers:</summary>
+  - The memory layout of a process including the stack, heap, and data segments.
+  - The process address space and memory management.
+  - What's in the process control block (PCB) and how it's used to manage the process's state and metadata.
+  - The execution states of a process and the life cycle as it transitions between them (new, ready, running, waiting, terminated).
+</details>
+
+### Concurrency and Synchronization
+
+The ability to run multiple threads concurrently unlocks significant performance gains.Even on a single CPU, multithreading improves responsiveness by allowing a program to perform other work while one thread is blocked on a long-running operation like disk I/O. On multi-core systems, it enables true parallelism, where multiple threads execute simultaneously. However, this concurrency introduces challenges, chiefly **data races**, where multiple threads access shared data and at least one is writing, leading to unpredictable outcomes.
+
+To prevent such issues, we use **synchronization constructs**:
+
+- **Mutexes** (Mutual Exclusion) are the most basic synchronization primitive. They act as a lock, ensuring that only one thread can access a critical section of code at a time. A thread must acquire the mutex before entering the critical section and release it upon exiting.
+- **Condition Variables** allow threads to wait for a specific condition to become true. They are used with a mutex to block a thread until another thread signals that the condition is met, avoiding inefficient busy-waiting.
+
+These constructs are critical to avoid common pitfalls like **deadlocks**, where two or more threads are stuck waiting for each other to release a resource, and **spurious wake-ups**, where a waiting thread is awakened without the condition it was waiting for being met.
+
+<details>
+  <summary>For more details, see the <a href="https://www.youtube.com/watch?v=uYlaQN1qqxQ&list=PLTsf9UeqkReZbK7xqIYn_mXmsQZIb011T&index=4" target="_blank">Threads and Concurrency lecture</a> which covers:</summary>
+  - Synchronization primitives like the Readers/Writer lock.
+  - Common pitfalls like spurious wake-ups and deadlocks in more detail.
+  - Kernel vs. User-Level Threads and different multithreading models (One-to-One, Many-to-One, Many-to-Many).
+  - Multithreading patterns like the Boss/Workers Pattern, Pipeline Pattern, and Layered Pattern are covered in the Thread Design & Performance Considerations section.
+</details>
+
+These mechanisms enable the operating system to support concurrent applications running on shared hardware, while maintaining isolation, fairness, and control.
+
+### PThreads
+
+**POSIX Threads (PThreads)**, are the standard C API for creating and synchronizing threads in linux and other unix-like operating systems like macOS. The following producer-consumer example demonstrates thread creation, mutexes, and condition variables in a single, concise program. I included it here to illustrate how little code is needed to work with the abstractions of threads and synchronization.
+
+Feel free to skip the code block below and move on to the next section. 
+
+```c
+#include <stdio.h>
+#include <pthread.h>
+#include <unistd.h>
+
+// Shared resources protected by a mutex
+pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
+int message_ready = 0;
+
+// Consumer thread waits for a condition
+void* consumer(void* arg) {
+    pthread_mutex_lock(&lock);
+    // Use a while loop to protect against spurious wakeups
+    while (message_ready == 0) {
+        printf("Consumer: Waiting for message...\n");
+        // Unlocks the mutex and waits; re-acquires lock upon wakeup
+        pthread_cond_wait(&cond, &lock);
+    }
+    printf("Consumer: Message received!\n");
+    pthread_mutex_unlock(&lock);
+    return NULL;
+}
+
+// Producer thread signals the condition
+void* producer(void* arg) {
+    // sleep(1) helps ensure the consumer runs first and waits
+    sleep(1); 
+    
+    pthread_mutex_lock(&lock);
+    printf("Producer: Preparing message...\n");
+    message_ready = 1;
+    // Wakes up one waiting thread
+    pthread_cond_signal(&cond);
+    printf("Producer: Message sent!\n");
+    pthread_mutex_unlock(&lock);
+    return NULL;
+}
+
+int main() {
+    pthread_t producer_thread, consumer_thread;
+
+    // Create the two threads
+    pthread_create(&consumer_thread, NULL, consumer, NULL);
+    pthread_create(&producer_thread, NULL, producer, NULL);
+
+    // Wait for both threads to complete
+    pthread_join(producer_thread, NULL);
+    pthread_join(consumer_thread, NULL);
+
+    printf("Producer and consumer have finished.\n");
+    return 0;
+}
+```
+
+This C code demonstrates a basic producer-consumer pattern using POSIX Threads (PThreads). The `producer` thread prepares a "message" and signals the `consumer` thread when it's ready. The `consumer` thread waits for this signal before processing the message, ensuring proper synchronization between the two threads using a mutex and a condition variable.
+
+A classic real-world scenario for the producer-consumer pattern is a message queue or a task processing system.
+Imagine a web server (the producer) that receives many user requests. Instead of processing each request immediately, which could overwhelm the server if there's a sudden surge, it adds these requests as "messages" to a queue. A separate pool of worker processes or threads (the consumers) then pick up these messages from the queue one by one, process them, and perform the necessary tasks (e.g., database operations, sending emails, generating reports). This allows the server to handle incoming requests efficiently by decoupling the request reception from its actual processing, ensuring smooth operation even under heavy load.
+
+<details>
+  <summary>For more details, see the <a href="https://www.youtube.com/watch?v=k9uG-76qGw8&list=PLTsf9UeqkReZbK7xqIYn_mXmsQZIb011T&index=5" target="_blank">Threads Case Study - PThreads</a> lecture which covers:</summary>
+  - Thread attributes (`pthread_attr_t`) for customizing thread behavior (e.g., stack size, detached state).
+  - Safety tips for using mutexes and condition variables to avoid common errors.
+  - A complete, classic Producer-Consumer problem implementation using PThreads.
+</details>
+
+### Thread Design Considerations
+
+This section is a bit more abstract. It delves into the tradeoffs that operating systems designers make when designing their threading models. 
+
+Beyond choosing a concurrency pattern, building a robust multithreaded system requires careful consideration of how threads are managed by the operating system and how they interact with system events. While most developers are unlikely to be designing their own threading models, understanding the tradeoffs and how they are implemented helps reveal how they work under the hood.
+
+*   **User-level vs. Kernel-level Threads**: This is a core design choice. **User-level threads** are managed by a library within a process, making them fast to create and switch. However, the OS kernel is unaware of them; if one user thread blocks on I/O, the entire process is blocked. **Kernel-level threads** are managed by the OS, which can schedule them across multiple CPU cores and handle blocking independently. This comes at the cost of slower creation and context switching due to the need for system calls.
+
+*   **Threading Models**: To balance these trade-offs, systems use different models. The **one-to-one** model (e.g., modern Linux, Windows) maps each user thread to a kernel thread, offering good performance and simplicity. The **many-to-one** model maps many user threads to a single kernel thread, which is efficient but suffers from the blocking problem. The **many-to-many** model offers a hybrid approach, but adds significant complexity.
+
+*   **Handling Interrupts and Signals**:
+    <div style="max-width: 640px; margin: 0 auto;">
+      <Image src={interrupts} alt="Interrupts" />
+    </div>
+    The diagram above illustrates the interrupt handling cycle. Interrupts are asynchronous signals sent to the CPU from software, I/O devices, or internal processor exceptions. When an interrupt is issued, the CPU halts the currently running code, saves its state, and executes a special function called an interrupt handler to address the event. Once the handler finishes, the CPU restores the original state and resumes execution. This mechanism is fundamental to multitasking and allows the OS to respond to events efficiently.
+
+    In a multithreaded environment, handling these asynchronous events is particularly complex. A classic problem arises when a signal handler, which runs in the context of the interrupted thread, tries to acquire a mutex that the thread already holds, causing an instant deadlock. A common, simple solution is to disable signals around critical sections. More advanced OS designs may treat the main work of an interrupt handler as a separate, lower-priority thread (a "bottom-half" handler) to avoid such issues.
+
+*   **Threading in Practice: Linux**: Modern Linux provides a concrete example of these designs. It uses a **one-to-one** threading model called the Native POSIX Thread Library (NPTL). Internally, Linux doesn't strongly distinguish between a process and a thread; both are simply "tasks" created by the `clone()` system call. The flags passed to `clone()` determine how much of the parent's context (memory, file descriptors, etc.) is shared, making a "thread" just a task that shares almost everything.
+
+<details>
+  <summary>For more details, see the <a href="https://www.youtube.com/watch?v=azvdSW1xj3w&list=PLTsf9UeqkReZbK7xqIYn_mXmsQZIb011T&index=6" target="_blank">Thread Design Considerations lecture</a> which covers:</summary>
+  - Data structures used by the OS (like in Solaris) to manage user and kernel threads, including the concept of a Lightweight Process (LWP). {/* TODO: cite solaris and lightweight threads papers */}
+  - The difference between "hard" and "light" process state and how it optimizes context switching.
+  - The mechanics of signal masks and interrupt handling on multicore systems in greater detail.
+</details>
+
+### Thread Performance Considerations
+
+Evaluating the performance of a multithreaded system is not just about measuring raw speed; it's about choosing the right **metrics** for the right goals. Different applications have different needs. A scientific computing task might prioritize minimum **execution time**, while a web server is likely more concerned with **throughput** (requests per second) and **response time**. As the lecture notes highlight, a design that excels in one metric (like the pipeline model for total execution time) might perform worse in another (like the boss/worker model for average response time).
+
+This leads to fundamental architectural choices:
+
+*   **Multi-Process vs. Multi-Threaded**: A multi-process architecture (like the original Apache web server) provides strong isolation, as each process has its own address space. This makes it robust but memory-intensive and slower due to higher context-switching and inter-process communication (IPC) costs. A multi-threaded architecture shares memory, making it much more resource-efficient and faster to switch contexts, but requires careful synchronization to prevent data races.
+
+*   **Event-Driven Model**: An alternative approach to concurrency, exemplified by servers like Nginx or frameworks like Node.js. An event-driven server uses a single thread and an event loop to handle many connections concurrently. It listens for events (like a new connection or incoming data) and reacts to them without blocking. This model can achieve very high throughput by avoiding the overhead of thread creation and context switching, but it performs poorly if any task blocks the event loop (e.g., a synchronous disk read).
+
+<details>
+  <summary>For more details, see the <a href="https://www.youtube.com/watch?v=slsbAtLzsyo&list=PLTsf9UeqkReZbK7xqIYn_mXmsQZIb011T&index=7" target="_blank">Thread Performance Considerations lecture</a> which covers:</summary>
+  - A deep dive into a case study comparing different web server architectures: multi-process, multi-threaded, and an event-driven model (the Flash web server).
+  - A detailed look at experimental methodology, including how to define system comparisons, select appropriate workloads (e.g., real-world traces vs. synthetic loads), and choose the right performance metrics.
+  - Practical advice on designing and running experiments to produce meaningful and reproducible results.
+</details>
+
+### Scheduling
+
+The OS **scheduler** is the component responsible for deciding which ready process or thread gets to run on the CPU next. This decision is guided by a scheduling policy, which aims to balance competing goals like fairness, responsiveness, and overall throughput. Different policies have different strengths and are suited for different workloads.
+
+{/* TODO add diagram of scheduling policies */}
+
+*   **First-Come, First-Serve (FCFS)**: The simplest policy. Tasks are executed in the order they arrive. It's fair in a "first-in, first-out" sense but can lead to poor performance if a long-running task blocks many shorter tasks (the "convoy effect").
+*   **Shortest Job First (SJF)**: This policy executes the task with the shortest estimated execution time next. It is provably optimal for minimizing average waiting time but is impractical, as the OS can't know the future execution time of a task.
+*   **Priority Scheduling**: Each task is assigned a priority, and the scheduler always runs the highest-priority task. This is common in systems where kernel tasks must take precedence over user tasks. However, it can lead to problems like **priority inversion**, where a high-priority task is forced to wait for a lower-priority task holding a necessary lock.
+*   **Round Robin (RR)**: The foundational algorithm for timesharing systems. Each task is given a small time slice (or quantum) to run. If it's still running when the time slice expires, it's preempted and moved to the back of the ready queue. This ensures that all tasks make progress and the system remains responsive.
+
+Modern systems use more sophisticated schedulers. The **Linux Completely Fair Scheduler (CFS)**, for instance, abandons fixed time slices and instead tries to give each task a fair, proportional amount of the CPU's processing time. On multi-core systems with **hyperthreading**, schedulers must also consider how to pair workloads. The best performance is often achieved by co-scheduling a mix of CPU-bound and memory-bound tasks, which maximizes the utilization of both the processor pipeline and the memory bus.
+
+<details>
+  <summary>For more details, see the <a href="https://www.youtube.com/watch?v=EpnE0vx8Xrs&list=PLTsf9UeqkReZbK7xqIYn_mXmsQZIb011T&index=8" target="_blank">Scheduling lecture</a> which covers:</summary>
+  - The mechanics of timeslice length and how it impacts CPU-bound vs. I/O-bound tasks.
+  - The evolution of Linux schedulers, from the O(1) scheduler to the Completely Fair Scheduler (CFS).
+  - How hardware counters can be used to identify memory-bound vs. CPU-bound workloads to make smarter scheduling decisions on hyperthreaded systems.
+</details>
+
+### Memory, I/O, & Persistence
+
+### Memory Management
+
+* Abstracts physical memory into a contiguous, isolated space per process.
+* Key concepts: **pages**, **page tables**, **translation lookaside buffer (TLB)**.
+* Enables memory protection, sharing, and efficient allocation.
+
+### Coherence and Consistency
+
+* **Coherence**: The consistency of data in memory.
+* **Consistency**: The consistency of data in the file system.
+
+
+### Disk and File Systems
+
+* OS organizes disks into **blocks**, **inodes**, **directories**, and **files**.
+* Provides logical file system abstraction over physical storage.
+
+### Networking
+
+* OS provides abstraction over the network stack.
+* Handles buffering, packet management, and exposes sockets.
+
+## System Virtualization
+
+* OS can support or be replaced by a **hypervisor**, enabling multiple virtual machines.
+* **Type 1** (bare-metal) and **Type 2** (hosted) hypervisors.
+* Key challenges: performance, isolation, resource management.
+
+## Distributed Systems
+
+### Remote Procedure Calls (RPC)
+
+* Abstraction for calling functions on remote machines as if they were local.
+* Handles marshalling, transport, and communication failures.
+
+### Distributed File Systems
+
+* Enables access to files over a network as if they were local.
+* Example features: replication, consistency, fault tolerance.
+
+### Distributed Shared Memory (DSM)
+
+* Allows processes on different machines to share a common address space.
+* Requires synchronization and coherence mechanisms.
+
+### Datacenter Technologies
+
+* Includes cluster scheduling, container orchestration, virtualization, and redundancy.
+* Focus on fault tolerance, load balancing, and scalability.
+
+## Course Overview
+
+### Resources
+
+* Lectures, readings, and papers from academic and real-world systems.
+* Emphasis on understanding mechanisms and design tradeoffs.
+
+### Books & Papers
+
+* Included readings from *Operating Systems: Three Easy Pieces* and foundational papers.
+* Topics ranged from scheduling and memory management to distributed protocols.
+
+### Projects
+
+* Three main projects: user-level threading library, multi-threaded web server, and distributed key-value store.
+* Each project built hands-on understanding of concurrency, memory, and distributed systems.
+
+## My Experience
+
+GIOS was one of the most demanding courses I've taken so far in the OMSCS program—but also one of the most rewarding. The projects were difficult but meaningful, and the concepts challenged me to think at a systems level, below the abstraction layers I'm usually working in.
+
+It helped me better appreciate what's happening under the hood of modern systems and gave me a foundation I lacked as a front-end engineer. While I still have much to learn, this course pushed me toward the kind of engineer I want to become.
+
+I hope this post is helpful for others considering GIOS, and I welcome feedback or corrections—especially if you catch something I got wrong. I'm still learning, and learning in public is part of the process.
+
+---
+
+Thanks for reading!
