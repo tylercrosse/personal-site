@@ -48,6 +48,7 @@
       const vectorFieldSketch = function (p) {
         // Set the renderer to maintain transparency
         let canvas;
+        let vectorColor;
         // Vector field parameters
         let vectorField = [];
         let originalVectors = [];
@@ -81,6 +82,20 @@
         let deviceTiltStrength = 3;
         let lastOrientation = { alpha: 0, beta: 0, gamma: 0 };
         let orientationInitialized = false;
+
+        function updateStrokeColor() {
+          const isDarkMode =
+            document.documentElement.getAttribute("data-effective-theme") ===
+            "dark";
+
+          if (isDarkMode) {
+            // Dark mode: use a light gray color that's visible on dark backgrounds
+            vectorColor = p.color(0, 0, 85, 220);
+          } else {
+            // Light mode: use black
+            vectorColor = p.color(0, 0, 0, 220);
+          }
+        }
 
         // Helper function to detect mobile devices
         function isMobileDevice() {
@@ -171,6 +186,22 @@
           isDeviceOrientation = false;
 
           p.colorMode(p.HSB, 360, 100, 100, 255);
+
+          updateStrokeColor();
+
+          // Use a MutationObserver to watch for theme changes
+          const observer = new MutationObserver((mutationsList) => {
+            for (const mutation of mutationsList) {
+              if (
+                mutation.type === "attributes" &&
+                mutation.attributeName === "data-effective-theme"
+              ) {
+                updateStrokeColor();
+              }
+            }
+          });
+
+          observer.observe(document.documentElement, { attributes: true });
 
           // Calculate grid dimensions with margins
           cols = p.floor((p.width - 2 * margin) / gridSize) + 1;
@@ -386,7 +417,7 @@
           }
 
           // Visualize vector field with small lines
-          p.stroke(0);
+          p.stroke(vectorColor);
           p.strokeWeight(1);
 
           // Mouse position for reference
@@ -467,7 +498,7 @@
               // Draw the vector field lines using your line length value
               p.push();
               p.translate(pos.x, pos.y);
-              p.stroke(0, 0, 0, 220);
+              p.stroke(vectorColor);
               p.line(
                 0,
                 0,
