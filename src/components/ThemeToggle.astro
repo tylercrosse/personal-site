@@ -2,7 +2,7 @@
 // ThemeToggle component for switching between light, dark, and system themes
 ---
 
-<button id="theme-toggle" aria-label="Toggle theme" title="Toggle theme">
+<button id="theme-toggle" aria-label="Toggle theme" title="Toggle theme (t)">
   <svg id="theme-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
     <!-- Sun icon (light theme) -->
     <circle cx="12" cy="12" r="5" class="sun"></circle>
@@ -135,6 +135,18 @@
       const currentTheme = getStoredTheme();
       if (currentTheme === 'system') {
         applyTheme('system');
+      }
+    });
+
+    // Add hotkey support for theme toggling
+    document.addEventListener('keydown', (event: KeyboardEvent) => {
+      // Don't trigger while typing
+      if ((event.target as HTMLElement).closest('input, textarea, [contenteditable]')) {
+        return;
+      }
+
+      if (event.key.toLowerCase() === 't') {
+        cycleTheme();
       }
     });
   }

@@ -187,6 +187,9 @@ a:hover {
 p {
   margin-bottom: 1em;
 }
+details {
+  margin-bottom: 1em;
+}
 /* .prose p {
   margin-bottom: 2em;
 } */
