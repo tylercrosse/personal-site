@@ -20,6 +20,8 @@ import osOverview from "./os-overview.png";
 import processThread from "./process-thread.png";
 import contextSwitch from "./context-switch.png";
 import interrupts from "./interrupts.png";
+import addressTranslation from "./address-translation3.png";
+import multiLevelPageTables from "./multi-level-page-tables.png";
 
 ## Introduction
 
@@ -67,7 +69,7 @@ A **process** is an instance of a running program, and the OS is responsible for
 * The OS manages the lifecycle of processes: creation, execution, suspension, and termination.
 * Each process has its own memory space, file descriptors, and state.
 
-<div style="max-width: 280px; margin: 0 auto;">
+<div style="max-width: 320px; margin: 0 auto;">
   <Image src={processThread} alt="Process Thread" />
 </div>
 
@@ -77,7 +79,7 @@ To enable more granular concurrency within a process, modern systems use **threa
 * Multiple threads in a single process share the same memory space.
 * Threads introduce concurrency and require careful synchronization.
 
-<div style="max-width: 560px; margin: 0 auto;">
+<div style="max-width: 720px; margin: 0 auto;">
   <Image src={contextSwitch} alt="Context Switch" />
 </div>
 
@@ -203,7 +205,7 @@ Beyond choosing a concurrency pattern, building a robust multithreaded system re
 *   **Threading Models**: To balance these trade-offs, systems use different models. The **one-to-one** model (e.g., modern Linux, Windows) maps each user thread to a kernel thread, offering good performance and simplicity. The **many-to-one** model maps many user threads to a single kernel thread, which is efficient but suffers from the blocking problem. The **many-to-many** model offers a hybrid approach, but adds significant complexity.
 
 *   **Handling Interrupts and Signals**:
-    <div style="max-width: 640px; margin: 0 auto;">
+    <div style="max-width: 720px; margin: 0 auto;">
       <Image src={interrupts} alt="Interrupts" />
     </div>
     The diagram above illustrates the interrupt handling cycle. Interrupts are asynchronous signals sent to the CPU from software, I/O devices, or internal processor exceptions. When an interrupt is issued, the CPU halts the currently running code, saves its state, and executes a special function called an interrupt handler to address the event. Once the handler finishes, the CPU restores the original state and resumes execution. This mechanism is fundamental to multitasking and allows the OS to respond to events efficiently.
@@ -240,7 +242,7 @@ This leads to fundamental architectural choices:
 
 The OS **scheduler** is the component responsible for deciding which ready process or thread gets to run on the CPU next. This decision is guided by a scheduling policy, which aims to balance competing goals like fairness, responsiveness, and overall throughput. Different policies have different strengths and are suited for different workloads.
 
-{/* TODO add diagram of scheduling policies */}
+{/* TODO add diagram of scheduling policies? */}
 
 *   **First-Come, First-Serve (FCFS)**: The simplest policy. Tasks are executed in the order they arrive. It's fair in a "first-in, first-out" sense but can lead to poor performance if a long-running task blocks many shorter tasks (the "convoy effect").
 *   **Shortest Job First (SJF)**: This policy executes the task with the shortest estimated execution time next. It is provably optimal for minimizing average waiting time but is impractical, as the OS can't know the future execution time of a task.
@@ -256,57 +258,187 @@ Modern systems use more sophisticated schedulers. The **Linux Completely Fair Sc
   - How hardware counters can be used to identify memory-bound vs. CPU-bound workloads to make smarter scheduling decisions on hyperthreaded systems.
 </details>
 
-### Memory, I/O, & Persistence
+## Memory, Persistence, & I/O
 
 ### Memory Management
 
-* Abstracts physical memory into a contiguous, isolated space per process.
-* Key concepts: **pages**, **page tables**, **translation lookaside buffer (TLB)**.
-* Enables memory protection, sharing, and efficient allocation.
+Memory management is the OS's strategy for arbitrating and controlling the finite physical memory (DRAM) on behalf of all running processes. The central abstraction is **virtual memory**, which gives each process the illusion of having its own large, contiguous, and private address space. Each process has it's own virtual address space. In reality, the OS, with crucial help from the hardware's **Memory Management Unit (MMU)**, translates these virtual addresses to physical addresses in DRAM. To speed up the constant address translations, the MMU uses a fast, specialized hardware cache called a **Translation Lookaside Buffer (TLB)**, which stores recently used mappings. A "TLB miss" forces a much slower lookup in the page table.
 
-### Coherence and Consistency
+{/* ![Address Translation](./address-translation3.png) */}
 
-* **Coherence**: The consistency of data in memory.
-* **Consistency**: The consistency of data in the file system.
+<div style="grid-column: 1 / 4 !important; max-width: 1000px; margin: 0 auto;">
+  <Image src={addressTranslation} alt="Address Translation" />
+</div>
 
+The dominant mechanism for this is **paging**. The virtual address space is divided into fixed-size blocks called **pages**, and physical memory is divided into identically sized **page frames**. For each process, the OS maintains a **page table** that maps virtual page numbers (VPNs) to physical frame numbers (PFNs). Each entry in this table, a Page Table Entry (PTE), also contains important metadata. This metadata is varies between architectures (x86, ARM, etc.) and often include a **present bit** (is the page in DRAM?), a **dirty bit** (has the page been modified?), an **access bit** (for read and write operations), and **protection bits** (read/write/execute permissions).
+
+**Demand Paging** allows pages to be loaded from disk only when a process first accesses them (a "page fault"), enabling programs to run even if they don't fit entirely in memory. When memory is full, **page replacement** algorithms (like approximations of Least Recently Used) use the "access" and "dirty" bits to decide which pages to evict to disk.
+
+Since each process has it's own virtual address space with it's own page tables, when context switching, the OS also saves the page table of the current process and loads the page table of the next process. **Copy-on-Write (COW)** is an important optimization for process creation (`fork()`), where the parent's pages are shared with the child instead of being copied. A real copy is only made if and when one of the processes attempts to write to a shared page.
+
+Since a page table for a large address space can itself be enormous, modern systems use **multi-level page tables** to save space. Each level of the page table is a pointer to the next level of the page table. The same optimization of using a TLB to cache these entries still applies.
+
+<div style="max-width: 420px; margin: 0 auto;">
+  <Image src={multiLevelPageTables} alt="Multi-Level Page Tables" />
+</div>
+
+Beyond managing memory for user processes, the OS kernel must also efficiently allocate memory for its own internal data structures. This presents unique challenges, primarily **fragmentation**. **External fragmentation** occurs when free memory is broken into many small, non-contiguous blocks, eventually making it impossible to satisfy a large allocation request even though enough total memory is free. **Internal fragmentation** occurs when the allocator provides a block of memory that is larger than the request, wasting the space left over inside the block.
+
+<details>
+  <summary>For more details, see the <a href="https://www.youtube.com/watch?v=Hr8Dck3re3k&list=PLTsf9UeqkReZbK7xqIYn_mXmsQZIb011T&index=9" target="_blank">Memory Management lecture</a> which covers:</summary>
+  - Different memory allocation strategies inside the Linux kernel, like the Buddy Allocator and Slab Allocator.
+  - The trade-offs of different page sizes.
+  - Alternative memory management designs like segmentation.
+  - Using memory management hardware for other services like checkpointing and process migration.
+</details>
+
+### Inter-Process Communication (IPC)
+
+Inter-Process Communication (IPC) provides a set of mechanisms for separate processes, each with its own private address space, to communicate and coordinate with each other. The OS provides several ways to achieve this, which generally fall into two categories: message-based and memory-based communication.
+
+**Message-based IPC** is an abstraction where the OS manages a communication channel between processes. Processes send messages into the channel, and the OS handles delivering them to the receiving process. This category includes familiar tools like **pipes** (simple byte streams between two processes, common in shell command chaining) and **sockets** (a more general-purpose interface that can work between processes on the same machine or across a network). The main advantage of this approach is simplicity; the OS handles the underlying details and synchronization. The disadvantage is performance overhead, as every send and receive operation requires a system call and a data copy between the user process and the kernel.
+
+**Shared memory**, the primary form of memory-based IPC, offers a much higher-performance alternative. Here, the OS maps a region of physical memory into the virtual address spaces of two or more processes. Once this mapping is established, the processes can read and write to this shared area as if it were their own memory, with no further kernel involvement. This avoids the system call and data copy overhead on every communication, making it ideal for transferring large amounts of data. However, this performance comes at the cost of complexity. The processes themselves are now responsible for synchronizing access to the shared memory using constructs like mutexes or semaphores to prevent race conditions.
+
+<details>
+  <summary>For more details, see the <a href="https://www.youtube.com/watch?v=5Y2IrKQWH6k&list=PLTsf9UeqkReZbK7xqIYn_mXmsQZIb011T&index=10" target="_blank">Inter-Process Communication lecture</a> which covers:</summary>
+  - Specific APIs for message queues and shared memory, including SysV and POSIX standards.
+  - How to use PThread synchronization primitives (mutexes, condition variables) for inter-process synchronization.
+  - Command-line tools for inspecting IPC facilities on a system.
+  - Design considerations for using shared memory, such as segment size and management.
+</details>
+
+### Synchronization Constructs
+
+While mutexes and condition variables are the fundamental building blocks for synchronization, they can be low-level and error-prone. To address this, operating systems and libraries provide higher-level and more specialized **synchronization constructs**. The correctness and performance of all these constructs, however, depend entirely on low-level **atomic instructions** provided by the hardware (e.g., `test-and-set`, `compare-and-swap`). These instructions guarantee that a sequence of operations, like reading a value, checking it, and writing a new value, happens indivisibly.
+
+On modern multi-core systems, the performance of these atomic operations is deeply tied to **cache coherence**. Each CPU core has its own private cache, which can lead to situations where one core's view of a memory location is different from another's. Cache coherence protocols (like the common **write-invalidate** protocol) solve this by forcing other cores to discard their local copies of a memory location whenever one core writes to it. This is crucial for correctness, but it means that when one thread modifies a shared lock, it can trigger a cascade of cache misses for all other spinning threads, significantly impacting performance.
+
+Building on this hardware foundation, we get more expressive tools:
+
+*   **Spinlocks**: The most basic type of lock. Unlike a mutex, which puts a waiting thread to sleep, a thread waiting on a spinlock will "spin" in a tight loop, repeatedly checking if the lock is free. This is highly efficient on multi-processor systems if the critical section is very short, as it avoids the high cost of a context switch. However, it's extremely wasteful if the lock is held for a long time or on a single-core system.
+*   **Semaphores**: A more general synchronization tool. A semaphore is essentially a counter that controls access to a resource. Threads "wait" on (decrement) the semaphore to acquire it and "signal" (increment) it to release. A semaphore initialized with a value of `1` behaves like a mutex. When initialized with a larger value `N`, it can be used to grant access to a pool of `N` identical resources.
+*   **Reader/Writer Locks**: A specialized lock designed for scenarios where a resource is read frequently but written to infrequently. It allows any number of "reader" threads to access the resource concurrently, but ensures that a "writer" thread has exclusive access. This provides much better performance than a simple mutex for read-dominant workloads.
+
+<details>
+  <summary>For more details, see the <a href="https://www.youtube.com/watch?v=RHprwajs5GI&list=PLTsf9UeqkReZbK7xqIYn_mXmsQZIb011T&index=11" target="_blank">Synchronization Constructs lecture</a> which covers:</summary>
+  - The impact of cache coherence on spinlock performance and the design of more advanced spinlocks (e.g., Test-and-Test-and-Set, Queueing Locks).
+  - Higher-level constructs like Monitors, which bundle data with the synchronization logic needed to access it.
+  - The specific POSIX API for semaphores.
+</details>
 
 ### Disk and File Systems
 
-* OS organizes disks into **blocks**, **inodes**, **directories**, and **files**.
-* Provides logical file system abstraction over physical storage.
+The OS manages I/O devices through **device drivers**, which abstract away the specific hardware details. For efficiency, modern systems use **Direct Memory Access (DMA)**, allowing devices to transfer data directly to and from main memory without involving the CPU for every byte. The CPU initiates the transfer, but the device and DMA controller handle the rest, freeing the CPU to do other work.
 
-### Networking
+To manage persistent storage, the OS provides a file system abstraction. A key component in Linux and other Unix-like systems is the **Virtual File System (VFS)**, an interface that allows the system to support many different underlying file systems (like `ext4`, `XFS`, `NFS`) in a uniform way. Applications interact with the VFS using standard system calls (`open`, `read`, `write`), and the VFS directs these calls to the correct filesystem driver.
 
-* OS provides abstraction over the network stack.
-* Handles buffering, packet management, and exposes sockets.
+The VFS operates on a few key abstractions. Every file and directory is represented by an **inode** (index node), a data structure that stores the file's metadata (permissions, owner, size) and, crucially, points to the actual data blocks on the disk. Because files don't need to be stored contiguously, the inode acts as an index for all of a file's blocks. To support files larger than what can be referenced by direct pointers in the inode, filesystems like `ext2` use **indirect pointers**, where an inode points to a block of more pointers, adding levels of indirection to address vast amounts of data.
+
+{/* TODO add diagram of file system? */}
+
+To make disk access efficient, filesystems rely on several optimizations. A **buffer cache** in main memory holds recently used disk blocks to avoid slow physical disk reads. **I/O schedulers** reorder disk requests to minimize the physical movement of the disk head, turning many small random writes into larger sequential ones. Finally, **journaling** provides reliability by writing changes to a log before committing them to their final location on disk, ensuring the filesystem can be quickly restored to a consistent state after a crash.
+
+<details>
+  <summary>For more details, see the <a href="https://www.youtube.com/watch?v=uCNf4ccwVZQ&list=PLTsf9UeqkReZbK7xqIYn_mXmsQZIb011T&index=12" target="_blank">I/O Management lecture</a> which goes deeper into:</summary>
+  - Different types of I/O devices (block, character, network) and how they are represented in the OS.
+  - The details of the block device stack in Linux.
+  - The role of the dentry cache in speeding up path lookups.
+  - The specific on-disk layout of the ext2 filesystem, including block groups and bitmaps.
+</details>
 
 ## System Virtualization
 
-* OS can support or be replaced by a **hypervisor**, enabling multiple virtual machines.
-* **Type 1** (bare-metal) and **Type 2** (hosted) hypervisors.
-* Key challenges: performance, isolation, resource management.
+System virtualization allows multiple, isolated operating systems—known as **Virtual Machines** (VMs) or guests—to run concurrently on a single physical machine. This is orchestrated by a **Virtual Machine Monitor (VMM)**, or **hypervisor**, which manages and allocates the underlying hardware resources. The VMM's goal is to provide each VM with an environment that is a faithful, performant, and isolated duplicate of the real hardware.
+
+There are two primary models for this:
+*   **Type 1 (Bare-Metal)**: The hypervisor runs directly on the physical hardware, and the guest VMs run on top of it. This model is common in datacenter environments, with examples like VMware ESX and Xen. Often, a privileged "service VM" (like Xen's `dom0`) is used to manage device drivers.
+*   **Type 2 (Hosted)**: The hypervisor is an application that runs on top of a conventional host OS (e.g., Linux, Windows). Examples include KVM, VirtualBox, and VMware Workstation. This model leverages the host OS for device support and management.
+
+{/* TODO add diagram of virtualization? */}
+
+The core challenge of virtualization is that the guest OS expects to have full, privileged control over the hardware, but the hypervisor must remain in charge. Historically, this was solved with clever software techniques. For CPU virtualization, where some privileged instructions on older x86 chips wouldn't trap to the hypervisor, solutions included **binary translation** (dynamically rewriting problematic guest code) and **paravirtualization** (modifying the guest OS to make explicit calls—"hypercalls"—to the VMM). For memory, the hypervisor creates **shadow page tables** to map the guest's virtual addresses directly to machine addresses. For I/O, the **split device driver model** is common, with a lightweight "front-end" driver in the guest communicating with a full "back-end" driver in the host or service VM.
+
+Today, most of these complex software techniques have been supplanted by direct **hardware support** (e.g., Intel VT-x and AMD-V). Modern CPUs have features that allow a guest OS to run in a non-privileged mode where sensitive instructions automatically trap to the hypervisor. Hardware also provides support for memory virtualization (e.g., Extended Page Tables) and I/O virtualization, making the whole process much simpler and more efficient.
+
+<details>
+  <summary>For more details, see the <a href="https://www.youtube.com/watch?v=HY5Z-_1bLoQ&list=PLTsf9UeqkReZbK7xqIYn_mXmsQZIb011T&index=13" target="_blank">Virtualization lecture</a> which digs into:</summary>
+  - The benefits of virtualization, such as server consolidation and easier migration.
+  - The different models for virtualizing I/O devices, including passthrough, hypervisor-direct, and the split device driver model.
+  - A deeper look at the hardware features that enable efficient virtualization on modern platforms.
+</details>
 
 ## Distributed Systems
 
 ### Remote Procedure Calls (RPC)
 
-* Abstraction for calling functions on remote machines as if they were local.
-* Handles marshalling, transport, and communication failures.
+Remote Procedure Calls (RPC) are a powerful abstraction that makes a function call on a remote machine look and feel like a local function call. The goal is to hide the underlying complexities of network communication—like socket programming, data serialization, and error handling—from the application developer.
+
+The magic of RPC is implemented through several key components. First, the client and server agree on a contract defined in an **Interface Definition Language (IDL)**. The IDL specifies the procedures that can be called, their parameters, and their return types, independent of any programming language. An RPC compiler then uses this IDL file to automatically generate **stubs** for both the client and the server. When the client calls a remote procedure, it's actually calling the local client stub. This stub's job is to take the arguments, package them into a standardized, machine-independent format (**marshalling**), and send them across the network to the server.
+
+On the server side, the server stub receives the message, unpacks it (**unmarshalling**), and makes a regular local call to the actual procedure implementation. The return value is then marshalled and sent back to the client stub, which unmarshals it and returns it to the calling client application. Before any of this can happen, the client must first find the server, a process called **binding**, which is typically handled by a central registry or "portmapper" service. A major challenge in any RPC system is handling **partial failures**—what happens if the server crashes or the network fails? Modern RPC frameworks must provide mechanisms to handle these inevitable distributed systems problems.
+
+<details>
+  <summary>For more details, see the <a href="https://www.omscs-notes.com/operating-systems/remote-procedure-calls/" target="_blank">Remote Procedure Calls lecture</a> which also covers:</summary>
+  - A concrete example using SunRPC (now ONC RPC) and its IDL, XDR (External Data Representation).
+  - How RPC systems handle complex data types like pointers.
+  - The specific encoding rules used by XDR to ensure cross-platform compatibility.
+  - Other RPC systems like Java RMI.
+</details>
 
 ### Distributed File Systems
 
-* Enables access to files over a network as if they were local.
-* Example features: replication, consistency, fault tolerance.
+A Distributed File System (DFS) abstracts away network storage to make remote files appear as if they were on the local machine. This is a powerful concept, but it introduces significant design challenges, primarily centered around performance, fault tolerance, and consistency. A fundamental choice is how to organize the servers: files can be **partitioned** across many servers to improve scalability, or **replicated** across servers to improve fault tolerance and availability. Most large systems use a hybrid approach.
 
-### Distributed Shared Memory (DSM)
+The core tension in any DFS is between performance and consistency. A simple model where the client downloads a file, modifies it, and uploads it back is efficient for local work but terrible for network traffic and concurrent access. The opposite, where every single read or write is a remote operation, is great for consistency but suffers from high latency and poor server scalability. The practical compromise is **client-side caching**, where clients cache file blocks locally. This improves performance dramatically but creates a new problem: how to ensure a client's cache is up-to-date if another client modifies the file on the server.
 
-* Allows processes on different machines to share a common address space.
-* Requires synchronization and coherence mechanisms.
+This leads to another critical design choice: is the server **stateless** or **stateful**? A stateless server keeps no information about which clients are accessing which files. This makes crash recovery trivial—the server just restarts—but it limits performance and makes consistency management difficult. A stateful server keeps track of clients and their open files, which enables high-performance caching strategies and features like file locking. However, if a stateful server crashes, recovering its state without losing data or breaking consistency is much more complex. Different file sharing semantics, from the strict "UNIX semantics" to the looser "session semantics," represent different trade-offs in this design space.
+
+<details>
+  <summary>For more details, see the <a href="https://www.omscs-notes.com/operating-systems/distributed-file-systems/" target="_blank">Distributed File Systems lecture</a> which also covers:</summary>
+  - **Network File System (NFS)**, a classic example of a DFS that evolved from a stateless protocol (v3) to a stateful one (v4) to better support caching, locking, and performance.
+  - **Sprite DFS**, an influential research system whose design was based on an analysis of real-world file access patterns, which revealed that most files are short-lived, leading to a caching system that optimized for delayed writes.
+  - The different file sharing semantics (UNIX, session, etc.) in more detail.
+</details>
+
+### Distributed Shared Memory (DSM) & Consistency
+
+**Distributed Shared Memory (DSM)** is an abstraction that allows processes running on different machines to share a common memory address space, giving them the illusion of running on a single, large shared-memory machine. This is a powerful technique for scaling applications beyond the memory capacity of a single node. DSM can be implemented directly in expensive, specialized hardware, but it is more commonly realized in software at the OS or programming language level.
+
+The central challenge in any DSM system is maintaining **consistency**. When one node writes to a shared memory location, how and when do other nodes see that change? This is defined by a **consistency model**, which is a contract between the system and the programmer about the ordering and visibility of memory operations. Different models offer different trade-offs between performance and programming simplicity.
+
+The spectrum of consistency models includes:
+*   **Strict Consistency**: The ideal model where any write is instantaneously visible to all other processes. This is impossible to implement in a real distributed system due to network latency.
+*   **Sequential Consistency**: A more relaxed model where all processes see the *same* global ordering (interleaving) of memory operations, though this order might not reflect the real-time execution. Operations from a single process always appear in the order they were issued. This is easier to reason about but can be slow, as it requires global coordination.
+*   **Causal Consistency**: This model only enforces ordering for writes that are causally related (i.e., a write that depends on a previous read). Concurrent, unrelated writes can be seen in different orders by different processes, which allows for better performance.
+*   **Weak Consistency**: This model gives the most control (and responsibility) to the programmer. It introduces explicit **synchronization points** (`acquire`/`release` operations). Memory updates are only guaranteed to be visible to other processes after an explicit synchronization call, allowing the system to batch updates and reduce network traffic, significantly improving performance.
+
+<details>
+  <summary>For more details, see the <a href="https://www.omscs-notes.com/operating-systems/distributed-shared-memory/" target="_blank">Distributed Shared Memory lecture</a> which also covers:</summary>
+  - The trade-offs of different sharing granularities (page-based vs. object-based).
+  - DSM design choices like data migration vs. replication.
+  - How software DSM systems leverage the Memory Management Unit (MMU) and page faults to trap on remote or protected memory accesses.
+</details>
 
 ### Datacenter Technologies
 
-* Includes cluster scheduling, container orchestration, virtualization, and redundancy.
-* Focus on fault tolerance, load balancing, and scalability.
+The final topic of the course brings everything together by looking at the technologies that power modern datacenters and cloud computing. Large-scale internet services are typically designed in one of two ways: a **homogenous architecture**, where any server can handle any request, which is simple to load-balance but has poor data locality; or a **heterogenous architecture**, where servers are specialized for specific tasks, which improves performance through caching and locality but is more complex to manage and scale.
+
+**Cloud Computing** emerged as a powerful solution to the challenges of building and scaling these services. It abstracts away physical hardware, offering **on-demand, elastic resources** as a utility. This model is built on two key principles: the **law of large numbers**, which allows providers to serve many customers with variable needs using a fixed set of resources, and **economies of scale**, which dramatically lowers the cost of hardware and operations.
+
+The services offered by cloud providers are typically categorized into different models, defining the trade-off between user control and provider management:
+*   **Infrastructure as a Service (IaaS)**: Provides the fundamental building blocks—virtual machines, storage, and networking. The user manages the OS, applications, and data. (e.g., Amazon EC2, Google Compute Engine).
+*   **Platform as a Service (PaaS)**: Provides a platform for developers to build and deploy applications without worrying about the underlying infrastructure. The provider manages the OS, runtime, and middleware. (e.g., Heroku, Google App Engine).
+*   **Software as a Service (SaaS)**: Delivers a complete software application over the internet. The user simply consumes the service. (e.g., Gmail, Salesforce).
+
+These cloud services are made possible by many of the technologies discussed throughout the course. **Virtualization** provides fungible, isolated compute resources. **Large-scale cluster schedulers** (like Kubernetes, Mesos, or YARN) manage resource allocation across thousands of machines. **Distributed file systems** and **NoSQL databases** provide scalable storage, and the entire stack is built on the principles of fault tolerance and redundancy to handle the inevitable failures in a large, complex system.
+
+<details>
+  <summary>For more details, see the <a href="https://www.omscs-notes.com/operating-systems/datacenter-technologies/" target="_blank">Datacenter Technologies lecture</a> which also covers:</summary>
+  - Cloud deployment models: Public, Private, and Hybrid clouds.
+  - The "poster child" case study of Animoto's massive scaling on AWS.
+  - An overview of big data processing stacks like Hadoop and Spark.
+</details>
 
 ## Course Overview
 
