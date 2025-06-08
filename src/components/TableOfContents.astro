@@ -146,19 +146,23 @@ const toc = buildHierarchy(filteredHeadings);
   /* Desktop Table of Contents */
   .desktop-toc {
     position: sticky;
-    top: 4rem;
+    /* HACK: force ToC to the right above the content and not push the content down */
     grid-column: 3 !important;
+    grid-row: 1 / -1; 
+    height: 0;
+    top: 4rem;
     right: calc(-260px - 2rem);
+    max-height: calc(100vh - 5rem);
+    margin-top: 0;
+    overflow-y: visible;
     width: 240px;
     min-width: 240px;
-    max-height: calc(100vh - 5rem);
-    overflow-y: auto;
     padding: 1rem;
+    z-index: 0;
     /* background: rgba(var(--gray-light), 0.5);
     border-radius: 8px;
     border: 1px solid rgba(var(--gray), 0.2);
     backdrop-filter: blur(10px); */
-    margin-top: 0;
   }
 
   [data-effective-theme="dark"] .desktop-toc {

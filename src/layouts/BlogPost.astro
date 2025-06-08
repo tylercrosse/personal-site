@@ -132,6 +132,12 @@ const imageData = getImageData();
         grid-column: 2;
       }
 
+      .toc-container {
+        grid-column: 3 !important;
+        height: fit-content;
+        align-self: start;
+      }
+
       /* Responsive adjustments for ToC */
       @media (max-width: 1279px) {
         /* .prose {
@@ -198,9 +204,7 @@ const imageData = getImageData();
           </div>
         </header>
         <div class="prose">
-          <div class="content-with-toc" style="position: relative;">
-            <slot />
-          </div>
+          <slot />
           <TableOfContents headings={headings || []} />
         </div>
       </article>
