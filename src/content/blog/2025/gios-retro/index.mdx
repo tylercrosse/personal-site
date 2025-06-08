@@ -379,7 +379,7 @@ The magic of RPC is implemented through several key components. First, the clien
 On the server side, the server stub receives the message, unpacks it (**unmarshalling**), and makes a regular local call to the actual procedure implementation. The return value is then marshalled and sent back to the client stub, which unmarshals it and returns it to the calling client application. Before any of this can happen, the client must first find the server, a process called **binding**, which is typically handled by a central registry or "portmapper" service. A major challenge in any RPC system is handling **partial failures**—what happens if the server crashes or the network fails? Modern RPC frameworks must provide mechanisms to handle these inevitable distributed systems problems.
 
 <details>
-  <summary>For more details, see the <a href="https://www.omscs-notes.com/operating-systems/remote-procedure-calls/" target="_blank">Remote Procedure Calls lecture</a> which also covers:</summary>
+  <summary>For more details, see the <a href="https://www.youtube.com/watch?v=X924eVTskwE&list=PLTsf9UeqkReZbK7xqIYn_mXmsQZIb011T&index=14" target="_blank">Remote Procedure Calls lecture</a> which also covers:</summary>
   - A concrete example using SunRPC (now ONC RPC) and its IDL, XDR (External Data Representation).
   - How RPC systems handle complex data types like pointers.
   - The specific encoding rules used by XDR to ensure cross-platform compatibility.
@@ -395,7 +395,7 @@ The core tension in any DFS is between performance and consistency. A simple mod
 This leads to another critical design choice: is the server **stateless** or **stateful**? A stateless server keeps no information about which clients are accessing which files. This makes crash recovery trivial—the server just restarts—but it limits performance and makes consistency management difficult. A stateful server keeps track of clients and their open files, which enables high-performance caching strategies and features like file locking. However, if a stateful server crashes, recovering its state without losing data or breaking consistency is much more complex. Different file sharing semantics, from the strict "UNIX semantics" to the looser "session semantics," represent different trade-offs in this design space.
 
 <details>
-  <summary>For more details, see the <a href="https://www.omscs-notes.com/operating-systems/distributed-file-systems/" target="_blank">Distributed File Systems lecture</a> which also covers:</summary>
+  <summary>For more details, see the <a href="https://www.youtube.com/watch?v=xZz0x2rS6F4&list=PLTsf9UeqkReZbK7xqIYn_mXmsQZIb011T&index=15" target="_blank">Distributed File Systems lecture</a> which also covers:</summary>
   - **Network File System (NFS)**, a classic example of a DFS that evolved from a stateless protocol (v3) to a stateful one (v4) to better support caching, locking, and performance.
   - **Sprite DFS**, an influential research system whose design was based on an analysis of real-world file access patterns, which revealed that most files are short-lived, leading to a caching system that optimized for delayed writes.
   - The different file sharing semantics (UNIX, session, etc.) in more detail.
@@ -414,7 +414,7 @@ The spectrum of consistency models includes:
 *   **Weak Consistency**: This model gives the most control (and responsibility) to the programmer. It introduces explicit **synchronization points** (`acquire`/`release` operations). Memory updates are only guaranteed to be visible to other processes after an explicit synchronization call, allowing the system to batch updates and reduce network traffic, significantly improving performance.
 
 <details>
-  <summary>For more details, see the <a href="https://www.omscs-notes.com/operating-systems/distributed-shared-memory/" target="_blank">Distributed Shared Memory lecture</a> which also covers:</summary>
+  <summary>For more details, see the <a href="https://www.youtube.com/watch?v=iZMr1JreSVU&list=PLTsf9UeqkReZbK7xqIYn_mXmsQZIb011T&index=16" target="_blank">Distributed Shared Memory lecture</a> which also covers:</summary>
   - The trade-offs of different sharing granularities (page-based vs. object-based).
   - DSM design choices like data migration vs. replication.
   - How software DSM systems leverage the Memory Management Unit (MMU) and page faults to trap on remote or protected memory accesses.
@@ -434,7 +434,7 @@ The services offered by cloud providers are typically categorized into different
 These cloud services are made possible by many of the technologies discussed throughout the course. **Virtualization** provides fungible, isolated compute resources. **Large-scale cluster schedulers** (like Kubernetes, Mesos, or YARN) manage resource allocation across thousands of machines. **Distributed file systems** and **NoSQL databases** provide scalable storage, and the entire stack is built on the principles of fault tolerance and redundancy to handle the inevitable failures in a large, complex system.
 
 <details>
-  <summary>For more details, see the <a href="https://www.omscs-notes.com/operating-systems/datacenter-technologies/" target="_blank">Datacenter Technologies lecture</a> which also covers:</summary>
+  <summary>For more details, see the <a href="https://www.youtube.com/watch?v=XniIFNo7aM4&list=PLTsf9UeqkReZbK7xqIYn_mXmsQZIb011T&index=17" target="_blank">Datacenter Technologies lecture</a> which also covers:</summary>
   - Cloud deployment models: Public, Private, and Hybrid clouds.
   - The "poster child" case study of Animoto's massive scaling on AWS.
   - An overview of big data processing stacks like Hadoop and Spark.
@@ -442,15 +442,34 @@ These cloud services are made possible by many of the technologies discussed thr
 
 ## Course Overview
 
-### Resources
-
-* Lectures, readings, and papers from academic and real-world systems.
-* Emphasis on understanding mechanisms and design tradeoffs.
 
 ### Books & Papers
 
 * Included readings from *Operating Systems: Three Easy Pieces* and foundational papers.
 * Topics ranged from scheduling and memory management to distributed protocols.
+
+
+Books:
+- Operating Systems: Three Easy Pieces [@arpaci-dusseauOperatingSystemsThree2018]
+- Computer Systems: A Programmer's Perspective [@bryant2011computer]
+- The C Programming Language [@kernighan1988c]
+- Beej's Guide to C Programming [@hallBeejsGuideProgramming2024]
+- Beej's Guide to Network Concepts [@hallBeejsGuideNetwork2024]
+- Beej's Guide to Unix IPC [@hallBeejsGuideInterprocess2024]
+- Beej's Guide to Network Programming [@hallBeejsGuideNetwork2019]
+- The Linux Programming Interface: A Linux and UNIX System Programming Handbook [@kerrisk2010linux]
+
+Papers:
+- An Introduction to Programming with Threads [@birrell1989introduction]
+- Beyond Multiprocessing: Multithreading the SunOS Kernel [@eykholt1992beyond]
+- Implementing Lightweight Threads [@stein1992implementing]
+- Flash: An Efficient and Portable Web Server [@pai1999flash]
+- The Performance of Spin Lock Alternatives for Shared-Memory Multiprocessors [@anderson1990performance]
+- Formal Requirements for Virtualizable Third Generation Architectures [@popek1974formal]
+- Virtual Machine Monitors: Current Technology and Future Trends [@rosenblum2005virtual]
+- Implementing Remote Procedure Calls [@birrell1984implementing]
+- Caching in the Sprite Network File System [@nelson1988caching]
+- Distributed Shared Memory: Concepts and Systems [@protic1996distributed]
 
 ### Projects
 
@@ -468,3 +487,5 @@ I hope this post is helpful for others considering GIOS, and I welcome feedback 
 ---
 
 Thanks for reading!
+
+## References
