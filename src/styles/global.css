@@ -210,6 +210,10 @@ a:hover {
 p {
   margin-bottom: 1em;
 }
+ul {
+
+  margin-block-start: 0;
+}
 details {
   margin-bottom: 1em;
 }

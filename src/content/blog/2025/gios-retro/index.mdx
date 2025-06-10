@@ -22,6 +22,12 @@ import contextSwitch from "./context-switch.png";
 import interrupts from "./interrupts.png";
 import addressTranslation from "./address-translation3.png";
 import multiLevelPageTables from "./multi-level-page-tables.png";
+import BookCard from "../../../../components/BookCard.astro";
+import osTepImg from "./os-tep.jpg";
+import csAppImg from "./cs-app.jpg";
+import cLangImg from "./c-lang.jpg";
+import beejGuidesImg from "./beej-network.jpg";
+import linuxInterfaceImg from "./linux-interface.png";
 
 ## Introduction
 
@@ -442,24 +448,91 @@ These cloud services are made possible by many of the technologies discussed thr
 
 ## Course Overview
 
+The projects were a great way to solidify the concepts learned in the course and took up a significant portion of the time I spent on the course. The average on [OMSCS Central](https://www.omscentral.com/courses/graduate-introduction-to-operating-systems/reviews) across all of the student reviews was 18.5 hours per week. I averaged a bit more than that, particularly on the first project, because of my lack of C and C++ experience. There were a few weeks when I hammered out the projects where I spent closer to 40 hours in a week. Once I got the projects done, I was able to focus on the lectures and readings which took up less time.
 
-### Books & Papers
+I'm planning to include follow up posts on each of the projects in the future and will update this post with links to them.
 
-* Included readings from *Operating Systems: Three Easy Pieces* and foundational papers.
-* Topics ranged from scheduling and memory management to distributed protocols.
+### Grading
+
+Here's the grading breakdown from when I took the course in Spring 2024:
+
+- 5% Participation (views and posts in the discussion forum)
+- 15% Project 1 - Multi-threaded Web Server
+- 15% Project 3 - Cache & Proxy Servers with Shared Memory IPC
+- 15% Project 4 - GRPC and Distributed Systems
+- 25% Midterm Exam - Everything up to Memory, Persistence, & I/O
+- 25% Final Exam - Everything after that
+
+The course was graded on a slight curve. A ton of folks withdrew (38.1%), so the [grade distribution](https://lite.gatech.edu/lite_script/dashboards/grade_distribution.html) for the ones that ones that stayed was pretty good. It was as follows:
+- A: 39.1%
+- B: 16.5%
+- C: 3.6%
+- D: 1.2%
+- F: 1.4% 
+- Withdrew: 38.1%
+
+### Books
+
+These are the books I used to complement the lectures and help me with the projects.
+
+<BookCard
+  title="Operating Systems: Three Easy Pieces"
+  author="Remzi H. Arpaci-Dusseau and Andrea C. Arpaci-Dusseau"
+  img={osTepImg}
+  url="https://pages.cs.wisc.edu/~remzi/OSTEP/"
+>
+  <p>
+    This is the main book I used to supplement the lectures. It's filled with easy-to-understand explanations of complex topics and covers most of the material in the course. I highly recommend it.
+  </p>
+</BookCard>
+
+<BookCard
+  title="Computer Systems: A Programmer's Perspective"
+  author="Randal E. Bryant and David R. O'Hallaron"
+  img={csAppImg}
+  url="https://csapp.cs.cmu.edu/"
+>
+    <p>
+        A classic for a reason. It provides a great bridge between hardware and software. Chapters 1, 6, and 8-12 were especially helpful for this course.
+    </p>
+</BookCard>
+
+<BookCard
+  title="The C Programming Language"
+  author="Brian W. Kernighan and Dennis M. Ritchie"
+  img={cLangImg}
+  url="https://www.google.com/books/edition/The_C_Programming_Language/OpJ_0zpF7jIC?hl=en&gbpv=1&dq=the+c+programming+language&printsec=frontcover"
+>
+    <p>
+        The definitive book on C, written by its creators. I ready this cover to cover before the course started to brush up on my C knowledge.
+    </p>
+</BookCard>
+
+<BookCard
+  title="Beej's Guides to C, Network Programming, and IPC"
+  author="Brian 'Beej' Hall"
+  img={beejGuidesImg}
+  url="https://beej.us/guide/"
+>
+    <p>
+        An invaluable, practical, and free resource for C programming, socket programming, and inter-process communication. These were immensely helpful for the projects.
+    </p>
+</BookCard>
+
+<BookCard
+  title="The Linux Programming Interface"
+  author="Michael Kerrisk"
+  img={linuxInterfaceImg}
+  url="https://man7.org/tlpi/"
+>
+    <p>
+        This is structured as an encyclopedic guide to the Linux and UNIX system programming interface. It was a great resource for the projects.
+    </p>
+</BookCard>
 
 
-Books:
-- Operating Systems: Three Easy Pieces [@arpaci-dusseauOperatingSystemsThree2018]
-- Computer Systems: A Programmer's Perspective [@bryant2011computer]
-- The C Programming Language [@kernighan1988c]
-- Beej's Guide to C Programming [@hallBeejsGuideProgramming2024]
-- Beej's Guide to Network Concepts [@hallBeejsGuideNetwork2024]
-- Beej's Guide to Unix IPC [@hallBeejsGuideInterprocess2024]
-- Beej's Guide to Network Programming [@hallBeejsGuideNetwork2019]
-- The Linux Programming Interface: A Linux and UNIX System Programming Handbook [@kerrisk2010linux]
+### Papers
 
-Papers:
 - An Introduction to Programming with Threads [@birrell1989introduction]
 - Beyond Multiprocessing: Multithreading the SunOS Kernel [@eykholt1992beyond]
 - Implementing Lightweight Threads [@stein1992implementing]
@@ -471,16 +544,9 @@ Papers:
 - Caching in the Sprite Network File System [@nelson1988caching]
 - Distributed Shared Memory: Concepts and Systems [@protic1996distributed]
 
-### Projects
-
-* Three main projects: user-level threading library, multi-threaded web server, and distributed key-value store.
-* Each project built hands-on understanding of concurrency, memory, and distributed systems.
-
 ## My Experience
 
-GIOS was one of the most demanding courses I've taken so far in the OMSCS program—but also one of the most rewarding. The projects were difficult but meaningful, and the concepts challenged me to think at a systems level, below the abstraction layers I'm usually working in.
-
-It helped me better appreciate what's happening under the hood of modern systems and gave me a foundation I lacked as a front-end engineer. While I still have much to learn, this course pushed me toward the kind of engineer I want to become.
+GIOS was the first course I took for the program and it was a great way to get my feet wet. The projects were difficult but meaningful, and the concepts challenged me to think at a systems level, below the abstraction layers I'm usually working in. While I still have much to learn, this course pushed me toward the kind of engineer I want to become.
 
 I hope this post is helpful for others considering GIOS, and I welcome feedback or corrections—especially if you catch something I got wrong. I'm still learning, and learning in public is part of the process.
 

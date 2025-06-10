@@ -1,0 +1,121 @@
+---
+const { title, author, img, alt, url } = Astro.props;
+import { Image } from "astro:assets";
+---
+
+{
+  url ? (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      class="book-card-link"
+    >
+      <div class="book-card">
+        <div class="book-cover">
+          <Image
+            src={img || "https://via.placeholder.com/150x220.png"}
+            alt={alt || title}
+            width="150"
+            height="220"
+          />
+        </div>
+        <div class="book-info">
+          <h4>{title}</h4>
+          <p>{author}</p>
+          <div class="description">
+            <slot />
+          </div>
+        </div>
+      </div>
+    </a>
+  ) : (
+    <div class="book-card">
+      <div class="book-cover">
+        <Image
+          src={img || "https://via.placeholder.com/150x220.png"}
+          alt={alt || title}
+          width="150"
+          height="220"
+        />
+      </div>
+      <div class="book-info">
+        <h4>{title}</h4>
+        <p>{author}</p>
+        <div class="description">
+          <slot />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+<style>
+  .book-card-link {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+  }
+
+  .book-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+    padding: 1rem 2rem;
+    border: 1px solid var(--theme-divider);
+    border-radius: 12px;
+    background-color: var(--theme-bg);
+    height: 100%;
+  }
+
+  .book-cover {
+    flex-shrink: 0;
+    width: 150px;
+  }
+
+  .book-cover img {
+    border-radius: 4px;
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+
+  .book-info {
+    flex-grow: 1;
+  }
+
+  .book-info h4 {
+    margin: 1em 0 0.25rem;
+    font-size: 1.4rem;
+    font-weight: 600;
+  }
+
+  @media (max-width: 720px) {
+    .book-card {
+      padding: 1em 0;
+    }
+
+    .book-info h4 {
+      margin: 0 0 0.25rem;
+      font-size: 1.2rem;
+    }
+  }
+
+  .book-info p {
+    margin: 0 0 1rem;
+    font-size: 1rem;
+    font-weight: 400;
+    font-style: italic;
+    color: var(--theme-text-light);
+  }
+
+  .description {
+    font-size: 1rem;
+    line-height: 1.6;
+  }
+
+  .description :global(p) {
+    margin-bottom: 0;
+  }
+</style>
+
