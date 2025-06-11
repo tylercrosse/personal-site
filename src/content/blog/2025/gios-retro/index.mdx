@@ -104,6 +104,7 @@ lecture</a> and which covers:</summary>
   - The process address space and memory management.
   - What's in the process control block (PCB) and how it's used to manage the process's state and metadata.
   - The execution states of a process and the life cycle as it transitions between them (new, ready, running, waiting, terminated).
+  - The paper "An Introduction to Programming with Threads" [@birrell1989introduction]
 </details>
 
 ### Concurrency and Synchronization
@@ -225,6 +226,7 @@ Beyond choosing a concurrency pattern, building a robust multithreaded system re
   - Data structures used by the OS (like in Solaris) to manage user and kernel threads, including the concept of a Lightweight Process (LWP). {/* TODO: cite solaris and lightweight threads papers */}
   - The difference between "hard" and "light" process state and how it optimizes context switching.
   - The mechanics of signal masks and interrupt handling on multicore systems in greater detail.
+  - The papers "Beyond Multiprocessing: Multithreading the SunOS Kernel"[@eykholt1992beyond] and "Implementing Lightweight Threads" [@stein1992implementing]
 </details>
 
 ### Thread Performance Considerations
@@ -242,6 +244,7 @@ This leads to fundamental architectural choices:
   - A deep dive into a case study comparing different web server architectures: multi-process, multi-threaded, and an event-driven model (the Flash web server).
   - A detailed look at experimental methodology, including how to define system comparisons, select appropriate workloads (e.g., real-world traces vs. synthetic loads), and choose the right performance metrics.
   - Practical advice on designing and running experiments to produce meaningful and reproducible results.
+  - The paper "Flash: An Efficient and Portable Web Server" [@pai1999flash]
 </details>
 
 ### Scheduling
@@ -262,6 +265,7 @@ Modern systems use more sophisticated schedulers. The **Linux Completely Fair Sc
   - The mechanics of timeslice length and how it impacts CPU-bound vs. I/O-bound tasks.
   - The evolution of Linux schedulers, from the O(1) scheduler to the Completely Fair Scheduler (CFS).
   - How hardware counters can be used to identify memory-bound vs. CPU-bound workloads to make smarter scheduling decisions on hyperthreaded systems.
+  - The paper "Chip Multithreading Systems Need a New Operating System Scheduler"[@fedorova2004chip]
 </details>
 
 ## Memory, Persistence, & I/O
@@ -284,7 +288,7 @@ Since each process has it's own virtual address space with it's own page tables,
 
 Since a page table for a large address space can itself be enormous, modern systems use **multi-level page tables** to save space. Each level of the page table is a pointer to the next level of the page table. The same optimization of using a TLB to cache these entries still applies.
 
-<div style="max-width: 420px; margin: 0 auto;">
+<div style="max-width: 500px; margin: 0 auto;">
   <Image src={multiLevelPageTables} alt="Multi-Level Page Tables" />
 </div>
 
@@ -331,6 +335,7 @@ Building on this hardware foundation, we get more expressive tools:
   - The impact of cache coherence on spinlock performance and the design of more advanced spinlocks (e.g., Test-and-Test-and-Set, Queueing Locks).
   - Higher-level constructs like Monitors, which bundle data with the synchronization logic needed to access it.
   - The specific POSIX API for semaphores.
+  - The paper "The Performance of Spin Lock Alternatives for Shared-Memory Multiprocessors" [@anderson1990performance]
 </details>
 
 ### Disk and File Systems
@@ -372,6 +377,7 @@ Today, most of these complex software techniques have been supplanted by direct 
   - The benefits of virtualization, such as server consolidation and easier migration.
   - The different models for virtualizing I/O devices, including passthrough, hypervisor-direct, and the split device driver model.
   - A deeper look at the hardware features that enable efficient virtualization on modern platforms.
+  - The papers "Formal Requirements for Virtualizable Third Generation Architectures" [@popek1974formal] and "Virtual Machine Monitors: Current Technology and Future Trends" [@rosenblum2005virtual]
 </details>
 
 ## Distributed Systems
@@ -390,6 +396,7 @@ On the server side, the server stub receives the message, unpacks it (**unmarsha
   - How RPC systems handle complex data types like pointers.
   - The specific encoding rules used by XDR to ensure cross-platform compatibility.
   - Other RPC systems like Java RMI.
+  - The paper "Implementing Remote Procedure Calls" [@birrell1984implementing]
 </details>
 
 ### Distributed File Systems
@@ -405,6 +412,7 @@ This leads to another critical design choice: is the server **stateless** or **s
   - **Network File System (NFS)**, a classic example of a DFS that evolved from a stateless protocol (v3) to a stateful one (v4) to better support caching, locking, and performance.
   - **Sprite DFS**, an influential research system whose design was based on an analysis of real-world file access patterns, which revealed that most files are short-lived, leading to a caching system that optimized for delayed writes.
   - The different file sharing semantics (UNIX, session, etc.) in more detail.
+  - The paper "Caching in the Sprite Network File System" [@nelson1988caching]
 </details>
 
 ### Distributed Shared Memory (DSM) & Consistency
@@ -424,6 +432,7 @@ The spectrum of consistency models includes:
   - The trade-offs of different sharing granularities (page-based vs. object-based).
   - DSM design choices like data migration vs. replication.
   - How software DSM systems leverage the Memory Management Unit (MMU) and page faults to trap on remote or protected memory accesses.
+  - The paper "Distributed Shared Memory: Concepts and Systems" [@protic1996distributed]
 </details>
 
 ### Datacenter Technologies
@@ -456,20 +465,25 @@ I'm planning to include follow up posts on each of the projects in the future an
 
 Here's the grading breakdown from when I took the course in Spring 2024:
 
-- 5% Participation (views and posts in the discussion forum)
-- 15% Project 1 - Multi-threaded Web Server
-- 15% Project 3 - Cache & Proxy Servers with Shared Memory IPC
-- 15% Project 4 - GRPC and Distributed Systems
-- 25% Midterm Exam - Everything up to Memory, Persistence, & I/O
-- 25% Final Exam - Everything after that
+| Component | Weight | Description |
+|-----------|--------|-------------|
+| Participation | 5% | Views and posts in the discussion forum |
+| Project 1 | 15% | Multi-threaded Web Server |
+| Project 3 | 15% | Cache & Proxy Servers with Shared Memory IPC |
+| Project 4 | 15% | GRPC and Distributed Systems |
+| Midterm Exam | 25% | Everything up to Memory, Persistence, & I/O |
+| Final Exam | 25% | Everything after that |
 
 The course was graded on a slight curve. A ton of folks withdrew (38.1%), so the [grade distribution](https://lite.gatech.edu/lite_script/dashboards/grade_distribution.html) for the ones that ones that stayed was pretty good. It was as follows:
-- A: 39.1%
-- B: 16.5%
-- C: 3.6%
-- D: 1.2%
-- F: 1.4% 
-- Withdrew: 38.1%
+
+| Grade | Percentage |
+|-------|------------|
+| A | 39.1% |
+| B | 16.5% |
+| C | 3.6% |
+| D | 1.2% |
+| F | 1.4% |
+| Withdrew | 38.1% |
 
 ### Books
 
@@ -501,7 +515,7 @@ These are the books I used to complement the lectures and help me with the proje
   title="The C Programming Language"
   author="Brian W. Kernighan and Dennis M. Ritchie"
   img={cLangImg}
-  url="https://www.google.com/books/edition/The_C_Programming_Language/OpJ_0zpF7jIC?hl=en&gbpv=1&dq=the+c+programming+language&printsec=frontcover"
+  url="https://www.google.com/books/edition/The_C_Programming_Language/OpJ_0zpF7jIC"
 >
     <p>
         The definitive book on C, written by its creators. I ready this cover to cover before the course started to brush up on my C knowledge.
@@ -529,20 +543,6 @@ These are the books I used to complement the lectures and help me with the proje
         This is structured as an encyclopedic guide to the Linux and UNIX system programming interface. It was a great resource for the projects.
     </p>
 </BookCard>
-
-
-### Papers
-
-- An Introduction to Programming with Threads [@birrell1989introduction]
-- Beyond Multiprocessing: Multithreading the SunOS Kernel [@eykholt1992beyond]
-- Implementing Lightweight Threads [@stein1992implementing]
-- Flash: An Efficient and Portable Web Server [@pai1999flash]
-- The Performance of Spin Lock Alternatives for Shared-Memory Multiprocessors [@anderson1990performance]
-- Formal Requirements for Virtualizable Third Generation Architectures [@popek1974formal]
-- Virtual Machine Monitors: Current Technology and Future Trends [@rosenblum2005virtual]
-- Implementing Remote Procedure Calls [@birrell1984implementing]
-- Caching in the Sprite Network File System [@nelson1988caching]
-- Distributed Shared Memory: Concepts and Systems [@protic1996distributed]
 
 ## My Experience
 

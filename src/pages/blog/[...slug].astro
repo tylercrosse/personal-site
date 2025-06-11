@@ -3,6 +3,7 @@ import { type CollectionEntry, getCollection } from "astro:content";
 import BlogPost from "../../layouts/BlogPost.astro";
 import { render } from "astro:content";
 import type { MarkdownHeading } from "astro";
+import readingTime from "reading-time";
 
 export async function getStaticPaths() {
   const posts = await getCollection("blog");
@@ -14,21 +15,25 @@ export async function getStaticPaths() {
     })
   );
 
-  return posts.map((post, index) => ({
-    params: { slug: post.id },
-    props: { post, headings: headings[index] },
-  }));
+  return posts.map((post, index) => {
+    const stats = readingTime(post.body || "");
+    return {
+      params: { slug: post.id },
+      props: { post, headings: headings[index], readingTimeText: stats.text },
+    };
+  });
 }
 
 type Props = {
   post: CollectionEntry<"blog">;
   headings: MarkdownHeading[];
+  readingTimeText: string;
 };
 
-const { post, headings } = Astro.props;
+const { post, headings, readingTimeText } = Astro.props;
 const { Content } = await render(post);
 ---
 
-<BlogPost {...post.data} headings={headings}>
+<BlogPost {...post.data} headings={headings} readingTimeText={readingTimeText}>
   <Content />
 </BlogPost>

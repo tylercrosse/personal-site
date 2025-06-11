@@ -11,6 +11,7 @@ import TableOfContents from "../components/TableOfContents.astro";
 
 type Props = CollectionEntry<"blog">["data"] & {
   headings?: MarkdownHeading[];
+  readingTimeText: string;
 };
 
 const {
@@ -24,6 +25,7 @@ const {
   status,
   type,
   tags,
+  readingTimeText,
 } = Astro.props;
 
 // Helper function to get image source and alt text from either format
@@ -175,6 +177,7 @@ const imageData = getImageData();
             <div class="title-meta">
               <span>{type}</span>
               <span>{status}</span>
+              <span>{readingTimeText}</span>
             </div>
             <h1>{title}</h1>
             <div class="description">{description}</div>

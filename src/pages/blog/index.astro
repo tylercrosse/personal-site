@@ -4,6 +4,7 @@ import { Image } from "astro:assets";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { SITE_TITLE, SITE_DESCRIPTION } from "../../consts";
 import FormattedDate from "../../components/FormattedDate.astro";
+import readingTime from "reading-time";
 
 const posts = (await getCollection("blog")).sort((a, b) => {
   const aDate = a.data.pubDate || a.data.date;
@@ -21,28 +22,23 @@ const allStatuses = [
   ...new Set(posts.map((post) => post.data.status).filter(Boolean)),
 ];
 
-const allPostsData = posts.map((post) => ({
-  id: post.id,
-  slug: post.slug,
-  title: post.data.title,
-  description: post.data.description,
-  date: post.data.date?.toLocaleDateString("en-us", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  }),
-  updated: post.data.updated
-    ? post.data.updated.toLocaleDateString("en-us", {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-      })
-    : null,
-  type: post.data.type,
-  status: post.data.status,
-  tags: post.data.tags || [],
-  image: post.data.image,
-}));
+const allPostsData = posts.map((post) => {
+  const slug = post.id.replace(/(\/index)?\.(md|mdx)$/, "");
+  const stats = readingTime(post.body || "");
+  return {
+    id: post.id,
+    slug: slug,
+    title: post.data.title,
+    description: post.data.description,
+    date: post.data.date,
+    updated: post.data.updated,
+    type: post.data.type,
+    status: post.data.status,
+    tags: post.data.tags || [],
+    image: post.data.image,
+    readingTimeText: stats.text,
+  };
+});
 ---
 
 <BaseLayout>
@@ -213,39 +209,38 @@ const allPostsData = posts.map((post) => ({
 
   <section class="post-grid" id="post-grid">
     {
-      posts.map((post) => {
-        const slug = post.id.replace(/(\/index)?\.(md|mdx)$/, "");
-        const image = post.data.image;
+      allPostsData.map((post) => {
         return (
           <a
-            href={`/blog/${slug}/`}
+            href={`/blog/${post.slug}/`}
             class="post-card"
-            data-tags={post.data.tags?.join(" ")}
-            data-type={post.data.type}
-            data-status={post.data.status}
+            data-tags={post.tags?.join(" ")}
+            data-type={post.type}
+            data-status={post.status}
           >
             <div class="post-card-content">
               <div class="post-card-content-header">
-                <span>{post.data.type}</span>
-                <span>{post.data.status}</span>
+                <span>{post.type}</span>
+                <span>{post.status}</span>
+                <span>{post.readingTimeText}</span>
               </div>
-              <h3>{post.data.title}</h3>
-              <p>{post.data.description}</p>
+              <h3>{post.title}</h3>
+              <p>{post.description}</p>
               <div class="post-meta">
                 <span>
-                  <FormattedDate date={post.data.date || new Date()} />
+                  <FormattedDate date={post.date || new Date()} />
                 </span>
-                {post.data.updated && (
+                {post.updated && (
                   <span>
-                    Updated: <FormattedDate date={post.data.updated} />
+                    Updated: <FormattedDate date={post.updated} />
                   </span>
                 )}
               </div>
             </div>
-            {image?.path && (
+            {post.image?.path && (
               <Image
-                src={image.path}
-                alt={image.alt || ""}
+                src={post.image.path}
+                alt={post.image.alt || ""}
                 width={400}
                 height={200}
               />
