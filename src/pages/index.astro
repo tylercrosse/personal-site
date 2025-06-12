@@ -1,8 +1,331 @@
 ---
+import { getCollection } from "astro:content";
+
 import BaseLayout from "../layouts/BaseLayout.astro";
+import FormattedDate from "../components/FormattedDate.astro";
+import readingTime from "reading-time";
+
+const posts = (await getCollection("blog"))
+  .sort((a, b) => {
+    const aDate = a.data.pubDate || a.data.date;
+    const bDate = b.data.pubDate || b.data.date;
+    return new Date(bDate || 0).valueOf() - new Date(aDate || 0).valueOf();
+  })
+  // .slice(0, 10); // 10 posts
+
+const allTags = [
+  ...new Set(posts.flatMap((post) => post.data.tags || [])),
+].sort((a, b) => a.localeCompare(b));
+const allTypes = [
+  ...new Set(posts.map((post) => post.data.type).filter(Boolean)),
+];
+const allStatuses = [
+  ...new Set(posts.map((post) => post.data.status).filter(Boolean)),
+];
+
+const allPostsData = posts.map((post) => {
+  const slug = post.id.replace(/(\/index)?\.(md|mdx)$/, "");
+  const stats = readingTime(post.body || "");
+  return {
+    id: post.id,
+    slug: slug,
+    title: post.data.title,
+    description: post.data.description,
+    date: post.data.date,
+    updated: post.data.updated,
+    type: post.data.type,
+    status: post.data.status,
+    tags: post.data.tags || [],
+    image: post.data.image,
+    readingTimeText: stats.text,
+  };
+});
 ---
 
 <BaseLayout>
-  <h1>Hi, I'm Tyler</h1>
-  <p>I'm a software engineer with a passion for building things.</p>
+  <div class="animatedwrapper">
+    <div class="optimized-dot dot-1"></div>
+    <div class="optimized-dot dot-2"></div>
+    <div class="optimized-dot dot-3"></div>
+  </div>
+  <section class="heading">
+    <h1 class="animated-heading">
+      <span class="word">Hi,</span>
+      <span class="word">I'm</span>
+      <span class="word">Tyler</span>
+    </h1>
+    <p class="animated-subtitle">
+      <span class="word">I'm</span>
+      <span class="word">a</span>
+      <span class="word">software</span>
+      <span class="word">engineer</span>
+      <span class="word">with</span>
+      <span class="word">a</span>
+      <span class="word">passion</span>
+      <span class="word">for</span>
+      <span class="word">building</span>
+      <span class="word">things.</span>
+    </p>
+  </section>
+  <section class="posts slide-in-block">
+    <h2>Writing</h2>
+    <ul>
+      {
+        allPostsData.map((post) => (
+          <li>
+            <a href={`/blog/${post.slug}/`}>
+              {post.date && <FormattedDate date={post.date} />} - 
+              <span class="title">{post.title}</span> - <span class="reading-time">{post.readingTimeText}</span>
+              <div class="description">{post.description}</div>
+              
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </section>
 </BaseLayout>
+
+<style>
+  .animatedwrapper {
+    overflow: hidden;
+    position: absolute;
+    right: 0px;
+    top: -100px;
+    z-index: -1;
+    width: 100%;
+    height: 1500px;
+    isolation: isolate;
+  }
+
+  /* Optimized animated dots - using fewer DOM elements with CSS variables */
+  .optimized-dot {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(60px);
+    opacity: 0.9;
+    mix-blend-mode: soft-light;
+    will-change: transform;
+  }
+
+  .dot-1 {
+    width: 700px;
+    height: 700px;
+    right: -200px;
+    top: -200px;
+    background: #25df53;
+    animation: dot-animation-1 20s infinite ease-in-out;
+  }
+
+  .dot-2 {
+    width: 650px;
+    height: 650px;
+    right: -100px;
+    top: -100px;
+    background: #2940f1;
+    animation: dot-animation-2 20s infinite ease-in-out;
+  }
+
+  .dot-3 {
+    width: 600px;
+    height: 600px;
+    right: -100px;
+    top: 150px;
+    background: #bd3690;
+    animation: dot-animation-3 20s infinite ease-in-out;
+  }
+
+  @media only screen and (max-width: 600px) {
+    .animatedwrapper {
+      top: -500px;
+    }
+
+    .dot-1,
+    .dot-2,
+    .dot-3 {
+      width: 300px;
+      height: 300px;
+      filter: blur(30px);
+    }
+  }
+
+  /* Separate animations for each dot to create more interesting movement */
+  @keyframes dot-animation-1 {
+    0% {
+      transform: translate(0, 0);
+    }
+    33% {
+      transform: translate(200px, 100px);
+    }
+    66% {
+      transform: translate(100px, 300px);
+    }
+    100% {
+      transform: translate(0, 0);
+    }
+  }
+
+  @keyframes dot-animation-2 {
+    0% {
+      transform: translate(0, 0);
+    }
+    33% {
+      transform: translate(-150px, 200px);
+    }
+    66% {
+      transform: translate(50px, 100px);
+    }
+    100% {
+      transform: translate(0, 0);
+    }
+  }
+
+  @keyframes dot-animation-3 {
+    0% {
+      transform: translate(0, 0);
+    }
+    33% {
+      transform: translate(100px, -100px);
+    }
+    66% {
+      transform: translate(200px, 50px);
+    }
+    100% {
+      transform: translate(0, 0);
+    }
+  }
+
+  .heading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 40vh;
+    text-align: center;
+  }
+
+  .heading h1 {
+    font-size: 5rem;
+  }
+
+  .animated-heading,
+  .animated-subtitle {
+    overflow: hidden;
+  }
+
+  .animated-subtitle {
+    max-width: 600px;
+  }
+
+  .word {
+    display: inline-block;
+    opacity: 0;
+    transform: translateY(100%) translateZ(0);
+    filter: blur(20px);
+    animation: wordSlideIn 0.8s cubic-bezier(0.43, 0.195, 0.02, 1) forwards;
+  }
+
+  .animated-heading .word {
+    animation-delay: calc(var(--word-index, 0) * 0.05s);
+  }
+
+  .animated-subtitle .word {
+    animation-delay: calc(0.15s + var(--word-index, 0) * 0.05s);
+  }
+
+  @keyframes wordSlideIn {
+    to {
+      opacity: 1;
+      transform: translateY(0) translateZ(0);
+      filter: blur(0px);
+    }
+  }
+
+  /* Set CSS custom properties for animation delays */
+  .animated-heading .word:nth-child(1) {
+    --word-index: 0;
+  }
+  .animated-heading .word:nth-child(2) {
+    --word-index: 1;
+  }
+  .animated-heading .word:nth-child(3) {
+    --word-index: 2;
+  }
+
+  .animated-subtitle .word:nth-child(1) {
+    --word-index: 0;
+  }
+  .animated-subtitle .word:nth-child(2) {
+    --word-index: 1;
+  }
+  .animated-subtitle .word:nth-child(3) {
+    --word-index: 2;
+  }
+  .animated-subtitle .word:nth-child(4) {
+    --word-index: 3;
+  }
+  .animated-subtitle .word:nth-child(5) {
+    --word-index: 4;
+  }
+  .animated-subtitle .word:nth-child(6) {
+    --word-index: 5;
+  }
+  .animated-subtitle .word:nth-child(7) {
+    --word-index: 6;
+  }
+  .animated-subtitle .word:nth-child(8) {
+    --word-index: 7;
+  }
+  .animated-subtitle .word:nth-child(9) {
+    --word-index: 8;
+  }
+  .animated-subtitle .word:nth-child(10) {
+    --word-index: 9;
+  }
+
+  .posts {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  .posts ul {
+    padding: 0;
+  }
+
+  .posts li {
+    list-style: none;
+    font-size: 1rem;
+    padding: 0.5rem 0;
+  }
+
+  .posts a {
+    text-decoration: none;
+    color: var(--sol-8);
+  }
+
+  .posts a:hover {
+    color: var(--sol-9);
+    text-decoration: underline;
+  }
+
+  .posts a .title {
+    font-weight: bold;
+    font-family: var(--font-heading);
+  }
+
+  .slide-in-block {
+    opacity: 0;
+    filter: blur(10px);
+    transform: scale(0.95);
+    will-change: transform, opacity, filter;
+    animation: slideInBlock 0.8s cubic-bezier(0.43, 0.195, 0.02, 1) 1s forwards;
+  }
+
+  @keyframes slideInBlock {
+    to {
+      opacity: 1;
+      filter: blur(0px);
+      transform: scale(1);
+    }
+  }
+</style>
