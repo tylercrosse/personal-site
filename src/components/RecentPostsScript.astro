@@ -1,16 +1,16 @@
 ---
 import { getCollection } from "astro:content";
 
-// Get recent blog posts
-const allBlogPosts = await getCollection("blog");
+// Get recent posts
+const allBlogPosts = await getCollection("ideas");
 const recentPosts = allBlogPosts
   .filter((post) => !post.data.draft && post.data.pubDate)
   .sort((a, b) => (b.data.pubDate?.valueOf() || 0) - (a.data.pubDate?.valueOf() || 0))
   .slice(0, 5)
   .map((post) => ({
     title: post.data.title,
-    href: `/blog/${post.id}`,
-    description: post.data.description || "Blog post",
+    href: `/ideas/${post.id}`,
+    description: post.data.description || "Post",
   }));
 ---
 
