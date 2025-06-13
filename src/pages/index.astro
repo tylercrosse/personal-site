@@ -5,7 +5,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 import FormattedDate from "../components/FormattedDate.astro";
 import readingTime from "reading-time";
 
-const posts = (await getCollection("blog"))
+const posts = (await getCollection("ideas"))
   .sort((a, b) => {
     const aDate = a.data.pubDate || a.data.date;
     const bDate = b.data.pubDate || b.data.date;
@@ -59,7 +59,7 @@ const allPostsData = posts.map((post) => {
       {
         allPostsData.map((post) => (
           <li>
-            <a href={`/blog/${post.slug}/`}>
+            <a href={`/ideas/${post.slug}/`}>
               {post.date && <FormattedDate date={post.date} />} - 
               <span class="title">{post.title}</span> - <span class="reading-time">{post.readingTimeText}</span>
               <div class="description">{post.description}</div>

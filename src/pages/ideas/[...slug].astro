@@ -6,7 +6,7 @@ import type { MarkdownHeading } from "astro";
 import readingTime from "reading-time";
 
 export async function getStaticPaths() {
-  const posts = await getCollection("blog");
+  const posts = await getCollection("ideas");
   
   const headings = await Promise.all(
     posts.map(async (post) => {
@@ -25,7 +25,7 @@ export async function getStaticPaths() {
 }
 
 type Props = {
-  post: CollectionEntry<"blog">;
+  post: CollectionEntry<"ideas">;
   headings: MarkdownHeading[];
   readingTimeText: string;
 };

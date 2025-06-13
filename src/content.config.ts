@@ -1,10 +1,10 @@
 import { glob } from "astro/loaders";
 import { defineCollection, z } from "astro:content";
 
-const blog = defineCollection({
+const ideas = defineCollection({
   // Load Markdown and MDX files in nested directories (Gatsby-style structure)
   loader: glob({ 
-    base: "./src/content/blog", 
+    base: "./src/content/ideas", 
     pattern: "**/*.{md,mdx}",
     // This allows loading from subdirectories
   }),
@@ -42,4 +42,4 @@ const blog = defineCollection({
   }),
 });
 
-export const collections = { blog };
+export const collections = { ideas };
