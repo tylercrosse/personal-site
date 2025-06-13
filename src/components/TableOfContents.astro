@@ -562,7 +562,7 @@ const toc = buildHierarchy(filteredHeadings);
     private desktopTocToggle: HTMLElement | null;
     private desktopToc: HTMLElement | null;
     private activeHeading: string = '';
-    private isDesktop: boolean = window.innerWidth >= 1280;
+    private isDesktop: boolean = window.innerWidth >= 1180;
 
     constructor() {
       this.headings = document.querySelectorAll('h2[id], h3[id], h4[id]');

@@ -54,6 +54,7 @@ const imageData = getImageData();
         width: calc(100% - 2em);
         max-width: 100%;
         margin: 0;
+        overflow-x: hidden;
       }
 
       .title {
@@ -93,10 +94,9 @@ const imageData = getImageData();
         color: var(--sol-7);
         flex-shrink: 0;
         text-align: right;
-        padding: 0.25em 0;
       }
       .last-updated-on {
-        margin-top: 0.6em;
+        padding-top: 0.5em;
       }
       .tags {
         display: flex;
@@ -106,8 +106,7 @@ const imageData = getImageData();
       .tag {
         background: rgb(var(--accent));
         color: var(--blue);
-        padding: 0.25em 0.5em;
-        padding-left: 0;
+        padding-right: 0.5em;
         border-radius: 0.25em;
         text-decoration: none;
         transition: background-color 0.2s ease;
@@ -134,6 +133,30 @@ const imageData = getImageData();
         grid-column: 2;
       }
 
+      .slide-in-block {
+        opacity: 0;
+        filter: blur(10px);
+        transform: scale(0.95); 
+        will-change: transform, opacity, filter;
+        animation: slideInBlock 0.4s cubic-bezier(0.43, 0.195, 0.02, 1) forwards;
+      }
+
+      .slide-in-block:nth-child(2) {
+        animation-delay: 0.2s;
+      }
+
+      .slide-in-block:nth-child(3) {
+        animation-delay: 0.4s;
+      }
+
+      @keyframes slideInBlock {
+        to {
+          opacity: 1;
+          filter: blur(0px);
+          transform: scale(1);
+        }
+      }
+
       .toc-container {
         grid-column: 3 !important;
         height: fit-content;
@@ -154,13 +177,6 @@ const imageData = getImageData();
 
       /* Responsive adjustments for ToC */
       @media (max-width: 1279px) {
-        /* .prose {
-          grid-template-columns: 1fr;
-          gap: 1rem;
-        }
-        .prose > :global(*) {
-          grid-column: 1;
-        } */
         .title {
           grid-column: 1 !important;
         }
@@ -172,7 +188,7 @@ const imageData = getImageData();
     <Header />
     <main>
       <article>
-        <header class="title">
+        <header class="title slide-in-block">
           <div class="title-container">
             <div class="title-meta">
               <span>{type}</span>
@@ -205,7 +221,7 @@ const imageData = getImageData();
               </div>
             </div>
           </div>
-          <div class="hero-image">
+          <div class="hero-image slide-in-block">
             {
               imageData && (
                 <Image

@@ -14,6 +14,10 @@ image:
   alt: 'The Ascendants XI (Homage To Ecclesiastes 3:1-8), 2021 by Wangari Mathenge'
 ---
 
+import { Image } from "astro:assets";
+import oneHotEncoding from "./one-hot-encoding.png";
+import embeddings from "./embeddings.png";
+
 
 Emma is looking for information about a new movie she wants to see. She searches for "new movie" on a site with data about movies, but the results are not very relevant. She tries again with "new movie 2021", but still doesn't find what she's looking for. Finally, she searches for "new movie 2021 trailer" and finds exactly what she was looking for.
 
@@ -47,9 +51,13 @@ Vectors are just lists of numbers. A decent way to think about vectors is as a r
 
 Models typically do this conversion from text to numbers in a few steps. First, they create a vocabulary of all the words or parts of words they care about. Then they assign each a unique number. Then they create a vector for each word by setting the number at the index of the word to 1 and all other numbers to 0. This creates a vector called one-hot encoding. These one-hot vectors are a good start but don't tell much about the meaning of words and are mostly zeros, often referred to as sparse.
 
-![Comparision of representations between one hot encoding and word embeddings. From WhatsNextApp: LSTM-based Next-App Prediction with App Usage Sequences](Comparison-of-representations-between-one-hot-encoding-and-word-embeddings.png)
+<div class="image-container" style="background-color: #fff; padding: 1em; margin: 1em auto; border-radius: 0.5em;">
+  <Image src={oneHotEncoding} alt="Comparision of representations between one hot encoding and word embeddings. From WhatsNextApp: LSTM-based Next-App Prediction with App Usage Sequences" />
+</div>
 
-![PLACEHOLDER https://neuro.cs.ut.ee/wp-content/uploads/2018/09/embeddings.png](embeddings.png)
+<div class="image-container" style="background-color: #fff; border-radius: 0.5em;">
+  <Image src={embeddings} alt="Embeddings" />
+</div>
 
 The one-hot vectors are fed into a model that was trained on a large body of text and has learned the statistical relationships between words. This process of feeding data to a trained model is typically called inference. The model is a humongous math formula, like a spreadsheet on steroids, with a ton of numbers in them called weights and biases. The model takes in the one-hot vectors, does a bunch of multiplications, and outputs an embedding vector. The embedding vectors are dense, meaning they have a lot of non-zero values, and have been embued with meaning from the model.
 

@@ -1,13 +1,178 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
+import { Image } from "astro:assets";
 ---
 
 <BaseLayout title="About">
-  <h2>About me</h2>
-  <p>I'm a software engineer with a passion for building things.</p>
-  <h2>About this site</h2>
-  <p>
-    This site is a collection of my thoughts and projects. It's a place where I
-    can share my ideas and work with others.
-  </p>
+  <section class="about-me slide-in-block">
+    <div>
+      <h2>About me</h2>
+      <p>I'm a software engineer with a passion for building things.</p>
+      <h3>Experience</h3>
+      <ul>
+        <li>
+          <div>
+            <span>2024 - current</span> - 
+            <span class="title">MS, Computer Science, Georgia Tech</span>
+          </div>
+          <div>
+            I'm currently a master's student at Georgia Tech, studying computer
+            science. I'm interested in AI, Machine Learning, and High-Performance Computing.
+          </div>
+        </li>
+        <li>
+          <div>
+            <span>2019 - 2024</span> - 
+            <span class="title">Senior Software Engineer, Knowable</span>
+          </div>
+          <div>
+            I was a senior software engineer at Knowable, where I worked on the
+            Knowable platform.
+          </div>
+        </li>
+        <li>
+          <div>
+            <span>2017 - 2019</span> - 
+            <span class="title">Senior Software Engineer, Rosetta Stone</span>
+          </div>
+          <div>
+            I was a senior software engineer at Rosetta Stone, where I worked on
+            the Rosetta Stone platform.
+          </div>
+        </li>
+        <li>
+          <div>
+            <span>2012 - 2016</span> - 
+            <span
+              class="title"
+              >BS, Biomedical Engineering, Virginia Commonwealth University</span
+            >
+          </div>
+          <div>
+            I graduated from Virginia Commonwealth University with a bachelor's
+            degree in biomedical engineering.
+          </div>
+        </li>
+      </ul>
+    </div>
+    <div class="headshot">
+      <Image src="/img/headshot.jpeg" alt="Me" width={300} height={300} />
+    </div>
+  </section>
+  <section class="about-this-site slide-in-block">
+    <h2>About this site</h2>
+    <p>
+      This site is a collection of my thoughts and projects. It's a place where
+      I can share my ideas and work with others. Sites that helped inspire this
+      one:
+      <ul>
+        <li>
+          <a
+            href="https://www.arlenmccluskey.com/"
+            target="_blank"
+            rel="noopener noreferrer">Arlen McCluskey</a
+          >
+        </li>
+        <li>
+          <a
+            href="https://maggieappleton.com/"
+            target="_blank"
+            rel="noopener noreferrer">Maggie Appleton</a
+          >
+        </li>
+        <li>
+          <a href="https://lowyx.com/" target="_blank" rel="noopener noreferrer"
+            >Yxlow</a
+          >
+        </li>
+        <li>
+          <a
+            href="https://www.swyx.io/"
+            target="_blank"
+            rel="noopener noreferrer">Swyx</a
+          >
+        </li>
+        <li>
+          <a
+            href="https://eugeneyan.com/"
+            target="_blank"
+            rel="noopener noreferrer">Eugene Yan</a
+          >
+        </li>
+        <li>
+          <a
+            href="https://microsoft.ai/"
+            target="_blank"
+            rel="noopener noreferrer">Microsoft AI</a
+          >
+        </li>
+        <li>
+          <a href="https://modal.com/" target="_blank" rel="noopener noreferrer"
+            >Modal</a
+          >
+        </li>
+      </ul>
+    </p>
+  </section>
+
+  <style>
+    section {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .about-me {
+      display: flex;
+      flex-direction: row;
+      /* align-items: center; */
+      justify-content: space-between;
+    }
+
+    .about-me ul {
+      padding: 0;
+    }
+
+    .about-me li {
+      list-style: none;
+      /* font-size: 1rem; */
+      padding: 0.5rem 0;
+      text-decoration: none;
+      color: var(--sol-8);
+    }
+
+    .about-me .title {
+      font-weight: bold;
+      font-family: var(--font-heading);
+    }
+
+    .slide-in-block {
+      opacity: 0;
+      filter: blur(10px);
+      transform: scale(0.95);
+      will-change: transform, opacity, filter;
+      animation: slideInBlock 0.4s cubic-bezier(0.43, 0.195, 0.02, 1)
+        forwards;
+    }
+
+    .slide-in-block:nth-child(1) {
+      animation-delay: 0;
+    }
+    .slide-in-block:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+    @keyframes slideInBlock {
+      to {
+        opacity: 1;
+        filter: blur(0px);
+        transform: scale(1);
+      }
+    }
+
+    .headshot {
+      padding-top: 2rem;
+      padding-left: 2rem;
+    }
+    .headshot img {
+      border: 10px solid #fff;
+    }
+  </style>
 </BaseLayout>
