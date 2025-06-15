@@ -5,13 +5,12 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 import FormattedDate from "../components/FormattedDate.astro";
 import readingTime from "reading-time";
 
-const posts = (await getCollection("ideas"))
-  .sort((a, b) => {
-    const aDate = a.data.pubDate || a.data.date;
-    const bDate = b.data.pubDate || b.data.date;
-    return new Date(bDate || 0).valueOf() - new Date(aDate || 0).valueOf();
-  })
-  // .slice(0, 10); // 10 posts
+const posts = (await getCollection("ideas")).sort((a, b) => {
+  const aDate = a.data.pubDate || a.data.date;
+  const bDate = b.data.pubDate || b.data.date;
+  return new Date(bDate || 0).valueOf() - new Date(aDate || 0).valueOf();
+});
+// .slice(0, 10); // 10 posts
 
 const allTags = [
   ...new Set(posts.flatMap((post) => post.data.tags || [])),
@@ -42,7 +41,7 @@ const allPostsData = posts.map((post) => {
 });
 ---
 
-<BaseLayout>
+<BaseLayout title="Home">
   <section class="heading">
     <h1 class="animated-heading">
       <span class="word">Hi,</span>
@@ -53,17 +52,17 @@ const allPostsData = posts.map((post) => {
       I'm a software engineer with a passion for building things.
     </p>
   </section>
-  <section class="posts slide-in-block">
+  <section class="posts slide-in-block" data-pagefind-ignore>
     <h2>Writing</h2>
     <ul>
       {
         allPostsData.map((post) => (
           <li>
             <a href={`/ideas/${post.slug}/`}>
-              {post.date && <FormattedDate date={post.date} />} - 
-              <span class="title">{post.title}</span> - <span class="reading-time">{post.readingTimeText}</span>
+              {post.date && <FormattedDate date={post.date} />} -
+              <span class="title">{post.title}</span> -{" "}
+              <span class="reading-time">{post.readingTimeText}</span>
               <div class="description">{post.description}</div>
-              
             </a>
           </li>
         ))
@@ -176,7 +175,6 @@ const allPostsData = posts.map((post) => {
     animation-delay: 0.6s;
   }
 
-  
   @keyframes slideInBlock {
     to {
       opacity: 1;

@@ -133,10 +133,7 @@
 
       // Keyboard shortcuts
       document.addEventListener("keydown", (e) => {
-        if (
-          (e.metaKey || e.ctrlKey) &&
-          (e.key === "k" || e.key === "/")
-        ) {
+        if ((e.metaKey || e.ctrlKey) && (e.key === "k" || e.key === "/")) {
           e.preventDefault();
           this.open();
         }
@@ -160,6 +157,14 @@
       // Click outside to close
       this.overlay.addEventListener("click", (e) => {
         if (e.target === this.overlay) {
+          this.close();
+        }
+        // If the click is on a sub-result item, open the page
+        const subResultItem = (e.target as HTMLElement).closest(
+          ".sub-result-item"
+        ) as HTMLElement;
+        if (subResultItem && subResultItem.dataset.href) {
+          window.location.href = subResultItem.dataset.href;
           this.close();
         }
       });
@@ -250,21 +255,57 @@
         let resultsGenerated = false;
         if ((window as any).pagefind) {
           const search = await (window as any).pagefind.search(query);
+
           if (search.results.length > 0) {
-            // Use Promise.all to wait for all individual result data fetching and DOM appending
-            await Promise.all(
-              search.results.slice(0, 8).map(async (result: any) => {
-                const data = await result.data();
+            // Render results
+            const pageResults = await Promise.all(
+              search.results.slice(0, 5).map((r: any) => r.data())
+            );
+            console.log("pageResults", pageResults);
+
+            for (const page of pageResults) {
+              if (page.sub_results.length === 0) continue;
+
+              const groupEl = document.createElement("div");
+              groupEl.className = "result-group";
+
+              // Ensure the group starts a main page entry
+              let subResults = page.sub_results.slice(0, 2);
+              const firstSubResult = subResults[0];
+              const hasMainPageEntry =
+                firstSubResult && !("anchor" in firstSubResult);
+              if (!hasMainPageEntry) {
                 const item = document.createElement("div");
                 item.className = "result-item";
-                item.dataset.href = data.url;
+                item.dataset.href = page.url;
                 item.innerHTML = `
-                <div class="result-title">${data.meta.title || "Untitled"}</div>
-                <div class="result-description">${data.excerpt}</div>
-              `;
-                container.appendChild(item);
-              })
-            );
+                  <div class="result-title">${page.meta.title}</div>
+                  <div class="result-description">${page.excerpt}</div>
+                `;
+                groupEl.appendChild(item);
+              } else {
+                // If the main page entry is present, show 3 results. The first is the main page entry.
+                subResults = page.sub_results.slice(0, 3);
+              }
+
+              for (const sub_result of subResults) {
+                const item = document.createElement("div");
+                item.className = "result-item";
+                item.dataset.href = sub_result.url;
+                
+
+                if ("anchor" in sub_result) {
+                  item.classList.add("sub-result-item");
+                }
+
+                item.innerHTML = `
+                  <div class="result-title">${sub_result.title}</div>
+                  <div class="result-description">${sub_result.excerpt}</div>
+                `;
+                groupEl.appendChild(item);
+              }
+              container.appendChild(groupEl);
+            }
             resultsGenerated = true;
           }
         } else {
@@ -288,6 +329,7 @@
               },
             ] as { title: string; href: string; description: string }[]
           ).filter(
+            // Filter out results that don't match the query
             (f) =>
               f.title.toLowerCase().includes(query.toLowerCase()) ||
               f.description.toLowerCase().includes(query.toLowerCase())
@@ -582,6 +624,7 @@
 
   :global(.result-title) {
     font-weight: 500;
+    font-size: 1rem;
     color: rgb(var(--black));
     margin-bottom: 0.25rem;
   }
@@ -590,6 +633,31 @@
     font-size: 0.875rem;
     color: rgb(var(--gray));
     line-height: 1.4;
+  }
+
+  .result-group {
+    padding: 0.5rem 0;
+  }
+
+  .result-group-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    /* color: rgb(var(--black)); */
+    padding: 0.5rem 1rem;
+  }
+
+  :global([data-effective-theme="dark"]) .result-group-title {
+    color: rgb(var(--white));
+  }
+
+  :global(.sub-result-item) {
+    padding-left: 2.5rem;
+  }
+
+  :global(.sub-result-item .result-title) {
+    font-size: 0.875rem;
+    /* font-weight: 400; */
+    /* color: rgb(var(--gray-dark)); */
   }
 
   .keyboard-shortcuts {

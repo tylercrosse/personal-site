@@ -215,7 +215,7 @@ const allPostsData = posts.map((post) => {
       </select>
     </div>
 
-    <div class="filters">
+    <div class="filters" data-pagefind-ignore>
       <ul class="tag-list">
         <li><button class="active" id="all-tags">All Topics</button></li>
         {
@@ -229,7 +229,7 @@ const allPostsData = posts.map((post) => {
     </div>
   </header>
 
-  <section class="post-grid slide-in-block" id="post-grid">
+  <section class="post-grid slide-in-block" id="post-grid" data-pagefind-ignore>
     {
       allPostsData.map((post) => {
         return (
