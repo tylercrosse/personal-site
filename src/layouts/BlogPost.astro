@@ -3,11 +3,9 @@ import { Image } from "astro:assets";
 
 import type { CollectionEntry } from "astro:content";
 import type { MarkdownHeading } from "astro";
-import BaseHead from "../components/BaseHead.astro";
-import Header from "../components/Header.astro";
-import Footer from "../components/Footer.astro";
 import FormattedDate from "../components/FormattedDate.astro";
 import TableOfContents from "../components/TableOfContents.astro";
+import BaseLayout from "./BaseLayout.astro";
 
 type Props = CollectionEntry<"ideas">["data"] & {
   headings?: MarkdownHeading[];
@@ -42,203 +40,190 @@ const getImageData = () => {
 const imageData = getImageData();
 ---
 
-<html lang="en">
-  <head>
-    <BaseHead
-      title={title}
-      description={description}
-      image={imageData?.src as string}
-    />
-    <style>
-      main {
-        width: calc(100% - 2em);
-        max-width: 100%;
-        margin: 0;
-      }
+<BaseLayout
+  title={title}
+  description={description}
+  image={imageData?.src as string}
+>
+  <style>
+    main {
+      width: calc(100% - 2em);
+      max-width: 100%;
+      margin: 0;
+    }
 
+    .title {
+      margin-bottom: 1em;
+      padding-bottom: 1em;
+    }
+
+    .title-meta {
+      display: flex;
+      gap: 1em;
+      font-size: 0.7em;
+      text-transform: capitalize;
+      margin-bottom: 1em;
+      color: var(--sol-7);
+    }
+
+    .title h1 {
+      margin-bottom: 0.5em;
+      max-width: 800px;
+      text-align: start;
+    }
+    .title-container {
+      display: flex;
+      flex-direction: column;
+      max-width: 800px;
+      margin: auto;
+    }
+    .meta {
+      display: flex;
+      justify-content: space-between;
+      max-width: 800px;
+      margin: auto;
+      font-size: 0.7em;
+      margin: 2em 0;
+    }
+    .dates {
+      color: var(--sol-7);
+      flex-shrink: 0;
+      text-align: right;
+    }
+    .last-updated-on {
+      padding-top: 0.5em;
+    }
+    .tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5em;
+    }
+    .tag {
+      background: rgb(var(--accent));
+      color: var(--blue);
+      padding-right: 0.5em;
+      border-radius: 0.25em;
+      text-decoration: none;
+      transition: background-color 0.2s ease;
+      text-transform: capitalize;
+    }
+    .tag:hover {
+      background: rgb(var(--accent-dark));
+    }
+
+    .hero-image {
+      width: 100%;
+    }
+    .hero-image img {
+      display: block;
+      margin: 0 auto;
+    }
+
+    .prose {
+      margin: auto;
+      display: grid;
+      grid-template-columns: 1fr min(800px, 100%) 1fr;
+    }
+    .prose > :global(*) {
+      grid-column: 2;
+    }
+
+    .slide-in-block {
+      opacity: 0;
+      filter: blur(10px);
+      transform: scale(0.95);
+      will-change: transform, opacity, filter;
+      animation: slideInBlock 0.4s cubic-bezier(0.43, 0.195, 0.02, 1) forwards;
+    }
+
+    .slide-in-block:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+
+    .slide-in-block:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+
+    @keyframes slideInBlock {
+      to {
+        opacity: 1;
+        filter: blur(0px);
+        transform: scale(1);
+      }
+    }
+
+    .toc-container {
+      grid-column: 3 !important;
+      height: fit-content;
+      align-self: start;
+    }
+
+    :global(.csl-bib-body) {
+      font-size: 0.7em;
+    }
+
+    :global(.csl-entry) {
+      margin-bottom: 0.8em;
+      margin-left: 1.5em;
+      display: list-item;
+      list-style: decimal;
+      line-height: 1.6em;
+    }
+
+    /* Responsive adjustments for ToC */
+    @media (max-width: 1279px) {
       .title {
-        margin-bottom: 1em;
-        padding-bottom: 1em;
+        grid-column: 1 !important;
       }
-
-      .title-meta {
-        display: flex;
-        gap: 1em;
-        font-size: 0.7em;
-        text-transform: capitalize;
-        margin-bottom: 1em;
-        color: var(--sol-7);
-      }
-
-      .title h1 {
-        margin-bottom: 0.5em;
-        max-width: 800px;
-        text-align: start;
-      }
-      .title-container {
-        display: flex;
-        flex-direction: column;
-        max-width: 800px;
-        margin: auto;
-      }
-      .meta {
-        display: flex;
-        justify-content: space-between;
-        max-width: 800px;
-        margin: auto;
-        font-size: 0.7em;
-        margin: 2em 0;
-      }
-      .dates {
-        color: var(--sol-7);
-        flex-shrink: 0;
-        text-align: right;
-      }
-      .last-updated-on {
-        padding-top: 0.5em;
-      }
-      .tags {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.5em;
-      }
-      .tag {
-        background: rgb(var(--accent));
-        color: var(--blue);
-        padding-right: 0.5em;
-        border-radius: 0.25em;
-        text-decoration: none;
-        transition: background-color 0.2s ease;
-        text-transform: capitalize;
-      }
-      .tag:hover {
-        background: rgb(var(--accent-dark));
-      }
-
-      .hero-image {
-        width: 100%;
-      }
-      .hero-image img {
-        display: block;
-        margin: 0 auto;
-      }
-
-      .prose {
-        margin: auto;
-        display: grid;
-        grid-template-columns: 1fr min(800px, 100%) 1fr;
-      }
-      .prose > :global(*) {
-        grid-column: 2;
-      }
-
-      .slide-in-block {
-        opacity: 0;
-        filter: blur(10px);
-        transform: scale(0.95); 
-        will-change: transform, opacity, filter;
-        animation: slideInBlock 0.4s cubic-bezier(0.43, 0.195, 0.02, 1) forwards;
-      }
-
-      .slide-in-block:nth-child(2) {
-        animation-delay: 0.2s;
-      }
-
-      .slide-in-block:nth-child(3) {
-        animation-delay: 0.4s;
-      }
-
-      @keyframes slideInBlock {
-        to {
-          opacity: 1;
-          filter: blur(0px);
-          transform: scale(1);
-        }
-      }
-
-      .toc-container {
-        grid-column: 3 !important;
-        height: fit-content;
-        align-self: start;
-      }
-
-      :global(.csl-bib-body) {
-        font-size: 0.7em;
-      }
-
-      :global(.csl-entry) {
-        margin-bottom: 0.8em;
-        margin-left: 1.5em;
-        display: list-item;
-        list-style: decimal;
-        line-height: 1.6em;
-      }
-
-      /* Responsive adjustments for ToC */
-      @media (max-width: 1279px) {
-        .title {
-          grid-column: 1 !important;
-        }
-      }
-    </style>
-  </head>
-
-  <body>
-    <Header />
-    <main>
-      <article>
-        <header class="title slide-in-block">
-          <div class="title-container">
-            <div class="title-meta">
-              <span>{type}</span>
-              <span>{status}</span>
-              <span>{readingTimeText}</span>
-            </div>
-            <h1>{title}</h1>
-            <div class="description">{description}</div>
-            <div class="meta">
-              {
-                tags && tags.length > 0 && (
-                  <div class="tags">
-                    {tags.map((tag) => (
-                      <span class="tag">{tag}</span>
-                    ))}
-                  </div>
-                )
-              }
-              <div class="dates">
-                <div class="published-on">
-                  Published <FormattedDate date={pubDate || new Date()} />
-                </div>
-                {
-                  updated && (
-                    <div class="last-updated-on">
-                      Updated <FormattedDate date={updated} />
-                    </div>
-                  )
-                }
-              </div>
-            </div>
-          </div>
-          <div class="hero-image slide-in-block">
-            {
-              imageData && (
-                <Image
-                  width={1020}
-                  height={510}
-                  src={imageData.src as string}
-                  alt={imageData.alt}
-                />
-              )
-            }
-          </div>
-        </header>
-        <div class="prose">
-          <slot />
-          <TableOfContents headings={headings || []} />
+    }
+  </style>
+  <article>
+    <header class="title slide-in-block">
+      <div class="title-container">
+        <div class="title-meta">
+          <span>{type}</span>
+          <span>{status}</span>
+          <span>{readingTimeText}</span>
         </div>
-      </article>
-    </main>
-    <Footer />
-  </body>
-</html>
+        <h1>{title}</h1>
+        <div class="description">{description}</div>
+        <div class="meta">
+          {
+            tags &&
+            tags.length > 0 && (
+              <div class="tags">
+                {tags.map((tag) => (
+                  <span class="tag">{tag}</span>
+                ))}
+              </div>
+            )
+          }
+          <div class="dates">
+            <div class="published-on">
+              Published <FormattedDate date={pubDate || new Date()} />
+            </div>
+            {updated && (
+              <div class="last-updated-on">
+                Updated <FormattedDate date={updated} />
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+      <div class="hero-image slide-in-block">
+        {imageData && (
+          <Image
+            width={1020}
+            height={510}
+            src={imageData.src as string}
+            alt={imageData.alt}
+          />
+        )}
+      </div>
+    </header>
+    <div class="prose">
+      <slot />
+      <TableOfContents headings={headings || []} />
+    </div>
+  </article>
+</BaseLayout>

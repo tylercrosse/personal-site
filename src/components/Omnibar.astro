@@ -261,7 +261,6 @@
             const pageResults = await Promise.all(
               search.results.slice(0, 5).map((r: any) => r.data())
             );
-            console.log("pageResults", pageResults);
 
             for (const page of pageResults) {
               if (page.sub_results.length === 0) continue;
@@ -270,7 +269,7 @@
               groupEl.className = "result-group";
 
               // Ensure the group starts a main page entry
-              let subResults = page.sub_results.slice(0, 2);
+              let subResults = page.sub_results.slice(0, 3);
               const firstSubResult = subResults[0];
               const hasMainPageEntry =
                 firstSubResult && !("anchor" in firstSubResult);
@@ -284,8 +283,8 @@
                 `;
                 groupEl.appendChild(item);
               } else {
-                // If the main page entry is present, show 3 results. The first is the main page entry.
-                subResults = page.sub_results.slice(0, 3);
+                // If the main page entry is present, show 4 results. The first is the main page entry.
+                subResults = page.sub_results.slice(0, 4);
               }
 
               for (const sub_result of subResults) {
@@ -441,6 +440,7 @@
       const selectedItem = this.resultItems[this.selectedIndex];
       if (selectedItem && selectedItem.dataset.href) {
         window.location.href = selectedItem.dataset.href;
+        this.close();
       }
     }
 
