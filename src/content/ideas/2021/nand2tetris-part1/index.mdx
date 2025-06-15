@@ -42,7 +42,7 @@ a  b  |  Nand(a,b)
 
 I created the logic for several fundamental hardware chips using Hardware Description Language (HDL) for the first project. Each of these chips was built using a combination of Nand gates as a starting point. What follows is some example HDL for an exclusive-or gate:
 
-```VHDL
+```vhdl
 /**
  * Exclusive-or gate:
  * out = not (a == b)
@@ -65,7 +65,7 @@ The complete list of gates I constructed includes, And, And16, DMux, DMux4Way, D
 
 Using the simple logic gates I wrote the [specification for a simple ALU](https://github.com/tylercrosse/nand2tetris/blob/main/projects/02/ALU.hdl), an incrementor, and a few adders. The ALU or Arithmetic Logic Unit, acts as the computational centerpiece of the CPU. This unit also gave a brief overview of binary math and two's complement. Here's an outline of the interface and functionality of the ALU I constructed using HDL:
 
-```VHDL
+```vhdl
 Input:  x[16], y[16],   // Two 16-bit inputs
         zx,             // zero the x input?
         nx,             // negate the x input?
@@ -116,7 +116,7 @@ This unit dances through the stored program concept, von Neumann Architecture, t
 
 Here is the Hack instruction set, with symbolic mnemonics and the corresponding binary. The instruction set represents all of the operations the CPU can perform.
 
-```nasm
+```asm
 // Adapted from Figure 4.5 in The Elements of Computing Systems.
 
 A-instruction
@@ -165,7 +165,7 @@ Machine language is the point where hardware meets software. A machine language 
 
 Here's an example of an elementary program written in the Hack machine language. At the end of this, the value 5 gets stored in RAM[0]:
 
-```nasm
+```asm
 // Computes R0 = 2 + 3  (R0 refers to RAM[0])
 
 @2      // A instruction - set the A register (reg) to the value 2
@@ -180,7 +180,7 @@ M=D     // Store the value of the D reg to the current memory address (0)
 
 The first half of this course culminated in writing an assembler that can take hack machine language and translate it from its symbolic form into its binary format, which can be loaded onto the Hack computer. Here's the output of the above example hack machine language from the assembler:
 
-```nasm
+```asm
 0000000000010000 // @2
 1110110000010000 // D=m
 0000000000010001 // @3
