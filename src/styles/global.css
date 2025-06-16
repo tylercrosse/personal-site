@@ -259,6 +259,7 @@ code {
   border-radius: 2px;
 }
 pre {
+  margin-top: 0;
   padding: 1.5em;
   border-radius: 8px;
   font-size: 0.8em;
