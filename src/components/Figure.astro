@@ -1,0 +1,123 @@
+---
+import { Image } from "astro:assets";
+
+interface Props {
+  src: string | ImageMetadata;
+  alt: string;
+  caption?: string;
+  width?: number;
+  height?: number;
+  class?: string;
+  numbered?: boolean;
+  maxWidth?: number;
+}
+
+const {
+  src,
+  alt,
+  caption,
+  width,
+  height,
+  class: className,
+  numbered = true,
+  maxWidth,
+} = Astro.props;
+
+// Determine if src is a string (path) or ImageMetadata object
+const isImagePath = typeof src === "string";
+
+// Auto-generate figure numbers using Astro.locals
+let figureNumber: number | undefined;
+if (numbered) {
+  // Initialize counter if it doesn't exist
+  if (!Astro.locals.figureCounter) {
+    Astro.locals.figureCounter = 0;
+  }
+  // Increment and get the current figure number
+  Astro.locals.figureCounter++;
+  figureNumber = Astro.locals.figureCounter;
+}
+---
+
+<figure class={`figure ${className || ""}`}>
+  {
+    isImagePath ? (
+      <img
+        src={src as string}
+        alt={alt}
+        width={width}
+        height={height}
+        loading="lazy"
+      />
+    ) : (
+      <Image
+        src={src as ImageMetadata}
+        alt={alt}
+        quality={90}
+        // width={width}
+        widths={width ? [width, width * 2] : undefined}
+        height={height}
+        loading="lazy"
+        decoding="async"
+      />
+    )
+  }
+  {
+    caption && (
+      <figcaption class="caption">
+        {numbered && figureNumber && <strong>Figure {figureNumber}: </strong>}
+        {caption}
+      </figcaption>
+    )
+  }
+</figure>
+
+<style>
+  .figure {
+    margin: 1rem 0;
+    text-align: center;
+  }
+
+  .figure img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+  }
+
+  .caption {
+    margin-top: 0.75rem;
+    font-size: 0.9rem;
+    font-style: italic;
+    color: var(--sol-1);
+    line-height: 1.4;
+    max-width: 90%;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .caption strong {
+    font-style: normal;
+    color: var(--sol-9);
+  }
+
+  /* Dark theme caption color */
+  [data-effective-theme="dark"] .caption {
+    color: var(--sol-0);
+  }
+
+  [data-effective-theme="dark"] .caption strong {
+    color: var(--sol-10);
+  }
+
+  @media (max-width: 720px) {
+    .figure {
+      margin: 1.5rem 0;
+    }
+
+    .caption {
+      font-size: 0.85rem;
+      max-width: 90%;
+    }
+  }
+</style>
+

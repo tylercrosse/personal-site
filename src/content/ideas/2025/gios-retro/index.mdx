@@ -16,6 +16,7 @@ image:
 ---
 
 import { Image } from "astro:assets";
+import Figure from "../../../../components/Figure.astro";
 import osOverview from "./os-overview.png";
 import processThread from "./process-thread.png";
 import contextSwitch from "./context-switch.png";
@@ -39,9 +40,12 @@ There's always a tension when writing something like this. I want to be honest a
 
 At a high level, an operating system (OS) "is a special piece of software that **abstracts and arbitrates** the use of a computer system." It sits between user applications and hardware, providing the illusion of a cohesive, manageable system despite the complexity and diversity of hardware components.
 
-<div style="max-width: 640px; margin: 0 auto;">
-  <Image src={osOverview} alt="OS Overview" />
-</div>
+<Figure
+  src={osOverview}
+  alt="OS Overview"
+  width={640}
+  caption="The OS is a special piece of software that abstracts and arbitrates the use of a computer system."
+/>
 
 This layered architecture separates **user space**, where applications run, from **kernel space**, where the OS performs core functions like managing hardware and system resources. Applications interact with the OS through **standard libraries** and **system calls**, enabling functionality like file operations or memory allocation without direct hardware access. The OS, in turn, controls and coordinates the hardware layer, which includes the CPU, memory, storage, displays, network devices, and input peripherals.
 
@@ -75,9 +79,12 @@ A **process** is an instance of a running program, and the OS is responsible for
 * The OS manages the lifecycle of processes: creation, execution, suspension, and termination.
 * Each process has its own memory space, file descriptors, and state.
 
-<div style="max-width: 320px; margin: 0 auto;">
-  <Image src={processThread} alt="Process Thread" />
-</div>
+<Figure
+  src={processThread}
+  alt="Process Thread"
+  width={320}
+  caption="A process is an instance of a program in execution."
+/>
 
 To enable more granular concurrency within a process, modern systems use **threads**. A thread is the smallest unit of execution and shares the same address space with other threads in the same process. This shared memory model allows for lightweight context switches and efficient communication but also introduces complexity: threads must coordinate access to shared resources to avoid data races and inconsistencies.
 
@@ -85,9 +92,12 @@ To enable more granular concurrency within a process, modern systems use **threa
 * Multiple threads in a single process share the same memory space.
 * Threads introduce concurrency and require careful synchronization.
 
-<div style="max-width: 720px; margin: 0 auto;">
-  <Image src={contextSwitch} alt="Context Switch" />
-</div>
+<Figure
+  src={contextSwitch}
+  alt="Context Switch"
+  width={720}
+  caption="A context switch is the process of switching the CPU from one process or thread to another."
+/>
 
 A **context switch** is the process of switching the CPU from one process or thread to another. It involves saving the current state of the running process to its PCB and then loading the state of the next process to be executed from its PCB. This allows multiple processes to share a single CPU, enabling multitasking. The operating system code (in kernel mode) manages the context switch by interrupting the current process and switching to the next process.
 
@@ -212,10 +222,13 @@ Beyond choosing a concurrency pattern, building a robust multithreaded system re
 *   **Threading Models**: To balance these trade-offs, systems use different models. The **one-to-one** model (e.g., modern Linux, Windows) maps each user thread to a kernel thread, offering good performance and simplicity. The **many-to-one** model maps many user threads to a single kernel thread, which is efficient but suffers from the blocking problem. The **many-to-many** model offers a hybrid approach, but adds significant complexity.
 
 *   **Handling Interrupts and Signals**:
-    <div style="max-width: 720px; margin: 0 auto;">
-      <Image src={interrupts} alt="Interrupts" />
-    </div>
-    The diagram above illustrates the interrupt handling cycle. Interrupts are asynchronous signals sent to the CPU from software, I/O devices, or internal processor exceptions. When an interrupt is issued, the CPU halts the currently running code, saves its state, and executes a special function called an interrupt handler to address the event. Once the handler finishes, the CPU restores the original state and resumes execution. This mechanism is fundamental to multitasking and allows the OS to respond to events efficiently.
+    <Figure
+      src={interrupts}
+      alt="Interrupts"
+      width={720}
+      caption="The interrupt handling cycle."
+    />
+    Figure 4. illustrates the interrupt handling cycle. Interrupts are asynchronous signals sent to the CPU from software, I/O devices, or internal processor exceptions. When an interrupt is issued, the CPU halts the currently running code, saves its state, and executes a special function called an interrupt handler to address the event. Once the handler finishes, the CPU restores the original state and resumes execution. This mechanism is fundamental to multitasking and allows the OS to respond to events efficiently.
 
     In a multithreaded environment, handling these asynchronous events is particularly complex. A classic problem arises when a signal handler, which runs in the context of the interrupted thread, tries to acquire a mutex that the thread already holds, causing an instant deadlock. A common, simple solution is to disable signals around critical sections. More advanced OS designs may treat the main work of an interrupt handler as a separate, lower-priority thread (a "bottom-half" handler) to avoid such issues.
 
@@ -274,11 +287,12 @@ Modern systems use more sophisticated schedulers. The **Linux Completely Fair Sc
 
 Memory management is the OS's strategy for arbitrating and controlling the finite physical memory (DRAM) on behalf of all running processes. The central abstraction is **virtual memory**, which gives each process the illusion of having its own large, contiguous, and private address space. Each process has it's own virtual address space. In reality, the OS, with crucial help from the hardware's **Memory Management Unit (MMU)**, translates these virtual addresses to physical addresses in DRAM. To speed up the constant address translations, the MMU uses a fast, specialized hardware cache called a **Translation Lookaside Buffer (TLB)**, which stores recently used mappings. A "TLB miss" forces a much slower lookup in the page table.
 
-{/* ![Address Translation](./address-translation3.png) */}
-
-<div style="grid-column: 1 / 4 !important; max-width: 1000px; margin: 0 auto;">
-  <Image src={addressTranslation} alt="Address Translation" />
-</div>
+<Figure
+  src={addressTranslation}
+  alt="Address Translation"
+  width={1000}
+  caption="Address Translation is the process of translating a virtual address (top) to a physical address (bottom). The fastest path is to use the TLB (green). If the TLB miss, the page table is used (yellow). If the page indicates the page isn't present a page fault occurs and the page is loaded from disk (red)."
+/>
 
 The dominant mechanism for this is **paging**. The virtual address space is divided into fixed-size blocks called **pages**, and physical memory is divided into identically sized **page frames**. For each process, the OS maintains a **page table** that maps virtual page numbers (VPNs) to physical frame numbers (PFNs). Each entry in this table, a Page Table Entry (PTE), also contains important metadata. This metadata is varies between architectures (x86, ARM, etc.) and often include a **present bit** (is the page in DRAM?), a **dirty bit** (has the page been modified?), an **access bit** (for read and write operations), and **protection bits** (read/write/execute permissions).
 
@@ -288,9 +302,12 @@ Since each process has it's own virtual address space with it's own page tables,
 
 Since a page table for a large address space can itself be enormous, modern systems use **multi-level page tables** to save space. Each level of the page table is a pointer to the next level of the page table. The same optimization of using a TLB to cache these entries still applies.
 
-<div style="max-width: 500px; margin: 0 auto;">
-  <Image src={multiLevelPageTables} alt="Multi-Level Page Tables" />
-</div>
+<Figure
+  src={multiLevelPageTables}
+  alt="Multi-Level Page Tables"
+  width={500}
+  caption="Multi-Level Page Tables are a way to save space in the page table. The first level is a pointer to the next level of the page table. The second level is a pointer to the next level of the page table, and so on. This allows for a very large address space to be supported with a relatively small page table."
+/>
 
 Beyond managing memory for user processes, the OS kernel must also efficiently allocate memory for its own internal data structures. This presents unique challenges, primarily **fragmentation**. **External fragmentation** occurs when free memory is broken into many small, non-contiguous blocks, eventually making it impossible to satisfy a large allocation request even though enough total memory is free. **Internal fragmentation** occurs when the allocator provides a block of memory that is larger than the request, wasting the space left over inside the block.
 

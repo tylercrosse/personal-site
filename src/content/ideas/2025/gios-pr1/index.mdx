@@ -15,8 +15,10 @@ image:
 ---
 
 import { Image } from "astro:assets";
+import Figure from "../../../../components/Figure.astro";
+import clientServer from "./client-server.png";
 import userKernelSocket from "./user-kernel-socket.png";
-
+import getfileProtocol from "./getfile-protocol.png";
 
 ## Introduction: The Challenge
 
@@ -30,7 +32,11 @@ Going in, I was comfortable with C's syntax but had never touched the Berkeley s
 
 At its heart, network communication is a conversation. The most common pattern for this conversation is the **client-server model**. It's a simple idea: a **client** (like your web browser) needs something, and a **server** (like the computer hosting `google.com`) has something to provide. The client initiates the conversation, and the server responds.
 
-![TCP/IP Model](./client-server.png)
+<Figure
+  src={clientServer}
+  alt="TCP/IP Model"
+  caption="The TCP/IP model is a 4-layer stack, and for this project, we're mostly concerned with two: the application layer and the transport layer."
+/>
 
 But for this conversation to work, both sides need to speak the same language and follow the same rules. The **TCP/IP model** provides this rulebook. It's a 4-layer stack, and for this project, we're mostly concerned with two:
 
@@ -45,15 +51,18 @@ A **socket** is one of the most powerful abstractions in modern computing. It's 
 
 This abstraction is necessary because network hardware is a protected resource. Your user-level application can't just write bytes to the network card directly. That would be chaos. Instead, you have to ask the OS to do it for you. This is accomplished via **system calls**.
 
-<div style="margin: 0 auto; max-width: 600px;">
-    <Image src={userKernelSocket} alt="Sockets" />
-</div>
+<Figure 
+  src={userKernelSocket} 
+  width={600}
+  alt="User-space application communicating with kernel through sockets"
+  caption="When your program calls send(), it's a request to the OS kernel. The CPU switches from User Mode to Kernel Mode, where the kernel handles the network communication."
+/>
 
 When your program calls a function like `send()`, it's not an ordinary function call. It's a request to the OS kernel. The CPU switches from **User Mode** to **Kernel Mode**, a privileged state where it has full access to the hardware. The kernel takes your data, breaks it into packets, adds the necessary TCP/IP headers, and sends it to the network card. This user/kernel separation is a fundamental security and stability feature of all modern operating systems.
 
 ### The Socket API in Action (C)
 
-The API for using sockets is direct and explicit. Here's a conceptual overview of the key API calls for a simple server and client.
+The API for using sockets is direct and explicit. Here's a conceptual overview of the key API calls for a simple server and client. This simple example follows [Beej's Guide to Network Programming](https://beej.us/guide/bgnet/html/#sendrecv), which was a great resource for this project.
 
 **Server Lifecycle:**
 
@@ -94,7 +103,7 @@ struct sockaddr_in serv_addr;
 connect(client_fd, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
 
 // 4. Communicate
-send(client_fd, "GETFILE my_document.txt", 24, 0);
+send(client_fd, "Hello from client", 16, 0);
 recv(client_fd, buffer, 1024, 0);
 
 // 5. Close the connection
@@ -102,52 +111,140 @@ close(client_fd);
 ```
 The server's flow is more complex because it has a "listening" socket that acts as a factory, creating a *new* socket for each client connection it accepts.
 
-## Designing Our `GETFILE` Protocol
+### The `GETFILE` Protocol
 
-With the ability to send and receive bytes, we needed to give those bytes meaning. We designed a simple, line-based ASCII protocol named `GETFILE`. Designing your own protocol, no matter how simple, is a fantastic exercise. It forces you to think about ambiguity and error handling.
+With the ability to send and receive bytes, I needed to give those bytes meaning. I implemented a simple HTTP-like protocol called `GETFILE`, which was specified in the project. Working with a bespoke protocol, no matter how simple, is a fantastic exercise. It forces you to think about ambiguity, parsing, and error handling with raw byte streams.
 
-Our specification was:
-1.  **Client Request:** The client sends a single line of text terminated by a newline (`\n`): `GET <filename>\n`.
-2.  **Server Success Response:** If the file exists and is readable, the server responds with: `OK <file_size_in_bytes>\n<raw_file_data>`. The client knows to read exactly `file_size_in_bytes` from the socket after the newline.
-3.  **Server Error Response:** If the file doesn't exist or can't be read, the server sends a single line: `ERROR <error_code>\n`. We defined codes like `1` for FILE_NOT_FOUND and `2` for PERMISSION_DENIED.
+<Figure
+  src={getfileProtocol}
+  alt="GETFILE Protocol"
+  caption="The GETFILE protocol is a simple HTTP-like protocol that is used to request files from the server."
+/>
 
-This simple design is surprisingly effective, but it also reveals why real-world protocols like HTTP have complex headers. What if the filename contains a space? What about non-ASCII characters? Our simple protocol doesn't handle this, but it was robust enough for the task at hand.
+The protocol specification from the project is strict and resembles a simplified version of HTTP/1.0.
+
+<details>
+  <summary>Expand to see more details about the GETFILE protocol including the client request, server response, and error handling:</summary>
+  
+
+#### Client Request
+
+The client sends a single request header, terminated by a `\r\n\r\n` sequence.
+
+```
+GETFILE GET /<path>\r\n\r\n
+```
+
+-   **Scheme:** Always `GETFILE`.
+-   **Method:** Always `GET`.
+-   **Path:** The path to the requested file, which must begin with a `/`.
+-   **Terminator:** A specific four-byte sequence: carriage return, newline, carriage return, newline. This marks the end of the header.
+
+#### Server Response
+
+The server's response also consists of a header, and if successful, a body.
+
+A successful response looks like this:
+
+```
+GETFILE OK <length>\r\n\r\n<content>
+```
+
+-   **Scheme:** Always `GETFILE`.
+-   **Status:** `OK` for a successful request.
+-   **Length:** The size of the file in bytes, represented as an ASCII string.
+-   **Header Terminator:** The `\r\n\r\n` sequence separates the header from the file's content.
+-   **Content:** The raw bytes of the file. The client must read exactly `length` bytes from the socket.
+
+#### Handling Errors
+
+A robust protocol must clearly define its error states. `GETFILE` has three:
+-   `FILE_NOT_FOUND`: The request was valid, but the file doesn't exist on the server.
+-   `INVALID`: The client sent a malformed request (e.g., wrong scheme, missing spaces, incomplete header).
+-   `ERROR`: An unexpected error occurred on the server side (e.g., could not read the file due to permissions).
+
+For any of these statuses, the server sends a single header line with no body content:
+
+```
+GETFILE <status>\r\n\r\n
+```
+For example: `GETFILE FILE_NOT_FOUND\r\n\r\n`.
+
+</details>
+
+### A Note on C Strings
+A crucial and challenging part of implementing this in C is that the received data is **not null-terminated**. A buffer from `recv()` is just a sequence of bytes. You cannot use standard string functions like `strcpy` or `strstr` on it directly without risking reading past the buffer's boundary. Parsing requires careful, manual inspection of the bytes, searching for the spaces and the final `\r\n\r\n` sequence. This was a fantastic, if sometimes frustrating, lesson in the difference between a C "string" and a raw byte array.
 
 ## Scaling Up: The Move to Multithreading
 
-Our initial server worked, but it had a huge flaw: it was single-threaded. It could only handle one client at a time. If one client requested a very large file, every other client had to wait for that transfer to complete. This does not scale.
+The initial, single-threaded server worked, but it had a huge flaw: it could only handle one client at a time. If one client requested a very large file, every other client had to wait in line. This does not scale.
 
-The solution is **multithreading**, and a common way to apply it here is the **Boss/Worker pattern**.
+The solution, mandated by the project, was to build a **multithreaded** server using the `pthreads` library, following the **Boss/Worker** design pattern.
 
-*   **The Boss Thread (Main Thread):** This thread has one job and one job only: accept new client connections. It runs the `listen()` and `accept()` calls. When `accept()` returns a new client socket descriptor, the Boss doesn't handle the client itself. Instead, it places the descriptor into a shared work queue.
-*   **Worker Threads:** We create a pool of worker threads when the server starts. These threads all wait for work to appear in the queue. When a descriptor is added, one worker wakes up, takes the descriptor from the queue, and then handles the entire `GETFILE` transaction for that single client. Once it's done, it closes the client socket and goes back to waiting for more work.
+*   **The Boss Thread (Main Thread):** This thread's only job is to `accept()` new client connections. When a new connection is made, the Boss doesn't handle the client itself. Instead, it places the client's socket file descriptor into a shared work queue (the project provided a `steque` library for this).
+*   **Worker Threads:** A pool of worker threads is created when the server starts. They wait for work to appear in the queue. When a descriptor is added, one worker wakes up, takes the job, and handles the entire `GETFILE` transaction. Once it's done, it closes the client socket and goes back to waiting for more work.
 
-This model isolates concerns. The Boss handles new connections; the Workers handle the actual protocol logic. This allows the server to be accepting a new connection while other workers are busy sending files.
+This model is powerful, but it introduces the classic challenges of concurrency.
 
-### The Danger Zone: Race Conditions and Mutexes
+### The Danger Zone: Concurrency, Mutexes, and Condition Variables
 
-This is where the real complexity of concurrent programming appears. The "work queue" is shared memory, accessed by the Boss (writing) and all Workers (reading). What happens if the Boss tries to add to the queue at the exact same moment a Worker is trying to remove from it? This is a **race condition**, and it can corrupt the state of your queue, leading to crashes or bizarre bugs.
+The work queue is shared memory. If the Boss thread tries to add to the queue at the same time a Worker is trying to remove from it, you get a **race condition** that can corrupt the queue's state, leading to crashes or bizarre bugs.
 
-The section of code that accesses this shared queue is called a **critical section**. We must ensure that only one thread can be inside this critical section at a time. This principle is called **mutual exclusion**.
+To solve this, you must protect the shared data. The project required using two key mechanisms from `pthreads`:
 
-In C, we enforce this with a `pthread_mutex_t` (a **mutex**, for **mut**ual **ex**clusion). A mutex is a lock. Before entering the critical section, a thread must acquire the lock. If another thread already holds the lock, it will be forced to wait. Once the thread is finished with the shared data, it releases the lock, allowing another waiting thread to proceed.
+1.  **Mutexes (`pthread_mutex_t`):** A mutex (short for **mut**ual **ex**clusion) acts as a lock. Before accessing the queue (the *critical section*), a thread must acquire the lock. If another thread already holds it, the thread will block until the lock is released. This ensures only one thread can modify the queue at a time.
 
-```c
-// Simplified example
-pthread_mutex_t queue_lock;
-// ...
-// In Boss thread:
-pthread_mutex_lock(&queue_lock);
-// Add new client_fd to queue
-pthread_mutex_unlock(&queue_lock);
+2.  **Condition Variables (`pthread_cond_t`):** But what should a worker do if it locks the queue and finds it's empty? It could unlock and then immediately try to lock again in a tight loop. This "busy-waiting" burns CPU cycles for no reason. A much more elegant solution is a condition variable. It allows threads to sleep efficiently until there's a reason to wake up.
 
-// In Worker thread:
-pthread_mutex_lock(&queue_lock);
-// Get client_fd from queue
-pthread_mutex_unlock(&queue_lock);
-// Handle client...
+The correct pattern looks like this:
+
+*   **Worker Thread (Consumer):**
+    1.  Lock the mutex.
+    2.  While the queue is empty, call `pthread_cond_wait()`. This special function atomically unlocks the mutex and puts the thread to sleep.
+    3.  When woken up, it automatically re-acquires the lock. It then grabs a job from the queue.
+    4.  Unlock the mutex.
+    5.  Process the job (this happens outside the lock, allowing other threads to access the queue).
+
+*   **Boss Thread (Producer):**
+    1.  Lock the mutex.
+    2.  Add a new job to the queue.
+    3.  Call `pthread_cond_signal()` to wake up *one* of the sleeping worker threads.
+    4.  Unlock the mutex.
+
+Getting this interaction between mutexes and condition variables right was the hardest, and most rewarding, part of the project. It's the core pattern for nearly all producer-consumer problems in concurrent programming.
+
+```mermaid
+graph TD;
+    subgraph Server;
+        A[Boss Thread] -- "accepts connection" --> B(Client Socket);
+        B -- "enqueues socket" --> C{Work Queue};
+        C -- "protected by<br/>Mutex &<br/>Condition Variable" --> C;
+
+        subgraph "Worker Thread Pool";
+            W1(Worker 1);
+            W2(Worker 2);
+            W...;
+        end
+
+        C -- "dequeues socket" --> W1;
+        C -- "dequeues socket" --> W2;
+        C -- "dequeues socket" --> W...;
+
+        W1 --> P1[Handle GETFILE Request];
+        W2 --> P2[Handle GETFILE Request];
+        W... --> P...[Handle GETFILE Request];
+
+        P1 --> W1;
+        P2 --> W2;
+        P... --> W...;
+    end;
+
+    style A fill:#cde4f9,stroke:#5a8ac6,stroke-width:2px;
+    style W1 fill:#d5e8d4,stroke:#82b366,stroke-width:2px;
+    style W2 fill:#d5e8d4,stroke:#82b366,stroke-width:2px;
+    style W... fill:#d5e8d4,stroke:#82b366,stroke-width:2px;
+    style C fill:#fff2cc,stroke:#d6b656,stroke-width:2px;
 ```
-Getting the locking right is one of the hardest parts of concurrent programming, but it's essential for a correct and stable multithreaded application.
 
 ## Building and Testing
 
@@ -155,9 +252,12 @@ A C project of this complexity demands proper tooling for building and testing.
 
 *   **Environment:** The project had specific Linux dependencies, so I used **Vagrant** to create a consistent, reproducible virtual machine, mirroring the official testing environment. This saved me from countless "works on my machine" headaches.
 *   **Build System:** You can't just run `gcc` over and over. A `Makefile` is essential. It automates the process of compiling, linking, and cleaning up object files. It's also the perfect place to store compiler flags like `-Wall` (turn on all warnings), `-g` (include debugging symbols), and `-pthread` (link the pthreads library).
-*   **Automated Testing:** How do you know your server *really* works? You write tests. And the best way to test a server is to write a client in a completely different language. It forces you to adhere strictly to your protocol specification. I used Python and `pytest`, whose `socket` library is a thin wrapper around the same C APIs.
+*   **Automated and Stress Testing:** How do you know your server *really* works? You write tests—and not just simple ones. The best way to test a server is to write a client in a completely different language, which forces you to follow your protocol specification to the letter. I used Python and `pytest` (with its `socket` library, a thin wrapper around the same C APIs) to build a test suite that connected to my C server and exercised a range of scenarios: successful file downloads, requests for non-existent files, and malformed protocol requests, all while asserting that the server's responses were byte-for-byte compliant with the `GETFILE` specification.
 
-Here's a small `pytest` example:
+    To push the server to its limits, I wrote a stress testing script that launched dozens of concurrent client connections, simulating real-world load and uncovering subtle race conditions or deadlocks. I also played with `valgrind` to check for memory leaks and invalid memory accesses, which is essential in C projects—especially when handling many threads and dynamic buffers. These tools together gave me confidence that my server was not only correct, but also robust and leak-free under heavy use.
+
+
+Here's a small generic `pytest` example of using the `socket` library to test a server (not specific to the `GETFILE` protocol):
 ```python
 import socket
 
@@ -201,3 +301,21 @@ My key takeaways were:
 *   **Test from the outside:** A robust test suite, especially one that mimics a real client, is the only way to be confident in your system's reliability.
 
 The patterns used here—thread pools, work queues, custom protocols—are the building blocks for the massive, distributed systems we use every day. While a web server like Nginx uses far more advanced techniques (like event-driven I/O with `epoll`), the fundamental goal is the same: handle as many concurrent clients as possible, as efficiently as possible. This project provided a tangible, low-level look at how that goal is achieved. It was a fantastic journey from the magic of a click to the logic of a `send()`.
+
+---
+
+### A Note on Code Availability
+
+In accordance with Georgia Tech's academic integrity policy and the license for course materials, the source code for this project is kept in a private repository. I believe passionately in sharing knowledge, but I also firmly respect the university's policies. This document follows [Dean Joyner's advice on sharing projects](https://www.reddit.com/r/OMSCS/comments/zwdwns/comment/j1udv6w/).
+
+I would be delighted to discuss the implementation details, architecture, or specific code sections in an interview. Please feel free to reach out to request private access to the repository.
+
+## Additional resources
+
+- [GIOS Course Website](https://omscs.gatech.edu/cs-6200-introduction-operating-systems)
+- [K&R C Programming Language](https://en.wikipedia.org/wiki/The_C_Programming_Language)
+- [Beej's Guide to C Programming](https://beej.us/guide/bgc/)
+- [Beej's Guide to Networking Concepts](https://beej.us/guide/bgnet0/)
+- [Beej's Guide to Network Programming](https://beej.us/guide/bgnet/)
+- [Linux Programming Interface](https://man7.org/tlpi/)
+- [Operating Systems: Three Easy Pieces](https://pages.cs.wisc.edu/~remzi/OSTEP/)
