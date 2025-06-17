@@ -5,6 +5,7 @@ import sitemap from "@astrojs/sitemap";
 import pagefind from "astro-pagefind";
 import remarkGfm from "remark-gfm";
 import rehypeCitation from "rehype-citation";
+import rehypeMermaid from "rehype-mermaid";
 
 // https://astro.build/config
 export default defineConfig({
@@ -16,8 +17,10 @@ export default defineConfig({
     "/ideas/exponential-backoff": "/ideas/2022/exponential-backoff",
     "/ideas/nand2tetris-vm-translator": "/ideas/2022/nand2tetris-vm-translator",
     "/ideas/planting-seeds": "/ideas/22022/planting-seeds",
-    "/ideas/python-bitwise-set-and-dicts": "/ideas/2022/python-bitwise-set-and-dicts",
-    "/ideas/search-engine-fundamentals": "/ideas/2022/search-engine-fundamentals",
+    "/ideas/python-bitwise-set-and-dicts":
+      "/ideas/2022/python-bitwise-set-and-dicts",
+    "/ideas/search-engine-fundamentals":
+      "/ideas/2022/search-engine-fundamentals",
     "/ideas/language-models": "/ideas/2023/language-models",
     "/ideas/semantic-search": "/ideas/2023/semantic-search",
     "/ideas/tech-debt": "/ideas/2023/tech-debt",
@@ -35,6 +38,7 @@ export default defineConfig({
           tooltipAttribute: "data-tooltip",
         },
       ],
+      rehypeMermaid,
     ],
     shikiConfig: {
       themes: {
@@ -42,6 +46,10 @@ export default defineConfig({
         dark: "solarized-dark",
       },
       wrap: true,
+    },
+    syntaxHighlight: {
+      type: "shiki",
+      excludeLangs: ["mermaid"],
     },
   },
 });

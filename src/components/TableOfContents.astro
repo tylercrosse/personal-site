@@ -295,9 +295,9 @@ const toc = buildHierarchy(filteredHeadings);
     top: 0;
     left: 0;
     right: 0;
-    background: rgba(255, 255, 255, 0.95);
+    background: rgba(255, 255, 255, 0.7);
     backdrop-filter: blur(10px);
-    border-bottom: 1px solid rgba(var(--gray), 0.2);
+    border-bottom: 1px solid rgba(var(--gray), 0.8);
     padding: 0.75rem 1rem;
     display: flex;
     justify-content: space-between;
@@ -305,11 +305,13 @@ const toc = buildHierarchy(filteredHeadings);
     z-index: 100;
     transform: translateY(-100%);
     transition: transform 0.3s ease;
+    box-shadow: 0 2px 8px rgba(var(--black),5%);
   }
 
   :global([data-effective-theme="dark"] .mobile-toc-header) {
-    background: var(--base02);
+    background: rgba(7, 54, 65, 0.7); /* --base02 */
     border-bottom-color: rgba(var(--gray), 0.3);
+    box-shadow: none;
   }
 
   .mobile-toc-header.visible {
@@ -617,7 +619,6 @@ const toc = buildHierarchy(filteredHeadings);
     }
 
     private setActiveHeading(id: string) {
-      console.log('setActiveHeading', id);
       this.activeHeading = id;
       
       // Update desktop ToC

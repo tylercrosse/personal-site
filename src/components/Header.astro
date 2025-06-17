@@ -18,7 +18,13 @@ import { SITE_TITLE } from "../consts";
       <HeaderLink href="/">Home</HeaderLink>
       <HeaderLink href="/ideas">Ideas</HeaderLink>
       <HeaderLink href="/about">About</HeaderLink>
-      <div class="search-wrapper">
+      <div
+        class="js-missing"
+        title="Search and other important features require JavaScript"
+      >
+        ⚠️ JavaScript Disabled
+      </div>
+      <div class="search-wrapper js-required">
         <Omnibar />
       </div>
       <div class="theme-toggle-wrapper">
