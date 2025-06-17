@@ -6,6 +6,7 @@ import pagefind from "astro-pagefind";
 import remarkGfm from "remark-gfm";
 import rehypeCitation from "rehype-citation";
 import rehypeMermaid from "rehype-mermaid";
+import rehypeCallouts from "rehype-callouts";
 
 // https://astro.build/config
 export default defineConfig({
@@ -39,6 +40,7 @@ export default defineConfig({
         },
       ],
       rehypeMermaid,
+      rehypeCallouts,
     ],
     shikiConfig: {
       themes: {
