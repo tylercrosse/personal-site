@@ -16,19 +16,23 @@ image:
 ---
 
 import { Image } from "astro:assets";
+
+import BookCard from "../../../../components/BookCard.astro";
 import Figure from "../../../../components/Figure.astro";
+
+import osTepImg from "../../../books/os-tep.jpg";
+import csAppImg from "../../../books/cs-app.jpg";
+import cLangImg from "../../../books/c-lang.jpg";
+import beejGuidesImg from "../../../books/beej-network.jpg";
+import linuxInterfaceImg from "../../../books/linux-interface.png";
+
 import osOverview from "./os-overview.png";
 import processThread from "./process-thread.png";
 import contextSwitch from "./context-switch.png";
 import interrupts from "./interrupts.png";
 import addressTranslation from "./address-translation3.png";
 import multiLevelPageTables from "./multi-level-page-tables.png";
-import BookCard from "../../../../components/BookCard.astro";
-import osTepImg from "./os-tep.jpg";
-import csAppImg from "./cs-app.jpg";
-import cLangImg from "./c-lang.jpg";
-import beejGuidesImg from "./beej-network.jpg";
-import linuxInterfaceImg from "./linux-interface.png";
+
 
 ## Introduction
 
@@ -476,7 +480,11 @@ These cloud services are made possible by many of the technologies discussed thr
 
 The projects were a great way to solidify the concepts learned in the course and took up a significant portion of the time I spent on the course. The average on [OMSCS Central](https://www.omscentral.com/courses/graduate-introduction-to-operating-systems/reviews) across all of the student reviews was 18.5 hours per week. I averaged a bit more than that, particularly on the first project, because of my lack of C and C++ experience. There were a few weeks when I hammered out the projects where I spent closer to 40 hours in a week. Once I got the projects done, I was able to focus on the lectures and readings which took up less time.
 
-I'm planning to include follow up posts on each of the projects in the future and will update this post with links to them.
+I'm writing follow-up posts for each project to explore them in more detail. Here is the first one:
+
+- **Project 1:** [Concurrent File Server](/ideas/2025/gios-pr1/)
+
+I'll update this list as I write about the other projects.
 
 ### Grading
 

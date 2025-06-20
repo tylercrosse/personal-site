@@ -164,7 +164,7 @@ body {
   color: var(--sol-8);
   font-size: 20px;
   line-height: 1.7;
-  transition: background-color 0.2s ease, color 0.2s ease;
+  transition: background 0.2s ease-in-out, background-color 0.2s ease-in-out, color 0.2s ease-in-out, box-shadow 0.2s ease-in-out, border-color 0.2s ease-in-out;
 }
 
 /* Dark theme body background */
