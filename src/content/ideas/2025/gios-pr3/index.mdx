@@ -1,105 +1,162 @@
 ---
-title: 'Proxy & Cache Server'
-description: 'Building a Proxy and Cache Server with IPC and Shared Memory in C: Lessons from a Graduate OS Course'
+title: 'IPC in Action: Building a High-Performance Proxy & Cache'
+description: 'A dive into inter-process communication, shared memory, and synchronization in C, based on a project from my graduate Operating Systems course.'
 date: '2025-06-24'
-status: 'in-progress'
+status: 'complete'
 type: 'project'
-tags: ['GIOS', 'operating-systems', 'c', 'multithreading', 'IPC', 'shared-memory']
+tags: ['GIOS', 'operating-systems', 'c', 'IPC', 'socket-programming']
 category: ['projects']
 draft: false
 audience: 'All'
 media_subpath: "/ideas/gios-pr3/"
 image:
   path: "./moebius-fly-dawn.png"
-  alt: 'Moebius Fly Night by Jean Giraud'
+  alt: 'Moebius Fly Dawn by Jean Giraud'
 ---
 
+import { Image } from "astro:assets";
+import BookCard from "../../../../components/BookCard.astro";
+import Figure from "../../../../components/Figure.astro";
 
-## Introduction
+import osTepImg from "../../../books/os-tep.jpg";
+import csAppImg from "../../../books/cs-app.jpg";
+import cLangImg from "../../../books/c-lang.jpg";
+import beejGuidesImg from "../../../books/beej-network.jpg";
+import linuxInterfaceImg from "../../../books/linux-interface.png";
 
-Inter-process communication (IPC) is a cornerstone of systems programming, enabling processes to share information and coordinate their actions. As part of a graduate Operating Systems course, I developed a system comprising a proxy server and a cache server that communicate using shared memory. This project provided valuable insights into designing scalable systems and leveraging IPC mechanisms effectively.
+import ipcImg from "./ipc.png";
+import stringCommImg from "./string-communication.jpg";
 
-In this post, I'll share key lessons from the experience, focusing on high-level concepts, challenges, and the broader implications of building such systems.
+## Introduction: When a Program Needs to Talk to Itself
 
-## Overview and Objectives
+In my previous project, I built a [multithreaded file server](/ideas/2025/gios-pr1/) that could handle many clients at once. All the work happened within a single program, a unified team of threads sharing the same memory. But what happens when you need to separate concerns more strictly? When one part of your system should be a specialized service, and another part its client?
 
-The project extended an existing file server by introducing two components:
+This was the challenge for my next project in Georgia Tech's OS course: to build a system of two distinct programs—a **proxy server** and a **cache server**—that had to communicate and cooperate to serve files. This wasn't about threads anymore; it was about full-fledged processes.
 
-1. **Proxy Server**: Acts as an intermediary, translating client requests into web server requests and relaying responses.
-2. **Cache Server**: Stores frequently requested data to improve efficiency and reduce response times, communicating with the proxy via shared memory.
+This forced me to dive into one of the most fundamental topics in operating systems: **Inter-Process Communication (IPC)**. The project was to design a system where a proxy fetches files for a client, but first checks with a separate cache process to see if it already has a copy. If it did, the file data had to be passed from the cache to the proxy, and then to the client, as fast as possible. This post explores the journey of building that system, and the powerful, tricky, and essential world of IPC.
 
-This system emulates real-world scenarios where performance and resource management are critical. The proxy handles external communication while the cache optimizes repeated requests. Both components required robust inter-process coordination and synchronization.
+## The Architecture: A Separation of Concerns
 
-### Key Challenges
+The goal was to extend a simple web server with a proxy and a cache. This is a classic pattern used everywhere on the web to improve performance and scalability.
 
-- **Handling Concurrency**: Ensuring smooth operation with multiple clients and processes.
-- **Designing IPC Mechanisms**: Efficiently transferring data between the proxy and the cache.
-- **Resource Management**: Cleaning up shared memory and other IPC resources to prevent leaks or conflicts.
+1.  **Proxy Server**: The public-facing intermediary. It takes requests from clients, but instead of getting the files itself, it turns around and asks the cache server. If the cache doesn't have it, *then* the proxy gets it from the original web server (and tells the cache to store it). It handles all the network logic.
+2.  **Cache Server**: The specialized backend. Its only job is to store and retrieve files in memory. It doesn't talk to the outside world; it only talks to the proxy.
 
-## Designing the System
+<Figure
+  src={ipcImg}
+  alt="A diagram showing a client talking to a proxy, which in turn communicates with a cache server via IPC and a web server via HTTP."
+  caption="The proxy acts as a middleman, consulting the cache via IPC before fetching from the source."
+/>
 
-The system architecture emphasized modularity and scalability:
+The key question is: how do these two separate processes, which by default know nothing about each other, communicate?
 
-1. **Proxy Server**:
-   - Serves as the interface between clients and the web or cache server.
-   - Uses multithreading to handle concurrent client requests efficiently.
-   - Employs a boss-worker model to distribute workload among threads.
+## A Primer on Inter-Process Communication (IPC)
 
-2. **Cache Server**:
-   - Acts as a centralized store for frequently accessed files.
-   - Communicates with the proxy using shared memory for data transfer and a command channel for coordination.
-   - Implements synchronization mechanisms to ensure safe access to shared resources.
+Modern operating systems are built on a bedrock principle: **process isolation**. Each process gets its own private virtual address space, its own chunk of memory that no other process can touch. This is a crucial security and stability feature. Without it, a bug in your web browser could crash your entire operating system.
 
-### High-Level Design Choices
+But this isolation creates a problem: what if processes *need* to cooperate? That's where IPC comes in. The OS provides a set of controlled "doorways" through the walls of process isolation. These mechanisms are all mediated by the kernel, ensuring that communication happens in a structured and safe way.
 
-- **Shared Memory for Data Transfer**: Chosen for its performance benefits, allowing large file contents to be shared without redundant copying.
-- **Command Channel for Coordination**: Used to transmit metadata and control messages between the proxy and cache, ensuring clear separation of concerns.
-- **Signal Handling for Cleanup**: Ensured proper resource management by intercepting termination signals to release shared memory and other IPC resources.
+Some common IPC mechanisms include:
 
-## Key Challenges and Insights
+-   **Pipes:** A simple one-way communication channel. What you write in one end, you read from the other.
+-   **Sockets:** The same mechanism used for network communication can be used for IPC on the same machine (via Unix domain sockets). It's like networking without the network.
+-   **Message Queues:** A structured way to send small "messages" between processes, like a system-wide mailbox.
+-   **Shared Memory:** The fastest, most powerful, and most dangerous method. The OS maps the same region of physical RAM into the virtual address space of multiple processes, allowing them to read and write to the same memory location directly.
 
-### Concurrency and Synchronization
+For this project, the goal was maximum performance, which pointed to a hybrid approach: **Shared Memory** for the heavy lifting (transferring file data) and a **Message Queue** for coordination.
 
-Building a multithreaded system required careful handling of shared resources. Synchronization primitives like mutexes and condition variables were critical for preventing race conditions and ensuring thread safety. The experience reinforced the importance of:
+## Shared Memory: The High-Speed Data Link
 
-- Designing thread-safe data structures.
-- Minimizing contention to maintain high performance.
-- Testing for edge cases, such as deadlocks and resource starvation.
+Shared memory is the IPC equivalent of teleportation. Instead of packaging data, handing it to the kernel (a system call), and having the kernel deliver it to another process (another system call), shared memory bypasses the kernel entirely for the data transfer itself.
 
-### IPC Design and Implementation
+Once set up, a write to a memory address in process A is *instantly* visible to process B at a corresponding memory address. This is incredibly fast because there's no copying. Both processes are looking at the *exact same bytes* in physical RAM.
 
-Using shared memory and message queues highlighted the trade-offs between performance and complexity. While shared memory provided high-speed data transfer, it required precise coordination to avoid inconsistencies. Lessons learned include:
+But this power comes with immense responsibility.
 
-- The value of clear communication protocols between processes.
-- The need for robust error handling in IPC mechanisms.
-- Balancing simplicity and functionality in system design.
+-   **No Built-in Synchronization:** Shared memory is just a raw slab of bytes. If the proxy is reading from a segment of memory while the cache is still writing to it, the proxy will read corrupted, nonsensical data. There are no traffic lights or stop signs; it's a free-for-all.
+-   **Life After Death:** IPC resources like shared memory segments exist at the OS level, outside of any single process. If your program crashes without cleaning up, that shared memory segment can be left orphaned, leaking system resources until the next reboot.
 
-### Resource Management
+## Message Queues: The Command Channel
 
-Proper cleanup of IPC resources was essential for preventing memory leaks and ensuring system stability. Implementing signal handlers to release resources upon process termination was a critical step in achieving reliability.
+If shared memory is the bulk cargo freighter, the message queue is the walkie-talkie used to coordinate the loading and unloading. We needed a way for the proxy to send commands to the cache, like "Do you have `/images/cat.jpg`?" or "Please store this file I just downloaded."
 
-## Broader Implications
+A message queue is perfect for this. It allows for sending small, structured messages between processes. The proxy could package up a request into a message, send it to the queue, and the cache, which would be listening on that queue, would receive it and know what to do. This neatly separates the control signals from the data itself. The messages contained metadata about the files, while the shared memory was reserved for the file contents.
 
-This project underscored the real-world relevance of IPC and multithreading in building efficient, scalable systems. From web servers to distributed databases, the concepts explored here apply to numerous domains where performance and concurrency are paramount.
+## Synchronization and Cleanup: Tying It Together
 
-Key takeaways include:
+With two powerful but unruly mechanisms in play, the biggest challenges were synchronization and resource management.
 
-- The importance of modular design in managing complexity.
-- The trade-offs between different IPC mechanisms.
-- The critical role of testing and debugging in developing robust systems.
+### Preventing Chaos with Semaphores
 
-## Conclusion
+To prevent the proxy and cache from writing over each other's data in the shared memory, we needed a synchronization primitive that works across processes. While mutexes are great for threads, **semaphores** are a classic solution for synchronizing separate processes.
 
-Developing a proxy and cache server with shared memory was a challenging yet rewarding experience. It provided a deeper understanding of systems programming concepts and practical insights into designing scalable and efficient solutions.
+A semaphore acts as a gatekeeper for a resource. Before accessing the shared memory, a process must acquire the semaphore. If the semaphore is already taken, the process will block (sleep) until it's released. This ensures that only one process can be operating on the shared data at any given time, preventing data races and corruption. It's the traffic light system we needed for our shared memory highway.
 
-For those interested in exploring IPC, projects like this offer an excellent opportunity to build foundational skills. Whether working on simple file servers or complex distributed systems, the principles of concurrency, synchronization, and resource management remain universal.
+### Graceful Exits with Signal Handlers
+
+The "orphaned resource" problem is a classic bug in systems programming. To solve it, I implemented **signal handlers**. A signal is a notification sent to a process by the OS about an event. By catching signals like `SIGINT` (from Ctrl-C) or `SIGTERM` (from a `kill` command), the program can execute a special cleanup function before it terminates. This function's job was to meticulously detach from and remove the shared memory segments and message queues, ensuring the system remained clean no matter how the processes exited.
+
+## Conclusion: Building Cooperative Systems
+
+This project was a fantastic lesson in the trade-offs of system design. While building a single, monolithic program is often simpler, splitting a system into specialized processes can lead to a more modular, scalable, and maintainable architecture.
+
+The key takeaways were:
+
+-   **IPC is a spectrum:** There's a tool for every job, from slow-but-simple pipes to fast-but-complex shared memory. The right choice depends entirely on the problem's requirements.
+-   **Synchronization is non-negotiable:** With great power comes great responsibility. Using high-performance IPC like shared memory *requires* robust, process-aware synchronization to prevent chaos.
+-   **Resource management is paramount:** Processes are mortal, but OS-level resources can be eternal. Writing code that cleans up after itself is a hallmark of a reliable system.
+
+While a production cache might use more advanced techniques, the fundamental principles are the same. This project provided a tangible, low-level understanding of how independent programs can be orchestrated to build a cooperative, high-performance system.
 
 ## Additional resources
 
-- [GIOS Course Website](https://omscs.gatech.edu/cs-6200-introduction-operating-systems)
-- [K&R C Programming Language](https://en.wikipedia.org/wiki/The_C_Programming_Language)
-- [Beej's Guide to Network Programming](https://beej.us/guide/bgnet/)
-- [Beej's Guide to C Programming](https://beej.us/guide/bgc/)
-- [Beej's Guide to Unix Socket Programming](https://beej.us/guide/bgnet/)
-- [Linux Programming Interface](https://man7.org/tlpi/)
-- [Operating Systems: Three Easy Pieces](https://pages.cs.wisc.edu/~remzi/OSTEP/)
+These books and guides were extremely helpful for understanding the concepts and APIs for IPC in C.
+
+<BookCard
+  title="The C Programming Language"
+  author="Brian W. Kernighan and Dennis M. Ritchie"
+  img={cLangImg}
+  url="https://www.google.com/books/edition/The_C_Programming_Language/OpJ_0zpF7jIC"
+>
+    <p>
+        The definitive book on C, written by its creators. Essential for mastering the language itself.
+    </p>
+</BookCard>
+
+<BookCard
+  title="Beej's Guides to C, Network Programming, and IPC"
+  author="Brian 'Beej' Hall"
+  img={beejGuidesImg}
+  url="https://beej.us/guide/"
+>
+    <p>
+        An invaluable, practical, and free resource. The IPC guide was a lifesaver for this project, providing clear, working examples for shared memory and semaphores.
+    </p>
+</BookCard>
+
+<BookCard
+  title="The Linux Programming Interface"
+  author="Michael Kerrisk"
+  img={linuxInterfaceImg}
+  url="https://man7.org/tlpi/"
+>
+    <p>
+        The encyclopedic guide to the Linux and UNIX system programming interface. The chapters on System V IPC and POSIX IPC are incredibly detailed and authoritative.
+    </p>
+</BookCard>
+
+<BookCard
+  title="Operating Systems: Three Easy Pieces"
+  author="Remzi H. Arpaci-Dusseau and Andrea C. Arpaci-Dusseau"
+  img={osTepImg}
+  url="https://pages.cs.wisc.edu/~remzi/OSTEP/"
+>
+  <p>
+    This is the main book I used to supplement the lectures. Its chapters on concurrency and persistence provide the conceptual backbone for understanding why IPC is necessary and how it works.
+  </p>
+</BookCard>
+
+> [!info] A Note on Code Availability
+> In accordance with Georgia Tech's academic integrity policy and the license for course materials, the source code for this project is kept in a private repository. I believe passionately in sharing knowledge, but I also firmly respect the university's policies. This document follows [Dean Joyner's advice on sharing projects](https://www.reddit.com/r/OMSCS/comments/zwdwns/comment/j1udv6w/).
+>
+> I would be delighted to discuss the implementation details, architecture, or specific code sections in an interview. Please feel free to reach out to request private access to the repository.
