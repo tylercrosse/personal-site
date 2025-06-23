@@ -291,7 +291,6 @@
                 const item = document.createElement("div");
                 item.className = "result-item";
                 item.dataset.href = sub_result.url;
-                
 
                 if ("anchor" in sub_result) {
                   item.classList.add("sub-result-item");
@@ -524,7 +523,21 @@
     padding-top: 10vh;
   }
 
+  @keyframes omnibar-open-animation {
+    from {
+      transform: scale(1.05);
+      opacity: 0;
+      filter: blur(15px);
+    }
+    to {
+      transform: scale(1);
+      opacity: 1;
+      filter: blur(0px);
+    }
+  }
+
   .omnibar-container {
+    animation: omnibar-open-animation 0.2s cubic-bezier(0.43, 0.195, 0.02, 1);
     background: white;
     border-radius: 12px;
     box-shadow:

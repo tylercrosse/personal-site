@@ -25,4 +25,10 @@ declare global {
       }>;
     };
   }
+}
+
+declare namespace App {
+  interface Locals {
+    figureCounter?: number;
+  }
 } 

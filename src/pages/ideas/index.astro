@@ -204,28 +204,34 @@ const allPostsData = posts.map((post) => {
       <p>The notes, thoughts, and projects I've been working on.</p>
     </div>
 
-    <div class="select-filters">
-      <select id="type-filter">
-        <option value="all">All types</option>
-        {allTypes.map((type) => <option value={type}>{type}</option>)}
-      </select>
-      <select id="status-filter">
-        <option value="all">All statuses</option>
-        {allStatuses.map((status) => <option value={status}>{status}</option>)}
-      </select>
-    </div>
+    <div class="js-required">
+      <div class="select-filters">
+        <select id="type-filter">
+          <option value="all">All types</option>
+          {allTypes.map((type) => <option value={type}>{type}</option>)}
+        </select>
+        <select id="status-filter">
+          <option value="all">All statuses</option>
+          {
+            allStatuses.map((status) => (
+              <option value={status}>{status}</option>
+            ))
+          }
+        </select>
+      </div>
 
-    <div class="filters" data-pagefind-ignore>
-      <ul class="tag-list">
-        <li><button class="active" id="all-tags">All Topics</button></li>
-        {
-          allTags.map((tag) => (
-            <li>
-              <button data-tag={tag}>{tag}</button>
-            </li>
-          ))
-        }
-      </ul>
+      <div class="filters" data-pagefind-ignore>
+        <ul class="tag-list">
+          <li><button class="active" id="all-tags">All Topics</button></li>
+          {
+            allTags.map((tag) => (
+              <li>
+                <button data-tag={tag}>{tag}</button>
+              </li>
+            ))
+          }
+        </ul>
+      </div>
     </div>
   </header>
 

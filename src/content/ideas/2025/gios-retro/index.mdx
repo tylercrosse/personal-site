@@ -1,9 +1,8 @@
 ---
 title: 'Graduate Introduction to Operating Systems'
 description: 'What I Learned in Graduate Introduction to Operating Systems (GIOS) - A Retrospective'
-date: '2025-05-05'
-updated: '2025-06-05'
-status: 'in-progress'
+date: '2025-06-22'
+status: 'complete'
 type: 'retro'
 tags: ['GIOS', 'operating-systems', 'c', 'c++', 'multithreading', 'IPC', 'socket-programming', 'distributed-systems']
 category: ['mscs']
@@ -16,22 +15,28 @@ image:
 ---
 
 import { Image } from "astro:assets";
+
+import BookCard from "../../../../components/BookCard.astro";
+import Figure from "../../../../components/Figure.astro";
+
+import osTepImg from "../../../books/os-tep.jpg";
+import csAppImg from "../../../books/cs-app.jpg";
+import cLangImg from "../../../books/c-lang.jpg";
+import beejGuidesImg from "../../../books/beej-network.jpg";
+import linuxInterfaceImg from "../../../books/linux-interface.png";
+
 import osOverview from "./os-overview.png";
 import processThread from "./process-thread.png";
-import contextSwitch from "./context-switch.png";
+import contextSwitch from "./context-switch2.png";
 import interrupts from "./interrupts.png";
-import addressTranslation from "./address-translation3.png";
-import multiLevelPageTables from "./multi-level-page-tables.png";
-import BookCard from "../../../../components/BookCard.astro";
-import osTepImg from "./os-tep.jpg";
-import csAppImg from "./cs-app.jpg";
-import cLangImg from "./c-lang.jpg";
-import beejGuidesImg from "./beej-network.jpg";
-import linuxInterfaceImg from "./linux-interface.png";
+import addressTranslation from "./address-translation4.png";
+import multiLevelPageTables from "./multi-level-page-tables2.png";
+import hypervisors from "./hypervisors.png";
+
 
 ## Introduction
 
-This article is part personal reflection, part technical summary. I recently completed Georgia Tech's Introduction to Graduate Operating Systems (GIOS), and I wanted to take the time to solidify what I've learned—both for myself, in the spirit of the Feynman technique, and for others who might be curious about the course or about me. This includes future OMSCS students, hiring managers, and peers who want a better sense of what this course covers and what I now know (and don't know yet).
+This article is part personal reflection, part technical summary. I recently completed Georgia Tech's [CS 6200: Graduate Introduction to Operating Systems (GIOS)](https://omscs.gatech.edu/cs-6200-introduction-operating-systems), and I wanted to take the time to solidify what I've learned—both for myself, in the spirit of the Feynman technique, and for others who might be curious about the course or about me. This includes future OMSCS students, hiring managers, and peers who want a better sense of what this course covers and what I now know (and don't know yet).
 
 There's always a tension when writing something like this. I want to be honest about what I've learned and the depth of my understanding, while acknowledging that I'm still learning. This course was challenging and rewarding, and this write-up is my way of digesting the material and sharing it in a format that feels productive.
 
@@ -39,9 +44,12 @@ There's always a tension when writing something like this. I want to be honest a
 
 At a high level, an operating system (OS) "is a special piece of software that **abstracts and arbitrates** the use of a computer system." It sits between user applications and hardware, providing the illusion of a cohesive, manageable system despite the complexity and diversity of hardware components.
 
-<div style="max-width: 640px; margin: 0 auto;">
-  <Image src={osOverview} alt="OS Overview" />
-</div>
+<Figure
+  src={osOverview}
+  alt="OS Overview"
+  width={640}
+  caption="The OS is a special piece of software that abstracts and arbitrates the use of a computer system."
+/>
 
 This layered architecture separates **user space**, where applications run, from **kernel space**, where the OS performs core functions like managing hardware and system resources. Applications interact with the OS through **standard libraries** and **system calls**, enabling functionality like file operations or memory allocation without direct hardware access. The OS, in turn, controls and coordinates the hardware layer, which includes the CPU, memory, storage, displays, network devices, and input peripherals.
 
@@ -75,9 +83,12 @@ A **process** is an instance of a running program, and the OS is responsible for
 * The OS manages the lifecycle of processes: creation, execution, suspension, and termination.
 * Each process has its own memory space, file descriptors, and state.
 
-<div style="max-width: 320px; margin: 0 auto;">
-  <Image src={processThread} alt="Process Thread" />
-</div>
+<Figure
+  src={processThread}
+  alt="Process Thread"
+  width={320}
+  caption="A process is an instance of a program in execution."
+/>
 
 To enable more granular concurrency within a process, modern systems use **threads**. A thread is the smallest unit of execution and shares the same address space with other threads in the same process. This shared memory model allows for lightweight context switches and efficient communication but also introduces complexity: threads must coordinate access to shared resources to avoid data races and inconsistencies.
 
@@ -85,9 +96,12 @@ To enable more granular concurrency within a process, modern systems use **threa
 * Multiple threads in a single process share the same memory space.
 * Threads introduce concurrency and require careful synchronization.
 
-<div style="max-width: 720px; margin: 0 auto;">
-  <Image src={contextSwitch} alt="Context Switch" />
-</div>
+<Figure
+  src={contextSwitch}
+  alt="Context Switch"
+  fullWidth
+  caption="A context switch is the process of switching the CPU from one process or thread to another."
+/>
 
 A **context switch** is the process of switching the CPU from one process or thread to another. It involves saving the current state of the running process to its PCB and then loading the state of the next process to be executed from its PCB. This allows multiple processes to share a single CPU, enabling multitasking. The operating system code (in kernel mode) manages the context switch by interrupting the current process and switching to the next process.
 
@@ -102,7 +116,7 @@ To execute a system call, like `read` or `write`, the current process has to con
 lecture</a> and which covers:</summary>
   - The memory layout of a process including the stack, heap, and data segments.
   - The process address space and memory management.
-  - What's in the process control block (PCB) and how it's used to manage the process's state and metadata.
+  - What's in the process control block (PCB) and how its used to manage the process's state and metadata.
   - The execution states of a process and the life cycle as it transitions between them (new, ready, running, waiting, terminated).
   - The paper "An Introduction to Programming with Threads" [@birrell1989introduction]
 </details>
@@ -212,10 +226,13 @@ Beyond choosing a concurrency pattern, building a robust multithreaded system re
 *   **Threading Models**: To balance these trade-offs, systems use different models. The **one-to-one** model (e.g., modern Linux, Windows) maps each user thread to a kernel thread, offering good performance and simplicity. The **many-to-one** model maps many user threads to a single kernel thread, which is efficient but suffers from the blocking problem. The **many-to-many** model offers a hybrid approach, but adds significant complexity.
 
 *   **Handling Interrupts and Signals**:
-    <div style="max-width: 720px; margin: 0 auto;">
-      <Image src={interrupts} alt="Interrupts" />
-    </div>
-    The diagram above illustrates the interrupt handling cycle. Interrupts are asynchronous signals sent to the CPU from software, I/O devices, or internal processor exceptions. When an interrupt is issued, the CPU halts the currently running code, saves its state, and executes a special function called an interrupt handler to address the event. Once the handler finishes, the CPU restores the original state and resumes execution. This mechanism is fundamental to multitasking and allows the OS to respond to events efficiently.
+    <Figure
+      src={interrupts}
+      alt="Interrupts"
+      width={720}
+      caption="The interrupt handling cycle."
+    />
+    Figure 4. illustrates the interrupt handling cycle. Interrupts are asynchronous signals sent to the CPU from software, I/O devices, or internal processor exceptions. When an interrupt is issued, the CPU halts the currently running code, saves its state, and executes a special function called an interrupt handler to address the event. Once the handler finishes, the CPU restores the original state and resumes execution. This mechanism is fundamental to multitasking and allows the OS to respond to events efficiently.
 
     In a multithreaded environment, handling these asynchronous events is particularly complex. A classic problem arises when a signal handler, which runs in the context of the interrupted thread, tries to acquire a mutex that the thread already holds, causing an instant deadlock. A common, simple solution is to disable signals around critical sections. More advanced OS designs may treat the main work of an interrupt handler as a separate, lower-priority thread (a "bottom-half" handler) to avoid such issues.
 
@@ -223,7 +240,7 @@ Beyond choosing a concurrency pattern, building a robust multithreaded system re
 
 <details>
   <summary>For more details, see the <a href="https://www.youtube.com/watch?v=azvdSW1xj3w&list=PLTsf9UeqkReZbK7xqIYn_mXmsQZIb011T&index=6" target="_blank">Thread Design Considerations lecture</a> which covers:</summary>
-  - Data structures used by the OS (like in Solaris) to manage user and kernel threads, including the concept of a Lightweight Process (LWP). {/* TODO: cite solaris and lightweight threads papers */}
+  - Data structures used by the OS (like in Solaris) to manage user and kernel threads, including the concept of a Lightweight Process (LWP).
   - The difference between "hard" and "light" process state and how it optimizes context switching.
   - The mechanics of signal masks and interrupt handling on multicore systems in greater detail.
   - The papers "Beyond Multiprocessing: Multithreading the SunOS Kernel"[@eykholt1992beyond] and "Implementing Lightweight Threads" [@stein1992implementing]
@@ -272,13 +289,15 @@ Modern systems use more sophisticated schedulers. The **Linux Completely Fair Sc
 
 ### Memory Management
 
-Memory management is the OS's strategy for arbitrating and controlling the finite physical memory (DRAM) on behalf of all running processes. The central abstraction is **virtual memory**, which gives each process the illusion of having its own large, contiguous, and private address space. Each process has it's own virtual address space. In reality, the OS, with crucial help from the hardware's **Memory Management Unit (MMU)**, translates these virtual addresses to physical addresses in DRAM. To speed up the constant address translations, the MMU uses a fast, specialized hardware cache called a **Translation Lookaside Buffer (TLB)**, which stores recently used mappings. A "TLB miss" forces a much slower lookup in the page table.
+Memory management is the OS's strategy for arbitrating and controlling the finite physical memory (DRAM) on behalf of all running processes. The central abstraction is **virtual memory**, which gives each process the illusion of having its own large, contiguous, and private address space. Each process has its own virtual address space. In reality, the OS, with crucial help from the hardware's **Memory Management Unit (MMU)**, translates these virtual addresses to physical addresses in DRAM. To speed up the constant address translations, the MMU uses a fast, specialized hardware cache called a **Translation Lookaside Buffer (TLB)**, which stores recently used mappings. A "TLB miss" forces a much slower lookup in the page table.
 
-{/* ![Address Translation](./address-translation3.png) */}
-
-<div style="grid-column: 1 / 4 !important; max-width: 1000px; margin: 0 auto;">
-  <Image src={addressTranslation} alt="Address Translation" />
-</div>
+<Figure
+  src={addressTranslation}
+  alt="Address Translation"
+  width={1000}
+  fullWidth
+  caption="Address Translation is the process of translating a virtual address (top) to a physical address (bottom). The fastest path is to use the TLB (green). If the TLB miss, the page table is used (yellow). If the page indicates the page isn't present a page fault occurs and the page is loaded from disk (red)."
+/>
 
 The dominant mechanism for this is **paging**. The virtual address space is divided into fixed-size blocks called **pages**, and physical memory is divided into identically sized **page frames**. For each process, the OS maintains a **page table** that maps virtual page numbers (VPNs) to physical frame numbers (PFNs). Each entry in this table, a Page Table Entry (PTE), also contains important metadata. This metadata is varies between architectures (x86, ARM, etc.) and often include a **present bit** (is the page in DRAM?), a **dirty bit** (has the page been modified?), an **access bit** (for read and write operations), and **protection bits** (read/write/execute permissions).
 
@@ -288,9 +307,12 @@ Since each process has it's own virtual address space with it's own page tables,
 
 Since a page table for a large address space can itself be enormous, modern systems use **multi-level page tables** to save space. Each level of the page table is a pointer to the next level of the page table. The same optimization of using a TLB to cache these entries still applies.
 
-<div style="max-width: 500px; margin: 0 auto;">
-  <Image src={multiLevelPageTables} alt="Multi-Level Page Tables" />
-</div>
+<Figure
+  src={multiLevelPageTables}
+  alt="Multi-Level Page Tables"
+  width={500}
+  caption="Multi-Level Page Tables are a way to save space in the page table. The first level is a pointer to the next level of the page table. The second level is a pointer to the next level of the page table, and so on. This allows for a very large address space to be supported with a relatively small page table."
+/>
 
 Beyond managing memory for user processes, the OS kernel must also efficiently allocate memory for its own internal data structures. This presents unique challenges, primarily **fragmentation**. **External fragmentation** occurs when free memory is broken into many small, non-contiguous blocks, eventually making it impossible to satisfy a large allocation request even though enough total memory is free. **Internal fragmentation** occurs when the allocator provides a block of memory that is larger than the request, wasting the space left over inside the block.
 
@@ -366,7 +388,13 @@ There are two primary models for this:
 *   **Type 1 (Bare-Metal)**: The hypervisor runs directly on the physical hardware, and the guest VMs run on top of it. This model is common in datacenter environments, with examples like VMware ESX and Xen. Often, a privileged "service VM" (like Xen's `dom0`) is used to manage device drivers.
 *   **Type 2 (Hosted)**: The hypervisor is an application that runs on top of a conventional host OS (e.g., Linux, Windows). Examples include KVM, VirtualBox, and VMware Workstation. This model leverages the host OS for device support and management.
 
-{/* TODO add diagram of virtualization? */}
+<Figure
+  src={hypervisors}
+  alt="Hypervisors"
+  caption="Type 1 (Bare-Metal) left and Type 2 (Hosted) right"
+  width={1000}
+  fullWidth
+/>
 
 The core challenge of virtualization is that the guest OS expects to have full, privileged control over the hardware, but the hypervisor must remain in charge. Historically, this was solved with clever software techniques. For CPU virtualization, where some privileged instructions on older x86 chips wouldn't trap to the hypervisor, solutions included **binary translation** (dynamically rewriting problematic guest code) and **paravirtualization** (modifying the guest OS to make explicit calls—"hypercalls"—to the VMM). For memory, the hypervisor creates **shadow page tables** to map the guest's virtual addresses directly to machine addresses. For I/O, the **split device driver model** is common, with a lightweight "front-end" driver in the guest communicating with a full "back-end" driver in the host or service VM.
 
@@ -443,7 +471,7 @@ The final topic of the course brings everything together by looking at the techn
 
 The services offered by cloud providers are typically categorized into different models, defining the trade-off between user control and provider management:
 *   **Infrastructure as a Service (IaaS)**: Provides the fundamental building blocks—virtual machines, storage, and networking. The user manages the OS, applications, and data. (e.g., Amazon EC2, Google Compute Engine).
-*   **Platform as a Service (PaaS)**: Provides a platform for developers to build and deploy applications without worrying about the underlying infrastructure. The provider manages the OS, runtime, and middleware. (e.g., Heroku, Google App Engine).
+*   **Platform as a Service (PaaS)**: Provides a platform for developers to build and deploy applications without worrying about the underlying infrastructure. The provider manages the OS, runtime, and middleware. (e.g., Vercel, Google App Engine).
 *   **Software as a Service (SaaS)**: Delivers a complete software application over the internet. The user simply consumes the service. (e.g., Gmail, Salesforce).
 
 These cloud services are made possible by many of the technologies discussed throughout the course. **Virtualization** provides fungible, isolated compute resources. **Large-scale cluster schedulers** (like Kubernetes, Mesos, or YARN) manage resource allocation across thousands of machines. **Distributed file systems** and **NoSQL databases** provide scalable storage, and the entire stack is built on the principles of fault tolerance and redundancy to handle the inevitable failures in a large, complex system.
@@ -459,7 +487,11 @@ These cloud services are made possible by many of the technologies discussed thr
 
 The projects were a great way to solidify the concepts learned in the course and took up a significant portion of the time I spent on the course. The average on [OMSCS Central](https://www.omscentral.com/courses/graduate-introduction-to-operating-systems/reviews) across all of the student reviews was 18.5 hours per week. I averaged a bit more than that, particularly on the first project, because of my lack of C and C++ experience. There were a few weeks when I hammered out the projects where I spent closer to 40 hours in a week. Once I got the projects done, I was able to focus on the lectures and readings which took up less time.
 
-I'm planning to include follow up posts on each of the projects in the future and will update this post with links to them.
+I'm writing follow-up posts for each project to explore them in more detail. Here is the first one:
+
+- **Project 1:** [Concurrent File Server](/ideas/2025/gios-pr1/)
+
+I'll update this list as I write about the other projects.
 
 ### Grading
 
@@ -474,7 +506,7 @@ Here's the grading breakdown from when I took the course in Spring 2024:
 | Midterm Exam | 25% | Everything up to Memory, Persistence, & I/O |
 | Final Exam | 25% | Everything after that |
 
-The course was graded on a slight curve. A ton of folks withdrew (38.1%), so the [grade distribution](https://lite.gatech.edu/lite_script/dashboards/grade_distribution.html) for the ones that ones that stayed was pretty good. It was as follows:
+The course was graded on a slight curve. A ton of folks withdrew (38.1%), so the [grade distribution](https://lite.gatech.edu/lite_script/dashboards/grade_distribution.html) for the ones that stayed was pretty good. It was as follows:
 
 | Grade | Percentage |
 |-------|------------|
@@ -544,13 +576,22 @@ These are the books I used to complement the lectures and help me with the proje
     </p>
 </BookCard>
 
-## My Experience
+### Other Resources
 
-GIOS was the first course I took for the program and it was a great way to get my feet wet. The projects were difficult but meaningful, and the concepts challenged me to think at a systems level, below the abstraction layers I'm usually working in. While I still have much to learn, this course pushed me toward the kind of engineer I want to become.
+Here are some other posts I found helpful:
 
-I hope this post is helpful for others considering GIOS, and I welcome feedback or corrections—especially if you catch something I got wrong. I'm still learning, and learning in public is part of the process.
+- [Eugene Yan's post on GIOS](https://eugeneyan.com/writing/omscs-cs6200-introduction-to-operating-systems/)
+- [Lowyx's post on GIOS](https://lowyx.com/posts/gt-gios/)
+- [OMSCS Notes](https://www.omscs-notes.com/operating-systems/welcome)
+- [Andrew Repp's Notes on GIOS](https://andrewrepp.com/omscs_classes/GIOS)
 
 ---
+
+## My Experience
+
+GIOS was the first course I took for the program and it was a great way to get my feet wet. The projects were difficult but meaningful, and the concepts challenged me to think at a systems level.
+
+I hope this post is helpful for others considering GIOS, and I welcome feedback or corrections—especially if you catch something I got wrong. I'm still learning, and learning in public is part of the process.
 
 Thanks for reading!
 
