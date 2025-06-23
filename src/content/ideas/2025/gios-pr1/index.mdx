@@ -1,8 +1,8 @@
 ---
 title: 'Concurrent File Server'
 description: 'Building a Scalable Multithreaded File Server in C: Lessons from a Graduate OS Course'
-date: '2025-06-19'
-status: 'in-progress'
+date: '2025-06-22'
+status: 'complete'
 type: 'project'
 tags: ['GIOS', 'operating-systems', 'c', 'multithreading', 'socket-programming']
 category: ['projects']
@@ -32,7 +32,7 @@ import bossWorker from "./boss-worker2.png";
 
 ## Introduction: The Challenge
 
-Ever wondered what *really* happens when you click a download link? It seems like magic. You click, and a file appears. But behind that simple action lies a carefully orchestrated conversation between computers, a conversation refereed by their operating systems. For my first project in Georgia Tech's [Graduate Introduction to Operating Systems (CS 6200)](https://omscs.gatech.edu/cs-6200-introduction-operating-systems), I had to build one side of that conversation: a multithreaded file server, from scratch, in C.
+Ever wondered what *really* happens when you click a download link? It seems like magic. You click, and a file appears. But behind that simple action lies a carefully orchestrated conversation between computers, a conversation refereed by their operating systems. For my first project in Georgia Tech's [CS 6200: Graduate Introduction to Operating Systems (GIOS)](https://omscs.gatech.edu/cs-6200-introduction-operating-systems), I had to build one side of that conversation: a multithreaded file server, from scratch, in C.
 
 The goal was to implement a server capable of handling multiple file requests simultaneously. This wasn't just about writing code; it was about a head-first dive into the core concepts that make the modern internet possible: network sockets, system calls, concurrency, and protocol design.
 

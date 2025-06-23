@@ -1,9 +1,8 @@
 ---
 title: 'Graduate Introduction to Operating Systems'
 description: 'What I Learned in Graduate Introduction to Operating Systems (GIOS) - A Retrospective'
-date: '2025-06-15'
-# updated: '2025-06-15'
-status: 'in-progress'
+date: '2025-06-22'
+status: 'complete'
 type: 'retro'
 tags: ['GIOS', 'operating-systems', 'c', 'c++', 'multithreading', 'IPC', 'socket-programming', 'distributed-systems']
 category: ['mscs']
@@ -28,7 +27,7 @@ import linuxInterfaceImg from "../../../books/linux-interface.png";
 
 import osOverview from "./os-overview.png";
 import processThread from "./process-thread.png";
-import contextSwitch from "./context-switch.png";
+import contextSwitch from "./context-switch2.png";
 import interrupts from "./interrupts.png";
 import addressTranslation from "./address-translation4.png";
 import multiLevelPageTables from "./multi-level-page-tables2.png";
@@ -37,7 +36,7 @@ import hypervisors from "./hypervisors.png";
 
 ## Introduction
 
-This article is part personal reflection, part technical summary. I recently completed Georgia Tech's Introduction to Graduate Operating Systems (GIOS), and I wanted to take the time to solidify what I've learned—both for myself, in the spirit of the Feynman technique, and for others who might be curious about the course or about me. This includes future OMSCS students, hiring managers, and peers who want a better sense of what this course covers and what I now know (and don't know yet).
+This article is part personal reflection, part technical summary. I recently completed Georgia Tech's [CS 6200: Graduate Introduction to Operating Systems (GIOS)](https://omscs.gatech.edu/cs-6200-introduction-operating-systems), and I wanted to take the time to solidify what I've learned—both for myself, in the spirit of the Feynman technique, and for others who might be curious about the course or about me. This includes future OMSCS students, hiring managers, and peers who want a better sense of what this course covers and what I now know (and don't know yet).
 
 There's always a tension when writing something like this. I want to be honest about what I've learned and the depth of my understanding, while acknowledging that I'm still learning. This course was challenging and rewarding, and this write-up is my way of digesting the material and sharing it in a format that feels productive.
 
@@ -100,7 +99,7 @@ To enable more granular concurrency within a process, modern systems use **threa
 <Figure
   src={contextSwitch}
   alt="Context Switch"
-  width={720}
+  fullWidth
   caption="A context switch is the process of switching the CPU from one process or thread to another."
 />
 
@@ -117,7 +116,7 @@ To execute a system call, like `read` or `write`, the current process has to con
 lecture</a> and which covers:</summary>
   - The memory layout of a process including the stack, heap, and data segments.
   - The process address space and memory management.
-  - What's in the process control block (PCB) and how it's used to manage the process's state and metadata.
+  - What's in the process control block (PCB) and how its used to manage the process's state and metadata.
   - The execution states of a process and the life cycle as it transitions between them (new, ready, running, waiting, terminated).
   - The paper "An Introduction to Programming with Threads" [@birrell1989introduction]
 </details>
@@ -241,7 +240,7 @@ Beyond choosing a concurrency pattern, building a robust multithreaded system re
 
 <details>
   <summary>For more details, see the <a href="https://www.youtube.com/watch?v=azvdSW1xj3w&list=PLTsf9UeqkReZbK7xqIYn_mXmsQZIb011T&index=6" target="_blank">Thread Design Considerations lecture</a> which covers:</summary>
-  - Data structures used by the OS (like in Solaris) to manage user and kernel threads, including the concept of a Lightweight Process (LWP). {/* TODO: cite solaris and lightweight threads papers */}
+  - Data structures used by the OS (like in Solaris) to manage user and kernel threads, including the concept of a Lightweight Process (LWP).
   - The difference between "hard" and "light" process state and how it optimizes context switching.
   - The mechanics of signal masks and interrupt handling on multicore systems in greater detail.
   - The papers "Beyond Multiprocessing: Multithreading the SunOS Kernel"[@eykholt1992beyond] and "Implementing Lightweight Threads" [@stein1992implementing]
@@ -290,7 +289,7 @@ Modern systems use more sophisticated schedulers. The **Linux Completely Fair Sc
 
 ### Memory Management
 
-Memory management is the OS's strategy for arbitrating and controlling the finite physical memory (DRAM) on behalf of all running processes. The central abstraction is **virtual memory**, which gives each process the illusion of having its own large, contiguous, and private address space. Each process has it's own virtual address space. In reality, the OS, with crucial help from the hardware's **Memory Management Unit (MMU)**, translates these virtual addresses to physical addresses in DRAM. To speed up the constant address translations, the MMU uses a fast, specialized hardware cache called a **Translation Lookaside Buffer (TLB)**, which stores recently used mappings. A "TLB miss" forces a much slower lookup in the page table.
+Memory management is the OS's strategy for arbitrating and controlling the finite physical memory (DRAM) on behalf of all running processes. The central abstraction is **virtual memory**, which gives each process the illusion of having its own large, contiguous, and private address space. Each process has its own virtual address space. In reality, the OS, with crucial help from the hardware's **Memory Management Unit (MMU)**, translates these virtual addresses to physical addresses in DRAM. To speed up the constant address translations, the MMU uses a fast, specialized hardware cache called a **Translation Lookaside Buffer (TLB)**, which stores recently used mappings. A "TLB miss" forces a much slower lookup in the page table.
 
 <Figure
   src={addressTranslation}
@@ -507,7 +506,7 @@ Here's the grading breakdown from when I took the course in Spring 2024:
 | Midterm Exam | 25% | Everything up to Memory, Persistence, & I/O |
 | Final Exam | 25% | Everything after that |
 
-The course was graded on a slight curve. A ton of folks withdrew (38.1%), so the [grade distribution](https://lite.gatech.edu/lite_script/dashboards/grade_distribution.html) for the ones that ones that stayed was pretty good. It was as follows:
+The course was graded on a slight curve. A ton of folks withdrew (38.1%), so the [grade distribution](https://lite.gatech.edu/lite_script/dashboards/grade_distribution.html) for the ones that stayed was pretty good. It was as follows:
 
 | Grade | Percentage |
 |-------|------------|
@@ -577,20 +576,22 @@ These are the books I used to complement the lectures and help me with the proje
     </p>
 </BookCard>
 
-## My Experience
+### Other Resources
 
-GIOS was the first course I took for the program and it was a great way to get my feet wet. The projects were difficult but meaningful, and the concepts challenged me to think at a systems level, below the abstraction layers I'm usually working in. While I still have much to learn, this course pushed me toward the kind of engineer I want to become.
+Here are some other posts I found helpful:
 
-I hope this post is helpful for others considering GIOS, and I welcome feedback or corrections—especially if you catch something I got wrong. I'm still learning, and learning in public is part of the process.
-
-{/* TODO links to other posts
-- https://eugeneyan.com/writing/omscs-cs6200-introduction-to-operating-systems/
-- https://lowyx.com/posts/gt-gios/
-- https://www.omscs-notes.com/operating-systems/welcome
-- https://andrewrepp.com/omscs_classes/GIOS
-*/}
+- [Eugene Yan's post on GIOS](https://eugeneyan.com/writing/omscs-cs6200-introduction-to-operating-systems/)
+- [Lowyx's post on GIOS](https://lowyx.com/posts/gt-gios/)
+- [OMSCS Notes](https://www.omscs-notes.com/operating-systems/welcome)
+- [Andrew Repp's Notes on GIOS](https://andrewrepp.com/omscs_classes/GIOS)
 
 ---
+
+## My Experience
+
+GIOS was the first course I took for the program and it was a great way to get my feet wet. The projects were difficult but meaningful, and the concepts challenged me to think at a systems level.
+
+I hope this post is helpful for others considering GIOS, and I welcome feedback or corrections—especially if you catch something I got wrong. I'm still learning, and learning in public is part of the process.
 
 Thanks for reading!
 

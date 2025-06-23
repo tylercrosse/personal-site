@@ -243,9 +243,14 @@ input {
 }
 table {
   margin-bottom: 1em;
+  border-collapse: collapse;
+  width: fit-content;
 }
 thead th {
   border-bottom: 1px solid var(--sol-1);
+}
+th, td {
+  padding-right: 1em;
 }
 img {
   max-width: 100%;
