@@ -1,0 +1,92 @@
+---
+// Giscus Comments Component
+// You'll need to configure these values based on your GitHub repository
+const GISCUS_CONFIG = {
+  repo: "tylercrosse/personal-site", // Your GitHub repository
+  repoId: "R_kgDOO5lCqA", // From giscus.app
+  category: "Comments", // Your chosen category
+  categoryId: "DIC_kwDOO5lCqM4Cr4xH", // From giscus.app
+  mapping: "pathname", // How to map pages to discussions
+  strict: "0", // Use strict title matching
+  reactionsEnabled: "1", // Enable reactions
+  emitMetadata: "0", // Emit discussion metadata
+  inputPosition: "bottom", // Comment box position
+  theme: "preferred_color_scheme", // Theme (will switch with your site theme)
+  lang: "en", // Language
+  loading: "lazy" // Loading strategy
+};
+---
+
+<div id="comments" class="comments-container">
+  <script 
+    src="https://giscus.app/client.js"
+    data-repo={GISCUS_CONFIG.repo}
+    data-repo-id={GISCUS_CONFIG.repoId}
+    data-category={GISCUS_CONFIG.category}
+    data-category-id={GISCUS_CONFIG.categoryId}
+    data-mapping={GISCUS_CONFIG.mapping}
+    data-strict={GISCUS_CONFIG.strict}
+    data-reactions-enabled={GISCUS_CONFIG.reactionsEnabled}
+    data-emit-metadata={GISCUS_CONFIG.emitMetadata}
+    data-input-position={GISCUS_CONFIG.inputPosition}
+    data-theme={GISCUS_CONFIG.theme}
+    data-lang={GISCUS_CONFIG.lang}
+    data-loading={GISCUS_CONFIG.loading}
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>
+
+<style>
+  .comments-container {
+    margin-top: 3rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--main-border-color, #e5e7eb);
+  }
+
+  /* Ensure giscus respects dark/light theme */
+  :global([data-effective-theme="dark"]) .comments-container {
+    border-top-color: var(--base03, #586e75);
+  }
+</style>
+
+<script>
+  // Handle theme switching for Giscus
+  function updateGiscusTheme() {
+    const theme = document.documentElement.getAttribute('data-effective-theme') || 'light';
+    const giscusTheme = theme === 'dark' ? 'dark' : 'light';
+    
+    const iframe = document.querySelector('iframe.giscus-frame') as HTMLIFrameElement;
+    if (iframe) {
+      iframe.contentWindow?.postMessage(
+        { giscus: { setConfig: { theme: giscusTheme } } },
+        'https://giscus.app'
+      );
+    }
+  }
+
+  // Listen for theme changes
+  const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      if (mutation.type === 'attributes' && mutation.attributeName === 'data-effective-theme') {
+        updateGiscusTheme();
+      }
+    });
+  });
+
+  // Start observing theme changes
+  observer.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ['data-effective-theme']
+  });
+
+  // Set initial theme when giscus loads
+  window.addEventListener('message', (event) => {
+    if (event.origin !== 'https://giscus.app') return;
+    if (!(typeof event.data === 'object' && event.data.giscus)) return;
+    
+    if (event.data.giscus.discussion) {
+      updateGiscusTheme();
+    }
+  });
+</script> 

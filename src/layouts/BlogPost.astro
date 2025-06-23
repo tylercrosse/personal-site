@@ -5,6 +5,7 @@ import type { CollectionEntry } from "astro:content";
 import type { MarkdownHeading } from "astro";
 import FormattedDate from "../components/FormattedDate.astro";
 import TableOfContents from "../components/TableOfContents.astro";
+import Comments from "../components/Comments.astro";
 import BaseLayout from "./BaseLayout.astro";
 
 type Props = CollectionEntry<"ideas">["data"] & {
@@ -224,6 +225,7 @@ const imageData = getImageData();
     <div class="prose">
       <slot />
       <TableOfContents headings={headings || []} />
+      <Comments />
     </div>
   </article>
 </BaseLayout>
