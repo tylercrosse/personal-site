@@ -11,7 +11,7 @@ const GISCUS_CONFIG = {
   reactionsEnabled: "1", // Enable reactions
   emitMetadata: "0", // Emit discussion metadata
   inputPosition: "bottom", // Comment box position
-  theme: "preferred_color_scheme", // Theme (will switch with your site theme)
+  theme: "transparent_dark", // Custom theme that works better with Solarized
   lang: "en", // Language
   loading: "lazy" // Loading strategy
 };
@@ -46,15 +46,84 @@ const GISCUS_CONFIG = {
 
   /* Ensure giscus respects dark/light theme */
   :global([data-effective-theme="dark"]) .comments-container {
-    border-top-color: var(--base03, #586e75);
+    border-top-color: var(--base01, #586e75);
+  }
+
+  /* Custom Solarized Dark styling for giscus */
+  :global([data-effective-theme="dark"]) .comments-container :global(.giscus) {
+    --color-prettylights-syntax-comment: var(--base01) !important;
+    --color-prettylights-syntax-constant: var(--cyan) !important;
+    --color-prettylights-syntax-entity: var(--yellow) !important;
+    --color-prettylights-syntax-storage-modifier-import: var(--base0) !important;
+    --color-prettylights-syntax-entity-tag: var(--red) !important;
+    --color-prettylights-syntax-keyword: var(--green) !important;
+    --color-prettylights-syntax-string: var(--cyan) !important;
+    --color-prettylights-syntax-variable: var(--blue) !important;
+    --color-prettylights-syntax-brackethighlighter-unmatched: var(--red) !important;
+    --color-prettylights-syntax-invalid-illegal: var(--red) !important;
+    --color-prettylights-syntax-carriage-return: var(--red) !important;
+    --color-prettylights-syntax-string-regexp: var(--cyan) !important;
+    --color-prettylights-syntax-markup-list: var(--yellow) !important;
+    --color-prettylights-syntax-markup-heading: var(--blue) !important;
+    --color-prettylights-syntax-markup-italic: var(--base0) !important;
+    --color-prettylights-syntax-markup-bold: var(--base0) !important;
+    --color-prettylights-syntax-markup-deleted: var(--red) !important;
+    --color-prettylights-syntax-markup-inserted: var(--green) !important;
+    --color-prettylights-syntax-markup-changed: var(--yellow) !important;
+    --color-prettylights-syntax-markup-ignored: var(--base01) !important;
+    --color-prettylights-syntax-meta-diff-range: var(--violet) !important;
+    --color-prettylights-syntax-brackethighlighter-angle: var(--base01) !important;
+    --color-prettylights-syntax-sublimelinter-gutter-mark: var(--base01) !important;
+    --color-prettylights-syntax-constant-other-reference-link: var(--cyan) !important;
+    
+    /* Giscus specific theme variables for Solarized Dark */
+    --color-canvas-default: var(--base03) !important; /* Main background */
+    --color-canvas-subtle: var(--base02) !important; /* Secondary background */
+    --color-border-default: var(--base02) !important; /* Borders */
+    --color-border-muted: var(--base01) !important; /* Muted borders */
+    --color-neutral-muted: var(--base01) !important; /* Muted text */
+    --color-fg-default: var(--base0) !important; /* Main text */
+    --color-fg-muted: var(--base01) !important; /* Secondary text */
+    --color-fg-subtle: var(--base00) !important; /* Subtle text */
+    --color-accent-fg: var(--blue) !important; /* Links and accents */
+    --color-accent-emphasis: var(--cyan) !important; /* Emphasized accents */
+    --color-success-fg: var(--green) !important; /* Success text */
+    --color-attention-fg: var(--yellow) !important; /* Warning text */
+    --color-danger-fg: var(--red) !important; /* Error text */
+    --color-btn-bg: var(--base02) !important; /* Button background */
+    --color-btn-border: var(--base01) !important; /* Button border */
+    --color-btn-text: var(--base0) !important; /* Button text */
+    --color-btn-hover-bg: var(--base01) !important; /* Button hover */
+    --color-btn-active-bg: var(--base00) !important; /* Button active */
+    --color-input-bg: var(--base02) !important; /* Input background */
+    --color-input-border: var(--base01) !important; /* Input border */
+    --color-timeline-badge-bg: var(--base02) !important; /* Timeline elements */
+  }
+
+  /* Override the iframe background to match Solarized */
+  :global([data-effective-theme="dark"]) .comments-container :global(iframe.giscus-frame) {
+    background-color: var(--base03) !important;
+  }
+
+  /* Light theme styling */
+  :global([data-effective-theme="light"]) .comments-container :global(.giscus) {
+    --color-canvas-default: var(--base3) !important;
+    --color-canvas-subtle: var(--base2) !important;
+    --color-border-default: var(--base2) !important;
+    --color-border-muted: var(--base1) !important;
+    --color-fg-default: var(--base00) !important;
+    --color-fg-muted: var(--base1) !important;
+    --color-accent-fg: var(--blue) !important;
+    --color-accent-emphasis: var(--cyan) !important;
   }
 </style>
 
 <script>
-  // Handle theme switching for Giscus
+  // Handle theme switching for Giscus with Solarized colors
   function updateGiscusTheme() {
     const theme = document.documentElement.getAttribute('data-effective-theme') || 'light';
-    const giscusTheme = theme === 'dark' ? 'dark' : 'light';
+    // Use transparent_dark for both themes since we're customizing with CSS
+    const giscusTheme = theme === 'dark' ? 'transparent_dark' : 'light';
     
     const iframe = document.querySelector('iframe.giscus-frame') as HTMLIFrameElement;
     if (iframe) {
@@ -88,5 +157,14 @@ const GISCUS_CONFIG = {
     if (event.data.giscus.discussion) {
       updateGiscusTheme();
     }
+  });
+
+  // Apply Solarized theme immediately when giscus loads
+  window.addEventListener('message', (event) => {
+    if (event.origin !== 'https://giscus.app') return;
+    if (!(typeof event.data === 'object' && event.data.giscus)) return;
+    
+    // Force update theme when giscus is ready
+    setTimeout(updateGiscusTheme, 100);
   });
 </script> 
