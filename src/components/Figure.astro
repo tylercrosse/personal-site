@@ -9,7 +9,7 @@ interface Props {
   height?: number;
   class?: string;
   numbered?: boolean;
-  maxWidth?: number;
+  fullWidth?: boolean;
 }
 
 const {
@@ -20,7 +20,7 @@ const {
   height,
   class: className,
   numbered = true,
-  maxWidth,
+  fullWidth = false,
 } = Astro.props;
 
 // Determine if src is a string (path) or ImageMetadata object
@@ -39,7 +39,9 @@ if (numbered) {
 }
 ---
 
-<figure class={`figure ${className || ""}`}>
+<figure
+  class:list={["figure", className, fullWidth && "full-width"]}
+>
   {
     isImagePath ? (
       <img
@@ -54,7 +56,7 @@ if (numbered) {
         src={src as ImageMetadata}
         alt={alt}
         quality={90}
-        // width={width}
+        width={width}
         widths={width ? [width, width * 2] : undefined}
         height={height}
         loading="lazy"
@@ -73,6 +75,9 @@ if (numbered) {
 </figure>
 
 <style>
+  .full-width {
+    grid-column: 1 / 4 !important;
+  }
   .figure {
     margin: 1rem 0;
     text-align: center;
@@ -90,7 +95,7 @@ if (numbered) {
     font-style: italic;
     color: var(--sol-1);
     line-height: 1.4;
-    max-width: 90%;
+    max-width: min(90%, 800px);
     margin-left: auto;
     margin-right: auto;
   }
@@ -120,4 +125,3 @@ if (numbered) {
     }
   }
 </style>
-

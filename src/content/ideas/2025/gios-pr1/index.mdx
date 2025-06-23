@@ -1,7 +1,7 @@
 ---
 title: 'Concurrent File Server'
 description: 'Building a Scalable Multithreaded File Server in C: Lessons from a Graduate OS Course'
-date: '2025-06-16'
+date: '2025-06-19'
 status: 'in-progress'
 type: 'project'
 tags: ['GIOS', 'operating-systems', 'c', 'multithreading', 'socket-programming']
@@ -32,14 +32,14 @@ import bossWorker from "./boss-worker2.png";
 
 ## Introduction: The Challenge
 
-Ever wondered what *really* happens when you click a download link? It seems like magic. You click, and a file appears. But behind that simple action lies a carefully orchestrated conversation between computers, a conversation refereed by their operating systems. For my first project in Georgia Tech's Graduate Introduction to Operating Systems (CS 6200), I had to build one side of that conversation: a multithreaded file server, from scratch, in C.
+Ever wondered what *really* happens when you click a download link? It seems like magic. You click, and a file appears. But behind that simple action lies a carefully orchestrated conversation between computers, a conversation refereed by their operating systems. For my first project in Georgia Tech's [Graduate Introduction to Operating Systems (CS 6200)](https://omscs.gatech.edu/cs-6200-introduction-operating-systems), I had to build one side of that conversation: a multithreaded file server, from scratch, in C.
 
 The goal was to implement a server capable of handling multiple file requests simultaneously. This wasn't just about writing code; it was about a head-first dive into the core concepts that make the modern internet possible: network sockets, system calls, concurrency, and protocol design.
 
 Going in, I was comfortable with C's syntax but had never touched the Berkeley socket API. Networking was a black box I'd only ever interacted with through the convenient abstractions like Python's `requests` library. This project was my opportunity to pry open that box. This post documents that journey, not just what I built, but the fundamental *whys* behind the code.
 
 > [!note]
-> This post is a detailed walkthrough of the first project in my graduate OS course. For a broader overview of all concepts covered in the course, please see the companion post: [GIOS: A Retrospective](/ideas/2025/gios-retro/).
+> This post is meant to be a showcase of the work I did on the project and the concepts I learned from it. For a broader overview of all concepts covered in the course, please see the companion post: [GIOS: A Retrospective](/ideas/2025/gios-retro/).
 
 ## The Foundation: Client-Server & Network Models
 

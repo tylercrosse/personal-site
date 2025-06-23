@@ -30,8 +30,9 @@ import osOverview from "./os-overview.png";
 import processThread from "./process-thread.png";
 import contextSwitch from "./context-switch.png";
 import interrupts from "./interrupts.png";
-import addressTranslation from "./address-translation3.png";
-import multiLevelPageTables from "./multi-level-page-tables.png";
+import addressTranslation from "./address-translation4.png";
+import multiLevelPageTables from "./multi-level-page-tables2.png";
+import hypervisors from "./hypervisors.png";
 
 
 ## Introduction
@@ -295,6 +296,7 @@ Memory management is the OS's strategy for arbitrating and controlling the finit
   src={addressTranslation}
   alt="Address Translation"
   width={1000}
+  fullWidth
   caption="Address Translation is the process of translating a virtual address (top) to a physical address (bottom). The fastest path is to use the TLB (green). If the TLB miss, the page table is used (yellow). If the page indicates the page isn't present a page fault occurs and the page is loaded from disk (red)."
 />
 
@@ -387,7 +389,13 @@ There are two primary models for this:
 *   **Type 1 (Bare-Metal)**: The hypervisor runs directly on the physical hardware, and the guest VMs run on top of it. This model is common in datacenter environments, with examples like VMware ESX and Xen. Often, a privileged "service VM" (like Xen's `dom0`) is used to manage device drivers.
 *   **Type 2 (Hosted)**: The hypervisor is an application that runs on top of a conventional host OS (e.g., Linux, Windows). Examples include KVM, VirtualBox, and VMware Workstation. This model leverages the host OS for device support and management.
 
-{/* TODO add diagram of virtualization? */}
+<Figure
+  src={hypervisors}
+  alt="Hypervisors"
+  caption="Type 1 (Bare-Metal) left and Type 2 (Hosted) right"
+  width={1000}
+  fullWidth
+/>
 
 The core challenge of virtualization is that the guest OS expects to have full, privileged control over the hardware, but the hypervisor must remain in charge. Historically, this was solved with clever software techniques. For CPU virtualization, where some privileged instructions on older x86 chips wouldn't trap to the hypervisor, solutions included **binary translation** (dynamically rewriting problematic guest code) and **paravirtualization** (modifying the guest OS to make explicit calls—"hypercalls"—to the VMM). For memory, the hypervisor creates **shadow page tables** to map the guest's virtual addresses directly to machine addresses. For I/O, the **split device driver model** is common, with a lightweight "front-end" driver in the guest communicating with a full "back-end" driver in the host or service VM.
 
@@ -464,7 +472,7 @@ The final topic of the course brings everything together by looking at the techn
 
 The services offered by cloud providers are typically categorized into different models, defining the trade-off between user control and provider management:
 *   **Infrastructure as a Service (IaaS)**: Provides the fundamental building blocks—virtual machines, storage, and networking. The user manages the OS, applications, and data. (e.g., Amazon EC2, Google Compute Engine).
-*   **Platform as a Service (PaaS)**: Provides a platform for developers to build and deploy applications without worrying about the underlying infrastructure. The provider manages the OS, runtime, and middleware. (e.g., Heroku, Google App Engine).
+*   **Platform as a Service (PaaS)**: Provides a platform for developers to build and deploy applications without worrying about the underlying infrastructure. The provider manages the OS, runtime, and middleware. (e.g., Vercel, Google App Engine).
 *   **Software as a Service (SaaS)**: Delivers a complete software application over the internet. The user simply consumes the service. (e.g., Gmail, Salesforce).
 
 These cloud services are made possible by many of the technologies discussed throughout the course. **Virtualization** provides fungible, isolated compute resources. **Large-scale cluster schedulers** (like Kubernetes, Mesos, or YARN) manage resource allocation across thousands of machines. **Distributed file systems** and **NoSQL databases** provide scalable storage, and the entire stack is built on the principles of fault tolerance and redundancy to handle the inevitable failures in a large, complex system.
