@@ -53,11 +53,6 @@ const imageData = getImageData();
       margin: 0;
     }
 
-    .title {
-      margin-bottom: 1em;
-      padding-bottom: 1em;
-    }
-
     .title-meta {
       display: flex;
       gap: 1em;
@@ -114,8 +109,13 @@ const imageData = getImageData();
 
     .hero-image {
       width: 100%;
+      margin: 0 auto;
     }
     .hero-image figure {
+      display: block;
+    }
+
+    .hero-image img {
       display: block;
       margin: 0 auto;
     }
@@ -224,23 +224,21 @@ const imageData = getImageData();
           </div>
         </div>
       </div>
-      <div class="hero-image slide-in-block">
-        {
-          imageData && (
-            <figure>
-              <Image
-                width={1020}
-                height={510}
-                src={imageData.src as string}
-                alt={imageData.alt}
-              />
-              {imageData.alt && (
-                <figcaption class="caption">{imageData.alt}</figcaption>
-              )}
-            </figure>
-          )
-        }
-      </div>
+      {
+        imageData && (
+          <figure class="hero-image slide-in-block">
+            <Image
+              width={1020}
+              height={510}
+              src={imageData.src as string}
+              alt={imageData.alt}
+            />
+            {imageData.alt && (
+              <figcaption class="caption">{imageData.alt}</figcaption>
+            )}
+          </figure>
+        )
+      }
     </header>
     <div class="prose">
       <slot />

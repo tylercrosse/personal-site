@@ -157,12 +157,6 @@ const GISCUS_CONFIG = {
     if (event.data.giscus.discussion) {
       updateGiscusTheme();
     }
-  });
-
-  // Apply Solarized theme immediately when giscus loads
-  window.addEventListener('message', (event) => {
-    if (event.origin !== 'https://giscus.app') return;
-    if (!(typeof event.data === 'object' && event.data.giscus)) return;
     
     // Force update theme when giscus is ready
     setTimeout(updateGiscusTheme, 100);

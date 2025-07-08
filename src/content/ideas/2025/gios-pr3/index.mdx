@@ -10,8 +10,8 @@ draft: false
 audience: 'All'
 media_subpath: "/ideas/gios-pr3/"
 image:
-  path: "./moebius-fly-dawn.png"
-  alt: 'Moebius Fly Dawn by Jean Giraud'
+  path: "./pizza-cache2.png"
+  alt: 'Pizza Cache'
 ---
 
 import { Image } from "astro:assets";
@@ -26,29 +26,63 @@ import linuxInterfaceImg from "../../../books/linux-interface.png";
 
 import ipcImg from "./ipc.png";
 import stringCommImg from "./string-communication.jpg";
+import proxyCacheFlowImg from "./proxy-cache-flow.png";
+import proxyCacheProcessesImg from "./proxy-cache-processes.png";
+import ipcMechanismsImg from "./ipc-mechanisms.png";
+import placeholderCommunicationImg from "./placeholder-communication.png";
+import placeholderLinuxCommunicationOverviewImg from "./placeholder-linux-communication-overview.png";
+import placeholderLinuxSynchronizationImg from "./placeholder-linux-synchronization.png";
+import placeholderSharedMemoryImg from "./placeholder-shared-memory.png";
 
-## Introduction: When a Program Needs to Talk to Itself
+## Introduction: The Scalability Problem
 
-In my previous project, I built a [multithreaded file server](/ideas/2025/gios-pr1/) that could handle many clients at once. All the work happened within a single program, a unified team of threads sharing the same memory. But what happens when you need to separate concerns more strictly? When one part of your system should be a specialized service, and another part its client?
+Imagine a wildly popular news website. On a big story day, millions of users are all trying to load the same front-page article and its images. The main web server, buried deep in a datacenter, gets hammered with identical requests, spending its cycles reading the same files from disk over and over. For users on the other side of the world, the experience is slow as data travels thousands of miles. This is a classic scalability bottleneck. How do you serve popular content to a global audience, quickly and efficiently, without overwhelming your origin server?
 
-This was the challenge for my next project in Georgia Tech's OS course: to build a system of two distinct programs—a **proxy server** and a **cache server**—that had to communicate and cooperate to serve files. This wasn't about threads anymore; it was about full-fledged processes.
+The solution is a one-two punch of architectural patterns: the **cache server** and the **proxy server**.
 
-This forced me to dive into one of the most fundamental topics in operating systems: **Inter-Process Communication (IPC)**. The project was to design a system where a proxy fetches files for a client, but first checks with a separate cache process to see if it already has a copy. If it did, the file data had to be passed from the cache to the proxy, and then to the client, as fast as possible. This post explores the journey of building that system, and the powerful, tricky, and essential world of IPC.
+A **cache server** is a simple but powerful idea: it's a separate, specialized server that keeps temporary copies of frequently requested data. Instead of the main server handling every request, the cache can serve up a copy of that popular news article instantly, from memory. This dramatically reduces the load on the origin and provides a much faster response.
 
-## The Architecture: A Separation of Concerns
-
-The goal was to extend a simple web server with a proxy and a cache. This is a classic pattern used everywhere on the web to improve performance and scalability.
-
-1.  **Proxy Server**: The public-facing intermediary. It takes requests from clients, but instead of getting the files itself, it turns around and asks the cache server. If the cache doesn't have it, *then* the proxy gets it from the original web server (and tells the cache to store it). It handles all the network logic.
-2.  **Cache Server**: The specialized backend. Its only job is to store and retrieve files in memory. It doesn't talk to the outside world; it only talks to the proxy.
+But how do client requests get directed to the cache instead of the main server? That's the job of a **proxy server**. A proxy acts as an intelligent intermediary, a gatekeeper that sits between the client and the internet. When a request comes in, the proxy intercepts it. It can then make a smart decision: "Do I have a fresh copy of this in a nearby cache?" If so, it serves it directly. If not, *then* it forwards the request to the main origin server, gets the response, and passes it back to the client—while also telling the cache to store a copy for next time.
 
 <Figure
-  src={ipcImg}
+  src={proxyCacheFlowImg}
   alt="A diagram showing a client talking to a proxy, which in turn communicates with a cache server via IPC and a web server via HTTP."
-  caption="The proxy acts as a middleman, consulting the cache via IPC before fetching from the source."
+  caption="The proxy and cache are separate processes, communicating via dedicated IPC channels."
 />
 
-The key question is: how do these two separate processes, which by default know nothing about each other, communicate?
+For my third project in Georgia Tech's OS course, the challenge was to build exactly this system: a cooperating proxy and cache. This wasn't about threads within a single program anymore; it was about two distinct processes that had to communicate and coordinate. This forced a deep dive into one of the most fundamental topics in operating systems: **Inter-Process Communication (IPC)**. How do you pass massive amounts of file data from a cache process to a proxy process with minimal overhead? This post explores that journey, and the powerful, tricky, and essential world of IPC that makes systems like this possible.
+
+## The Architecture: A Tale of Two Processes
+
+In the real world, the line between a proxy and a cache is often blurry. It's crucial to understand their distinct roles and how this project intentionally separates them to create a specific engineering challenge.
+
+### The Modern Proxy: A Versatile Gatekeeper
+
+A proxy server is an intermediary that sits between a client and a server. As [Wikipedia explains](https://en.wikipedia.org/wiki/Proxy_server), there are two main types:
+
+*   **Forward Proxy:** Acts on behalf of a *client* or a network of clients. When you use a proxy at a company or school to access the internet, you're using a forward proxy. It can be used to enforce security policies, filter content, or mask the client's identity.
+*   **Reverse Proxy:** Acts on behalf of a *server* or a pool of servers. When you connect to a major website, you're almost certainly talking to a reverse proxy. It presents a single, unified entry point to a complex system of backend services.
+
+Reverse proxies are the workhorses of the modern web, often handling multiple critical tasks beyond just forwarding requests:
+*   **Load Balancing:** Distributing incoming traffic across many backend servers.
+*   **SSL Termination:** Decrypting incoming HTTPS traffic so backend servers don't have to.
+*   **Authentication:** Verifying user credentials before passing a request to a protected service.
+*   **Caching:** Storing copies of responses to speed up future requests, a role so common that the term "caching proxy" is widely used [[1]](https://web.archive.org/web/20250527171714/https://www.techtarget.com/whatis/definition/cache-server).
+
+### The Project's Design: An Intentional Separation
+
+In a production system like Nginx or a Content Delivery Network (CDN), the proxy and cache logic are typically part of the same highly-optimized application. For this project, however, the two were explicitly separated into distinct processes to create a focused challenge in systems programming.
+
+1.  **The Proxy Process**: This acts as a simple reverse proxy. Its only jobs are to intercept client requests, ask the cache if it has the file, and if not, use `libcurl` to fetch it from the origin server. It handles the network I/O and protocol logic.
+2.  **The Cache Process**: This is a pure, specialized key-value store. Its only job is to store and retrieve file data from memory. It doesn't know about `GETFILE` or HTTP; it only responds to commands from the proxy.
+
+This artificial separation is the heart of the project. By splitting these tightly-coupled roles into two programs, the primary engineering problem becomes: **how do you build a high-bandwidth, low-latency communication channel between them?** This forces a deep dive into Inter-Process Communication, making it the central lesson.
+
+<Figure
+  src={proxyCacheProcessesImg}
+  alt="A diagram showing the proxy and cache processes and their communication."
+  caption="The proxy and cache processes and their communication."
+/>
 
 ## A Primer on Inter-Process Communication (IPC)
 
@@ -59,11 +93,21 @@ But this isolation creates a problem: what if processes *need* to cooperate? Tha
 Some common IPC mechanisms include:
 
 -   **Pipes:** A simple one-way communication channel. What you write in one end, you read from the other.
--   **Sockets:** The same mechanism used for network communication can be used for IPC on the same machine (via Unix domain sockets). It's like networking without the network.
 -   **Message Queues:** A structured way to send small "messages" between processes, like a system-wide mailbox.
 -   **Shared Memory:** The fastest, most powerful, and most dangerous method. The OS maps the same region of physical RAM into the virtual address space of multiple processes, allowing them to read and write to the same memory location directly.
+-   **Semaphores:** A synchronization primitive that allows processes to coordinate their access to shared resources.
+
+<Figure
+  src={ipcMechanismsImg}
+  alt="A diagram showing the different IPC mechanisms and their use cases."
+  caption="The different IPC mechanisms and their use cases."
+/>
 
 For this project, the goal was maximum performance, which pointed to a hybrid approach: **Shared Memory** for the heavy lifting (transferring file data) and a **Message Queue** for coordination.
+
+The project mandated a strict division of this communication:
+*   A high-speed **data channel** for transferring the large file contents.
+*   A separate **command channel** for control messages like "do you have this file?"
 
 ## Shared Memory: The High-Speed Data Link
 
@@ -76,25 +120,46 @@ But this power comes with immense responsibility.
 -   **No Built-in Synchronization:** Shared memory is just a raw slab of bytes. If the proxy is reading from a segment of memory while the cache is still writing to it, the proxy will read corrupted, nonsensical data. There are no traffic lights or stop signs; it's a free-for-all.
 -   **Life After Death:** IPC resources like shared memory segments exist at the OS level, outside of any single process. If your program crashes without cleaning up, that shared memory segment can be left orphaned, leaking system resources until the next reboot.
 
+<Figure
+  src={placeholderSharedMemoryImg}
+  alt="A diagram showing the different shared memory mechanisms and their use cases."
+  caption="The different shared memory mechanisms and their use cases."
+/>
+
 ## Message Queues: The Command Channel
 
 If shared memory is the bulk cargo freighter, the message queue is the walkie-talkie used to coordinate the loading and unloading. We needed a way for the proxy to send commands to the cache, like "Do you have `/images/cat.jpg`?" or "Please store this file I just downloaded."
 
 A message queue is perfect for this. It allows for sending small, structured messages between processes. The proxy could package up a request into a message, send it to the queue, and the cache, which would be listening on that queue, would receive it and know what to do. This neatly separates the control signals from the data itself. The messages contained metadata about the files, while the shared memory was reserved for the file contents.
 
-## Synchronization and Cleanup: Tying It Together
+## Design in Practice: Synchronization and Robustness
 
-With two powerful but unruly mechanisms in play, the biggest challenges were synchronization and resource management.
+With the core components defined, the real challenge lay in making them work together reliably. This involved not just preventing data corruption, but also designing the system to handle the realities of process lifecycle and startup.
 
 ### Preventing Chaos with Semaphores
 
 To prevent the proxy and cache from writing over each other's data in the shared memory, we needed a synchronization primitive that works across processes. While mutexes are great for threads, **semaphores** are a classic solution for synchronizing separate processes.
 
+<Figure
+  src={placeholderCommunicationImg}
+  alt="A diagram showing a semaphore and its use in synchronization."
+  caption="A semaphore and its use in synchronization."
+/>
+
 A semaphore acts as a gatekeeper for a resource. Before accessing the shared memory, a process must acquire the semaphore. If the semaphore is already taken, the process will block (sleep) until it's released. This ensures that only one process can be operating on the shared data at any given time, preventing data races and corruption. It's the traffic light system we needed for our shared memory highway.
 
-### Graceful Exits with Signal Handlers
+> [!note]
+> Semaphores are just one of many tools for synchronization. For a broader look at how they compare to thread-focused tools like mutexes or high-performance spinlocks, see my overview of [Synchronization Constructs in the GIOS Retrospective](/ideas/2025/gios-retro/#synchronization-constructs).
 
-The "orphaned resource" problem is a classic bug in systems programming. To solve it, I implemented **signal handlers**. A signal is a notification sent to a process by the OS about an event. By catching signals like `SIGINT` (from Ctrl-C) or `SIGTERM` (from a `kill` command), the program can execute a special cleanup function before it terminates. This function's job was to meticulously detach from and remove the shared memory segments and message queues, ensuring the system remained clean no matter how the processes exited.
+### Responsibility and Resource Management
+
+A key design decision mandated by the project was that **the proxy is responsible for creating and destroying the IPC resources**. From the cache's perspective, this follows the "don't mess with my memory" adage. It makes the cache a more robust service, capable of handling multiple proxy clients without being brought down by a single misbehaving one. If a proxy crashes, it's responsible for its own mess, and the cache can continue serving other clients.
+
+This responsibility extends to cleanup. It's not enough for the system to work; it must also exit cleanly. The project required implementing **signal handlers** to catch termination signals like `SIGINT` (from Ctrl-C) and `SIGTERM` (from a `kill` command). When caught, these signals trigger a cleanup routine that meticulously removes all shared memory segments and message queues before the process terminates, preventing orphaned resources from littering the OS.
+
+### Flexible Startup
+
+Finally, the system had to be robust to the order in which the processes were started. The proxy could launch before the cache was ready, or vice-versa. This meant the connection logic couldn't be a one-time attempt. The proxy, when starting, had to be prepared to try connecting to the cache's command channel, wait, and retry if the cache wasn't yet available. This small detail is a classic example of the kind of defensive programming required when building distributed or multi-process systems.
 
 ## Conclusion: Building Cooperative Systems
 
