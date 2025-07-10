@@ -1,7 +1,7 @@
 ---
 title: 'IPC in Action: Building a High-Performance Proxy & Cache'
-description: 'A dive into inter-process communication, shared memory, and synchronization in C, based on a project from my graduate Operating Systems course.'
-date: '2025-06-24'
+description: 'A dive into a project that explores IPC and synchronization in C'
+date: '2025-07-10'
 status: 'complete'
 type: 'project'
 tags: ['GIOS', 'operating-systems', 'c', 'IPC', 'socket-programming']
@@ -52,7 +52,10 @@ But how do client requests get directed to the cache instead of the main server?
   caption="The proxy and cache are separate processes, communicating via dedicated IPC channels."
 />
 
-For my third project in Georgia Tech's OS course, the challenge was to build exactly this system: a cooperating proxy and cache. This project wasn't about threads within a single program; it was about two distinct processes that had to communicate and coordinate. This forced a deep dive into one of the most fundamental topics in operating systems: **Inter-Process Communication (IPC)**. How could we pass massive amounts of file data from a cache process to a proxy process with minimal overhead? This post explores that journey, and the powerful, tricky, and essential world of IPC that makes systems like this possible.
+In this project in Georgia Tech's OS course, the challenge was to build exactly this system: a cooperating proxy and cache. This project dovetails with the [first project in the course](/ideas/2025/gios-pr1/), where I created a multithreaded client and file server (the origin server). The proxy and cache processes built in this project sit between the client and origin server and act as an intermediary to improve performance.
+
+This project was about two distinct processes that had to communicate and coordinate. This forced a deep dive into one of the most fundamental topics in operating systems: **Inter-Process Communication (IPC)**. How could we pass massive amounts of file data from a cache process to a proxy process with minimal overhead? This post explores that journey, and the powerful, tricky, and essential world of IPC that makes systems like this possible.
+
 
 ## The Architecture: A Tale of Two Processes
 
