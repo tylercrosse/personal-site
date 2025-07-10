@@ -101,7 +101,7 @@ IPC mechanisms fall into two main families: **message-based** and **memory-based
   src={messageBasedIpcImg}
   alt="Diagram of message-based IPC, showing pipes, message queues, and sockets managed by the kernel."
   caption="In message-based IPC, the kernel acts as an intermediary for channels like pipes, message queues, and sockets."
-  width="500px"
+  width={500}
 />
 
 *   In **memory-based IPC**, the kernel's role is more like a city planner. It designates a specific region of physical RAM and maps it into the address space of multiple processes. Once this **Shared Memory** region is established, the kernel gets out of the way. Processes can read and write to it directly at memory speed, with no copying or system calls. This offers incredible performance but comes with a major risk: without coordination, processes can interfere with each other, leading to corrupted data.
@@ -110,7 +110,7 @@ IPC mechanisms fall into two main families: **message-based** and **memory-based
   src={memoryBasedIpcImg}
   alt="Diagram of memory-based IPC, showing a shared memory region mapped into the virtual address space of two processes."
   caption="Memory-based IPC: A region of physical memory is mapped into the address space of multiple processes for direct access."
-  width="500px"
+  width={500}
 />
 
 
