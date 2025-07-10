@@ -18,8 +18,7 @@ import { Image } from "astro:assets";
 import BookCard from "../../../../components/BookCard.astro";
 import Figure from "../../../../components/Figure.astro";
 
-import osTepImg from "../../../books/os-tep.jpg";
-import csAppImg from "../../../books/cs-app.jpg";
+import osConceptsImg from "../../../books/os-concepts10.jpg";
 import cLangImg from "../../../books/c-lang.jpg";
 import beejGuidesImg from "../../../books/beej-network.jpg";
 import linuxInterfaceImg from "../../../books/linux-interface.png";
@@ -31,6 +30,7 @@ import messageBasedIpcImg from "./message-based2.png";
 import proxyCacheFlowImg from "./proxy-cache-flow.png";
 import proxyCacheProcessesImg from "./proxy-cache-processes.png";
 import ipcMechanismsImg from "./ipc-mechanisms.png";
+import semaphoreSharedMemoryImg from "./semaphore-shared-mem2.png";
 import placeholderCommunicationImg from "./placeholder-communication.png";
 import placeholderLinuxCommunicationOverviewImg from "./placeholder-linux-communication-overview.png";
 import placeholderLinuxSynchronizationImg from "./placeholder-linux-synchronization.png";
@@ -120,29 +120,7 @@ The project mandated a strict division of this communication:
 - A high-speed **data channel** for transferring the large file contents.
 - A separate **command channel** for control messages like "do you have this file?"
 
-## Shared Memory: The High-Speed Data Link
-
-Shared memory is the IPC equivalent of teleportation. To make it work, one process first needs to request a new segment from the OS using a system call like `shmget()` (from the classic System V API) or `shm_open()` (from the more modern POSIX API). The OS reserves a chunk of physical memory and provides a unique key or name to identify it.
-
-Next, any process wanting to use this segment—including the creator—must "attach" it to its own virtual address space using a call like `shmat()`. The OS performs its page table magic, and the process gets back a simple `void*` pointer. From that moment on, it's just memory. There are no special `write_to_shared_memory()` calls. A process can use `memcpy`, pointer arithmetic, or direct assignments on that pointer, and the changes are instantly visible to any other process attached to that same segment because they all point to the same physical RAM.
-
-The POSIX equivalent achieves the same result by treating the shared memory segment like a file descriptor that can be memory-mapped:
-
-```c
-// 1. Create a named shared memory object
-int fd = shm_open("/my_shm_key", O_CREAT | O_RDWR, 0666);
-// 2. Set its size
-ftruncate(fd, sizeof(struct shared_data_struct));
-// 3. Memory-map it to get a pointer
-void *ptr = mmap(0, sizeof(struct shared_data_struct), PROT_WRITE, MAP_SHARED, fd, 0);
-```
-
-This raw pointer access is the source of both its power and its danger.
-
-- **No Built-in Synchronization:** The pointer is just a `void*`; it carries no information about whether another process is currently writing to that memory. If the cache is in the middle of a `memcpy` to the shared segment while the proxy tries to read from it, the proxy will get a corrupted, half-written file.
-- **Life After Death:** That memory segment is owned by the kernel, not the process. If a program crashes without explicitly detaching and telling the OS to destroy the segment, it becomes "orphaned"—invisible to new processes but still consuming system resources until the next reboot. This makes rigorous cleanup and signal handling an absolute necessity.
-
-## Message Queues: The Command Channel
+### Message Queues: The Command Channel
 
 If shared memory is the bulk cargo freighter, the message queue is the dispatch radio used to coordinate. While shared memory is just a raw slab of bytes, message queues are for sending small, discrete, structured messages. The modern POSIX API for message queues is often preferred for its simplicity and file-descriptor-based approach.
 
@@ -168,24 +146,74 @@ mq_receive(mq_recv, buf, 8192, &sender_prio);
 
 The kernel handles all the buffering and synchronization of the queue itself, making it a reliable—if slower—communication channel perfectly suited for control signals.
 
+### Shared Memory: The High-Speed Data Link
+
+Shared memory is the IPC equivalent of teleportation. To make it work, one process first needs to request a new segment from the OS using a system call like `shmget()` (from the classic System V API) or `shm_open()` (from the more modern POSIX API). The OS reserves a chunk of physical memory and provides a unique key or name to identify it.
+
+Next, any process wanting to use this segment—including the creator—must "attach" it to its own virtual address space using a call like `shmat()`. The OS performs its page table magic, and the process gets back a simple `void*` pointer. From that moment on, it's just memory. There are no special `write_to_shared_memory()` calls. A process can use `memcpy`, pointer arithmetic, or direct assignments on that pointer, and the changes are instantly visible to any other process attached to that same segment because they all point to the same physical RAM.
+
+The POSIX equivalent achieves the same result by treating the shared memory segment like a file descriptor that can be memory-mapped:
+
+```c
+// 1. Create a named shared memory object
+int fd = shm_open("/my_shm_key", O_CREAT | O_RDWR, 0666);
+// 2. Set its size
+ftruncate(fd, sizeof(struct shared_data_struct));
+// 3. Memory-map it to get a pointer
+void *ptr = mmap(0, sizeof(struct shared_data_struct), PROT_WRITE, MAP_SHARED, fd, 0);
+```
+
+This raw pointer access is the source of both its power and its danger.
+
+- **No Built-in Synchronization:** The pointer is just a `void*`; it carries no information about whether another process is currently writing to that memory. If the cache is in the middle of a `memcpy` to the shared segment while the proxy tries to read from it, the proxy will get a corrupted, half-written file.
+- **Life After Death:** That memory segment is owned by the kernel, not the process. If a program crashes without explicitly detaching and telling the OS to destroy the segment, it becomes "orphaned"—invisible to new processes but still consuming system resources until the next reboot. This makes rigorous cleanup and signal handling an absolute necessity.
+
+### Preventing Chaos with Semaphores
+
+Using shared memory requires more than just preventing two processes from writing at the same time; it requires coordinating a *handoff*. How does the proxy (the "reader") know when the cache (the "writer") has finished placing a new file into shared memory? How does the cache know when the proxy is done reading, so it's safe to overwrite the memory with new data? This is a classic producer-consumer problem.
+
+One approach is to use a pair of semaphores to act as traffic signals.
+
+<Figure
+  src={semaphoreSharedMemoryImg}
+  alt="A diagram showing a reader and a writer using two semaphores (rsem and wsem) to coordinate access to a shared memory block."
+  caption="A 'producer-consumer' pattern using two semaphores to safely coordinate a handoff between a writer and a reader. Micheal Kerrisk's presentation goes into more detail on this topic and inspired this diagram."
+/>
+
+1.  **`wsem` (Write Semaphore):** This semaphore can be thought of as representing the number of "empty" slots available for the writer to write into. It's initialized to 1. The writer must wait on this semaphore before it can write.
+2.  **`rsem` (Read Semaphore):** This represents the number of "full" slots ready for the reader to read. It's initialized to 0, because initially, there is no data to read.
+
+This creates a clean, synchronized dance:
+- The **writer** first calls `sem_wait(wsem)`. Since it was initialized to 1, this succeeds immediately, and it now "owns" the shared buffer.
+- It copies the file data into the shared memory segment.
+- It then calls `sem_post(rsem)`, signaling to the reader that a file is ready.
+- The **reader**, which was likely blocked on `sem_wait(rsem)` (since it started at 0), now unblocks and can safely read the data.
+- After reading, the reader calls `sem_post(wsem)`, signaling that the shared buffer is now empty and available for the writer to write the *next* file.
+
+This two-semaphore system elegantly ensures that the reader never reads an incomplete file and the writer never overwrites a file before the reader has had a chance to read it.
+
+
+> [!note]
+> Semaphores are just one of many tools for synchronization. For a broader look at how they compare to thread-focused tools like mutexes or high-performance spinlocks, see my overview of [Synchronization Constructs in the GIOS Retrospective](/ideas/2025/gios-retro/#synchronization-constructs).
+
+
 ## Design in Practice: Synchronization and Robustness
 
 With the core components defined, the real challenge lay in making them work together reliably. This involved not just preventing data corruption, but also designing the system to handle the realities of process lifecycle and startup.
 
-### Preventing Chaos with Semaphores
+### The Coordination Challenge
 
-To prevent the proxy and cache from writing over each other's data in the shared memory, it needed a synchronization primitive that works across processes. While mutexes are great for threads, **semaphores** are a classic solution for synchronizing separate processes.
+With a message queue for commands, shared memory for bulk data, and semaphores for synchronization, the next step is to weave them into a coherent protocol. This is where the core design challenge lies. It's not enough to have the right tools; they must be orchestrated correctly.
 
-<Figure
-  src={placeholderCommunicationImg}
-  alt="A diagram showing a semaphore and its use in synchronization."
-  caption="A semaphore and its use in synchronization."
-/>
+This raises several critical design questions:
+- When the proxy receives a "file is ready" message, how does it know *where* in the shared memory segment to look for the data?
+- How does the cache know which part of the shared memory is free to use for a new file it just fetched?
+- Is it better to have one single, large shared memory segment that is partitioned and managed, or to create and destroy smaller segments on demand?
+- How are the semaphores associated with the specific data they are protecting?
 
-A semaphore acts as a gatekeeper for a resource. Before accessing the shared memory, a process must acquire the semaphore. If the semaphore is already taken, the process will block (sleep) until it's released. This ensures that only one process can be operating on the shared data at any given time, preventing data races and corruption. It's the traffic light system we needed for our shared memory highway.
+Answering these questions is the heart of the engineering task. There are many valid patterns one could use to build a robust solution, each with different trade-offs in complexity and performance. The key is to create a clear, unambiguous system of rules that both processes can follow to communicate without error.
 
-> [!note]
-> Semaphores are just one of many tools for synchronization. For a broader look at how they compare to thread-focused tools like mutexes or high-performance spinlocks, see my overview of [Synchronization Constructs in the GIOS Retrospective](/ideas/2025/gios-retro/#synchronization-constructs).
+Getting these details right was the most challenging and rewarding part of the project.
 
 ### Responsibility and Resource Management
 
@@ -247,17 +275,19 @@ These books and guides were extremely helpful for understanding the concepts and
 </BookCard>
 
 <BookCard
-  title="Operating Systems: Three Easy Pieces"
-  author="Remzi H. Arpaci-Dusseau and Andrea C. Arpaci-Dusseau"
-  img={osTepImg}
-  url="https://pages.cs.wisc.edu/~remzi/OSTEP/"
+  title="Operating System Concepts 10th Edition"
+  author="Silberschatz, Galvin, and Gagne"
+  img={osConceptsImg}
+  url="https://os-book.com/OS10/index.html"
 >
   <p>
-    This is the main book I used to supplement the lectures. Its chapters on concurrency and persistence provide the conceptual backbone for understanding why IPC is necessary and how it works.
+    This book was a great resource for understanding the concepts of IPC and synchronization.
   </p>
 </BookCard>
 
+- [An Introduction to Linux IPC, 2013 presentation by Michael Kerrisk](https://man7.org/conf/lca2013/IPC_Overview-LCA-2013-printable.pdf) and [accompanying recording](https://www.youtube.com/watch?v=vU2HDf5ZhO4)
+
 > [!info] A Note on Code Availability
-> In accordance with Georgia Tech's academic integrity policy and the license for course materials, the source code for this project is kept in a private repository. I believe passionately in sharing knowledge, but I also firmly respect the university's policies. This document follows [Dean Joyner's advice on sharing projects](https://www.reddit.com/r/OMSCS/comments/zwdwns/comment/j1udv6w/).
+> In accordance with Georgia Tech's academic integrity policy and the license for course materials, the source code for this project is kept in a private repository. I believe passionately in sharing knowledge, but I also firmly respect the university's policies. This document follows [Dean Joyner's advice on sharing projects](https://www.reddit.com/r/OMSCS/comments/zwdwns/comment/j1udv6w/) with a focus not on any particular solution and instead on an abstract overview of the problem and the underlying concepts I learned.
 >
 > I would be delighted to discuss the implementation details, architecture, or specific code sections in an interview. Please feel free to reach out to request private access to the repository.
