@@ -26,6 +26,8 @@ import linuxInterfaceImg from "../../../books/linux-interface.png";
 
 import ipcImg from "./ipc.png";
 import stringCommImg from "./string-communication.jpg";
+import memoryBasedIpcImg from "./memory-based2.png";
+import messageBasedIpcImg from "./message-based2.png";
 import proxyCacheFlowImg from "./proxy-cache-flow.png";
 import proxyCacheProcessesImg from "./proxy-cache-processes.png";
 import ipcMechanismsImg from "./ipc-mechanisms.png";
@@ -60,8 +62,8 @@ In the real world, the line between a proxy and a cache is often blurry. It's cr
 
 A proxy server is an intermediary that sits between a client and a server. As [Wikipedia explains](https://en.wikipedia.org/wiki/Proxy_server), there are two main types:
 
-* **Forward Proxy:** Acts on behalf of a *client* or a network of clients. When you use a proxy at a company or school to access the internet, you're using a forward proxy. It can be used to enforce security policies, filter content, or mask the client's identity.
-* **Reverse Proxy:** Acts on behalf of a *server* or a pool of servers. When you connect to a major website, you're almost certainly talking to a reverse proxy. It presents a single, unified entry point to a complex system of backend services.
+*   **Forward Proxy:** Acts on behalf of a *client* or a network of clients. When you use a proxy at a company or school to access the internet, you're using a forward proxy. It can be used to enforce security policies, filter content, or mask the client's identity.
+*   **Reverse Proxy:** Acts on behalf of a *server* or a pool of servers. When you connect to a major website, you're almost certainly talking to a reverse proxy. It presents a single, unified entry point to a complex system of backend services.
 
 Reverse proxies are the workhorses of the modern web, often handling multiple critical tasks beyond just forwarding requests:
 - **Load Balancing:** Distributing incoming traffic across many backend servers.
@@ -86,22 +88,31 @@ This artificial separation was the heart of the project. By splitting these tigh
 
 ## A Primer on Inter-Process Communication (IPC)
 
-Modern operating systems are built on a bedrock principle: **process isolation**. Each process gets its own private virtual address space, its own chunk of memory that no other process can touch. This is a crucial security and stability feature. Without it, a bug in your web browser could crash your entire operating system.
+Modern operating systems are built on a bedrock principle: **process isolation**. Each process gets its own private virtual address space, its own chunk of memory that no other process can touch. This is a crucial security and stability feature. Without it, a bug in your web browser could crash your entire operating system. But this isolation creates a problem: what if processes *need* to cooperate? That's where **Inter-Process Communication (IPC)** comes in. The OS provides a set of controlled "doorways" through the walls of process isolation, ensuring that communication happens in a structured and safe way.
 
-But this isolation creates a problem: what if processes *need* to cooperate? That's where IPC comes in. The OS provides a set of controlled "doorways" through the walls of process isolation. The kernel mediates these mechanisms, ensuring that communication happens in a structured and safe way.
+IPC mechanisms fall into two main families: **message-based** and **memory-based**.
 
-Some common IPC mechanisms include:
+*   In **message-based IPC**, the kernel acts as a post office. One process packages data into a message and hands it to the kernel (a system call); the kernel then delivers it to the other process (another system call). The data has to be copied from the virtual memory of the sending process to the kernel and then from the kernel to the virtual memory of the receiving process. This is safe and structured, but the constant kernel involvement and data copying create overhead. Common examples include **Pipes** for simple byte streams, **Message Queues** for structured messages, and **Sockets** for network communication.
 
-- **Pipes:** A simple one-way communication channel. What you write in one end, you read from the other.
-- **Message Queues:** A structured way to send small "messages" between processes, like a system-wide mailbox.
-- **Shared Memory:** The fastest, most powerful, and most dangerous method. The OS maps the same region of physical RAM into the virtual address space of multiple processes, allowing them to read and write to the same memory location directly.
-- **Semaphores:** A synchronization primitive that allows processes to coordinate their access to shared resources.
+<Figure 
+  src={messageBasedIpcImg}
+  alt="Diagram of message-based IPC, showing pipes, message queues, and sockets managed by the kernel."
+  caption="In message-based IPC, the kernel acts as an intermediary for channels like pipes, message queues, and sockets."
+  width="500px"
+/>
+
+*   In **memory-based IPC**, the kernel's role is more like a city planner. It designates a specific region of physical RAM and maps it into the address space of multiple processes. Once this **Shared Memory** region is established, the kernel gets out of the way. Processes can read and write to it directly at memory speed, with no copying or system calls. This offers incredible performance but comes with a major risk: without coordination, processes can interfere with each other, leading to corrupted data.
 
 <Figure
-  src={ipcMechanismsImg}
-  alt="A diagram showing the different IPC mechanisms and their use cases."
-  caption="The different IPC mechanisms and their use cases."
+  src={memoryBasedIpcImg}
+  alt="Diagram of memory-based IPC, showing a shared memory region mapped into the virtual address space of two processes."
+  caption="Memory-based IPC: A region of physical memory is mapped into the address space of multiple processes for direct access."
+  width="500px"
 />
+
+
+
+This risk highlights the need for a separate class of IPC tool: **synchronization primitives**. When using shared memory, it's essential to have a way to control access. **Semaphores** are a classic tool for this job, acting as a traffic light that ensures only one process can enter the shared "intersection" at a time. They don't transfer data themselves, but they make it safe for other mechanisms to do so.
 
 For this project, the goal was maximum performance, which pointed to a hybrid approach: **Shared Memory** for the heavy lifting (transferring file data) and a **Message Queue** for coordination.
 
@@ -111,26 +122,51 @@ The project mandated a strict division of this communication:
 
 ## Shared Memory: The High-Speed Data Link
 
-Shared memory is the IPC equivalent of teleportation. Instead of packaging data, handing it to the kernel (a system call), and having the kernel deliver it to another process (another system call), shared memory bypasses the kernel entirely for the data transfer itself.
+Shared memory is the IPC equivalent of teleportation. To make it work, one process first needs to request a new segment from the OS using a system call like `shmget()` (from the classic System V API) or `shm_open()` (from the more modern POSIX API). The OS reserves a chunk of physical memory and provides a unique key or name to identify it.
 
-Once set up, a write to a memory address in process A is *instantly* visible to process B at a corresponding memory address. This is incredibly fast because there's no copying. Both processes are looking at the *exact same bytes* in physical RAM.
+Next, any process wanting to use this segment—including the creator—must "attach" it to its own virtual address space using a call like `shmat()`. The OS performs its page table magic, and the process gets back a simple `void*` pointer. From that moment on, it's just memory. There are no special `write_to_shared_memory()` calls. A process can use `memcpy`, pointer arithmetic, or direct assignments on that pointer, and the changes are instantly visible to any other process attached to that same segment because they all point to the same physical RAM.
 
-But this power comes with immense responsibility.
+The POSIX equivalent achieves the same result by treating the shared memory segment like a file descriptor that can be memory-mapped:
 
-- **No Built-in Synchronization:** Shared memory is just a raw slab of bytes. If the proxy is reading from a segment of memory while the cache is still writing to it, the proxy will read corrupted, nonsensical data. There are no traffic lights or stop signs; it's a free-for-all.
-- **Life After Death:** IPC resources like shared memory segments exist at the OS level, outside of any single process. If a program crashes without cleaning up, it can orphan the shared memory segment, leaking system resources until the next reboot.
+```c
+// 1. Create a named shared memory object
+int fd = shm_open("/my_shm_key", O_CREAT | O_RDWR, 0666);
+// 2. Set its size
+ftruncate(fd, sizeof(struct shared_data_struct));
+// 3. Memory-map it to get a pointer
+void *ptr = mmap(0, sizeof(struct shared_data_struct), PROT_WRITE, MAP_SHARED, fd, 0);
+```
 
-<Figure
-  src={placeholderSharedMemoryImg}
-  alt="A diagram showing the different shared memory mechanisms and their use cases."
-  caption="The different shared memory mechanisms and their use cases."
-/>
+This raw pointer access is the source of both its power and its danger.
+
+- **No Built-in Synchronization:** The pointer is just a `void*`; it carries no information about whether another process is currently writing to that memory. If the cache is in the middle of a `memcpy` to the shared segment while the proxy tries to read from it, the proxy will get a corrupted, half-written file.
+- **Life After Death:** That memory segment is owned by the kernel, not the process. If a program crashes without explicitly detaching and telling the OS to destroy the segment, it becomes "orphaned"—invisible to new processes but still consuming system resources until the next reboot. This makes rigorous cleanup and signal handling an absolute necessity.
 
 ## Message Queues: The Command Channel
 
-If shared memory is the bulk cargo freighter, the message queue is the walkie-talkie used to coordinate the loading and unloading. We needed a way for the proxy to send commands to the cache, like "Do you have `/images/cat.jpg`?" or "Please store this file I just downloaded."
+If shared memory is the bulk cargo freighter, the message queue is the dispatch radio used to coordinate. While shared memory is just a raw slab of bytes, message queues are for sending small, discrete, structured messages. The modern POSIX API for message queues is often preferred for its simplicity and file-descriptor-based approach.
 
-A message queue is perfect for this. It allows for sending small, structured messages between processes. The proxy could package up a request into a message, send it to the queue, and the cache, which would be listening on that queue, would receive it and know what to do. This neatly separates the control signals from the data itself. The messages contained metadata about the files, while the shared memory was reserved for the file contents.
+With the POSIX API (`mq_open`, `mq_send`, `mq_receive`), message queues are identified by a simple name (e.g., `/my_queue_name`). Instead of a message "type," POSIX queues use a message **priority**. This allows a process to send urgent commands that can be read from the queue before older, lower-priority messages.
+
+This makes them ideal for a command channel, where a process might need to listen for and respond to different kinds of requests. Here is a generic example of the API in use:
+
+```c
+// In the sender:
+// 1. Open a named queue
+mqd_t mq = mq_open("/my_queue_name", O_WRONLY);
+// 2. Send a message with a specific priority
+mq_send(mq, "your_message", strlen("your_message"), 10);
+
+// In the receiver:
+// 1. Open the same queue for reading
+mqd_t mq_recv = mq_open("/my_queue_name", O_RDONLY);
+// 2. Receive the message
+char buf[8192];
+unsigned int sender_prio;
+mq_receive(mq_recv, buf, 8192, &sender_prio);
+```
+
+The kernel handles all the buffering and synchronization of the queue itself, making it a reliable—if slower—communication channel perfectly suited for control signals.
 
 ## Design in Practice: Synchronization and Robustness
 
