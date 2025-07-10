@@ -1,0 +1,296 @@
+---
+title: 'IPC in Action: Building a High-Performance Proxy & Cache'
+description: 'A dive into a project that explores IPC and synchronization in C'
+date: '2025-07-10'
+status: 'complete'
+type: 'project'
+tags: ['GIOS', 'operating-systems', 'c', 'IPC', 'socket-programming']
+category: ['projects']
+draft: false
+audience: 'All'
+media_subpath: "/ideas/gios-pr3/"
+image:
+  path: "./pizza-cache2.png"
+  alt: 'Pizza Cache'
+---
+
+import { Image } from "astro:assets";
+import BookCard from "../../../../components/BookCard.astro";
+import Figure from "../../../../components/Figure.astro";
+
+import osConceptsImg from "../../../books/os-concepts10.jpg";
+import cLangImg from "../../../books/c-lang.jpg";
+import beejGuidesImg from "../../../books/beej-network.jpg";
+import linuxInterfaceImg from "../../../books/linux-interface.png";
+
+import ipcImg from "./ipc.png";
+import stringCommImg from "./string-communication.jpg";
+import memoryBasedIpcImg from "./memory-based2.png";
+import messageBasedIpcImg from "./message-based2.png";
+import proxyCacheFlowImg from "./proxy-cache-flow.png";
+import proxyCacheProcessesImg from "./proxy-cache-processes.png";
+import ipcMechanismsImg from "./ipc-mechanisms.png";
+import semaphoreSharedMemoryImg from "./semaphore-shared-mem2.png";
+import placeholderCommunicationImg from "./placeholder-communication.png";
+import placeholderLinuxCommunicationOverviewImg from "./placeholder-linux-communication-overview.png";
+import placeholderLinuxSynchronizationImg from "./placeholder-linux-synchronization.png";
+import placeholderSharedMemoryImg from "./placeholder-shared-memory.png";
+
+## Introduction: The Scalability Problem
+
+Imagine a wildly popular news website. On a big story day, millions of users are all trying to load the same front-page article and its images. The main web server, buried deep in a datacenter, gets hammered with identical requests, spending its cycles reading the same files from disk over and over. For users on the other side of the world, the experience is slow because data must travel thousands of miles. This is a classic scalability bottleneck. How do you serve popular content to a global audience, quickly and efficiently, without overwhelming your origin server?
+
+The solution is a one-two punch of architectural patterns: the **cache server** and the **proxy server**.
+
+A **cache server** is a simple but powerful idea: it's a separate, specialized server that keeps temporary copies of frequently requested data. Instead of the main server handling every request, the cache can serve up a copy of that popular news article instantly, from memory. This dramatically reduces the load on the origin and provides a much faster response.
+
+But how do client requests get directed to the cache instead of the main server? That's the job of a **proxy server**. A proxy acts as an intelligent intermediary, a gatekeeper that sits between the client and the internet. When a request comes in, the proxy intercepts it. It can then make a smart decision: "Do I have a fresh copy of this in a nearby cache?" If so, it serves it directly. If not, *then* it forwards the request to the main origin server, gets the response, and passes it back to the client—while also telling the cache to store a copy for next time.
+
+<Figure
+  src={proxyCacheFlowImg}
+  alt="A diagram showing a client talking to a proxy, which in turn communicates with a cache server via IPC and a web server via HTTP."
+  caption="The proxy and cache are separate processes, communicating via dedicated IPC channels."
+/>
+
+In this project in Georgia Tech's OS course, the challenge was to build exactly this system: a cooperating proxy and cache. This project dovetails with the [first project in the course](/ideas/2025/gios-pr1/), where I created a multithreaded client and file server (the origin server). The proxy and cache processes built in this project sit between the client and origin server and act as an intermediary to improve performance.
+
+This project was about two distinct processes that had to communicate and coordinate. This forced a deep dive into one of the most fundamental topics in operating systems: **Inter-Process Communication (IPC)**. How could we pass massive amounts of file data from a cache process to a proxy process with minimal overhead? This post explores that journey, and the powerful, tricky, and essential world of IPC that makes systems like this possible.
+
+
+## The Architecture: A Tale of Two Processes
+
+In the real world, the line between a proxy and a cache is often blurry. It's crucial to understand their distinct roles and how this project intentionally separates them to create a specific engineering challenge.
+
+### The Modern Proxy: A Versatile Gatekeeper
+
+A proxy server is an intermediary that sits between a client and a server. As [Wikipedia explains](https://en.wikipedia.org/wiki/Proxy_server), there are two main types:
+
+*   **Forward Proxy:** Acts on behalf of a *client* or a network of clients. When you use a proxy at a company or school to access the internet, you're using a forward proxy. It can be used to enforce security policies, filter content, or mask the client's identity.
+*   **Reverse Proxy:** Acts on behalf of a *server* or a pool of servers. When you connect to a major website, you're almost certainly talking to a reverse proxy. It presents a single, unified entry point to a complex system of backend services.
+
+Reverse proxies are the workhorses of the modern web, often handling multiple critical tasks beyond just forwarding requests:
+- **Load Balancing:** Distributing incoming traffic across many backend servers.
+- **SSL Termination:** Decrypting incoming HTTPS traffic so backend servers don't have to.
+- **Authentication:** Verifying user credentials before passing a request to a protected service.
+- **Caching:** Storing copies of responses to speed up future requests, a role so common that the term "caching proxy" is widely used [[1]](https://web.archive.org/web/20250527171714/https://www.techtarget.com/whatis/definition/cache-server).
+
+### The Project's Design: An Intentional Separation
+
+In a production system like Nginx or a Content Delivery Network (CDN), the proxy and cache logic are typically integrated into the same highly-optimized application. For this project, however, the two were explicitly separated into distinct processes to create a focused challenge in systems programming.
+
+1.  **The Proxy Process**: This acts as a simple reverse proxy. Its only jobs are to intercept client requests, ask the cache if it has the file, and if not, use `libcurl` to fetch it from the origin server. It handles the network I/O and protocol logic.
+2.  **The Cache Process**: This is a pure, specialized key-value store. Its only job is to store and retrieve file data from memory. It doesn't know about `GETFILE` or HTTP; it only responds to commands from the proxy.
+
+This artificial separation was the heart of the project. By splitting these tightly-coupled roles, the primary engineering problem became: **how to build a high-bandwidth, low-latency communication channel between them?** This forces a deep dive into Inter-Process Communication, making it the central lesson.
+
+<Figure
+  src={proxyCacheProcessesImg}
+  alt="A diagram showing the proxy and cache processes and their communication."
+  caption="The proxy and cache processes and their communication."
+/>
+
+## A Primer on Inter-Process Communication (IPC)
+
+Modern operating systems are built on a bedrock principle: **process isolation**. Each process gets its own private virtual address space, its own chunk of memory that no other process can touch. This is a crucial security and stability feature. Without it, a bug in your web browser could crash your entire operating system. But this isolation creates a problem: what if processes *need* to cooperate? That's where **Inter-Process Communication (IPC)** comes in. The OS provides a set of controlled "doorways" through the walls of process isolation, ensuring that communication happens in a structured and safe way.
+
+IPC mechanisms fall into two main families: **message-based** and **memory-based**.
+
+*   In **message-based IPC**, the kernel acts as a post office. One process packages data into a message and hands it to the kernel (a system call); the kernel then delivers it to the other process (another system call). The data has to be copied from the virtual memory of the sending process to the kernel and then from the kernel to the virtual memory of the receiving process. This is safe and structured, but the constant kernel involvement and data copying create overhead. Common examples include **Pipes** for simple byte streams, **Message Queues** for structured messages, and **Sockets** for network communication.
+
+<Figure 
+  src={messageBasedIpcImg}
+  alt="Diagram of message-based IPC, showing pipes, message queues, and sockets managed by the kernel."
+  caption="In message-based IPC, the kernel acts as an intermediary for channels like pipes, message queues, and sockets."
+  width={500}
+/>
+
+*   In **memory-based IPC**, the kernel's role is more like a city planner. It designates a specific region of physical RAM and maps it into the address space of multiple processes. Once this **Shared Memory** region is established, the kernel gets out of the way. Processes can read and write to it directly at memory speed, with no copying or system calls. This offers incredible performance but comes with a major risk: without coordination, processes can interfere with each other, leading to corrupted data.
+
+<Figure
+  src={memoryBasedIpcImg}
+  alt="Diagram of memory-based IPC, showing a shared memory region mapped into the virtual address space of two processes."
+  caption="Memory-based IPC: A region of physical memory is mapped into the address space of multiple processes for direct access."
+  width={500}
+/>
+
+
+
+This risk highlights the need for a separate class of IPC tool: **synchronization primitives**. When using shared memory, it's essential to have a way to control access. **Semaphores** are a classic tool for this job, acting as a traffic light that ensures only one process can enter the shared "intersection" at a time. They don't transfer data themselves, but they make it safe for other mechanisms to do so.
+
+For this project, the goal was maximum performance, which pointed to a hybrid approach: **Shared Memory** for the heavy lifting (transferring file data) and a **Message Queue** for coordination.
+
+The project mandated a strict division of this communication:
+- A high-speed **data channel** for transferring the large file contents.
+- A separate **command channel** for control messages like "do you have this file?"
+
+### Message Queues: The Command Channel
+
+If shared memory is the bulk cargo freighter, the message queue is the dispatch radio used to coordinate. While shared memory is just a raw slab of bytes, message queues are for sending small, discrete, structured messages. The modern POSIX API for message queues is often preferred for its simplicity and file-descriptor-based approach.
+
+With the POSIX API (`mq_open`, `mq_send`, `mq_receive`), message queues are identified by a simple name (e.g., `/my_queue_name`). Instead of a message "type," POSIX queues use a message **priority**. This allows a process to send urgent commands that can be read from the queue before older, lower-priority messages.
+
+This makes them ideal for a command channel, where a process might need to listen for and respond to different kinds of requests. Here is a generic example of the API in use:
+
+```c
+// In the sender:
+// 1. Open a named queue
+mqd_t mq = mq_open("/my_queue_name", O_WRONLY);
+// 2. Send a message with a specific priority
+mq_send(mq, "your_message", strlen("your_message"), 10);
+
+// In the receiver:
+// 1. Open the same queue for reading
+mqd_t mq_recv = mq_open("/my_queue_name", O_RDONLY);
+// 2. Receive the message
+char buf[8192];
+unsigned int sender_prio;
+mq_receive(mq_recv, buf, 8192, &sender_prio);
+```
+
+The kernel handles all the buffering and synchronization of the queue itself, making it a reliable—if slower—communication channel perfectly suited for control signals.
+
+### Shared Memory: The High-Speed Data Link
+
+Shared memory is the IPC equivalent of teleportation. To make it work, one process first needs to request a new segment from the OS using a system call like `shmget()` (from the classic System V API) or `shm_open()` (from the more modern POSIX API). The OS reserves a chunk of physical memory and provides a unique key or name to identify it.
+
+Next, any process wanting to use this segment—including the creator—must "attach" it to its own virtual address space using a call like `shmat()`. The OS performs its page table magic, and the process gets back a simple `void*` pointer. From that moment on, it's just memory. There are no special `write_to_shared_memory()` calls. A process can use `memcpy`, pointer arithmetic, or direct assignments on that pointer, and the changes are instantly visible to any other process attached to that same segment because they all point to the same physical RAM.
+
+The POSIX equivalent achieves the same result by treating the shared memory segment like a file descriptor that can be memory-mapped:
+
+```c
+// 1. Create a named shared memory object
+int fd = shm_open("/my_shm_key", O_CREAT | O_RDWR, 0666);
+// 2. Set its size
+ftruncate(fd, sizeof(struct shared_data_struct));
+// 3. Memory-map it to get a pointer
+void *ptr = mmap(0, sizeof(struct shared_data_struct), PROT_WRITE, MAP_SHARED, fd, 0);
+```
+
+This raw pointer access is the source of both its power and its danger.
+
+- **No Built-in Synchronization:** The pointer is just a `void*`; it carries no information about whether another process is currently writing to that memory. If the cache is in the middle of a `memcpy` to the shared segment while the proxy tries to read from it, the proxy will get a corrupted, half-written file.
+- **Life After Death:** That memory segment is owned by the kernel, not the process. If a program crashes without explicitly detaching and telling the OS to destroy the segment, it becomes "orphaned"—invisible to new processes but still consuming system resources until the next reboot. This makes rigorous cleanup and signal handling an absolute necessity.
+
+### Preventing Chaos with Semaphores
+
+Using shared memory requires more than just preventing two processes from writing at the same time; it requires coordinating a *handoff*. How does the proxy (the "reader") know when the cache (the "writer") has finished placing a new file into shared memory? How does the cache know when the proxy is done reading, so it's safe to overwrite the memory with new data? This is a classic producer-consumer problem.
+
+One approach is to use a pair of semaphores to act as traffic signals.
+
+<Figure
+  src={semaphoreSharedMemoryImg}
+  alt="A diagram showing a reader and a writer using two semaphores (rsem and wsem) to coordinate access to a shared memory block."
+  caption="A 'producer-consumer' pattern using two semaphores to safely coordinate a handoff between a writer and a reader. Micheal Kerrisk's presentation goes into more detail on this topic and inspired this diagram."
+/>
+
+1.  **`wsem` (Write Semaphore):** This semaphore can be thought of as representing the number of "empty" slots available for the writer to write into. It's initialized to 1. The writer must wait on this semaphore before it can write.
+2.  **`rsem` (Read Semaphore):** This represents the number of "full" slots ready for the reader to read. It's initialized to 0, because initially, there is no data to read.
+
+This creates a clean, synchronized dance:
+- The **writer** first calls `sem_wait(wsem)`. Since it was initialized to 1, this succeeds immediately, and it now "owns" the shared buffer.
+- It copies the file data into the shared memory segment.
+- It then calls `sem_post(rsem)`, signaling to the reader that a file is ready.
+- The **reader**, which was likely blocked on `sem_wait(rsem)` (since it started at 0), now unblocks and can safely read the data.
+- After reading, the reader calls `sem_post(wsem)`, signaling that the shared buffer is now empty and available for the writer to write the *next* file.
+
+This two-semaphore system elegantly ensures that the reader never reads an incomplete file and the writer never overwrites a file before the reader has had a chance to read it.
+
+
+> [!note]
+> Semaphores are just one of many tools for synchronization. For a broader look at how they compare to thread-focused tools like mutexes or high-performance spinlocks, see my overview of [Synchronization Constructs in the GIOS Retrospective](/ideas/2025/gios-retro/#synchronization-constructs).
+
+
+## Design in Practice: Synchronization and Robustness
+
+With the core components defined, the real challenge lay in making them work together reliably. This involved not just preventing data corruption, but also designing the system to handle the realities of process lifecycle and startup.
+
+### The Coordination Challenge
+
+With a message queue for commands, shared memory for bulk data, and semaphores for synchronization, the next step is to weave them into a coherent protocol. This is where the core design challenge lies. It's not enough to have the right tools; they must be orchestrated correctly.
+
+This raises several critical design questions:
+- When the proxy receives a "file is ready" message, how does it know *where* in the shared memory segment to look for the data?
+- How does the cache know which part of the shared memory is free to use for a new file it just fetched?
+- Is it better to have one single, large shared memory segment that is partitioned and managed, or to create and destroy smaller segments on demand?
+- How are the semaphores associated with the specific data they are protecting?
+
+Answering these questions is the heart of the engineering task. There are many valid patterns one could use to build a robust solution, each with different trade-offs in complexity and performance. The key is to create a clear, unambiguous system of rules that both processes can follow to communicate without error.
+
+Getting these details right was the most challenging and rewarding part of the project.
+
+### Responsibility and Resource Management
+
+A key design decision mandated by the project was that **the proxy would be responsible for creating and destroying all IPC resources**. From the cache's perspective, this design respects its memory boundaries. It makes the cache a more robust service, capable of handling multiple proxy clients without being brought down by a single misbehaving one. If a proxy crashes, it's responsible for its own mess, and the cache can continue serving other clients.
+
+This responsibility extends to cleanup. It's not enough for the system to work; it must also exit cleanly. The project required implementing **signal handlers** to catch termination signals like `SIGINT` (from Ctrl-C) and `SIGTERM` (from a `kill` command). When caught, these signals trigger a cleanup routine that meticulously removes all shared memory segments and message queues before the process terminates, preventing orphaned resources from littering the OS.
+
+### Flexible Startup
+
+Finally, the system had to be robust to the order in which the processes were started. The proxy could launch before the cache was ready, or vice-versa. This meant the connection logic couldn't be a one-time attempt. The proxy, upon starting, had to be prepared to repeatedly attempt a connection to the cache's command channel if it wasn't yet available. This small detail is a classic example of the kind of defensive programming required when building distributed or multi-process systems.
+
+## Conclusion: Building Cooperative Systems
+
+This project was a fantastic lesson in the trade-offs of system design. While building a single, monolithic program is often simpler, splitting a system into specialized processes can lead to a more modular, scalable, and maintainable architecture.
+
+The key takeaways were:
+
+- **IPC is a spectrum:** There's a tool for every job, from slow-but-simple pipes to fast-but-complex shared memory. The right choice depends entirely on the problem's requirements.
+- **Synchronization is non-negotiable:** With great power comes great responsibility. Using high-performance IPC like shared memory *requires* robust, process-aware synchronization to prevent chaos.
+- **Resource management is paramount:** Processes are mortal, but OS-level resources can be eternal. Writing code that cleans up after itself is a hallmark of a reliable system.
+
+While a production cache might use more advanced techniques, the fundamental principles are the same. This project provided a tangible, low-level understanding of how independent programs can be orchestrated to build a cooperative, high-performance system.
+
+## Additional resources
+
+These books and guides were extremely helpful for understanding the concepts and APIs for IPC in C.
+
+<BookCard
+  title="The C Programming Language"
+  author="Brian W. Kernighan and Dennis M. Ritchie"
+  img={cLangImg}
+  url="https://www.google.com/books/edition/The_C_Programming_Language/OpJ_0zpF7jIC"
+>
+    <p>
+        The definitive book on C, written by its creators. Essential for mastering the language itself.
+    </p>
+</BookCard>
+
+<BookCard
+  title="Beej's Guides to C, Network Programming, and IPC"
+  author="Brian 'Beej' Hall"
+  img={beejGuidesImg}
+  url="https://beej.us/guide/"
+>
+    <p>
+        An invaluable, practical, and free resource. The IPC guide was a lifesaver for this project, providing clear, working examples for shared memory and semaphores.
+    </p>
+</BookCard>
+
+<BookCard
+  title="The Linux Programming Interface"
+  author="Michael Kerrisk"
+  img={linuxInterfaceImg}
+  url="https://man7.org/tlpi/"
+>
+    <p>
+        The encyclopedic guide to the Linux and UNIX system programming interface. The chapters on System V IPC and POSIX IPC are incredibly detailed and authoritative.
+    </p>
+</BookCard>
+
+<BookCard
+  title="Operating System Concepts 10th Edition"
+  author="Silberschatz, Galvin, and Gagne"
+  img={osConceptsImg}
+  url="https://os-book.com/OS10/index.html"
+>
+  <p>
+    This book was a great resource for understanding the concepts of IPC and synchronization.
+  </p>
+</BookCard>
+
+- [An Introduction to Linux IPC, 2013 presentation by Michael Kerrisk](https://man7.org/conf/lca2013/IPC_Overview-LCA-2013-printable.pdf) and [accompanying recording](https://www.youtube.com/watch?v=vU2HDf5ZhO4)
+
+> [!info] A Note on Code Availability
+> In accordance with Georgia Tech's academic integrity policy and the license for course materials, the source code for this project is kept in a private repository. I believe passionately in sharing knowledge, but I also firmly respect the university's policies. This document follows [Dean Joyner's advice on sharing projects](https://www.reddit.com/r/OMSCS/comments/zwdwns/comment/j1udv6w/) with a focus not on any particular solution and instead on an abstract overview of the problem and the underlying concepts I learned.
+>
+> I would be delighted to discuss the implementation details, architecture, or specific code sections in an interview. Please feel free to reach out to request private access to the repository.

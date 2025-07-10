@@ -1,0 +1,53 @@
+/* 
+ * Giscus Custom Theme for Solarized Dark 
+ */
+main {
+  /* Giscus specific theme variables for Solarized Dark */
+  --color-canvas-default: #002b36; /* base03 */
+  --color-canvas-subtle: #073642;  /* base02 */
+  --color-border-default: #073642; /* base02 */
+  --color-border-muted: #586e75;   /* base01 */
+  --color-neutral-muted: #586e75;  /* base01 */
+  --color-fg-default: #839496;     /* base0 */
+  --color-fg-muted: #586e75;       /* base01 */
+  --color-fg-subtle: #657b83;      /* base00 */
+  --color-accent-fg: #268bd2;      /* blue */
+  --color-accent-emphasis: #2aa198;/* cyan */
+  --color-success-fg: #859900;     /* green */
+  --color-attention-fg: #b58900;   /* yellow */
+  --color-danger-fg: #dc322f;      /* red */
+  --color-btn-bg: #073642;         /* base02 */
+  --color-btn-border: #586e75;     /* base01 */
+  --color-btn-text: #839496;       /* base0 */
+  --color-btn-hover-bg: #586e75;   /* base01 */
+  --color-btn-active-bg: #657b83;  /* base00 */
+  --color-input-bg: #073642;       /* base02 */
+  --color-input-border: #586e75;   /* base01 */
+  --color-timeline-badge-bg: #073642; /* base02 */
+  
+  /* Prettylights syntax highlighting for Solarized Dark */
+  --color-prettylights-syntax-comment: #586e75;
+  --color-prettylights-syntax-constant: #2aa198;
+  --color-prettylights-syntax-entity: #b58900;
+  --color-prettylights-syntax-storage-modifier-import: #839496;
+  --color-prettylights-syntax-entity-tag: #dc322f;
+  --color-prettylights-syntax-keyword: #859900;
+  --color-prettylights-syntax-string: #2aa198;
+  --color-prettylights-syntax-variable: #268bd2;
+  --color-prettylights-syntax-brackethighlighter-unmatched: #dc322f;
+  --color-prettylights-syntax-invalid-illegal: #dc322f;
+  --color-prettylights-syntax-carriage-return: #dc322f;
+  --color-prettylights-syntax-string-regexp: #2aa198;
+  --color-prettylights-syntax-markup-list: #b58900;
+  --color-prettylights-syntax-markup-heading: #268bd2;
+  --color-prettylights-syntax-markup-italic: #839496;
+  --color-prettylights-syntax-markup-bold: #839496;
+  --color-prettylights-syntax-markup-deleted: #dc322f;
+  --color-prettylights-syntax-markup-inserted: #859900;
+  --color-prettylights-syntax-markup-changed: #b58900;
+  --color-prettylights-syntax-markup-ignored: #586e75;
+  --color-prettylights-syntax-meta-diff-range: #6c71c4;
+  --color-prettylights-syntax-brackethighlighter-angle: #586e75;
+  --color-prettylights-syntax-sublimelinter-gutter-mark: #586e75;
+  --color-prettylights-syntax-constant-other-reference-link: #2aa198;
+} 

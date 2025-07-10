@@ -53,11 +53,6 @@ const imageData = getImageData();
       margin: 0;
     }
 
-    .title {
-      margin-bottom: 1em;
-      padding-bottom: 1em;
-    }
-
     .title-meta {
       display: flex;
       gap: 1em;
@@ -114,10 +109,27 @@ const imageData = getImageData();
 
     .hero-image {
       width: 100%;
+      margin: 0 auto;
     }
+    .hero-image figure {
+      display: block;
+    }
+
     .hero-image img {
       display: block;
       margin: 0 auto;
+    }
+
+    .caption {
+      margin-top: 0.75rem;
+      font-size: 0.9rem;
+      font-style: italic;
+      color: var(--sol-1);
+      line-height: 1.4;
+      max-width: min(90%, 800px);
+      margin-left: auto;
+      margin-right: auto;
+      text-align: center;
     }
 
     .prose {
@@ -190,8 +202,7 @@ const imageData = getImageData();
         <div class="description">{description}</div>
         <div class="meta">
           {
-            tags &&
-            tags.length > 0 && (
+            tags && tags.length > 0 && (
               <div class="tags">
                 {tags.map((tag) => (
                   <span class="tag">{tag}</span>
@@ -203,24 +214,31 @@ const imageData = getImageData();
             <div class="published-on">
               Published <FormattedDate date={pubDate || new Date()} />
             </div>
-            {updated && (
-              <div class="last-updated-on">
-                Updated <FormattedDate date={updated} />
-              </div>
-            )}
+            {
+              updated && (
+                <div class="last-updated-on">
+                  Updated <FormattedDate date={updated} />
+                </div>
+              )
+            }
           </div>
         </div>
       </div>
-      <div class="hero-image slide-in-block">
-        {imageData && (
-          <Image
-            width={1020}
-            height={510}
-            src={imageData.src as string}
-            alt={imageData.alt}
-          />
-        )}
-      </div>
+      {
+        imageData && (
+          <figure class="hero-image slide-in-block">
+            <Image
+              width={1020}
+              height={510}
+              src={imageData.src as string}
+              alt={imageData.alt}
+            />
+            {imageData.alt && (
+              <figcaption class="caption">{imageData.alt}</figcaption>
+            )}
+          </figure>
+        )
+      }
     </header>
     <div class="prose">
       <slot />

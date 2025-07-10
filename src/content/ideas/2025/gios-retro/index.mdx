@@ -2,6 +2,7 @@
 title: 'Graduate Introduction to Operating Systems'
 description: 'What I Learned in Graduate Introduction to Operating Systems (GIOS) - A Retrospective'
 date: '2025-06-22'
+updated: '2025-07-09'
 status: 'complete'
 type: 'retro'
 tags: ['GIOS', 'operating-systems', 'c', 'c++', 'multithreading', 'IPC', 'socket-programming', 'distributed-systems']
@@ -10,8 +11,8 @@ draft: false
 audience: 'All'
 media_subpath: "/ideas/gios-retro/"
 image:
-  path: "./affiche-moebius-arzak-mystere-montrouge.jpg"
-  alt: 'Affiche Moebius Arzak Mystere Montrouge by Jean Giraud'
+  path: "./pizza-computer.png"
+  alt: 'Pizza Computer'
 ---
 
 import { Image } from "astro:assets";
@@ -339,6 +340,9 @@ Inter-Process Communication (IPC) provides a set of mechanisms for separate proc
   - Design considerations for using shared memory, such as segment size and management.
 </details>
 
+> [!note]
+> For a broader survey of a practical application of IPC concepts and other methods, see the [IPC project I did for this class](/ideas/2025/gios-pr3/).
+
 ### Synchronization Constructs
 
 While mutexes and condition variables are the fundamental building blocks for synchronization, they can be low-level and error-prone. To address this, operating systems and libraries provide higher-level and more specialized **synchronization constructs**. The correctness and performance of all these constructs, however, depend entirely on low-level **atomic instructions** provided by the hardware (e.g., `test-and-set`, `compare-and-swap`). These instructions guarantee that a sequence of operations, like reading a value, checking it, and writing a new value, happens indivisibly.
@@ -489,6 +493,8 @@ The projects were a great way to solidify the concepts learned in the course and
 I'm writing follow-up posts for each project to explore them in more detail. Here is the first one:
 
 - **Project 1:** [Concurrent File Server](/ideas/2025/gios-pr1/)
+- (project 2 was omitted in my iteration of the course)
+- **Project 3:** [Cache & Proxy Servers with Shared Memory IPC](/ideas/2025/gios-pr3/)
 
 I'll update this list as I write about the other projects.
 

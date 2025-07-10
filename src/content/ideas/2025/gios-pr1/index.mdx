@@ -1,7 +1,8 @@
 ---
-title: 'Concurrent File Server'
-description: 'Building a Scalable Multithreaded File Server in C: Lessons from a Graduate OS Course'
-date: '2025-06-22'
+title: 'Building a Scalable Multithreaded File Server in C'
+description: 'A project that explores multithreading, sockets, and the basics of operating systems'
+date: '2025-06-23'
+updated: '2025-07-09'
 status: 'complete'
 type: 'project'
 tags: ['GIOS', 'operating-systems', 'c', 'multithreading', 'socket-programming']
@@ -10,8 +11,8 @@ draft: false
 audience: 'All'
 media_subpath: "/ideas/gios-pr1/"
 image:
-  path: "./moebius-pilot.webp"
-  alt: 'Moebius Pilot by Jean Giraud'
+  path: "./pizza-server2.png"
+  alt: 'Pizza Server'
 ---
 
 import { Image } from "astro:assets";
@@ -32,9 +33,9 @@ import bossWorker from "./boss-worker2.png";
 
 ## Introduction: The Challenge
 
-Ever wondered what *really* happens when you click a download link? It seems like magic. You click, and a file appears. But behind that simple action lies a carefully orchestrated conversation between computers, a conversation refereed by their operating systems. For my first project in Georgia Tech's [CS 6200: Graduate Introduction to Operating Systems (GIOS)](https://omscs.gatech.edu/cs-6200-introduction-operating-systems), I had to build one side of that conversation: a multithreaded file server, from scratch, in C.
+Ever wondered what *really* happens when you click a download link? It seems like magic. You click, and a file appears. But behind that simple action lies a carefully orchestrated conversation between computers, a conversation refereed by their operating systems. For my first project in Georgia Tech's [CS 6200: Graduate Introduction to Operating Systems (GIOS)](https://omscs.gatech.edu/cs-6200-introduction-operating-systems), I had to build both sides of that conversation: a multithreaded file server and client, from scratch, in C.
 
-The goal was to implement a server capable of handling multiple file requests simultaneously. This wasn't just about writing code; it was about a head-first dive into the core concepts that make the modern internet possible: network sockets, system calls, concurrency, and protocol design.
+The goal was to build a complete system: a server capable of handling multiple file requests simultaneously and a client that could download multiple files concurrently. This wasn't just about writing code; it was about a head-first dive into the core concepts that make the modern internet possible: network sockets, system calls, concurrency, and protocol design.
 
 Going in, I was comfortable with C's syntax but had never touched the Berkeley socket API. Networking was a black box I'd only ever interacted with through the convenient abstractions like Python's `requests` library. This project was my opportunity to pry open that box. This post documents that journey, not just what I built, but the fundamental *whys* behind the code.
 
@@ -234,7 +235,7 @@ A C project of this complexity demands proper tooling for building and testing.
 *   **Automated and Stress Testing:** How do you know your server *really* works? You write tests—and not just simple ones. The best way to test a server is to write a client in a completely different language, which forces you to follow your protocol specification to the letter. I used Python and `pytest` (with its `socket` library, a thin wrapper around the same C APIs) to build a test suite that connected to my C server and exercised a range of scenarios: successful file downloads, requests for non-existent files, and malformed protocol requests, all while asserting that the server's responses were byte-for-byte compliant with the `GETFILE` specification.
 
 
-    To push the server to its limits, I wrote a stress testing script that launched dozens of concurrent client connections, simulating real-world load and uncovering subtle race conditions or deadlocks. I also played with `valgrind` to check for memory leaks and invalid memory accesses, which is essential in C projects—especially when handling many threads and dynamic buffers. These tools together gave me confidence that my server was not only correct, but also robust and leak-free under heavy use.
+    To push the server to its limits, I used the multithreaded C client itself as a stress-testing tool. By configuring it to request dozens of files concurrently, I could simulate real-world load, uncovering subtle race conditions or deadlocks in the server. I also played with `valgrind` to check for memory leaks and invalid memory accesses, which is essential in C projects—especially when handling many threads and dynamic buffers. These tools together gave me confidence that my server was not only correct, but also robust and leak-free under heavy use.
 
 
 Here's a small generic `pytest` example of using the `socket` library to test a server (not specific to the `GETFILE` protocol to avoid academic integrity issues):
