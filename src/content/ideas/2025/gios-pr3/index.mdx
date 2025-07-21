@@ -2,6 +2,7 @@
 title: 'IPC in Action: Building a High-Performance Proxy & Cache'
 description: 'A dive into a project that explores IPC and synchronization in C'
 date: '2025-07-10'
+updated: '2025-07-22'
 status: 'complete'
 type: 'project'
 tags: ['GIOS', 'operating-systems', 'c', 'IPC', 'socket-programming']
@@ -12,6 +13,7 @@ media_subpath: "/ideas/gios-pr3/"
 image:
   path: "./pizza-cache2.png"
   alt: 'Pizza Cache'
+hideCaption: true
 ---
 
 import { Image } from "astro:assets";
@@ -52,9 +54,12 @@ But how do client requests get directed to the cache instead of the main server?
   caption="The proxy and cache are separate processes, communicating via dedicated IPC channels."
 />
 
-In this project in Georgia Tech's OS course, the challenge was to build exactly this system: a cooperating proxy and cache. This project dovetails with the [first project in the course](/ideas/2025/gios-pr1/), where I created a multithreaded client and file server (the origin server). The proxy and cache processes built in this project sit between the client and origin server and act as an intermediary to improve performance.
+In this project in Georgia Tech's [CS 6200: Graduate Introduction to Operating Systems (GIOS)](https://omscs.gatech.edu/cs-6200-introduction-operating-systems), the challenge was to build exactly this system: a cooperating proxy and cache. This project dovetails with the [first project in the course](/ideas/2025/gios-pr1/), where I created a multithreaded client and file server (the origin server). The proxy and cache processes built in this project sit between the client and origin server and act as an intermediary to improve performance.
 
 This project was about two distinct processes that had to communicate and coordinate. This forced a deep dive into one of the most fundamental topics in operating systems: **Inter-Process Communication (IPC)**. How could we pass massive amounts of file data from a cache process to a proxy process with minimal overhead? This post explores that journey, and the powerful, tricky, and essential world of IPC that makes systems like this possible.
+
+> [!note]
+> This post is meant to be a showcase of the work I did on the project and the concepts I learned from it. For a broader overview of all concepts covered in the course, please see the companion post: [GIOS: A Retrospective](/ideas/2025/gios-retro/).
 
 
 ## The Architecture: A Tale of Two Processes

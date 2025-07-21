@@ -32,6 +32,7 @@ const ideas = defineCollection({
       path: image().optional(),
       alt: z.string(),
     }).optional(),
+    hideCaption: z.boolean().optional(),
     media_subpath: z.string().optional(),
   }).transform((data) => {
     // Transform Gatsby 'date' field to Astro 'pubDate' if needed

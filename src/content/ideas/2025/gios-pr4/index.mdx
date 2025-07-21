@@ -1,0 +1,323 @@
+---
+title: 'Syncing Up: Building a Distributed File System in C++'
+description: 'A deep dive into the challenges of remote communication and data consistency, inspired by systems like Google Drive.'
+date: '2025-07-22'
+status: 'complete'
+type: 'project'
+tags: ['GIOS', 'operating-systems', 'c++', 'multithreading', 'RPC', 'distributed-systems']
+category: ['projects']
+draft: false
+audience: 'Technical'
+media_subpath: "/ideas/gios-pr4/"
+image:
+  path: "./distributed-pizza-server.jpeg"
+  alt: 'Distributed Pizza Server'
+hideCaption: true
+---
+import { Image } from "astro:assets";
+import BookCard from "../../../../components/BookCard.astro";
+import Figure from "../../../../components/Figure.astro";
+
+import osTepImg from "../../../books/os-tep.jpg";
+import linuxInterfaceImg from "../../../books/linux-interface.png";
+import cLangImg from "../../../books/c-lang.jpg";
+import cPlusPlusConcurrencyImg from "../../../books/c++concurrency-in-action.jpg";
+import cPlusPlusTourImg from "../../../books/a-tour-of-c++.jpg";
+import ddiaImg from "../../../books/ddia.jpg";
+
+import dfsOverview from "./dfs-overview3.png";
+import protobufExample from "./protobuf-bytes.png";
+import remoteAccess from "./remote-access.png";
+import copyDownload from "./copy-download.png";
+
+## Introduction: The "Magic" of Google Drive
+
+The seamless sync of Google Drive feels like magic. I can edit a document on my laptop, and it instantly appears on my phone. This seamless synchronization feels effortless, but it's the result of a complex, carefully engineered **Distributed File System (DFS)**.
+
+A DFS is the backbone of modern cloud storage and collaboration. It allows multiple, geographically dispersed clients to access and modify a shared set of files as if they were stored on a single, local machine. For my final project in Georgia Tech's [CS 6200: Graduate Introduction to Operating Systems (GIOS)](https://omscs.gatech.edu/cs-6200-introduction-operating-systems), I built one from the ground up in C++.
+
+In the [first project](/ideas/2025/gios-pr1/), I built a simple file system with a single client and server. In the [second project](/ideas/2025/gios-pr3/), I extended it to add a proxy and cache server. This final project was a fantastic opportunity to tackle the challenges of distributed computing, and this post explores the key lessons from that journey, focusing on the three pillars of any DFS: remote communication, data consistency, and synchronization.
+
+> [!note]
+> This post is meant to be a showcase of the work I did on the project and the concepts I learned from it. For a broader overview of all concepts covered in the course, please see the companion post: [GIOS: A Retrospective](/ideas/2025/gios-retro/).
+
+## The Anatomy of a Distributed File System
+
+<Figure
+  caption="A simplified Distributed File System (DFS) architecture. Clients maintain local caches of files and use Remote Procedure Calls (RPCs) to communicate with a central server that manages the authoritative file storage."
+  src={dfsOverview}
+  alt="A simplified Distributed File System (DFS) architecture. Clients maintain local caches of files and use Remote Procedure Calls (RPCs) to communicate with a central server that manages the authoritative file storage."
+  width={600}
+/>
+
+A DFS hides the complexity of the network behind the standard file system interface that applications already know how to use (`open`, `read`, `write`, `close`). But under the hood, it must make fundamental design decisions about how data is stored, accessed, and kept consistent.
+
+### Architectural Models: Replication vs. Partitioning
+
+There are several ways to architect a DFS server infrastructure:
+- **Replication:** The simplest model is to have multiple servers, each holding a complete copy of every file. This provides high **fault tolerance** (if one server fails, others can take over) and **high availability** (requests can be balanced across any server).
+- **Partitioning:** In this model, the file set is split up, with each server holding only a subset of the files. This is incredibly **scalable**—if you need to store more files, you just add more servers. However, if a server holding a partition fails, that data becomes unavailable.
+
+In practice, many large-scale systems use a hybrid approach, partitioning the data into chunks and then replicating each chunk across multiple servers to get the benefits of both scalability and fault tolerance. For this project, focused on the client-server interaction model instead of the on server replication or partitioning.
+
+### The Caching Compromise
+
+At the heart of any DFS is a fundamental trade-off in how clients interact with remote files. There are two extremes:
+
+- **The Upload/Download Model:** A client downloads the entire file, modifies it locally, and uploads the entire file back. This is fast for local edits but inefficient for small changes and gives the server no control over concurrent access.
+
+<Figure
+  caption="The Upload/Download Model. A client downloads the entire file, modifies it locally, and uploads the entire file back."
+  src={copyDownload}
+  alt="The Upload/Download Model. A client downloads the entire file, modifies it locally, and uploads the entire file back."
+  width={600}
+/>
+
+- **True Remote Access:** Every single file operation (`read` a byte, `write` a byte) is sent over the network to the server. This gives the server complete control, making consistency easy, but it's painfully slow and doesn't scale.
+
+<Figure
+  caption="The True Remote Access Model. Every single file operation (`read` a byte, `write` a byte) is sent over the network to the server."
+  src={remoteAccess}
+  alt="The True Remote Access Model. Every single file operation (`read` a byte, `write` a byte) is sent over the network to the server."
+  width={600}
+/>
+
+Neither extreme is practical. The necessary compromise is **caching**. Clients cache parts of files locally to speed up access. This is the best of both worlds: it reduces network latency for many operations and lessens the load on the server. However, it introduces the central challenge of DFS design: if a client has a cached copy, how do we ensure it's kept up-to-date when someone else changes the file?
+
+This is where the concepts of consistency models, remote procedure calls, and synchronization mechanisms—the core topics of this project—become critical.
+
+## The Language of Distributed Systems: RPC and gRPC
+
+In a distributed system, processes running on different machines need a way to talk to each other. You could build a custom protocol on top of raw sockets, as we did in the [first project](/ideas/2025/gios-pr1/), but this is complex and error-prone. A much more robust and scalable approach is to use a **Remote Procedure Call (RPC)** framework.
+
+RPCs create a powerful abstraction: they allow a program to call a function or method on a remote machine as if it were a normal, local function call. The RPC framework handles all the messy details of networking, data serialization (converting data structures into a format for network transmission), and error handling, letting you focus on the application logic.
+
+### How RPCs Work: Stubs, Marshalling, and IDLs
+
+At its core, an RPC interaction is a client-server exchange designed to look like a simple function call. This illusion is created by a few key components:
+
+1.  **The Client and Server Stubs:** When a client calls a remote function, it's actually calling a local function in a **client stub**. This stub's job is to take the arguments, package them up, and send them over the network to the server. On the server side, a **server stub** (or "skeleton") receives the package, unpacks the arguments, and calls the actual implementation of the function.
+2.  **Marshalling and Unmarshalling:** The process of packaging the function arguments into a format suitable for network transmission (like a byte stream) is called **marshalling**. The reverse process on the server side—unpacking the byte stream back into arguments—is called **unmarshalling**. The same process happens in reverse for the function's return value.
+3.  **Interface Definition Language (IDL):** The client and server need to agree on the set of available functions and the exact structure of their arguments and return values. This "service contract" is formally defined in a language-agnostic **Interface Definition Language (IDL)**. The IDL file is used by the RPC framework to automatically generate the client and server stubs.
+
+For this project, I used **gRPC**, a modern, high-performance RPC framework developed by Google, paired with **Protocol Buffers (protobufs)** for defining the service and structuring the data.
+
+### Defining the Service with Protocol Buffers
+
+Before you can make a call, you have to define the "service contract"—the set of available functions and the structure of the data they exchange. With gRPC, you do this in a simple `.proto` file, which is a specific type of IDL. This language-agnostic definition is the single source of truth for the entire system.
+
+In accordance with academic integrity policies, I have not included the exact `.proto` file from the project. However, to illustrate the syntax and the underlying serialization, let's consider a simple `FileService` that could be part of a DFS:
+```protobuf
+syntax = "proto3";
+
+package dfs;
+
+// The file service definition.
+service FileService {
+  // Gets metadata for a file.
+  rpc GetMetadata(GetMetadataRequest) returns (FileMetadata) {}
+}
+
+// The request message for GetMetadata.
+message GetMetadataRequest {
+  string filename = 1;
+}
+
+// A message representing a file's metadata.
+message FileMetadata {
+  string filename    = 1;
+  int64  size_bytes  = 2;
+  repeated string categories = 3;
+}
+```
+From a file like this, the `protoc` compiler can generate all the necessary client and server code in C++, Python, Go, or a dozen other languages.
+
+As Martin Kleppmann explains in his analysis of serialization formats, the way data is encoded from the schema has huge implications for performance and flexibility. Unlike text-based formats like JSON, Protocol Buffers uses the schema to create a compact binary representation. Each field defined in the `.proto` file is assigned a unique tag number. When marshalling data, Protobuf encodes the record as a simple concatenation of its fields, where each field is prefixed with its tag number and type. This means the field names (`filename`, `size_bytes`, etc.) are not stored in the encoded data, saving a significant amount of space [[2]](https://martin.kleppmann.com/2012/12/05/schema-evolution-in-avro-protocol-buffers-thrift.html).
+
+For example, imagine a client receives the following `FileMetadata` object from the server:
+```json
+{
+  "filename": "cat.jpg",
+  "size_bytes": 1337,
+  "categories": ["funny", "cute"]
+}
+```
+
+The binary data for this message would be a compact sequence of key-value pairs, visualized below. Note how the `categories` field, being `repeated`, simply appears multiple times in the output stream.
+
+<Figure
+  caption="Serialization of a FileMetadata message using Protocol Buffers. Each field is encoded as a key (containing the tag number and wire type) followed by the value. String fields also include a length prefix."
+  src={protobufExample}
+  alt="Serialization of a FileMetadata message using Protocol Buffers. Each field is encoded as a key (containing the tag number and wire type) followed by the value. String fields also include a length prefix."
+/>
+
+This tag-based approach is also what enables powerful **schema evolution**. If a parser encounters a tag it doesn't recognize (perhaps because it's from a newer version of the schema), it can use the type information embedded with the tag to determine how many bytes to skip, allowing it to parse the rest of the record. This allows different components of a large system to be updated independently without breaking compatibility [[2]](https://martin.kleppmann.com/2012/12/05/schema-evolution-in-avro-protocol-buffers-thrift.html).
+
+For this project, the `.proto` file defined the core API of the Distributed File System. It specified:
+- RPCs for essential file operations: `Fetch`, `Store`, and `Delete`.
+- RPCs to `List` files with their metadata and `GetAttributes` for a specific file (such as size and modification times).
+- The structure of request and response messages, defining what data is needed for each call (e.g., a filename) and what data is returned (e.g., file content and a timestamp).
+- A long-lived, server-to-client streaming RPC for the server to proactively send cache invalidation notifications to clients.
+
+### Making the Call in C++
+
+With the service defined, making a remote call from the C++ client becomes remarkably clean. The generated code provides a "stub" object that has methods corresponding to each RPC defined in the `.proto` file.
+
+In the DFS client, this stub was used to invoke the remote `Fetch`, `Store`, and `Delete` methods on the server. The client code was responsible for creating a request message, populating it with the necessary data (like the filename), invoking the stub method, and then processing the server's response or handling any network errors.
+
+Using the service definition from above, here is a conceptual example showing how a client would call the `GetMetadata` RPC from the `FileService`.
+
+```cpp
+// Conceptual C++ code for a client making a gRPC call.
+// Error handling and full setup omitted for brevity & academic integrity.
+#include <grpcpp/grpcpp.h>
+#include "dfs.grpc.pb.h" // Assuming the file is dfs.proto
+
+using grpc::Channel;
+using grpc::ClientContext;
+using grpc::Status;
+using dfs::FileService;
+using dfs::GetMetadataRequest;
+using dfs::FileMetadata;
+
+class DfsClient {
+public:
+    DfsClient(std::shared_ptr<Channel> channel)
+        : stub_(FileService::NewStub(channel)) {}
+
+    // Calls the remote GetMetadata RPC.
+    void GetFileMetadata(const std::string& filename) {
+        GetMetadataRequest request;
+        request.set_filename(filename);
+
+        FileMetadata reply;
+        ClientContext context;
+
+        // The actual RPC call.
+        Status status = stub_->GetMetadata(&context, request, &reply);
+
+        if (status.ok()) {
+            std::cout << "Filename: " << reply.filename() << std::endl;
+            std::cout << "Size: " << reply.size_bytes() << " bytes"
+                      << std::endl;
+            std::cout << "Categories: ";
+            for (const auto& category : reply.categories()) {
+                std::cout << category << " ";
+            }
+            std::cout << std::endl;
+        } else {
+            std::cout << status.error_code() << ": " << status.error_message() 
+                      << std::endl;
+        }
+    }
+
+private:
+    std::unique_ptr<FileService::Stub> stub_;
+};
+
+int main() {
+    std::string server_address("localhost:50051");
+    DfsClient client(grpc::CreateChannel(
+        server_address, grpc::InsecureChannelCredentials()));
+    
+    std::cout << "Getting metadata for cat.jpg..." << std::endl;
+    client.GetFileMetadata("cat.jpg");
+
+    return 0;
+}
+```
+All the complexity of serialization, network sockets, and HTTP/2 framing is hidden behind that single `stub_->GetMetadata()` call. This is the power of a modern RPC framework.
+
+## The Consistency Challenge: From Strict to Weak
+
+One of the hardest problems in any distributed system is **consistency**. If Client A and Client B both have a copy of `document.txt`, and Client A edits it, how and when does Client B see that change? There's a spectrum of possible guarantees, or **consistency models**, each with different trade-offs between correctness and performance. As covered in the course, these models range from the theoretical ideal of strict consistency to the more practical weak consistency models seen in many real-world systems [GIOS Notes on Distributed Shared Memory](https://www.omscs-notes.com/operating-systems/distributed-shared-memory/).
+
+| Consistency Model | Guarantee                                                                                             |
+| ----------------- | ----------------------------------------------------------------------------------------------------- |
+| **Strict**        | All writes are seen by all nodes instantaneously and in the exact real-time order they occurred.      |
+| **Sequential**    | All nodes see the same single ordering of operations, but this order is not guaranteed to be real-time. |
+| **Causal**        | Only causally related writes are seen in the same order by all nodes. Concurrent writes can be seen in different orders. |
+| **Weak**          | Data is only guaranteed to be consistent after an explicit synchronization operation.                    |
+| **This Project**  | Writes are serialized; reads may be temporarily stale until an invalidation notice is received.       |
+
+*   **Strict Consistency:** Often called **Linearizability**, this is the most intuitive model. Any read will always return the result of the most recently completed write, viewed in absolute real-time across the entire system. The tradeoff is perfect correctness for performance that is effectively impossible to achieve in a real-world distributed system due to network latency.
+
+*   **Sequential Consistency:** This model relaxes the real-time constraint. It guarantees that all processes will see the *same interleaving* of operations, creating a single global order. The tradeoff is that while it's simpler to reason about than weaker models, maintaining this global order can be a performance bottleneck, as it requires significant coordination.
+
+*   **Causal Consistency:** This model offers a pragmatic tradeoff, improving performance by relaxing the global ordering requirement of sequential consistency. It recognizes that not all operations are related. If a write is causally dependent on a previous operation, the model guarantees that this causal order is preserved for all observers. For concurrent writes, however, different observers may see them in different orders, making the system state more complex to reason about.
+
+*   **Weak Consistency:** This model and its variants (like **Release Consistency**) offer the highest performance by minimizing communication. The tradeoff is that it provides no guarantees unless the programmer uses explicit **synchronization points** (like `acquire` and `release`). This shifts the burden of ensuring correctness entirely to the developer, making it the most difficult model to program against correctly.
+
+For this project, I implemented a **weak consistency model** inspired by the **Andrew File System (AFS)**, which strikes a pragmatic balance. In this model:
+- Clients aggressively **cache** copies of files locally for fast access.
+- When a client wants to *modify* a file, it must acquire a **write lock** from the server. This ensures only one client can write to a file at any given time, serializing writes and preventing the "lost update" anomaly.
+- When a client closes a modified file, it uploads the new version to the server. This "close" operation acts as a `release` synchronization point, making the client's updates available.
+- The server then sends out **cache invalidation** callbacks to all other clients that have a copy of that file. This callback tells them their version is now stale.
+- On the next access, the other clients must re-fetch the file, which acts as an `acquire` synchronization point.
+
+This "write-on-close" strategy provides an excellent trade-off for this type of system. It makes reads very fast by serving them from the local cache, while still providing strong enough guarantees to prevent data corruption. It accepts that a client might read slightly stale data in the short window between another client's write and receiving the invalidation message, a perfectly acceptable compromise for many applications.
+
+## Synchronization in Action: `inotify` and Server Callbacks
+
+To make the system feel responsive, changes need to be propagated automatically. Waiting for a user to manually sync is not an option. For this project, I used two key mechanisms for this.
+
+1.  **Client-Side File Watcher:** The client used Linux's `inotify` API to monitor its local file directory. `inotify` is an event-driven mechanism that allows an application to be notified by the kernel whenever a file is created, modified, or deleted in a specific directory. This is far more efficient than constantly polling the directory to check for changes. When an event was detected, the client would automatically trigger the appropriate RPC to the server (e.g., `Store` for a modification).
+
+2.  **Asynchronous Server Callbacks:** As seen in the `.proto` definition, the server has a `ListenForInvalidations` RPC. This is a long-lived, server-to-client streaming RPC. The client calls this once when it connects, and the server keeps the connection open. When the server needs to invalidate a file, it simply sends an `Invalidation` message down this established stream. This is far more efficient and scalable than having the server initiate a new connection to every client for every update.
+
+This architecture also presented a significant client-side challenge: the `inotify` watcher and the asynchronous gRPC callback listener run on separate threads. This required careful synchronization to ensure that local file events and remote server notifications were handled correctly without race conditions.
+
+## Broader Implications and Applications
+
+The concepts I explored in this project have real-world applications in:
+- **Cloud Storage Services** (e.g., Google Drive, Dropbox) where multiple users edit shared files.
+- **Distributed Databases** that replicate data across nodes while maintaining consistency.
+- **Big Data Processing** frameworks that distribute large files across multiple servers for analysis.
+
+## Final Thoughts
+This project highlighted the importance of designing distributed systems that balance **performance, consistency, and reliability**. Building a distributed file system from scratch was a journey through the fundamental trade-offs that engineers face when building large-scale systems. Whether working on cloud storage, real-time collaboration tools, or distributed databases, the principles of **remote communication, data consistency, and synchronization** are the essential pillars for building robust and scalable solutions.
+
+## Additional resources
+
+These books and guides were extremely helpful for understanding the concepts and APIs for this project.
+
+- The official [gRPC C++ Quickstart](https://grpc.io/docs/languages/cpp/quickstart/) guide was helpful for getting started.
+
+<BookCard
+  title="C++ Concurrency in Action"
+  author="Anthony Williams"
+  img={cPlusPlusConcurrencyImg}
+  url="https://www.manning.com/books/c-plus-plus-concurrency-in-action-second-edition"
+>
+  <p>
+    An indispensable guide for writing robust concurrent and multithreaded applications in C++. It was essential for understanding the complexities of thread management and synchronization.
+  </p>
+</BookCard>
+
+<BookCard
+  title="A Tour of C++, 3rd Edition"
+  author="Bjarne Stroustrup"
+  img={cPlusPlusTourImg}
+  url="https://www.stroustrup.com/tour3.html"
+>
+  <p>
+    A high-level tour of modern C++ features from the language's creator. Perfect for getting a broad overview of the language's capabilities and best practices.
+  </p>
+</BookCard>
+
+<BookCard
+  title="Designing Data-Intensive Applications"
+  author="Martin Kleppmann"
+  img={ddiaImg}
+  url="https://www.amazon.com/Designing-Data-Intensive-Applications-Reliable-Maintainable/dp/1449373321"
+>
+  <p>
+    A great book for understanding the principles of distributed systems. The chapter on serialization was particularly helpful.
+  </p>
+</BookCard>
+
+
+> [!info] A Note on Code Availability
+> In accordance with Georgia Tech's academic integrity policy and the license for course materials, the source code for this project is kept in a private repository. I believe passionately in sharing knowledge, but I also firmly respect the university's policies. This document follows [Dean Joyner's advice on sharing projects](https://www.reddit.com/r/OMSCS/comments/zwdwns/comment/j1udv6w/) with a focus not on any particular solution and instead on an abstract overview of the problem and the underlying concepts I learned.
+>
+> I would be delighted to discuss the implementation details, architecture, or specific code sections in an interview. Please feel free to reach out to request private access to the repository.

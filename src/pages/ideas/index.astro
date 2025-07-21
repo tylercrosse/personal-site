@@ -6,6 +6,11 @@ import { SITE_TITLE, SITE_DESCRIPTION } from "../../consts";
 import FormattedDate from "../../components/FormattedDate.astro";
 import readingTime from "reading-time";
 
+const capitalize = (s: string) => {
+  if (typeof s !== "string" || !s) return s;
+  return s.charAt(0).toUpperCase() + s.slice(1);
+};
+
 const posts = (await getCollection("ideas")).sort((a, b) => {
   const aDate = a.data.pubDate || a.data.date;
   const bDate = b.data.pubDate || b.data.date;
@@ -208,13 +213,13 @@ const allPostsData = posts.map((post) => {
       <div class="select-filters">
         <select id="type-filter">
           <option value="all">All types</option>
-          {allTypes.map((type) => <option value={type}>{type}</option>)}
+          {allTypes.map((type) => <option value={type}>{capitalize(type)}</option>)}
         </select>
         <select id="status-filter">
           <option value="all">All statuses</option>
           {
             allStatuses.map((status) => (
-              <option value={status}>{status}</option>
+              <option value={status}>{capitalize(status)}</option>
             ))
           }
         </select>
@@ -248,8 +253,8 @@ const allPostsData = posts.map((post) => {
           >
             <div class="post-card-content">
               <div class="post-card-content-header">
-                <span>{post.type}</span>
-                <span>{post.status}</span>
+                {post.type && <span>{capitalize(post.type)}</span>}
+                {post.status && <span>{capitalize(post.status)}</span>}
                 <span>{post.readingTimeText}</span>
               </div>
               <h3>{post.title}</h3>
