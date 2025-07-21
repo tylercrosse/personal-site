@@ -62,6 +62,32 @@ In a distributed file system, file modifications must be propagated efficiently 
 - **Synchronization Must Handle Concurrent Events:** Clients and servers must manage concurrent modifications safely to avoid inconsistencies.
 - **Asynchronous Communication Improves Efficiency:** Clients do not block execution while waiting for updates, enabling better scalability.
 
+{/* <Figure
+  caption="The Remote Procedure Call (RPC) flow. The client call is marshalled, sent over the network, and unmarshalled by the server stub, which then invokes the actual service implementation. The process is reversed for the response."
+> */}
+```mermaid
+sequenceDiagram
+    participant C as Client App
+    participant CS as Client Stub (Generated)
+    participant G as gRPC Framework
+    participant SS as Server Stub (Generated)
+    participant S as Service Impl
+
+    C->>+CS: SayHello("world")
+    CS->>+G: Marshal Request<br/>(Serialize Protobuf)
+    G->>G: Send over Network (HTTP/2)
+    G->>+SS: Receive Data
+    SS->>SS: Unmarshal Request<br/>(Deserialize Protobuf)
+    SS->>+S: SayHello(request)
+    S-->>-SS: return "Hello world"
+    SS->>+G: Marshal Response
+    G-->>G: Send over Network
+    G-->>-CS: Receive Response
+    CS-->>CS: Unmarshal Response
+    CS-->>-C: return "Hello world"
+```
+{/* </Figure> */}
+
 ## Broader Implications and Applications
 
 The concepts explored in this project have real-world applications in:
@@ -71,6 +97,37 @@ The concepts explored in this project have real-world applications in:
 
 ### Final Thoughts
 This project highlighted the importance of designing distributed systems that balance **performance, consistency, and reliability**. Whether working on cloud storage, large-scale computing, or real-time collaboration tools, the principles of **remote communication, synchronization, and consistency** are crucial for building scalable and robust solutions.
+
+{/* <Figure
+    caption="Weak consistency with cache invalidation. A write from Client A updates the server, which then asynchronously tells Client B that its cached copy is stale. Client B will fetch the new version on its next read."
+> */}
+```mermaid
+sequenceDiagram
+    participant ClientA as Client A
+    participant Server
+    participant ClientB as Client B
+
+    ClientA->>Server: 1. Store("file.txt", "new content")
+    activate Server
+    Server-->>ClientA: 2. Acknowledge Write
+    deactivate Server
+
+    Note right of Server: Server detects change,<br/>finds other clients with<br/>a cached copy of "file.txt"
+
+    Server->>ClientB: 3. InvalidateCache("file.txt") [Async]
+    activate ClientB
+    Note over ClientB: Marks local copy as stale
+    ClientB-->>Server: 4. (Optional) Ack Invalidation
+    deactivate ClientB
+
+    critical Next read from Client B
+        ClientB->>Server: 5. Fetch("file.txt")
+        activate Server
+        Server-->>ClientB: 6. Return "new content"
+        deactivate Server
+    end
+```
+{/* </Figure> */}
 
 ## Additional resources
 

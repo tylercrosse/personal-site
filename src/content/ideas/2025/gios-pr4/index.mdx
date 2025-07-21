@@ -26,7 +26,7 @@ import cPlusPlusTourImg from "../../../books/a-tour-of-c++.jpg";
 import ddiaImg from "../../../books/ddia.jpg";
 
 import dfsOverview from "./dfs-overview3.png";
-import protobufExample from "./protobuf-placeholder.png";
+import protobufExample from "./protobuf-bytes.png";
 import remoteAccess from "./remote-access.png";
 import copyDownload from "./copy-download.png";
 
@@ -107,69 +107,55 @@ At its core, an RPC interaction is a client-server exchange designed to look lik
 2.  **Marshalling and Unmarshalling:** The process of packaging the function arguments into a format suitable for network transmission (like a byte stream) is called **marshalling**. The reverse process on the server side—unpacking the byte stream back into arguments—is called **unmarshalling**. The same process happens in reverse for the function's return value.
 3.  **Interface Definition Language (IDL):** The client and server need to agree on the set of available functions and the exact structure of their arguments and return values. This "service contract" is formally defined in a language-agnostic **Interface Definition Language (IDL)**. The IDL file is used by the RPC framework to automatically generate the client and server stubs.
 
-{/* <Figure
-  caption="The Remote Procedure Call (RPC) flow. The client call is marshalled, sent over the network, and unmarshalled by the server stub, which then invokes the actual service implementation. The process is reversed for the response."
-> */}
-```mermaid
-sequenceDiagram
-    participant C as Client App
-    participant CS as Client Stub (Generated)
-    participant G as gRPC Framework
-    participant SS as Server Stub (Generated)
-    participant S as Service Impl
-
-    C->>+CS: SayHello("world")
-    CS->>+G: Marshal Request<br/>(Serialize Protobuf)
-    G->>G: Send over Network (HTTP/2)
-    G->>+SS: Receive Data
-    SS->>SS: Unmarshal Request<br/>(Deserialize Protobuf)
-    SS->>+S: SayHello(request)
-    S-->>-SS: return "Hello world"
-    SS->>+G: Marshal Response
-    G-->>G: Send over Network
-    G-->>-CS: Receive Response
-    CS-->>CS: Unmarshal Response
-    CS-->>-C: return "Hello world"
-```
-{/* </Figure> */}
-
 For this project, I used **gRPC**, a modern, high-performance RPC framework developed by Google, paired with **Protocol Buffers (protobufs)** for defining the service and structuring the data.
 
 ### Defining the Service with Protocol Buffers
 
 Before you can make a call, you have to define the "service contract"—the set of available functions and the structure of the data they exchange. With gRPC, you do this in a simple `.proto` file, which is a specific type of IDL. This language-agnostic definition is the single source of truth for the entire system.
 
-In accordance with academic integrity policies, I have not included the exact `.proto` file from the project. However, to illustrate the syntax, here is a generic "Greeter" service, a common example used in gRPC documentation:
-
+In accordance with academic integrity policies, I have not included the exact `.proto` file from the project. However, to illustrate the syntax and the underlying serialization, let's consider a simple `FileService` that could be part of a DFS:
 ```protobuf
 syntax = "proto3";
 
-package helloworld;
+package dfs;
 
-// The greeting service definition.
-service Greeter {
-  // Sends a greeting
-  rpc SayHello (HelloRequest) returns (HelloReply) {}
+// The file service definition.
+service FileService {
+  // Gets metadata for a file.
+  rpc GetMetadata(GetMetadataRequest) returns (FileMetadata) {}
 }
 
-// The request message containing the user's name.
-message HelloRequest {
-  string name = 1;
+// The request message for GetMetadata.
+message GetMetadataRequest {
+  string filename = 1;
 }
 
-// The response message containing the greetings
-message HelloReply {
-  string message = 1;
+// A message representing a file's metadata.
+message FileMetadata {
+  string filename    = 1;
+  int64  size_bytes  = 2;
+  repeated string categories = 3;
 }
 ```
 From a file like this, the `protoc` compiler can generate all the necessary client and server code in C++, Python, Go, or a dozen other languages.
 
-As Martin Kleppmann explains in his analysis of serialization formats, the way data is encoded from the schema has huge implications for performance and flexibility. Unlike text-based formats like JSON, Protocol Buffers uses the schema to create a compact binary representation. Each field defined in the `.proto` file is assigned a unique tag number. When marshalling data, Protobuf encodes the record as a simple concatenation of its fields, where each field is prefixed with its tag number and type. This means the field names (`userName`, `favouriteNumber`, etc.) are not stored in the encoded data, saving a significant amount of space [[2]](https://martin.kleppmann.com/2012/12/05/schema-evolution-in-avro-protocol-buffers-thrift.html).
+As Martin Kleppmann explains in his analysis of serialization formats, the way data is encoded from the schema has huge implications for performance and flexibility. Unlike text-based formats like JSON, Protocol Buffers uses the schema to create a compact binary representation. Each field defined in the `.proto` file is assigned a unique tag number. When marshalling data, Protobuf encodes the record as a simple concatenation of its fields, where each field is prefixed with its tag number and type. This means the field names (`filename`, `size_bytes`, etc.) are not stored in the encoded data, saving a significant amount of space [[2]](https://martin.kleppmann.com/2012/12/05/schema-evolution-in-avro-protocol-buffers-thrift.html).
+
+For example, imagine a client receives the following `FileMetadata` object from the server:
+```json
+{
+  "filename": "cat.jpg",
+  "size_bytes": 1337,
+  "categories": ["funny", "cute"]
+}
+```
+
+The binary data for this message would be a compact sequence of key-value pairs, visualized below. Note how the `categories` field, being `repeated`, simply appears multiple times in the output stream.
 
 <Figure
-  caption="A simple example of a Protocol Buffers message. The `name` field is encoded as a string with tag number 1, and the `age` field is encoded as an integer with tag number 2."
+  caption="Serialization of a FileMetadata message using Protocol Buffers. Each field is encoded as a key (containing the tag number and wire type) followed by the value. String fields also include a length prefix."
   src={protobufExample}
-  alt="A simple example of a Protocol Buffers message. The `name` field is encoded as a string with tag number 1, and the `age` field is encoded as an integer with tag number 2."
+  alt="Serialization of a FileMetadata message using Protocol Buffers. Each field is encoded as a key (containing the tag number and wire type) followed by the value. String fields also include a length prefix."
 />
 
 This tag-based approach is also what enables powerful **schema evolution**. If a parser encounters a tag it doesn't recognize (perhaps because it's from a newer version of the schema), it can use the type information embedded with the tag to determine how many bytes to skip, allowing it to parse the rest of the record. This allows different components of a large system to be updated independently without breaking compatibility [[2]](https://martin.kleppmann.com/2012/12/05/schema-evolution-in-avro-protocol-buffers-thrift.html).
@@ -186,62 +172,68 @@ With the service defined, making a remote call from the C++ client becomes remar
 
 In the DFS client, this stub was used to invoke the remote `Fetch`, `Store`, and `Delete` methods on the server. The client code was responsible for creating a request message, populating it with the necessary data (like the filename), invoking the stub method, and then processing the server's response or handling any network errors.
 
-To avoid academic integrity issues, here is a generic example showing how a client would call the `SayHello` RPC from the `Greeter` service defined above:
+Using the service definition from above, here is a conceptual example showing how a client would call the `GetMetadata` RPC from the `FileService`.
 
 ```cpp
 // Conceptual C++ code for a client making a gRPC call.
-// Error handling and full setup omitted for brevity.
+// Error handling and full setup omitted for brevity & academic integrity.
 #include <grpcpp/grpcpp.h>
-#include "helloworld.grpc.pb.h"
+#include "dfs.grpc.pb.h" // Assuming the file is dfs.proto
 
 using grpc::Channel;
 using grpc::ClientContext;
 using grpc::Status;
-using helloworld::Greeter;
-using helloworld::HelloRequest;
-using helloworld::HelloReply;
+using dfs::FileService;
+using dfs::GetMetadataRequest;
+using dfs::FileMetadata;
 
-class GreeterClient {
+class DfsClient {
 public:
-    GreeterClient(std::shared_ptr<Channel> channel)
-        : stub_(Greeter::NewStub(channel)) {}
+    DfsClient(std::shared_ptr<Channel> channel)
+        : stub_(FileService::NewStub(channel)) {}
 
-    // Assembles the client's payload, sends it and presents the response back
-    // from the server.
-    std::string SayHello(const std::string& user) {
-        HelloRequest request;
-        request.set_name(user);
+    // Calls the remote GetMetadata RPC.
+    void GetFileMetadata(const std::string& filename) {
+        GetMetadataRequest request;
+        request.set_filename(filename);
 
-        HelloReply reply;
+        FileMetadata reply;
         ClientContext context;
 
         // The actual RPC call.
-        Status status = stub_->SayHello(&context, request, &reply);
+        Status status = stub_->GetMetadata(&context, request, &reply);
 
         if (status.ok()) {
-            return reply.message();
+            std::cout << "Filename: " << reply.filename() << std::endl;
+            std::cout << "Size: " << reply.size_bytes() << " bytes"
+                      << std::endl;
+            std::cout << "Categories: ";
+            for (const auto& category : reply.categories()) {
+                std::cout << category << " ";
+            }
+            std::cout << std::endl;
         } else {
-            std::cout << status.error_code() << ": " << status.error_message() << std::endl;
-            return "RPC failed";
+            std::cout << status.error_code() << ": " << status.error_message() 
+                      << std::endl;
         }
     }
 
 private:
-    std::unique_ptr<Greeter::Stub> stub_;
+    std::unique_ptr<FileService::Stub> stub_;
 };
 
 int main() {
     std::string server_address("localhost:50051");
-    GreeterClient greeter(grpc::CreateChannel(
+    DfsClient client(grpc::CreateChannel(
         server_address, grpc::InsecureChannelCredentials()));
-    std::string user("world");
-    std::string reply = greeter.SayHello(user);
-    std::cout << "Greeter received: " << reply << std::endl;
+    
+    std::cout << "Getting metadata for cat.jpg..." << std::endl;
+    client.GetFileMetadata("cat.jpg");
 
     return 0;
 }
 ```
-All the complexity of serialization, network sockets, and HTTP/2 framing is hidden behind that single `stub_->SayHello()` call. This is the power of a modern RPC framework.
+All the complexity of serialization, network sockets, and HTTP/2 framing is hidden behind that single `stub_->GetMetadata()` call. This is the power of a modern RPC framework.
 
 ## The Consistency Challenge: From Strong to Eventual
 
@@ -266,36 +258,7 @@ This project implemented a **weak consistency model** inspired by the **Andrew F
 
 This "write-on-close" strategy provides the ideal trade-off for this project: it makes reads snappy by serving them from the local cache, while still providing strong enough guarantees to prevent data corruption and keep data reasonably fresh across all clients. It accepts that a client might read slightly stale data in the short window between another client's write and the invalidation message, a perfectly acceptable compromise for this type of application.
 
-{/* <Figure
-    caption="Weak consistency with cache invalidation. A write from Client A updates the server, which then asynchronously tells Client B that its cached copy is stale. Client B will fetch the new version on its next read."
-> */}
-```mermaid
-sequenceDiagram
-    participant ClientA as Client A
-    participant Server
-    participant ClientB as Client B
 
-    ClientA->>Server: 1. Store("file.txt", "new content")
-    activate Server
-    Server-->>ClientA: 2. Acknowledge Write
-    deactivate Server
-
-    Note right of Server: Server detects change,<br/>finds other clients with<br/>a cached copy of "file.txt"
-
-    Server->>ClientB: 3. InvalidateCache("file.txt") [Async]
-    activate ClientB
-    Note over ClientB: Marks local copy as stale
-    ClientB-->>Server: 4. (Optional) Ack Invalidation
-    deactivate ClientB
-
-    critical Next read from Client B
-        ClientB->>Server: 5. Fetch("file.txt")
-        activate Server
-        Server-->>ClientB: 6. Return "new content"
-        deactivate Server
-    end
-```
-{/* </Figure> */}
 
 ## Synchronization in Action: `inotify` and Server Callbacks
 
@@ -321,38 +284,7 @@ This project highlighted the importance of designing distributed systems that ba
 
 These books and guides were extremely helpful for understanding the concepts and APIs for this project.
 
-<BookCard
-  title="The C Programming Language"
-  author="Brian W. Kernighan and Dennis M. Ritchie"
-  img={cLangImg}
-  url="https://www.google.com/books/edition/The_C_Programming_Language/OpJ_0zpF7jIC"
->
-    <p>
-        While the project was in C++, a strong foundation in C is essential. This book remains the definitive guide.
-    </p>
-</BookCard>
-
-<BookCard
-  title="The Linux Programming Interface"
-  author="Michael Kerrisk"
-  img={linuxInterfaceImg}
-  url="https://man7.org/tlpi/"
->
-    <p>
-        An encyclopedic guide to the Linux and UNIX system programming interface. The chapters on file systems and `inotify` were particularly relevant.
-    </p>
-</BookCard>
-
-<BookCard
-  title="Operating Systems: Three Easy Pieces"
-  author="Remzi H. Arpaci-Dusseau and Andrea C. Arpaci-Dusseau"
-  img={osTepImg}
-  url="https://pages.cs.wisc.edu/~remzi/OSTEP/"
->
-  <p>
-    The main book I used to supplement the lectures. The chapters on distributed systems provided excellent conceptual background.
-  </p>
-</BookCard>
+- The official [gRPC C++ Quickstart](https://grpc.io/docs/languages/cpp/quickstart/) guide was helpful for getting started.
 
 <BookCard
   title="C++ Concurrency in Action"
@@ -383,11 +315,10 @@ These books and guides were extremely helpful for understanding the concepts and
   url="https://www.amazon.com/Designing-Data-Intensive-Applications-Reliable-Maintainable/dp/1449373321"
 >
   <p>
-    A great book for understanding the principles of distributed systems.
+    A great book for understanding the principles of distributed systems. The chapter on serialization was particularly helpful.
   </p>
 </BookCard>
 
-- [gRPC C++ Quickstart](https://grpc.io/docs/languages/cpp/quickstart/)
 
 > [!info] A Note on Code Availability
 > In accordance with Georgia Tech's academic integrity policy and the license for course materials, the source code for this project is kept in a private repository. I believe passionately in sharing knowledge, but I also firmly respect the university's policies. This document follows [Dean Joyner's advice on sharing projects](https://www.reddit.com/r/OMSCS/comments/zwdwns/comment/j1udv6w/) with a focus not on any particular solution and instead on an abstract overview of the problem and the underlying concepts I learned.
