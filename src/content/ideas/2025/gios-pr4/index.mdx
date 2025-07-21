@@ -1,7 +1,7 @@
 ---
 title: 'Syncing Up: Building a Distributed File System in C++'
 description: 'A deep dive into the challenges of remote communication and data consistency, inspired by systems like Google Drive.'
-date: '2025-07-20'
+date: '2025-07-22'
 status: 'in-progress'
 type: 'project'
 tags: ['GIOS', 'operating-systems', 'c++', 'multithreading', 'RPC', 'distributed-systems']
@@ -57,8 +57,6 @@ A DFS hides the complexity of the network behind the standard file system interf
 
 ### Architectural Models: Replication vs. Partitioning
 
-{/* TODO: Add a figure here illustrating the difference between replication and partitioning. */}
-
 There are several ways to architect a DFS server infrastructure:
 - **Replication:** The simplest model is to have multiple servers, each holding a complete copy of every file. This provides high **fault tolerance** (if one server fails, others can take over) and **high availability** (requests can be balanced across any server).
 - **Partitioning:** In this model, the file set is split up, with each server holding only a subset of the files. This is incredibly **scalable**—if you need to store more files, you just add more servers. However, if a server holding a partition fails, that data becomes unavailable.
@@ -66,8 +64,6 @@ There are several ways to architect a DFS server infrastructure:
 In practice, many large-scale systems use a hybrid approach, partitioning the data into chunks and then replicating each chunk across multiple servers to get the benefits of both scalability and fault tolerance.
 
 ### The Caching Compromise
-
-{/* TODO: Add a figure here illustrating the difference between the client interaction models. */}
 
 At the heart of any DFS is a fundamental trade-off in how clients interact with remote files. There are two extremes:
 
@@ -235,30 +231,34 @@ int main() {
 ```
 All the complexity of serialization, network sockets, and HTTP/2 framing is hidden behind that single `stub_->GetMetadata()` call. This is the power of a modern RPC framework.
 
-## The Consistency Challenge: From Strong to Eventual
+## The Consistency Challenge: From Strict to Weak
 
-One of the hardest problems in any distributed system is **consistency**. If Client A and Client B both have a copy of `document.txt`, and Client A edits it, how and when does Client B see that change? There's a spectrum of possible guarantees, or **consistency models**, each with different trade-offs between correctness and performance.
+One of the hardest problems in any distributed system is **consistency**. If Client A and Client B both have a copy of `document.txt`, and Client A edits it, how and when does Client B see that change? There's a spectrum of possible guarantees, or **consistency models**, each with different trade-offs between correctness and performance. As covered in the course, these models range from the theoretical ideal of strict consistency to the more practical weak consistency models seen in many real-world systems [GIOS Notes on Distributed Shared Memory](https://www.omscs-notes.com/operating-systems/distributed-shared-memory/).
 
-| Consistency Model   | Guarantee                                                | Pro (Performance / Availability) | Con (Simplicity / Correctness) |
-| ------------------- | -------------------------------------------------------- | -------------------------------- | ------------------------------ |
-| **Strong**          | Reads always see the most recently completed write.      | Slowest / Lowest                 | Easiest to reason about        |
-| **Sequential**      | Operations appear in some global order.                  | Medium                           | Complex to implement           |
-| **Eventual**        | Replicas will eventually converge if writes stop.        | Fastest / Highest                | Hardest to reason about        |
-| **This Project**    | Writes are serialized; reads may be temporarily stale.   | High (for reads)                 | Balanced trade-off             |
+| Consistency Model | Guarantee                                                                                             |
+| ----------------- | ----------------------------------------------------------------------------------------------------- |
+| **Strict**        | All writes are seen by all nodes instantaneously and in the exact real-time order they occurred.      |
+| **Sequential**    | All nodes see the same single ordering of operations, but this order is not guaranteed to be real-time. |
+| **Causal**        | Only causally related writes are seen in the same order by all nodes. Concurrent writes can be seen in different orders. |
+| **Weak**          | Data is only guaranteed to be consistent after an explicit synchronization operation.                    |
+| **This Project**  | Writes are serialized; reads may be temporarily stale until an invalidation notice is received.       |
 
-*   **Strong Consistency:** This is the most intuitive model, behaving like a single machine. Any read will always return the result of the most recently completed write. Think of a bank transaction: you expect your balance to be updated everywhere, immediately. This is the easiest to reason about, but it's often the slowest, as it may require complex locking or coordination across the network for every single operation, sacrificing availability if the network has problems.
+*   **Strict Consistency:** Often called **Linearizability**, this is the most intuitive model. Any read will always return the result of the most recently completed write, viewed in absolute real-time across the entire system. The tradeoff is perfect correctness for performance that is effectively impossible to achieve in a real-world distributed system due to network latency.
 
-*   **Eventual Consistency:** This is the weakest model, prioritizing availability and speed. It guarantees that if no new updates are made, all replicas will *eventually* converge to the same value, but it doesn't say *when*. Think of DNS or updating a social media profile; your new profile picture will show up for everyone, but it might take a few seconds or minutes to propagate. This model offers the best performance, as clients can continue to read and write from local replicas without waiting, but it means developers have to handle the possibility of working with stale data.
+*   **Sequential Consistency:** This model relaxes the real-time constraint. It guarantees that all processes will see the *same interleaving* of operations, creating a single global order. The tradeoff is that while it's simpler to reason about than weaker models, maintaining this global order can be a performance bottleneck, as it requires significant coordination.
 
-This project implemented a **weak consistency model** inspired by the **Andrew File System (AFS)**, which strikes a pragmatic balance between the two extremes. In this model:
+*   **Causal Consistency:** This model offers a pragmatic tradeoff, improving performance by relaxing the global ordering requirement of sequential consistency. It recognizes that not all operations are related. If a write is causally dependent on a previous operation, the model guarantees that this causal order is preserved for all observers. For concurrent writes, however, different observers may see them in different orders, making the system state more complex to reason about.
+
+*   **Weak Consistency:** This model and its variants (like **Release Consistency**) offer the highest performance by minimizing communication. The tradeoff is that it provides no guarantees unless the programmer uses explicit **synchronization points** (like `acquire` and `release`). This shifts the burden of ensuring correctness entirely to the developer, making it the most difficult model to program against correctly.
+
+This project implemented a **weak consistency model** inspired by the **Andrew File System (AFS)**, which strikes a pragmatic balance. In this model:
 - Clients aggressively **cache** copies of files locally for fast access.
-- When a client wants to *modify* a file, it must acquire a **write lock** from the server. This ensures only one client can write to a file at any given time, preventing the "lost update" anomaly where concurrent edits could overwrite each other.
-- The client determines if its cached file is stale by comparing the file's metadata (like a timestamp or checksum) against the server's version before using it.
-- When a client closes a modified file, it uploads the new version to the server. The server then sends out **cache invalidation** callbacks to all other clients that have a copy of that file, telling them their version is now stale and must be re-fetched on the next access.
+- When a client wants to *modify* a file, it must acquire a **write lock** from the server. This ensures only one client can write to a file at any given time, serializing writes and preventing the "lost update" anomaly.
+- When a client closes a modified file, it uploads the new version to the server. This "close" operation acts as a `release` synchronization point, making the client's updates available.
+- The server then sends out **cache invalidation** callbacks to all other clients that have a copy of that file. This callback tells them their version is now stale.
+- On the next access, the other clients must re-fetch the file, which acts as an `acquire` synchronization point.
 
-This "write-on-close" strategy provides the ideal trade-off for this project: it makes reads snappy by serving them from the local cache, while still providing strong enough guarantees to prevent data corruption and keep data reasonably fresh across all clients. It accepts that a client might read slightly stale data in the short window between another client's write and the invalidation message, a perfectly acceptable compromise for this type of application.
-
-
+This "write-on-close" strategy provides an excellent trade-off for this type of system. It makes reads very fast by serving them from the local cache, while still providing strong enough guarantees to prevent data corruption. It accepts that a client might read slightly stale data in the short window between another client's write and receiving the invalidation message, a perfectly acceptable compromise for many applications.
 
 ## Synchronization in Action: `inotify` and Server Callbacks
 
