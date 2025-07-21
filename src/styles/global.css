@@ -245,8 +245,12 @@ table {
   margin-bottom: 1em;
   border-collapse: collapse;
   width: fit-content;
+  font-size: 0.8em;
 }
-thead th {
+thead tr {
+  border-bottom: 2px solid var(--sol-1);
+}
+tr {
   border-bottom: 1px solid var(--sol-1);
 }
 th, td {

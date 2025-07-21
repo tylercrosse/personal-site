@@ -25,6 +25,7 @@ const {
   type,
   tags,
   readingTimeText,
+  hideCaption,
 } = Astro.props;
 
 // Helper function to get image source and alt text from either format
@@ -228,12 +229,12 @@ const imageData = getImageData();
         imageData && (
           <figure class="hero-image slide-in-block">
             <Image
-              width={1020}
-              height={510}
+              width={1200}
+              height={600}
               src={imageData.src as string}
               alt={imageData.alt}
             />
-            {imageData.alt && (
+            {imageData.alt && !hideCaption && (
               <figcaption class="caption">{imageData.alt}</figcaption>
             )}
           </figure>
