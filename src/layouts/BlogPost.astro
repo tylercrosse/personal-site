@@ -40,12 +40,15 @@ const getImageData = () => {
 };
 
 const imageData = getImageData();
+
+// For Open Graph, pass the processed ImageMetadata if available, otherwise the string path
+const ogImage = image?.path || heroImage;
 ---
 
 <BaseLayout
   title={title}
   description={description}
-  image={imageData?.src as string}
+  image={ogImage}
 >
   <style>
     main {

@@ -1,68 +1,97 @@
-# Astro Starter Kit: Blog
+# Tyler Crosse's Personal Site
 
-```sh
-pnpm create astro@latest -- --template blog
-```
+A digital garden built with Astro, featuring technical writing on computer science, machine learning, and systems programming.
 
-[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/withastro/astro/tree/latest/examples/blog)
-[![Open with CodeSandbox](https://assets.codesandbox.io/github/button-edit-lime.svg)](https://codesandbox.io/p/sandbox/github/withastro/astro/tree/latest/examples/blog)
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/withastro/astro?devcontainer_path=.devcontainer/blog/devcontainer.json)
+## About This Site
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+This is my personal website where I share my thoughts, projects, and learning journey as I pursue a Master of Science in Computer Science at Georgia Tech. The site serves as a digital garden - a space for ideas in various stages of development, from rough notes to polished articles.
 
-![blog](https://github.com/withastro/astro/assets/2244813/ff10799f-a816-4703-b967-c78997e8323d)
+### Content Areas
 
-Features:
+- **Operating Systems**: Deep dives into GIOS coursework, including multithreaded servers, IPC, and distributed systems
+- **Machine Learning**: Projects and retrospectives from ML coursework and research
+- **Computer Science Fundamentals**: Explorations of topics like search engines, language models, and system architecture
+- **Learning in Public**: Documenting my journey from biomedical engineering to computer science
 
-- ✅ Minimal styling (make it your own!)
-- ✅ 100/100 Lighthouse performance
-- ✅ SEO-friendly with canonical URLs and OpenGraph data
-- ✅ Sitemap support
-- ✅ RSS Feed support
-- ✅ Markdown & MDX support
+### Digital Garden Philosophy
 
-## 🚀 Project Structure
+Following the digital garden approach pioneered by thinkers like [Maggie Appleton](https://maggieappleton.com/garden-history), this site embraces:
 
-Inside of your Astro project, you'll see the following folders and files:
+- **Non-chronological organization**: Content is linked by ideas, not publication dates
+- **Iterative development**: Posts evolve and improve over time
+- **Transparency about completeness**: Each piece shows its current status (seedling, budding, complete)
+- **Learning in public**: Sharing works-in-progress alongside finished pieces
+
+## Technical Details
+
+Built with modern web technologies for performance and maintainability:
+
+- **Framework**: [Astro](https://astro.build/) for static site generation
+- **Content**: Markdown and MDX with support for citations, diagrams, and callouts
+- **Styling**: Custom CSS with Solarized color scheme
+- **Search**: Client-side search powered by Pagefind
+- **Analytics**: Vercel Analytics and Speed Insights
+
+### Key Features
+
+- ✅ Fast static site generation with Astro
+- ✅ MDX support for rich content with React components
+- ✅ Academic citations with bibliography support
+- ✅ Mermaid diagrams for technical illustrations
+- ✅ Client-side search functionality
+- ✅ RSS feed for content syndication
+- ✅ Responsive design with dark/light themes
+- ✅ SEO optimized with structured data
+
+## Project Structure
 
 ```text
-├── public/
+├── public/                 # Static assets (images, fonts, etc.)
 ├── src/
-│   ├── components/
-│   ├── content/
-│   ├── layouts/
-│   └── pages/
-├── astro.config.mjs
-├── README.md
-├── package.json
-└── tsconfig.json
+│   ├── components/        # Reusable Astro components
+│   ├── content/
+│   │   ├── ideas/         # Main content collection (digital garden posts)
+│   │   ├── books/         # Book covers and references
+│   │   └── draft/         # Work-in-progress content
+│   ├── layouts/           # Page layouts
+│   ├── pages/             # Route definitions
+│   └── styles/            # Global CSS
+├── astro.config.mjs       # Astro configuration
+└── package.json
 ```
 
-Astro looks for `.astro` or `.md` files in the `src/pages/` directory. Each page is exposed as a route based on its file name.
+The `src/content/ideas/` directory contains the main content, organized by year and topic. Each post includes frontmatter with metadata like status, tags, and publication dates.
 
-There's nothing special about `src/components/`, but that's where we like to put any Astro/React/Vue/Svelte/Preact components.
+## Development
 
-The `src/content/` directory contains "collections" of related Markdown and MDX documents. Use `getCollection()` to retrieve posts from `src/content/blog/`, and type-check your frontmatter using an optional schema. See [Astro's Content Collections docs](https://docs.astro.build/en/guides/content-collections/) to learn more.
+All commands are run from the root of the project:
 
-Any static assets, like images, can be placed in the `public/` directory.
+| Command | Action |
+| :-- | :-- |
+| `pnpm install` | Install dependencies |
+| `pnpm dev` | Start local dev server at `localhost:4321` |
+| `pnpm build` | Build production site to `./dist/` |
+| `pnpm preview` | Preview build locally before deploying |
 
-## 🧞 Commands
+## Content Guidelines
 
-All commands are run from the root of the project, from a terminal:
+When adding new content to the digital garden:
 
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `pnpm install`             | Installs dependencies                            |
-| `pnpm dev`             | Starts local dev server at `localhost:4321`      |
-| `pnpm build`           | Build your production site to `./dist/`          |
-| `pnpm preview`         | Preview your build locally, before deploying     |
-| `pnpm astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `pnpm astro -- --help` | Get help using the Astro CLI                     |
+1. **Status tracking**: Use frontmatter to indicate content status (seedling, budding, complete)
+2. **Tagging**: Add relevant tags for discoverability
+3. **Dating**: Include both creation and update dates
+4. **Audience**: Specify the intended audience level
+5. **Media**: Store images in topic-specific directories under `public/`
 
-## 👀 Want to learn more?
+## Inspiration
 
-Check out [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+This site draws inspiration from the digital garden movement and several excellent personal sites:
 
-## Credit
+- [Maggie Appleton](https://maggieappleton.com/) - Digital garden philosophy and design
+- [Arlen McCluskey](https://www.arlenmccluskey.com/) - Technical writing style
+- [Eugene Yan](https://eugeneyan.com/) - ML content structure
+- [Swyx](https://www.swyx.io/) - Learning in public approach
 
-This theme is based off of the lovely [Bear Blog](https://github.com/HermanMartinus/bearblog/).
+## License
+
+Content is available under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/). Code is MIT licensed.
