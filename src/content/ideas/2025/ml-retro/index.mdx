@@ -26,6 +26,18 @@ import rlSuttonBarto from "../../../books/rl-sutton-barto.jpg";
 import grokkingDeepRL from "../../../books/grokking-deep-rl.jpg";
 
 import mlTaxonomy from "./ml-taxonomy-placeholder.jpg";
+import ann from "./ann-placeholder.webp";
+import nnWeights from "./nn-weights-placeholder.jpg";
+import baggingBoosting from "./bagging-boosting-placeholder.jpg";
+import decisionTree from "./decision-tree-placeholder.png";
+import instanceBased from "./instance-based-placeholder.png";
+import kernelTrick from "./kernel-trick-placeholder.png";
+import pac from "./pac-placeholder.png";
+import activationFunctions from "./activation-funcs-placeholder.jpg";
+import aiMlDl from "./ai-ml-dl-placeholder.webp";
+import svmMargin from "./svm-margin-placeholder.png";
+import vcDimension from "./vc-dimension-placeholder.png";
+import bayesianInference from "./bayesian-inference-placeholder.jpg";
 
 ## Introduction
 
@@ -34,6 +46,14 @@ This article is part personal reflection, part technical summary. I recently com
 There's always a tension when writing something like this. I want to be honest about what I've learned and the depth of my understanding, while acknowledging that I'm still learning. This course was challenging and rewarding, and this write-up is my way of digesting the material and sharing it in a format that feels productive.
 
 ## Machine Learning
+
+Machine learning is often framed as a subfield of artificial intelligence (AI), but it's more than that. It's a broad field that encompasses a wide range of techniques and applications. It's a field that is constantly evolving, and there is no single "right" way to do machine learning. Recent advances in machine learning have been driven by the development of deep learning, which at least started as a subfield of machine learning that uses deep neural networks to learn from data.
+
+<Figure
+  src={aiMlDl}
+  alt="Machine Learning, AI, and Deep Learning"
+  caption="Machine Learning, AI, and Deep Learning"
+/>
 
 The course opens with a foundational discussion on the philosophy of machine learning. It's not simply "computational statistics," as one of the instructors, Dr. Michael Littman, argues. Instead, Dr. Charles Isbell proposes a broader definition:
 
@@ -50,7 +70,7 @@ This perspective—that machine learning is an interdisciplinary effort to creat
 
 ## Supervised Learning
 
-Supervised learning is a cornerstone of machine learning where the goal is to learn a mapping from inputs, or **instances**, to outputs. We are given a **sample** of training data, which consists of input vectors and their corresponding correct labels. The overall function that maps inputs to outputs is the **concept**, and the ideal version we are trying to discover is the **target concept**. The set of all possible concepts we might consider is the **hypothesis class**. Our learning algorithm will search through this hypothesis class to find a **candidate** concept that best approximates the target concept, which we then evaluate on a separate **testing set**.
+Supervised learning is a cornerstone of machine learning where the goal is to learn a mapping from inputs, or **instances** $x$, to outputs, or **labels** $y$. We are given a **sample** of training data, which consists of input vectors and their corresponding correct labels. The overall function that maps inputs to outputs is the **concept** $f$, and the ideal version we are trying to discover is the **target concept** $f^*$. The set of all possible concepts we might consider is the **hypothesis class** $H$. Our learning algorithm will search through this hypothesis class to find a **candidate** concept that best approximates the target concept, which we then evaluate on a separate **testing set**.
 
 ### Classification and Regression
 
@@ -73,7 +93,24 @@ The most common algorithm for building decision trees is **ID3**, which follows 
 4.  Sort the training examples down to the new branches.
 5.  If the examples are perfectly classified, stop. Otherwise, repeat the process on the new branches.
 
-The "best" attribute is determined using a metric called **Information Gain**, which measures how much a given attribute reduces uncertainty, or **entropy**, in the data. {/** TODO: Add Information Gain formula back as an image or formatted text */}
+<Figure
+  src={decisionTree}
+  alt="Decision Tree"
+  caption="Decision Tree"
+/>
+
+The "best" attribute is determined using a metric called **Information Gain**, which measures how much a given attribute reduces uncertainty, or **entropy** $H$, in the data. More formally, the information gain of an attribute $X$ is defined as:
+
+$$
+H(X) = -\sum_{i=1}^{n} p_i \log_2(p_i)
+$$
+
+- $H(X)$ is the entropy of the attribute $X$.
+- $n$ is the number of classes in the attribute $X$.
+- $p_i$ is the probability of the $i$th class in the attribute $X$.
+- $\log_2$ is the base-2 logarithm -- this comes back to splitting between two choices (e.g. yes/no) at each node.
+
+Altogether, this says that the entropy of an attribute $X$ is the sum of the probability of each class $i$ in $X$ multiplied by the logarithm of the probability of that class.
 
 ID3 has a **preference bias** towards shorter trees and trees that place good splits at the top. This is a form of Occam's Razor, preferring simpler explanations. However, this can lead to **overfitting**, where the tree becomes too specific to the training data. To combat this, a common technique is **pruning**, where parts of the tree are removed to improve its ability to generalize to new, unseen data.
 
@@ -82,15 +119,39 @@ Decision trees can also be adapted for regression problems by having the leaves 
 
 ### Neural Networks
 
-Artificial Neural Networks (ANNs) are a class of models inspired by the structure of the human brain. They are composed of layers of interconnected nodes, or "neurons." A typical network consists of an input layer, one or more hidden layers, and an output layer. Each connection between neurons has an associated weight, which is adjusted during the training process.
+Artificial Neural Networks (ANNs) are a type of models loosely inspired by the structure of the human brain. They are composed of layers of interconnected nodes, or "neurons." A typical network consists of an input layer, one or more hidden layers, and an output layer. Each connection between neurons has an associated weight, which is adjusted during the training process.
+
+<Figure
+  src={ann}
+  alt="Artificial Neural Network"
+  caption="Artificial Neural Network"
+/>
 
 When data is fed into the network, each neuron receives inputs from the previous layer, calculates a weighted sum, and then passes the result through an activation function (like Sigmoid, Tanh, or ReLU) to produce its output. This process continues through the network until the final output is produced.
 
+<Figure
+  src={activationFunctions}
+  alt="Activation Functions"
+  caption="Activation Functions"
+/>
+
 The network "learns" by adjusting its weights to minimize a loss function, which measures the difference between the network's predictions and the actual labels in the training data. The most common training algorithm is **backpropagation**, which uses gradient descent to efficiently compute the contribution of each weight to the overall error and adjust it accordingly.
+
+<Figure
+  src={nnWeights}
+  alt="Neural Network Weights"
+  caption="Neural Network Weights"
+/>
 
 ### Ensemble Learning
 
 Ensemble learning is a powerful technique that involves combining the predictions of multiple individual models to produce a more accurate and robust prediction than any single model. The core idea is that by aggregating the "votes" of a diverse set of models, we can reduce variance, mitigate bias, and improve generalization.
+
+<Figure
+  src={baggingBoosting}
+  alt="Bagging and Boosting"
+  caption="Bagging and Boosting"
+/>
 
 There are two primary families of ensemble methods:
 *   **Bagging (Bootstrap Aggregating)**: This method involves training multiple instances of the same model (e.g., decision trees) on different random subsets of the training data (selected with replacement). The final prediction is made by averaging the outputs of all models (for regression) or by taking a majority vote (for classification). **Random Forests** are a popular and effective implementation of this approach.
@@ -100,6 +161,12 @@ There are two primary families of ensemble methods:
 
 Instance-based learning, often called lazy learning, is a family of algorithms that, instead of building an explicit model from the training data, simply stores the entire dataset. When a new, unseen instance needs to be classified, the algorithm compares it to the stored instances and makes a prediction based on the most similar ones.
 
+<Figure
+  src={instanceBased}
+  alt="Instance-based Learning"
+  caption="Instance-based Learning"
+/>
+
 The most well-known instance-based learning algorithm is **k-Nearest Neighbors (k-NN)**. To classify a new data point, k-NN looks at the 'k' closest training examples in the feature space and assigns the new point the most common class among its neighbors. The "closeness" is typically measured using a distance metric like Euclidean distance.
 
 The choice of 'k' is a critical hyperparameter. A small 'k' can make the model sensitive to noise, while a large 'k' can be computationally expensive and may oversmooth the decision boundary. Because they don't learn a "model" in the traditional sense, instance-based learners can easily adapt to new data but can also be very slow at prediction time, as they need to compare the new instance to every single training example.
@@ -108,7 +175,19 @@ The choice of 'k' is a critical hyperparameter. A small 'k' can make the model s
 
 Support Vector Machines (SVMs) are a powerful and versatile class of supervised learning models used for classification, regression, and outlier detection. The core idea of an SVM is to find the optimal hyperplane that best separates the classes in the feature space. The "best" hyperplane is the one that has the largest margin—the distance between the hyperplane and the nearest data points from either class. These nearest points are called the **support vectors**, as they are the critical elements that "support" the decision boundary.
 
+<Figure
+  src={svmMargin}
+  alt="Support Vector Machine Margin"
+  caption="Support Vector Machine Margin"
+/>
+
 One of the most powerful features of SVMs is the **kernel trick**. For data that is not linearly separable in its original feature space, SVMs can use a kernel function to implicitly map the data into a much higher-dimensional space where it *is* linearly separable. This is done without ever actually computing the coordinates of the data in this new space, which would be computationally very expensive.
+
+<Figure
+  src={kernelTrick}
+  alt="Kernel Trick"
+  caption="Kernel Trick"
+/>
 
 Common kernel functions include:
 *   **Linear**: For linearly separable data.
@@ -123,18 +202,44 @@ Computational Learning Theory (COLT) is a field of study that seeks to answer fu
 
 A key concept in COLT is the **Vapnik-Chervonenkis (VC) Dimension**. The VC dimension is a measure of the "capacity" or "expressive power" of a hypothesis class (the set of all possible models a learning algorithm can produce). Informally, it measures the most complex dataset that the model can "shatter"—that is, perfectly classify for every possible labeling of the data points.
 
+<Figure
+  src={vcDimension}
+  alt="VC Dimension"
+  caption="VC Dimension"
+/>
+
 A higher VC dimension means the model is more flexible and can fit more complex patterns. However, this comes at a cost. A model with a very high VC dimension requires more training data to learn effectively and is more prone to overfitting. The VC dimension provides a way to quantify the trade-off between the complexity of a model and its ability to generalize, giving us a theoretical handle on the bias-variance trade-off.
+
+<Figure
+  src={pac}
+  alt="PAC Learning"
+  caption="PAC Learning"
+/>
 
 ### Bayesian Learning + Inference
 
 Bayesian learning is a probabilistic approach to machine learning that is based on **Bayes' Theorem**. Unlike frequentist methods that compute a single "best" model, Bayesian methods aim to calculate the full posterior probability distribution of the model's parameters, given the data.
 
-{/* TODO: Add Bayes' Theorem formula back as an image or formatted text */}
+$$
+P(A|B) = \frac{P(B|A)P(A)}{P(B)}
+$$
+
+- $P(A|B)$ is the posterior probability of $A$ given $B$.
+- $P(B|A)$ is the likelihood of $B$ given $A$.
+- $P(A)$ is the prior probability of $A$.
+- $P(B)$ is the prior probability of $B$.
+
 
 The core idea is to start with a prior belief about our model's parameters, and then update this belief as we observe more data. This allows us to incorporate domain knowledge into our models and to quantify uncertainty in our predictions. For example, instead of predicting a single class, a Bayesian model can output a probability for each class, giving us a better sense of how confident the model is in its prediction.
 
+<Figure
+  src={bayesianInference}
+  alt="Bayesian Inference"
+  caption="Bayesian Inference"
+/>
+
 ## Unsupervised Learning
-{/* TODO: Add content for Unsupervised Learning */}
+{/* TODO: Add overview of unsupervised learning */}
 
 ### Randomized Optimization
 
@@ -187,10 +292,10 @@ The most fundamental concept is **entropy**, which measures the average level of
 A Markov Decision Process (MDP) is a mathematical framework for modeling decision-making in situations where outcomes are partly random and partly under the control of a decision-maker. It is the formal foundation for reinforcement learning.
 
 An MDP is defined by:
-*   A set of **states** (S)
-*   A set of **actions** (A)
-*   A **transition model** T(s, a, s'), which gives the probability of transitioning from state s to state s' after taking action a.
-*   A **reward function** R(s, a, s'), which gives the immediate reward received after transitioning from state s to s' as a result of action a.
+*   A set of **states** ($S$)
+*   A set of **actions** ($A$)
+*   A **transition model** $T(s, a, s')$, which gives the probability of transitioning from state $s$ to state $s'$ after taking action $a$.
+*   A **reward function** $R(s, a, s')$, which gives the immediate reward received after transitioning from state $s$ to $s'$ as a result of action $a$.
 
 The goal in an MDP is to find a **policy** $\pi(s)$, which is a mapping from states to actions, that maximizes the cumulative expected reward over time.
 
@@ -259,6 +364,16 @@ These are some classic books in Machine Learning that complement the course mate
 </BookCard>
 
 <BookCard
+  title="An Introduction to Statistical Learning"
+  author="Gareth James, Daniela Witten, Trevor Hastie, and Robert Tibshirani"
+  img={introToStatLearning}
+>
+  <p>
+    A great book for getting started with machine learning. It covers a lot of the same material as the course, but in a more statistical perspective. It's less rigorous than The Elements of Statistical Learning, but it's a great book for getting started.
+  </p>
+</BookCard>
+
+<BookCard
   title="Hands-On Machine Learning with Scikit-Learn, Keras, and TensorFlow"
   author="Aurélien Géron"
   img={handsOnMl}
@@ -279,17 +394,7 @@ These are some classic books in Machine Learning that complement the course mate
 </BookCard>
 
 <BookCard
-  title="An Introduction to Statistical Learning"
-  author="Gareth James, Daniela Witten, Trevor Hastie, and Robert Tibshirani"
-  img={introToStatLearning}
->
-  <p>
-    A great book for getting started with machine learning. It covers a lot of the same material as the course, but in a more statistical perspective. It's less rigorous than The Elements of Statistical Learning, but it's a great book for getting started.
-  </p>
-</BookCard>
-
-<BookCard
-  title="Artificial Intelligence: A Modern Approach"
+  title="Artificial Intelligence: A Modern Approach (4th Ed)"
   author="Stuart Russell and Peter Norvig"
   img={aiModernApproach}
 >
@@ -299,7 +404,7 @@ These are some classic books in Machine Learning that complement the course mate
 </BookCard>
 
 <BookCard
-  title="Reinforcement Learning: An Introduction"
+  title="Reinforcement Learning: An Introduction (2nd Ed)"
   author="Richard S. Sutton and Andrew G. Barto"
   img={rlSuttonBarto}
 >

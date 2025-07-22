@@ -1,6 +1,7 @@
 ---
 // Import the global.css file here so that it is included on
 // all pages through the use of the <BaseHead /> component.
+import "katex/dist/katex.min.css";
 import "../styles/global.css";
 import { SITE_TITLE } from "../consts";
 import RecentPostsScript from "./RecentPostsScript.astro";
@@ -22,30 +23,30 @@ const getImageURL = async (imageInput: string | ImageMetadata | undefined) => {
   if (!imageInput) {
     return new URL(defaultImage, Astro.site).href;
   }
-  
+
   // If it's a string, handle different path types
-  if (typeof imageInput === 'string') {
+  if (typeof imageInput === "string") {
     // If it's already an absolute URL, use it as-is
-    if (imageInput.startsWith('http://') || imageInput.startsWith('https://')) {
+    if (imageInput.startsWith("http://") || imageInput.startsWith("https://")) {
       return imageInput;
     }
-    
+
     // If it starts with a slash, it's a public path
-    if (imageInput.startsWith('/')) {
+    if (imageInput.startsWith("/")) {
       return new URL(imageInput, Astro.site).href;
     }
-    
+
     // For relative paths, we'll need to construct the public path
     // This is a fallback - ideally we should receive processed ImageMetadata
     return new URL(imageInput, Astro.site).href;
   }
-  
+
   // If it's ImageMetadata (processed by Astro), get the optimized URL
   try {
     const optimizedImage = await getImage({ src: imageInput });
     return new URL(optimizedImage.src, Astro.site).href;
   } catch (error) {
-    console.warn('Failed to process image for Open Graph:', error);
+    console.warn("Failed to process image for Open Graph:", error);
     return new URL(defaultImage, Astro.site).href;
   }
 };
