@@ -5,150 +5,384 @@ import { Image } from "astro:assets";
 
 <BaseLayout title="About">
   <div class="headshot slide-in-block">
-    <Image src="/img/headshot.jpeg" alt="Me" width={300} height={300} />
+    <Image
+      src="/img/headshot.jpeg"
+      alt="Tyler Crosse"
+      width={300}
+      height={300}
+    />
   </div>
-  <section class="about-me slide-in-block">
-    <div>
-      <h2>About me</h2>
-      <p>I'm a software engineer with a passion for building things.</p>
-      <h3>Experience</h3>
-      <ul>
-        <li>
-          <div>
-            <span>current</span> -
-            <span class="title">MS, Computer Science, Georgia Tech</span>
-          </div>
-          <div>
-            I'm currently a master's student at Georgia Tech, studying computer
-            science. I'm interested in AI, Machine Learning, and
-            High-Performance Computing.
-          </div>
-        </li>
-        <li>
-          <div>
-            <span>5 years</span> -
-            <span class="title">Senior Software Engineer, Knowable</span>
-          </div>
-          <div>
-            I was a senior software engineer at Knowable, where I worked on the
-            Knowable platform.
-          </div>
-        </li>
-        <li>
-          <div>
-            <span>2 years</span> -
-            <span class="title">Senior Software Engineer, Rosetta Stone</span>
-          </div>
-          <div>
-            I was a senior software engineer at Rosetta Stone, where I worked on
-            the Rosetta Stone platform.
-          </div>
-        </li>
-        <li>
-          <div>
-            <span class="title"
-              >BS, Biomedical Engineering, Virginia Commonwealth University</span
-            >
-          </div>
-          <div>
-            I graduated from Virginia Commonwealth University with a bachelor's
-            degree in biomedical engineering.
-          </div>
-        </li>
-      </ul>
+
+  <section class="intro slide-in-block">
+    <h1>Hi, I'm Tyler 👋</h1>
+    <p class="lead">
+      I'm a software engineer turned graduate student, currently pursuing my
+      passion for understanding how computers work — from the silicon to
+      systems.
+    </p>
+  </section>
+
+  <section class="journey slide-in-block">
+    <h2>My Journey</h2>
+    <p>
+      My path to computer science has been anything but conventional. I started
+      with a degree in <strong>Biomedical Engineering</strong> from VCU, thinking
+      I'd build medical devices. Instead, I found myself drawn to the software side—building
+      web applications, distributed systems, and eventually leading engineering teams.
+    </p>
+    <p>
+      After nearly a decade in industry, <a
+        href="https://en.wikipedia.org/wiki/AlphaFold"
+        target="_blank"
+        rel="noopener noreferrer">AlphaFold's breakthrough in 2018</a
+      >
+      crystallized something for me: machine learning wasn't just another tool—it
+      was going to revolutionize science in ways I hadn't imagined. That realization
+      sent me back to school to build the foundational knowledge I needed to be part
+      of that revolution.
+    </p>
+  </section>
+
+  <section class="experience slide-in-block">
+    <h2>Experience</h2>
+    <div class="timeline">
+      <div class="timeline-item current">
+        <div class="timeline-marker"></div>
+        <div class="timeline-content">
+          <h3>Georgia Institute of Technology</h3>
+          <p class="company">
+            MS Computer Science <span class="period">| 2024 - Present</span>
+          </p>
+
+          <p class="description">
+            Specializing in Machine Learning and High-Performance Computing.
+            Deep diving into operating systems, distributed systems, and the
+            mathematical foundations of ML. Building everything from
+            multithreaded servers in C to neural networks from scratch.
+          </p>
+        </div>
+      </div>
+
+      <div class="timeline-item">
+        <div class="timeline-marker"></div>
+        <div class="timeline-content">
+          <h3>Knowable</h3>
+          <p class="company">
+            Lead Software Engineer <span class="period">| 5 years</span>
+          </p>
+
+          <p class="description">
+            Led engineering initiatives on an audio learning platform. Built
+            scalable backend systems, mentored junior developers, and
+            architected solutions for millions of users. Worked across the full
+            stack from React frontends to distributed microservices.
+          </p>
+        </div>
+      </div>
+
+      <div class="timeline-item">
+        <div class="timeline-marker"></div>
+        <div class="timeline-content">
+          <h3>Rosetta Stone</h3>
+          <p class="company">
+            Senior Software Engineer <span class="period">| 2 years</span>
+          </p>
+
+          <p class="description">
+            Contributed to the language learning platform that's helped millions
+            of people learn new languages. Focused on backend systems and API
+            development, working with international teams across multiple time
+            zones.
+          </p>
+        </div>
+      </div>
+
+      <div class="timeline-item">
+        <div class="timeline-marker"></div>
+        <div class="timeline-content">
+          <h3>Virginia Commonwealth University</h3>
+          <p class="company">BS Biomedical Engineering</p>
+
+          <p class="description">
+            Where it all started. Studied the intersection of engineering and
+            medicine, but discovered my true passion lay in the computational
+            side of solving complex problems.
+          </p>
+        </div>
+      </div>
     </div>
   </section>
+
+  <section class="interests slide-in-block">
+    <h2>What I'm Into</h2>
+    <div class="interests-grid">
+      <div class="interest-card">
+        <h3>🧠 Machine Learning</h3>
+        <p>
+          From neural networks to optimization algorithms, I'm fascinated by how
+          we can teach machines to learn patterns and make decisions.
+        </p>
+      </div>
+      <div class="interest-card">
+        <h3>⚡ High-Performance Computing</h3>
+        <p>
+          There's something beautiful about squeezing every ounce of performance
+          out of hardware—parallel processing, GPU computing, distributed
+          systems.
+        </p>
+      </div>
+      <div class="interest-card">
+        <h3>🔧 Systems Programming</h3>
+        <p>
+          Getting close to the metal. Understanding how operating systems work,
+          how memory is managed, how processes communicate.
+        </p>
+      </div>
+      <div class="interest-card">
+        <h3>📚 Learning in Public</h3>
+        <p>
+          Sharing the journey, the failures, and the breakthroughs. Building
+          knowledge in the open where others can learn alongside me.
+        </p>
+      </div>
+      <div class="interest-card">
+        <h3>🧬 Computational Biology</h3>
+        <p>
+          Understanding the biological processes that underlie disease and
+          development.
+        </p>
+      </div>
+      <div class="interest-card">
+        <h3>⚖️ Economics</h3>
+        <p>Understanding the economic forces that shape our world.</p>
+      </div>
+    </div>
+  </section>
+
   <section class="about-this-site slide-in-block">
-    <h2>About this site</h2>
+    <h2>About This Digital Garden</h2>
     <p>
-      This site is a collection of my thoughts and projects. It's a place where
-      I can share my ideas and work with others. Sites that helped inspire this
-      one:
-      <ul>
+      This site is my <strong>digital garden</strong>—a place where ideas can
+      grow and evolve over time. Unlike a traditional blog, content here isn't
+      organized chronologically but by connections and themes. Some pieces are
+      polished articles, others are rough notes or works in progress.
+    </p>
+    <p>
+      I believe in <strong>learning in public</strong>, sharing not just the
+      final results but the messy process of figuring things out. If you see
+      something interesting, wrong, or want to discuss an idea,
+      <a href="mailto:hello@tylercrosse.com">drop me a line</a>!
+    </p>
+
+    <p>
+      Built with <a href="https://astro.build/" target="_blank" rel="noopener noreferrer">Astro</a>. Check out the <a href="https://github.com/tylercrosse/personal-site" target="_blank" rel="noopener noreferrer">source code</a>. It would be a little weird to just copy it wholesale.
+    </p>
+
+    <details class="inspiration-details">
+      <summary>Sites that inspired this one</summary>
+      <ul class="inspiration-list">
         <li>
           <a
-            href="https://www.arlenmccluskey.com/"
+            href="https://distill.pub/"
             target="_blank"
-            rel="noopener noreferrer">Arlen McCluskey</a
+            rel="noopener noreferrer"
           >
+            <strong>Distill.pub</strong>
+          </a> - Interactive machine learning research papers
         </li>
         <li>
           <a
             href="https://maggieappleton.com/"
             target="_blank"
-            rel="noopener noreferrer">Maggie Appleton</a
+            rel="noopener noreferrer"
           >
-        </li>
-        <li>
-          <a href="https://lowyx.com/" target="_blank" rel="noopener noreferrer"
-            >Yxlow</a
-          >
+            <strong>Maggie Appleton</strong>
+          </a> - The digital garden philosophy and beautiful visual thinking
         </li>
         <li>
           <a
-            href="https://www.swyx.io/"
+            href="https://www.arlenmccluskey.com/"
             target="_blank"
-            rel="noopener noreferrer">Swyx</a
+            rel="noopener noreferrer"
           >
+            <strong>Arlen McCluskey</strong>
+          </a> - Clean technical writing and site structure
         </li>
         <li>
           <a
             href="https://eugeneyan.com/"
             target="_blank"
-            rel="noopener noreferrer">Eugene Yan</a
+            rel="noopener noreferrer"
           >
+            <strong>Eugene Yan</strong>
+          </a> - Thoughtful ML content and career insights
         </li>
         <li>
           <a
-            href="https://microsoft.ai/"
+            href="https://www.swyx.io/"
             target="_blank"
-            rel="noopener noreferrer">Microsoft AI</a
+            rel="noopener noreferrer"
           >
+            <strong>Swyx</strong>
+          </a> - Learning in public and developer advocacy
         </li>
         <li>
-          <a href="https://modal.com/" target="_blank" rel="noopener noreferrer"
-            >Modal</a
+          <a
+            href="https://lowyx.com/"
+            target="_blank"
+            rel="noopener noreferrer"
           >
+            <strong>Yxlow</strong>
+          </a> - Minimalist design and thoughtful curation
         </li>
       </ul>
-    </p>
+    </details>
   </section>
 
   <style>
     section {
       max-width: 800px;
-      margin: 0 auto;
+      margin: 2rem auto;
+      padding: 0 1rem;
     }
 
     .headshot {
-      margin: 0 auto;
+      margin: 2rem auto;
       max-width: 300px;
+      text-align: center;
     }
+
     .headshot img {
-      border: 10px solid #fff;
-    }
-    .about-me {
-      display: flex;
-      flex-direction: row;
-      /* align-items: center; */
-      justify-content: space-between;
+      border: 8px solid #fff;
     }
 
-    .about-me ul {
-      padding: 0;
+    .intro {
+      text-align: center;
+      margin-bottom: 3rem;
     }
 
-    .about-me li {
-      list-style: none;
-      /* font-size: 1rem; */
+    .intro h1 {
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+      color: var(--sol-base01);
+    }
+
+    .lead {
+      font-size: 1.25rem;
+      line-height: 1.6;
+      color: var(--sol-base0);
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .journey {
+      margin-bottom: 3rem;
+    }
+
+    .journey p {
+      font-size: 1.1rem;
+      line-height: 1.7;
+      margin-bottom: 1.5rem;
+    }
+
+    .timeline {
+      position: relative;
+      /* margin: 2rem 0; */
+    }
+    .timeline-item {
+      position: relative;
+      margin-bottom: 2rem;
+      /* padding-left: 60px; */
+    }
+
+    .timeline-marker {
+      position: absolute;
+      left: 11px;
+      top: 8px;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--sol-base2);
+      border: 3px solid var(--sol-base3);
+    }
+
+    .timeline-content h3 {
+      color: var(--sol-base01);
+      font-size: 1.4rem;
+    }
+
+    .company {
+      color: var(--sol-blue);
+      font-weight: 600;
+      margin: 0 0 0.25rem 0;
+    }
+
+    .description {
+      color: var(--sol-base0);
+      line-height: 1.6;
+      margin: 0;
+    }
+
+    .interests-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem;
+      margin: 2rem 0;
+    }
+
+    .interest-card h3 {
+      margin: 0 0 1rem 0;
+      color: var(--sol-base01);
+      font-size: 1.4rem;
+    }
+
+    .interest-card p {
+      margin: 0;
+      color: var(--sol-base0);
+      line-height: 1.5;
+    }
+
+    /* .about-this-site {
+        background: var(--sol-base3);
+        border-radius: 12px;
+        padding: 2rem;
+        border: 1px solid var(--sol-base2);
+      } */
+
+    .about-this-site p {
+      font-size: 1.1rem;
+      line-height: 1.7;
+      margin-bottom: 1.5rem;
+    }
+
+    .inspiration-details {
+      margin-top: 2rem;
+    }
+
+    .inspiration-details summary {
+      cursor: pointer;
+      font-weight: 600;
+      color: var(--sol-base01);
       padding: 0.5rem 0;
-      text-decoration: none;
-      color: var(--sol-8);
+      border-bottom: 1px solid var(--sol-base2);
     }
 
-    .about-me .title {
-      font-weight: bold;
-      font-family: var(--font-heading);
+    .inspiration-details summary:hover {
+      color: var(--sol-blue);
+    }
+    .inspiration-list li {
+      margin-bottom: 0.75rem;
+      padding-left: 1rem;
+      position: relative;
+    }
+
+    .inspiration-list a {
+      color: var(--sol-blue);
+      text-decoration: none;
+    }
+
+    .inspiration-list a:hover {
+      text-decoration: underline;
     }
 
     .slide-in-block {
@@ -160,16 +394,82 @@ import { Image } from "astro:assets";
     }
 
     .slide-in-block:nth-child(1) {
-      animation-delay: 0;
+      animation-delay: 0s;
     }
     .slide-in-block:nth-child(2) {
+      animation-delay: 0.1s;
+    }
+    .slide-in-block:nth-child(3) {
       animation-delay: 0.2s;
     }
+    .slide-in-block:nth-child(4) {
+      animation-delay: 0.3s;
+    }
+    .slide-in-block:nth-child(5) {
+      animation-delay: 0.4s;
+    }
+    .slide-in-block:nth-child(6) {
+      animation-delay: 0.5s;
+    }
+
     @keyframes slideInBlock {
       to {
         opacity: 1;
         filter: blur(0px);
         transform: scale(1);
+      }
+    }
+
+    /* Dark theme adjustments */
+    @media (prefers-color-scheme: dark) {
+      .headshot img {
+        /* border-color: var(--sol-base02); */
+      }
+
+      .interest-card {
+        background: var(--sol-base02);
+        border-color: var(--sol-base01);
+      }
+
+      .about-this-site {
+        background: var(--sol-base02);
+        border-color: var(--sol-base01);
+      }
+
+      .timeline::before {
+        background: var(--sol-base01);
+      }
+
+      .timeline-marker {
+        background: var(--sol-base01);
+        border-color: var(--sol-base02);
+      }
+    }
+
+    /* Mobile responsive */
+    @media (max-width: 768px) {
+      .intro h1 {
+        font-size: 2rem;
+      }
+
+      .lead {
+        font-size: 1.1rem;
+      }
+
+      .interests-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .timeline-item {
+        padding-left: 50px;
+      }
+
+      .timeline::before {
+        left: 15px;
+      }
+
+      .timeline-marker {
+        left: 6px;
       }
     }
   </style>

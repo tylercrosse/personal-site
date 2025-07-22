@@ -4,16 +4,52 @@
 import "../styles/global.css";
 import { SITE_TITLE } from "../consts";
 import RecentPostsScript from "./RecentPostsScript.astro";
+import { getImage } from "astro:assets";
 
 interface Props {
   title: string;
   description: string;
-  image?: string;
+  image?: string | ImageMetadata;
 }
 
 const canonicalURL = new URL(Astro.url.pathname, Astro.site);
 
 const { title, description, image = "/blog-placeholder-1.jpg" } = Astro.props;
+
+// Helper function to get the proper image URL for Open Graph
+const getImageURL = async (imageInput: string | ImageMetadata | undefined) => {
+  if (!imageInput) {
+    return new URL("/blog-placeholder-1.jpg", Astro.site).href;
+  }
+  
+  // If it's a string, handle different path types
+  if (typeof imageInput === 'string') {
+    // If it's already an absolute URL, use it as-is
+    if (imageInput.startsWith('http://') || imageInput.startsWith('https://')) {
+      return imageInput;
+    }
+    
+    // If it starts with a slash, it's a public path
+    if (imageInput.startsWith('/')) {
+      return new URL(imageInput, Astro.site).href;
+    }
+    
+    // For relative paths, we'll need to construct the public path
+    // This is a fallback - ideally we should receive processed ImageMetadata
+    return new URL(imageInput, Astro.site).href;
+  }
+  
+  // If it's ImageMetadata (processed by Astro), get the optimized URL
+  try {
+    const optimizedImage = await getImage({ src: imageInput });
+    return new URL(optimizedImage.src, Astro.site).href;
+  } catch (error) {
+    console.warn('Failed to process image for Open Graph:', error);
+    return new URL("/blog-placeholder-1.jpg", Astro.site).href;
+  }
+};
+
+const imageURL = await getImageURL(image);
 ---
 
 <!-- Theme script to prevent FOUC -->
@@ -81,22 +117,6 @@ const { title, description, image = "/blog-placeholder-1.jpg" } = Astro.props;
 />
 <meta name="generator" content={Astro.generator} />
 
-<!-- Font preloads -->
-<!-- <link
-  rel="preload"
-  href="/fonts/atkinson-regular.woff"
-  as="font"
-  type="font/woff"
-  crossorigin
-/>
-<link
-  rel="preload"
-  href="/fonts/atkinson-bold.woff"
-  as="font"
-  type="font/woff"
-  crossorigin
-/> -->
-
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link
@@ -116,11 +136,11 @@ const { title, description, image = "/blog-placeholder-1.jpg" } = Astro.props;
 <meta property="og:url" content={Astro.url} />
 <meta property="og:title" content={`${title} | ${SITE_TITLE}`} />
 <meta property="og:description" content={description} />
-<meta property="og:image" content={new URL(image, Astro.url)} />
+<meta property="og:image" content={imageURL} />
 
 <!-- Twitter -->
 <meta property="twitter:card" content="summary_large_image" />
 <meta property="twitter:url" content={Astro.url} />
 <meta property="twitter:title" content={`${title} | ${SITE_TITLE}`} />
 <meta property="twitter:description" content={description} />
-<meta property="twitter:image" content={new URL(image, Astro.url)} />
+<meta property="twitter:image" content={imageURL} />

@@ -1,5 +1,6 @@
 ---
 import Analytics from "@vercel/analytics/astro";
+import SpeedInsights from "@vercel/speed-insights/astro";
 import BaseHead from "../components/BaseHead.astro";
 import Header from "../components/Header.astro";
 import Footer from "../components/Footer.astro";
@@ -8,7 +9,7 @@ import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
 interface Props {
   title?: string;
   description?: string;
-  image?: string;
+  image?: string | ImageMetadata;
 }
 
 const {
@@ -47,4 +48,5 @@ const {
     </style>
   </noscript>
   <Analytics />
+  <SpeedInsights />
 </html>
