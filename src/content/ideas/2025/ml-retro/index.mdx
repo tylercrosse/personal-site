@@ -26,18 +26,27 @@ import rlSuttonBarto from "../../../books/rl-sutton-barto.jpg";
 import grokkingDeepRL from "../../../books/grokking-deep-rl.jpg";
 
 import mlTaxonomy from "./ml-taxonomy-placeholder.jpg";
+import classificationRegression from "./classification-regression-placeholder.png";
+import decisionTree from "./decision-tree-placeholder.png";
 import ann from "./ann-placeholder.webp";
 import nnWeights from "./nn-weights-placeholder.jpg";
 import baggingBoosting from "./bagging-boosting-placeholder.jpg";
-import decisionTree from "./decision-tree-placeholder.png";
 import instanceBased from "./instance-based-placeholder.png";
 import kernelTrick from "./kernel-trick-placeholder.png";
-import pac from "./pac-placeholder.png";
+import pac from "./pac-placeholder2.png";
 import activationFunctions from "./activation-funcs-placeholder.jpg";
 import aiMlDl from "./ai-ml-dl-placeholder.webp";
 import svmMargin from "./svm-margin-placeholder.png";
 import vcDimension from "./vc-dimension-placeholder.png";
 import bayesianInference from "./bayesian-inference-placeholder.jpg";
+import simulatedAnnealing from "./simulated-annealing.gif";
+import geneticAlg from "./genetic-alg-placeholder.svg";
+import kMeansEmClustering from "./k-means-em-clustering-placeholder.png";
+import pcaIca from "./pca-ica-placeholder.png";
+import tsneUmap from "./tsne-umap-placeholder.png";
+import mdp from "./mdp-placeholder.png";
+import rlModels from "./rl-models-placeholder.png";
+import nash from "./nash-placeholder.png";
 
 ## Introduction
 
@@ -77,6 +86,12 @@ Supervised learning is a cornerstone of machine learning where the goal is to le
 The two main types of supervised learning problems are classification and regression.
 *   **Classification** aims to predict a discrete class label (e.g., "cat" or "dog"). The learned function is a decision boundary that separates the classes. We evaluate classification models with metrics like accuracy, precision, recall, and F1-score.
 *   **Regression** aims to predict a continuous numerical value (e.g., stock price, temperature). The learned function is a curve or line that best fits the data points. We evaluate regression models with metrics like Mean Squared Error (MSE) or R-squared.
+
+<Figure
+  src={classificationRegression}
+  alt="Classification and Regression"
+  caption="Classification and Regression"
+/>
 
 The fundamental difference lies in the output: classification models produce unordered, categorical outputs, while regression models produce ordered, continuous outputs. This distinction guides the choice of algorithms, loss functions, and evaluation metrics.
 
@@ -247,12 +262,32 @@ Randomized optimization algorithms are a class of methods used to find good appr
 
 *   **Randomized Hill Climbing (RHC)**: This is the simplest algorithm. It starts with a random solution and at each step, generates a random neighbor. If the neighbor is better, it moves to that neighbor. This process continues until no better neighbor can be found. The main drawback is that it can easily get stuck in local optima.
 *   **Simulated Annealing (SA)**: SA improves on hill climbing by allowing the algorithm to occasionally accept worse solutions, which helps it escape local optima. The probability of accepting a worse solution is controlled by a "temperature" parameter, which starts high and gradually decreases over time. This mimics the metallurgical process of annealing, where a metal is heated and then cooled slowly to make it stronger.
+
+<Figure
+  src={simulatedAnnealing}
+  alt="Simulated Annealing"
+  caption="Simulated Annealing"
+/>
+
 *   **Genetic Algorithms (GAs)**: Inspired by the process of natural selection, GAs work with a population of solutions. At each iteration, the "fittest" solutions are selected to "reproduce" by combining their features (**crossover**) and introducing small random changes (**mutation**). This creates a new generation of solutions, and the process is repeated. GAs are effective at exploring large and complex search spaces.
+
+<Figure
+  src={geneticAlg}
+  alt="Genetic Algorithm"
+  caption="Genetic Algorithm"
+/>
+
 *   **MIMIC (Mutual-Information-Maximizing Input Clustering)**: MIMIC is a more advanced algorithm that builds a probabilistic model of the promising regions of the search space. It samples new points from this model to generate the next generation of solutions. It can be very effective but is also more complex to implement and tune.
 
 ### Clustering
 
 Clustering is a fundamental task in unsupervised learning where the goal is to group a set of objects in such a way that objects in the same group (or **cluster**) are more similar to each other than to those in other groups.
+
+<Figure
+  src={kMeansEmClustering}
+  alt="k-Means and EM Clustering"
+  caption="k-Means and EM Clustering"
+/>
 
 *   **k-Means Clustering**: This is the most popular clustering algorithm. It partitions the data into 'k' clusters by iteratively assigning each data point to the cluster with the nearest mean (or **centroid**) and then recalculating the centroids based on the new assignments. The algorithm converges when the assignments no longer change.
 *   **Hierarchical Clustering**: This method creates a tree of clusters, known as a dendrogram. There are two main approaches: **agglomerative** (bottom-up), where each data point starts in its own cluster and pairs of clusters are merged as one moves up the hierarchy, and **divisive** (top-down), where all data points start in one cluster and splits are performed recursively as one moves down the hierarchy.
@@ -271,9 +306,23 @@ There are three main types of feature selection methods:
 
 Feature transformation, or dimensionality reduction, is the process of transforming data from a high-dimensional space into a lower-dimensional space, while preserving some meaningful properties of the original data. This can help to visualize the data, reduce computational complexity, and remove noise.
 
+<Figure
+  src={pcaIca}
+  alt="PCA and ICA"
+  caption="PCA and ICA"
+/>
+
 *   **Principal Component Analysis (PCA)**: PCA is a linear technique that finds a new set of orthogonal axes, called principal components, that capture the maximum amount of variance in the data. The data is then projected onto a smaller number of these components.
 *   **Independent Component Analysis (ICA)**: ICA is another linear technique that separates a multivariate signal into additive, non-Gaussian subcomponents. It is particularly useful for separating mixed signals, like separating individual voices from a mixed audio recording.
 *   **Linear Discriminant Analysis (LDA)**: LDA is a supervised dimensionality reduction technique that finds the feature subspace that maximizes the separability between the classes. It is often used as a pre-processing step for classification tasks.
+
+<Figure
+  src={tsneUmap}
+  alt="t-SNE and UMAP"
+  caption="t-SNE and UMAP"
+/>
+
+
 *   **t-SNE (t-Distributed Stochastic Neighbor Embedding)**: t-SNE is a non-linear technique that is particularly well-suited for visualizing high-dimensional datasets. It models each high-dimensional object by a two- or three-dimensional point in such a way that similar objects are modeled by nearby points and dissimilar objects are modeled by distant points with high probability.
 *   **UMAP (Uniform Manifold Approximation and Projection)**: UMAP is another non-linear technique for manifold learning and dimensionality reduction. It is often faster than t-SNE and can better preserve the global structure of the data.
 
@@ -291,6 +340,12 @@ The most fundamental concept is **entropy**, which measures the average level of
 
 A Markov Decision Process (MDP) is a mathematical framework for modeling decision-making in situations where outcomes are partly random and partly under the control of a decision-maker. It is the formal foundation for reinforcement learning.
 
+<Figure
+  src={mdp}
+  alt="Markov Decision Process"
+  caption="Markov Decision Process"
+/>
+
 An MDP is defined by:
 *   A set of **states** ($S$)
 *   A set of **actions** ($A$)
@@ -302,6 +357,12 @@ The goal in an MDP is to find a **policy** $\pi(s)$, which is a mapping from sta
 ### Reinforcement Learning
 
 Reinforcement Learning (RL) is an area of machine learning concerned with how an **agent** ought to take **actions** in an **environment** in order to maximize some notion of cumulative **reward**. RL algorithms learn a policy by trial and error, interacting with the environment and receiving feedback in the form of rewards or punishments.
+
+<Figure
+  src={rlModels}
+  alt="Reinforcement Learning Models"
+  caption="Reinforcement Learning Models"
+/>
 
 There are two main approaches to solving RL problems:
 *   **Model-Based RL**: In this approach, the agent first tries to learn the transition model and reward function of the environment (i.e., learn the MDP). Once the model is learned, the agent can use planning algorithms (like value iteration or policy iteration) to find the optimal policy.
@@ -318,6 +379,12 @@ Key concepts in game theory include:
 *   **Strategies**: The possible actions that each player can take.
 *   **Payoffs**: The outcomes or rewards that each player receives for a given combination of strategies.
 *   **Nash Equilibrium**: A state of the game where no player has an incentive to unilaterally change their strategy, given the strategies of the other players.
+
+<Figure
+  src={nash}
+  alt="Nash Equilibrium"
+  caption="Nash Equilibrium"
+/>
 
 By modeling multi-agent problems as games, we can analyze the dynamics of competition and cooperation and design agents that can learn to behave strategically in the presence of other intelligent agents.
 
