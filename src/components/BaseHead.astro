@@ -13,13 +13,14 @@ interface Props {
 }
 
 const canonicalURL = new URL(Astro.url.pathname, Astro.site);
+const defaultImage = "/blog-placeholder-2.jpg";
 
-const { title, description, image = "/blog-placeholder-1.jpg" } = Astro.props;
+const { title, description, image = defaultImage } = Astro.props;
 
 // Helper function to get the proper image URL for Open Graph
 const getImageURL = async (imageInput: string | ImageMetadata | undefined) => {
   if (!imageInput) {
-    return new URL("/blog-placeholder-1.jpg", Astro.site).href;
+    return new URL(defaultImage, Astro.site).href;
   }
   
   // If it's a string, handle different path types
@@ -45,7 +46,7 @@ const getImageURL = async (imageInput: string | ImageMetadata | undefined) => {
     return new URL(optimizedImage.src, Astro.site).href;
   } catch (error) {
     console.warn('Failed to process image for Open Graph:', error);
-    return new URL("/blog-placeholder-1.jpg", Astro.site).href;
+    return new URL(defaultImage, Astro.site).href;
   }
 };
 
