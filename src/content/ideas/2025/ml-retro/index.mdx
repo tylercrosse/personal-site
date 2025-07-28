@@ -25,9 +25,10 @@ import aiModernApproach from "../../../books/ai-modern-approach-4th.jpg";
 import rlSuttonBarto from "../../../books/rl-sutton-barto.jpg";
 import grokkingDeepRL from "../../../books/grokking-deep-rl.jpg";
 
-import mlTaxonomy from "./ml-taxonomy-placeholder.jpg";
+import mlTaxonomy from "./ml-taxonomy2.png";
 import classificationRegression from "./classification-regression-placeholder.png";
 import decisionTree from "./decision-tree-placeholder.png";
+import inductiveBias from "./inductive-bias-placeholder.webp";
 import ann from "./ann-placeholder.webp";
 import nnWeights from "./nn-weights-placeholder.jpg";
 import baggingBoosting from "./bagging-boosting-placeholder.jpg";
@@ -50,7 +51,7 @@ import nash from "./nash-placeholder.png";
 
 ## Introduction
 
-This article is part personal reflection, part technical summary. I recently completed Georgia Tech's [CS 7641: Machine Learning](https://omscs.gatech.edu/cs-7641-machine-learning), and I wanted to take the time to solidify what I've learned—both for myself, in the spirit of the Feynman technique, and for others who might be curious about the course or about me. This includes future OMSCS students, hiring managers, and peers who want a better sense of what this course covers and what I now know (and don't know yet).
+This article is part personal reflection, part technical summary. I recently completed Georgia Tech's [CS 7641: Machine Learning](https://omscs.gatech.edu/cs-7641-machine-learning), and I wanted to take the time to solidify what I've learned—both for myself, in the spirit of the Feynman technique, and for others who might be curious about the course or about me. This includes future OMSCS students, hiring managers, and peers who want a better sense of what this course covers and what I now know (and don't know yet). The majority of this article is a summary of the course. I've also included a section on the mechanics of the course, my experience and resources at the end.
 
 There's always a tension when writing something like this. I want to be honest about what I've learned and the depth of my understanding, while acknowledging that I'm still learning. This course was challenging and rewarding, and this write-up is my way of digesting the material and sharing it in a format that feels productive.
 
@@ -64,12 +65,14 @@ Machine learning is often framed as a subfield of artificial intelligence (AI), 
   caption="Machine Learning, AI, and Deep Learning"
 />
 
-The course opens with a foundational discussion on the philosophy of machine learning. It's not simply "computational statistics," as one of the instructors, Dr. Michael Littman, argues. Instead, Dr. Charles Isbell proposes a broader definition:
+The course is taught as a dialog between Dr. Michael Littman and Dr. Charles Isbell. It opens with a foundational discussion on the philosophy of machine learning. It's not simply "computational statistics," as Dr. Littman argues. Instead, Dr. Isbell proposes a broader definition:
 
 > [!quote]
 > "Machine learning is about this broader notion of building artifacts, computational artifacts typically, that learn over time based on experience. And then in particular, it's not just the act of building these artifacts that matter. It's the math behind it, it's the science behind it, it's the engineering behind it, and it's the computing behind it. It's everything that goes into building intelligent artifacts that almost by necessity have to learn over time." - Dr. Charles Isbell
 
-This perspective—that machine learning is an interdisciplinary effort to create systems that genuinely learn—shapes the entire curriculum. The goal isn't just to use algorithms, but to understand them, to "think about data," and to "build artifacts that you know will learn." The course is structured around the three core pillars of machine learning: Supervised Learning, Unsupervised Learning, and Reinforcement Learning, which this article will also explore.
+This perspective—that machine learning is an interdisciplinary effort to create systems that genuinely learn—shapes the entire curriculum. The goal isn't just to use algorithms, but to understand them, to "think about data," and to "build artifacts that you know will learn." 
+
+Three core pillars of machine learning make up the foundation of the course: supervised learning, unsupervised learning, and reinforcement learning. Each of these pillars is a different way of learning from data. The most common and well-understood is **Supervised learning** which involves learning from labeled data. **Unsupervised learning** is a way to learn from data without labels, and **Reinforcement learning** is a way to learn from data by interacting with an environment.
 
 <Figure
   src={mlTaxonomy}
@@ -77,15 +80,52 @@ This perspective—that machine learning is an interdisciplinary effort to creat
   caption="Machine Learning Taxonomy"
 />
 
+Math is the language of machine learning. Feel free to gloss over it if it's off putting, there's still value in building intuition. Defining a few key terms helps to enrich the discussion:
+
+- **Data point ($x$)**: The individual instances of data we want to make predictions about. An instance is typically represented as a vector of features or attributes. The data points are typically a finite sample drawn i.i.d. from some unknown distribution $P(x)$ over the inputs space $\mathcal{X}$  of all possible values of $x$.
+- **Labels ($y$)**: The correct answers we want to predict. A label is typically a single value, like a color ("red," "blue," "green") or a simple "yes" or "no." The output space $\mathcal{Y}$ is the set of all possible values of $y$ and $P(y)$ is the distribution of the labels. The big distinction between supervised and unsupervised learning is whether the labels are provided or not.
+- **Sample (or Training Set) ($\mathcal{D}$)**: This is the data we learn from. It's a set of instances that the learning algorithm uses to find a function within the hypothesis class that best fits the data.
+- **Concept ($f$)**: A concept is the function we are trying to learn. It's a mapping from input instances to outputs. Intuitively, a concept is the underlying idea we want our model to grasp. 
+$$
+f: \mathcal{X} \rightarrow \mathcal{Y}
+$$
+
+
+*   **Target Concept ($f^*$)**: This is the *true*, ideal function that we aim to approximate. It's the perfect, ground-truth mapping that we will never truly know but strive to find.
+
+While the $f: \mathcal{X} \rightarrow \mathcal{Y}$ formulation is classic for supervised learning, the idea of learning a 'concept' from a 'hypothesis class' extends to the other pillars as well:
+- In **unsupervised learning**, the concept is not a mapping to pre-defined labels, but a function that reveals underlying structure, like a clustering assignment ($f: \mathcal{X} \rightarrow \{c_1, ..., c_k\}$) or a lower-dimensional projection.
+- In **reinforcement learning**, the core concept being learned is a **policy** ($\pi$), which is a function mapping states to actions ($\pi: S \rightarrow A$) to maximize long-term reward.
+
+With these terms in mind, the course is structured around the three core pillars of machine learning: Supervised Learning, Unsupervised Learning, and Reinforcement Learning, which this article will also explore.
+
 ## Supervised Learning
 
-Supervised learning is a cornerstone of machine learning where the goal is to learn a mapping from inputs, or **instances** $x$, to outputs, or **labels** $y$. We are given a **sample** of training data, which consists of input vectors and their corresponding correct labels. The overall function that maps inputs to outputs is the **concept** $f$, and the ideal version we are trying to discover is the **target concept** $f^*$. The set of all possible concepts we might consider is the **hypothesis class** $H$. Our learning algorithm will search through this hypothesis class to find a **candidate** concept that best approximates the target concept, which we then evaluate on a separate **testing set**.
+Supervised learning is a cornerstone of machine learning. The goal is to learn from labeled data. To understand how this works, it's helpful to define a few key terms that form the language of supervised learning:
+
+{/* something about y, and the data in supervised learning be {x, y} etc. */}
+
+*   **Hypothesis Class ($H$)**: This is the set of all possible concepts our learning algorithm is allowed to consider. By choosing a type of model (like decision trees or neural networks), we are implicitly defining our hypothesis class.
+*   **Candidate Concept**: This is a concept from the hypothesis class that our algorithm believes might be the target concept. The learning process involves evaluating different candidate concepts.
+*   **Testing Set**: This is a separate set of labeled instances, unseen during training, that we use to evaluate our final candidate concept. A model's performance on the testing set indicates its ability to **generalize** to new, unseen data, which is the ultimate goal of machine learning. The training and testing sets must be distinct to avoid "cheating."
+
+With these terms in mind, the process is to use a learning algorithm to search through the hypothesis class ($H$) using the training set to find a final candidate concept that is a good approximation of the target concept ($f^*$), as measured by its performance on the testing set.
+
+The supervised learning hypothesis classes we will explore are:
+
+*   **Decision Trees**: A tree-like model of decisions.
+*   **Neural Networks**: A model that is inspired by the structure of the human brain.
+*   **Ensemble Methods**: A model that is a combination of multiple models.
+*   **Instance-based Learning**: A model that is a combination of multiple models.
+*   **Kernel Methods & Support Vector Machines**: A model that is a combination of multiple models.
+
 
 ### Classification and Regression
 
-The two main types of supervised learning problems are classification and regression.
-*   **Classification** aims to predict a discrete class label (e.g., "cat" or "dog"). The learned function is a decision boundary that separates the classes. We evaluate classification models with metrics like accuracy, precision, recall, and F1-score.
-*   **Regression** aims to predict a continuous numerical value (e.g., stock price, temperature). The learned function is a curve or line that best fits the data points. We evaluate regression models with metrics like Mean Squared Error (MSE) or R-squared.
+The two main types of concepts $f$ that can be learned with supervised learning are classification and regression. The key distinction is the nature of the output.
+
+*   **Classification** aims to predict a discrete class label. The output is a category, like a color ("red," "blue," "green") or a simple "yes" or "no." The learned function is a decision boundary that separates the classes. For example, a bank might use a classification model to decide whether to lend money based on a person's credit history. The output is a discrete choice: lend or not. We evaluate classification models with metrics like accuracy, precision, recall, and F1-score.
+*   **Regression** aims to predict a continuous numerical value. The output is a real number, like a stock price, temperature, or a person's age. The learned function is a curve or line that best fits the data points. We evaluate regression models with metrics like Mean Squared Error (MSE) or R-squared.
 
 <Figure
   src={classificationRegression}
@@ -93,20 +133,20 @@ The two main types of supervised learning problems are classification and regres
   caption="Classification and Regression"
 />
 
-The fundamental difference lies in the output: classification models produce unordered, categorical outputs, while regression models produce ordered, continuous outputs. This distinction guides the choice of algorithms, loss functions, and evaluation metrics.
+The fundamental difference lies in the output: classification models produce unordered, categorical outputs, while regression models produce ordered, continuous outputs. This distinction guides the choice of algorithms, loss functions, and evaluation metrics. A problem like predicting a person's age could be framed as either. If you predict their exact age (e.g., 23.7 years), it's regression. If you predict an age group (e.g., "high school," "college," "grad student"), it's a classification task.
 
 ### Decision Trees
 
-A Decision Tree is a non-parametric supervised learning method that approximates a target function with a tree-like model of decisions. It's an intuitive model, similar to a game of 20 questions, where each node in the tree represents a question about a feature, and the branches represent the answers, leading to a final decision at a leaf node.
+A Decision Tree is a non-parametric supervised learning method that approximates a target function with a tree-like model of decisions. It's an intuitive model, much like a game of **20 Questions**. Each internal node in the tree represents a question about a feature, and the branches represent the answers, leading you down a path to a final decision at a leaf node.
 
-The power of a decision tree lies in its expressiveness. It can represent simple logical functions like AND, OR, and XOR. However, the complexity of the tree can grow rapidly. For an n-ary OR function, the tree has a linear number of nodes, but for an n-ary XOR (parity), the number of nodes is exponential ($O(2^n)$). This highlights how the choice of features and the underlying structure of the problem dramatically impact model complexity.
+The most common algorithm for building decision trees is **ID3**, which follows a simple, greedy, top-down approach. It's best understood through the "20 Questions" analogy: at each step, you want to ask the question that gives you the most information, splitting the remaining possibilities as cleanly as possible.
 
-The most common algorithm for building decision trees is **ID3**, which follows a simple loop:
+The ID3 loop is as follows:
 1.  Select the "best" attribute to split the data on.
-2.  Create a new node for that attribute.
+2.  Create a new decision node for that attribute.
 3.  For each possible value of the attribute, create a new branch.
 4.  Sort the training examples down to the new branches.
-5.  If the examples are perfectly classified, stop. Otherwise, repeat the process on the new branches.
+5.  If a branch contains perfectly classified examples, you're done for that path and can add a leaf node. Otherwise, you repeat the process on the remaining examples in that branch.
 
 <Figure
   src={decisionTree}
@@ -114,7 +154,7 @@ The most common algorithm for building decision trees is **ID3**, which follows 
   caption="Decision Tree"
 />
 
-The "best" attribute is determined using a metric called **Information Gain**, which measures how much a given attribute reduces uncertainty, or **entropy** $H$, in the data. More formally, the information gain of an attribute $X$ is defined as:
+The "best" attribute is the one that provides the highest **Information Gain**. This metric measures how much a given attribute reduces uncertainty, or **entropy** ($H$), in the data. Entropy is a measure of randomness or impurity. A dataset with an even split of class labels (e.g., 50% "yes," 50% "no") has high entropy, while a dataset with only one class label (e.g., 100% "yes") has zero entropy. Information gain selects the attribute that leads to the "purest" child nodes—the splits that do the best job of separating the data by their class labels. More formally, the entropy of an attribute $X$ is defined as:
 
 $$
 H(X) = -\sum_{i=1}^{n} p_i \log_2(p_i)
@@ -123,14 +163,36 @@ $$
 - $H(X)$ is the entropy of the attribute $X$.
 - $n$ is the number of classes in the attribute $X$.
 - $p_i$ is the probability of the $i$th class in the attribute $X$.
-- $\log_2$ is the base-2 logarithm -- this comes back to splitting between two choices (e.g. yes/no) at each node.
+- $\log_2$ is the base-2 logarithm, reflecting the bits of information needed to specify the outcome. The base-2 is used because we split between two choices (e.g. binary, yes/no) at each node.
 
-Altogether, this says that the entropy of an attribute $X$ is the sum of the probability of each class $i$ in $X$ multiplied by the logarithm of the probability of that class.
+Altogether, the entropy of an attribute $X$ is the sum of the probability of each class $i$ in $X$ multiplied by the logarithm of that probability. ID3 aims to maximize the reduction in this entropy at each step.
 
-ID3 has a **preference bias** towards shorter trees and trees that place good splits at the top. This is a form of Occam's Razor, preferring simpler explanations. However, this can lead to **overfitting**, where the tree becomes too specific to the training data. To combat this, a common technique is **pruning**, where parts of the tree are removed to improve its ability to generalize to new, unseen data.
+{/* Maybe omit this paragraph? I'm not sure it adds much to the discussion. */}
+{/* The power of a decision tree lies in its expressiveness. It can represent any Boolean function. For simple logical functions like AND and OR, the tree is compact. For example, an OR function with inputs A and B can be represented with just a few nodes: if A is true, output true; otherwise, check B. However, the complexity can grow rapidly. For the "any of" function (an n-ary OR function), the tree has a linear number of nodes ($O(n)$) -- one for each option. But for the "if and only if" function a.k.a "parity" (an n-ary XOR function), the number of nodes is exponential ($O(2^n)$). For example, for the inputs A and B: you need to check both A and B at every level, creating branches for all combinations (A=true,B=false → true; A=false,B=true → true; otherwise false). This highlights a key challenge: some concepts are inherently "harder" for decision trees to learn and represent efficiently. If your problem has a parity-like structure, you might need a very deep tree or a different representation altogether. */}
 
-Decision trees can also be adapted for regression problems by having the leaves predict a continuous value, often the average of the training samples that reach that leaf.
+#### 20 Questions Example
 
+When playing 20 Questions, you want to ask the question that gives you the most information. For example, if you are trying to guess a person's name, you might ask if the first letter comes before or after "M". This is a binary question, and it gives you the most information because it splits the remaining possibilities in half.
+
+This example also illustrates how decision trees can handle continuous attributes. The algorithm might ask a binary question like "Is age < 25.5?". The optimal split point is typically found by sorting all the values of the continuous attribute in the training data and testing the midpoint between each consecutive pair. This allows you to repeat an attribute along a path (e.g., first ask "Is age < 25.5?" then later "Is age < 20?") because each split represents a new, distinct question.
+
+#### Inductive Bias and Overfitting in Decision Trees
+
+Every type of model (hypothesis class) has a different **inductive bias**. This is the set of assumptions the model makes about the data. Inductive bias can be thought of as the model's "prior" knowledge about the data. It comes from the model's design and structure.
+
+**Preference bias** is the model's tendency to favor certain types of solutions (hypotheses) over others within the chosen hypothesis space. **Restriction bias** is the model's tendency to favor solutions that are consistent with the data, limiting the set of possible hypotheses that the algorithm can even consider. Both are forms of inductive bias.
+
+<Figure
+  src={inductiveBias}
+  alt="Inductive Bias"
+  caption="Inductive Bias"
+/>
+
+For example, decision trees assume that the data is split into a tree-like structure. This is a form of restriction bias. The greedy nature of ID3 gives it a specific preference bias for:
+1.  **Good splits at the top:** It will always choose the split that maximizes information gain at the current node.
+2.  **Shorter trees:** As a consequence of the first point, it naturally prefers simpler explanations that classify the data quickly. This is a form of Occam's Razor.
+
+However, this greedy approach can lead to **overfitting**. The tree might grow very large to perfectly classify every training example, including noisy data. Such a tree would fail to generalize to new, unseen data. To combat this, a common technique is **pruning**, where parts of the tree are removed post-training to improve its ability to generalize. Another approach is to set a stopping criterion, such as a maximum tree depth or a minimum number of samples required at a leaf node.
 
 ### Neural Networks
 
@@ -157,6 +219,10 @@ The network "learns" by adjusting its weights to minimize a loss function, which
   alt="Neural Network Weights"
   caption="Neural Network Weights"
 />
+
+#### Inductive Bias and Overfitting in Neural Networks
+
+
 
 ### Ensemble Learning
 

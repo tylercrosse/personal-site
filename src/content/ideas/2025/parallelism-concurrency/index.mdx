@@ -1,0 +1,224 @@
+---
+title: 'Parallelism and Concurrency'
+description: 'A retrospective on my machine learning journey'
+date: '2025-07-23'
+status: 'in-progress'
+type: 'idea'
+tags: ['operating-systems', 'multithreading', 'distributed-systems', 'go', 'c++']
+category: ['ideas']
+draft: false
+audience: 'All'
+media_subpath: "/ideas/parallelism-concurrency/"
+image:
+  path: "./parallel-hero1.png"
+  alt: 'Parallelism and Concurrency'
+hideCaption: true
+---
+
+import Figure from "../../../../components/Figure.astro";
+
+import parallelismConcurrency from "./parallelism-placeholder.jpg";
+import parallelism from "./parallelism.png";
+import parallelismDiagram from "./parallelism-diagram2.png";
+import concurrency from "./concurrency.png";
+import concurrencyDiagram from "./concurrency-diagram2.png";
+import bandwidthLatency from "./bandwidth-latency.png";
+import userKernelCores from "./user-kernel-cores.png";
+
+In an ideal world, our computers would be infinitely fast and instantly responsive. Every task, from crunching massive datasets to loading a webpage, would complete in the blink of an eye. But in reality, we are bound by the physical limitations of hardware: CPUs have finite clock speeds, and waiting for data from a disk or a network takes time.
+
+Parallelism and concurrency are the two fundamental strategies software engineers use to fight against these limitations. They are tools for making our programs *faster* and *more responsive* than the underlying hardware would otherwise allow.
+
+- **Concurrency** is our tool for managing **responsiveness**. It's a way of structuring a program to handle many slow or unpredictable tasks (like network requests) without grinding to a halt. It creates the illusion of doing many things at once, even on a single processor.
+- **Parallelism** is our tool for achieving raw **speed**. It's about breaking a large problem into smaller pieces and executing them simultaneously on multiple processors to get the answer faster.
+
+This article delves into the nuances of these two powerful concepts, exploring how they work, where they differ, and how they are applied at every level of a modern computer system to help us approach the ideal of an infinitely capable machine.
+
+## Concurrency: Structuring for Simultaneous Tasks 
+
+Concurrency is primarily about **structure**. It's a way of writing code that can handle multiple tasks in overlapping time periods, which is essential for building responsive applications that don't freeze while waiting for slow operations like network requests or disk I/O.
+
+<Figure
+  src={concurrencyDiagram}
+  alt="Concurrency"
+  caption="Concurrency"
+/>
+
+A key aspect of concurrency is that it provides the illusion of parallelism. On a single-core processor, a concurrent program achieves this by interleaving the execution of different tasks. The system rapidly switches between tasks, giving each a slice of processor time. This creates the appearance that multiple tasks are running simultaneously, even though only one is actively executing at any given moment. 
+
+The primary goal of concurrency is to structure a program in a way that it can handle many independent events or tasks, such as user input, file I/O, and network requests. This structure is often achieved using tools like threads, coroutines, and event loops. 
+
+## Parallelism: Executing for Speed 
+
+Parallelism is about **execution**. It's the act of running multiple computations simultaneously to make the overall task finish faster. Unlike concurrency, which can be simulated on a single processor, true parallelism requires hardware with multiple processing units, such as multi-core CPUs or GPUs.
+
+<Figure
+  src={parallelismDiagram}
+  alt="Parallelism"
+  caption="Parallelism"
+/>
+
+The main objective of parallelism is to increase throughput and speed up computations by distributing the workload. A classic example is matrix multiplication on a GPU, where thousands of cores work in parallel to perform the calculations. Other tools used to achieve parallelism include SIMD (Single Instruction, Multiple Data) instructions, OpenMP, and multiprocessing libraries. 
+
+## The Kitchen Analogy: A Recipe for Understanding 
+
+To better illustrate the difference, consider a chef preparing a meal with multiple dishes: 
+
+<Figure
+  src={concurrency}
+  alt="Concurrency"
+  caption="Concurrency"
+  width={600}
+/>
+
+*   **Concurrency:** Imagine a single chef in the kitchen. They might start by chopping onions for a sauce, then move to searing a steak, and then stir the sauce again. The chef is switching between tasks, making progress on each one. This is concurrency -- one person multitasking to handle multiple dishes. 
+
+<Figure
+  src={parallelism}
+  alt="Parallelism"
+  caption="Parallelism"
+  width={600}
+/>
+
+*   **Parallelism:** Now, picture two chefs in the kitchen. One chef can focus entirely on making the sauce while the other prepares the steak. They are working on their respective dishes simultaneously. This is parallelism -- multiple workers executing tasks at the same time. 
+
+## Key Differences at a Glance 
+
+| **Feature** | **Concurrency** | **Parallelism** |
+| :--- | :--- | :--- |
+| **Focus** | *Structure* of tasks | *Execution* of tasks |
+| **Goal** | Manage many tasks, improve **responsiveness** | Finish one task faster, improve **throughput** |
+| **Perception** | Tasks *appear* to run at once | Tasks *actually* run at once |
+| **Hardware** | Can happen on a **single core** | Requires **multiple cores/processors** |
+| **Example Use Case** | Handling many client requests on a web server | Large-scale data processing on a cluster |
+| **Programming Tools** | Threads, coroutines, event loops | SIMD, OpenMP, multiprocessing |
+
+## The Power of Both: Concurrency and Parallelism in Harmony 
+
+In the real world, most high-performance systems utilize both concurrency and parallelism. Concurrency is used to structure the program to handle multiple tasks, and parallelism is employed to execute those tasks faster. 
+
+A web server, for instance, uses concurrency to manage requests from thousands of clients simultaneously. To make individual tasks faster, it might use parallelism to compress files or query databases across multiple CPU cores. Similarly, a scientific application might use concurrency to manage different stages of a simulation and then leverage parallelism to run the complex calculations on a powerful GPU. 
+
+## A Multi-Layered Perspective: Levels of Concurrency and Parallelism
+
+Concurrency and parallelism are not just high-level software concepts; they are deeply embedded in every layer of a modern computer system. The famous "Latency Numbers Every Programmer Should Know" list quantifies the staggering performance gaps between these layers—from nanoseconds for a CPU cycle to milliseconds for a network round trip. Understanding the levels of concurrency and parallelism reveals how engineers have systematically applied these strategies at every scale to hide latency and bridge these gaps.
+
+<Figure
+  src={bandwidthLatency}
+  alt="Bandwidth vs Latency"
+  caption="A plot of the bandwidth vs latency of various components from the 'Latency Numbers Every Programmer Should Know' list. "
+  width={1000}
+  fullWidth
+/>
+
+### 1. Hardware Level: The Foundation of Speed
+
+The fight against latency begins in the silicon. The hardware is where parallelism is born, with features designed to do as much work as possible before hitting the bottleneck of main memory or I/O.
+
+*   **Instruction-Level Parallelism (ILP):** Modern CPUs are masters of micro-optimization. They use techniques like **pipelining** (starting a new instruction before the previous one has finished) and **superscalar execution** (having multiple execution units to process several instructions in the same clock cycle) to execute a single stream of code in parallel. This is a form of parallelism that is largely invisible to the programmer but critical for performance.
+*   **Multi-Core and Many-Core Processors:** This is the most familiar form of hardware parallelism. By placing multiple independent processing cores onto a single chip, CPUs can execute completely different streams of instructions (threads) at the same time. This is what enables a modern computer to run the operating system, a web browser, and a music player simultaneously without stuttering. GPUs take this to an extreme with thousands of simpler cores, making them ideal for "embarrassingly parallel" problems like graphics rendering and machine learning.
+*   **Hardware Support for Concurrency:** Hardware also provides features essential for managing concurrency. **Asynchronous I/O** allows a CPU to initiate a slow operation (like reading from a disk) and then switch to other tasks, receiving an interrupt only when the operation is complete. This avoids wasting cycles and is a key mechanism for building responsive systems.
+
+### 2. Operating System Level: The Master Scheduler
+
+The Operating System (OS) acts as the master scheduler, whose primary job is to hide the immense latency of I/O operations. It provides the abstractions that allow programmers to build responsive applications, even when dealing with slow disks and networks.
+
+*   **Processes and Threads:** Key OS level abstractions for concurrency. The OS manages **processes**, which are isolated programs with their own memory space, and **threads**, which are lighter-weight execution units that share the memory of a single process.
+*   **Scheduling:** A core responsibility of the OS is **scheduling**—deciding which thread gets to run on which CPU core at any given time. It uses sophisticated algorithms to preemptively switch between threads, giving each a fair slice of CPU time. This creates the illusion of many tasks running at once, even on a single core, and it leverages multi-core hardware for true parallelism when available. The OS scheduler is what makes multitasking a reality.
+
+<Figure
+  src={userKernelCores}
+  alt="User vs Kernel Threads"
+  caption="A diagram of the user vs kernel threads."
+  width={600}
+/>
+
+#### The Classic Model: 1:1 (Kernel) Threading
+
+The default threading model provided by most operating systems is **one-to-one (1:1) threading**. This means for every single thread created in your application (like with C++'s `std::thread` or Java's traditional `Thread` class), the OS creates and manages a corresponding, dedicated kernel thread.
+
+*   **Pros:**
+    *   **Simple to Reason About:** The programming model is straightforward. One thread of execution in your code maps directly to one schedulable entity in the OS. An application can create as many threads as it wants, and the OS will manage them.
+    *   **True Parallelism:** The OS scheduler is aware of every thread and can run them on different CPU cores, achieving true parallelism.
+    *   **Blocking is Not an Issue:** If one thread makes a blocking system call (e.g., waiting for a network request), the OS simply schedules another ready thread to run on that core. The application doesn't stall.
+*   **Cons:**
+    *   **Heavyweight:** Kernel threads are expensive. Each one consumes a significant amount of kernel memory for its stack and requires OS data structures to manage it.
+    *   **Slow Context Switching:** Switching between kernel threads requires a "context switch," which is a relatively slow operation that involves trapping into the kernel, saving the CPU state of the current thread, and loading the state of the next one.
+    *   **Limited Scalability:** Due to their high memory and performance overhead, an application can typically only create a few hundred to a few thousand kernel threads before performance degrades.
+
+
+### 3. Software/Application Level: The Programmer's Toolkit
+
+This is the level where developers actively design and build concurrent and parallel systems using a variety of programming models and libraries.
+
+*   **Programming Language Constructs:** Languages provide built-in features for managing concurrency. Examples include Java's `Thread` class, C++'s `std::thread`, Python's `async/await` for asynchronous programming, and Go's native `goroutines` and `channels`.
+*   **Parallel Computing Libraries:** For computationally intensive tasks, developers rely on specialized libraries that simplify parallel programming. **OpenMP** is a set of compiler directives for C++ and Fortran that makes it easy to parallelize loops, while **MPI (Message Passing Interface)** is a standard for communication in high-performance computing clusters.
+
+#### A Spectrum of Application-Level Concurrency
+
+To overcome the scalability limitations of 1:1 kernel threading, modern software uses several patterns. These exist on a continuum, trading off direct programmer control for the convenience of runtime abstractions. Two of the most popular models are the Event Loop and User-Level Threads.
+
+**The Event Loop Model (e.g., Node.js, Python's asyncio)**
+
+An event loop typically runs on a single thread and uses non-blocking I/O. Instead of a thread blocking on a slow operation (like a network call), it submits the request to the OS and provides a callback function. The event loop is then free to process other events. When the slow operation completes, the OS notifies the event loop, which then executes the associated callback.
+
+*   **Pros:**
+    *   Highly efficient for I/O-bound workloads as the single thread is never idle waiting for I/O.
+    *   Very low memory overhead per concurrent operation.
+*   **Cons:**
+    *   A long-running, CPU-bound task will block the entire loop, making the application unresponsive.
+    *   It leads to the concept of "function coloring" (`async` vs. regular functions), where asynchronous code can be complex to write and integrate with synchronous code, a problem often called "callback hell."
+
+**User-Level Threads (M:N Model)**
+
+This model, exemplified by Go's `goroutines` and Java's Virtual Threads, provides a higher-level abstraction. The language runtime manages a large number (M) of lightweight "user threads" and schedules them onto a small pool (N) of OS threads. When a user thread performs a blocking I/O operation, the runtime scheduler automatically and transparently swaps it for another ready user thread on the same OS thread.
+
+*   **Pros:**
+    *   Combines the I/O efficiency of an event loop with the simplicity of traditional, blocking-style code. The programmer writes simple, sequential logic, and the runtime handles the asynchronous complexity.
+    *   No "function coloring." Blocking calls don't block the whole system.
+    *   The runtime scheduler can distribute user threads across multiple OS threads to achieve true parallelism for CPU-bound tasks.
+*   **Cons:**
+    *   The runtime scheduler is highly complex to implement correctly, shifting the burden from the application developer to the language/runtime developers.
+
+**Comparison**
+
+| Feature | Event Loop (e.g., Node.js) | User-Level Threads (e.g., Go) |
+| :--- | :--- | :--- |
+| **Programming Model** | Asynchronous, non-blocking (callbacks, `async/await`) | Synchronous, blocking-style code |
+| **CPU-Bound Tasks** | Blocks the single thread, hurting responsiveness | Can be run in parallel on other OS threads |
+| **State Management** | Manual (closures, state machines) | Automatic (managed by the runtime via stacks) |
+| **Complexity** | In the application code ("callback hell", `async` propagation) | In the language runtime (scheduler) |
+| **Scalability** | Excellent for I/O, poor for mixed workloads | Excellent for both I/O and CPU-bound workloads |
+
+#### Case Study: The Go Runtime
+
+The Go programming language is a modern exemplar of the M:N concurrency model. Its `goroutines` are lightweight user threads, and the Go runtime implements a sophisticated M:N scheduler to manage them.
+
+This design allows developers to write straightforward, blocking code that is incredibly scalable. A web server can spawn a new goroutine for each incoming request—potentially millions of them—without the overhead of kernel threads. When a goroutine reads from a network connection, the Go runtime transparently parks it and schedules another goroutine on the underlying OS thread, achieving the same I/O efficiency as an event loop without the complex asynchronous code.
+
+This design is heavily influenced by C.A.R. Hoare's 1978 paper, "Communicating Sequential Processes" (CSP), which posits that communication between independent processes should be the primary means of coordination. Go internalizes this philosophy with its built-in channels.
+
+Go's famous mantra is: **"Don't communicate by sharing memory; share memory by communicating."** This encourages a cleaner, less error-prone style of concurrent programming. Instead of using locks and other complex synchronization primitives to protect shared data, developers are encouraged to pass data between goroutines via channels. This approach avoids entire classes of race conditions and makes concurrent code easier to reason about. The combination of millions of lightweight goroutines and the safety of channels allows developers to build robust, highly concurrent applications with ease.
+
+### 4. Distributed Systems Level: The Global Scale
+
+In distributed computing, we move beyond a single machine. Here, multiple computers—often thousands of them—are connected over a network to work together on a problem that is too large or complex for any single machine to handle.
+
+*   **Concurrency in Distributed Systems:** Concurrency is inherent. A distributed database must handle simultaneous requests from clients all over the world. A web server farm must manage thousands of concurrent user sessions.
+*   **Parallelism in Distributed Systems:** This is where large-scale data processing happens. Frameworks like **Apache Spark** and **Google's MapReduce** achieve massive parallelism by breaking up a dataset, sending chunks to different machines in a cluster for processing, and then aggregating the results. This is how companies process terabytes of data for tasks like search indexing, data analytics, and training massive machine learning models.
+
+## Additional Resources
+
+- [Latency Numbers Every Programmer Should Know](https://gist.github.com/hellerbarde/2843375)
+- [Concurrency in Go](https://go.dev/doc/effective_go#concurrency)
+- [Parallelism in Go](https://go.dev/doc/effective_go#parallelism)
+- [Concurrency in Python](https://docs.python.org/3/library/asyncio.html)
+- [Parallelism in Python](https://docs.python.org/3/library/concurrent.futures.html)
+- [Concurrency in C++](https://en.cppreference.com/w/cpp/thread)
+- [Parallelism in C++](https://en.cppreference.com/w/cpp/parallel/future)
+
+- [Concurrency in Java](https://docs.oracle.com/javase/tutorial/essential/concurrency/)
+- [Parallelism in Java](https://docs.oracle.com/javase/tutorial/essential/concurrency/parallel.html)
+- [Green Threads](https://en.wikipedia.org/wiki/Green_threads)
+- [User-Level Threads](https://en.wikipedia.org/wiki/User-level_threading)
+- [Kernel Threads](https://en.wikipedia.org/wiki/Kernel_thread)
