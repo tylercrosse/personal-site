@@ -4,9 +4,11 @@ import mdx from "@astrojs/mdx";
 import sitemap from "@astrojs/sitemap";
 import pagefind from "astro-pagefind";
 import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
 import rehypeCitation from "rehype-citation";
 import rehypeMermaid from "rehype-mermaid";
 import rehypeCallouts from "rehype-callouts";
+import rehypeKatex from "rehype-katex";
 
 // https://astro.build/config
 export default defineConfig({
@@ -26,22 +28,30 @@ export default defineConfig({
     "/ideas/semantic-search": "/ideas/2023/semantic-search",
     "/ideas/tech-debt": "/ideas/2023/tech-debt",
   },
-  integrations: [mdx(), sitemap(), pagefind()],
-  markdown: {
-    remarkPlugins: [remarkGfm],
-    rehypePlugins: [
-      [
-        rehypeCitation,
-        {
-          bibliography: "src/references.bib",
-          linkCitations: true,
-          showTooltips: true,
-          tooltipAttribute: "data-tooltip",
-        },
+  integrations: [
+    mdx({
+      remarkPlugins: [remarkGfm, remarkMath],
+      rehypePlugins: [
+        [rehypeKatex, { strict: false }],
+        [
+          rehypeCitation,
+          {
+            bibliography: "src/references.bib",
+            linkCitations: true,
+            showTooltips: true,
+            tooltipAttribute: "data-tooltip",
+          },
+        ],
+        rehypeMermaid,
+        rehypeCallouts,
       ],
-      rehypeMermaid,
-      rehypeCallouts,
-    ],
+    }),
+    sitemap(),
+    pagefind(),
+  ],
+  markdown: {
+    remarkPlugins: [remarkMath, remarkGfm],
+    rehypePlugins: [[rehypeKatex, { strict: false }]],
     shikiConfig: {
       themes: {
         light: "solarized-light",

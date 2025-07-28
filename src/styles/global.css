@@ -94,6 +94,16 @@
   --font-mono: "IBM Plex Mono", monospace;
 }
 
+/* KaTeX Math Styling */
+.katex {
+  font-size: 1.2em;
+}
+
+.katex-display {
+  margin: 0 0 1.5rem;
+  font-size: 1.25em;
+}
+
 /* Dark theme variables */
 [data-effective-theme="dark"] {
   --sol-0: #839496;
