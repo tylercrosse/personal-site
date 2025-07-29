@@ -51,13 +51,12 @@ import mdp from "./mdp-placeholder.png";
 import rlModels from "./rl-models-placeholder.png";
 import nash from "./nash-placeholder.png";
 
-## Introduction
 
 This article is part personal reflection, part technical summary. I recently completed Georgia Tech's [CS 7641: Machine Learning](https://omscs.gatech.edu/cs-7641-machine-learning), and I wanted to take the time to solidify what I've learned—both for myself, in the spirit of the Feynman technique, and for others who might be curious about the course or about me. This includes future OMSCS students, hiring managers, and peers who want a better sense of what this course covers and what I now know (and don't know yet). The majority of this article is a summary of the course. I've also included a section on the mechanics of the course, my experience and resources at the end.
 
 There's always a tension when writing something like this. I want to be honest about what I've learned and the depth of my understanding, while acknowledging that I'm still learning. This course was challenging and rewarding, and this write-up is my way of digesting the material and sharing it in a format that feels productive.
 
-## Machine Learning
+## Machine Learning Introduction
 
 Machine learning is often framed as a subfield of artificial intelligence (AI), but it's more than that. It's a broad field that encompasses a wide range of techniques and applications. It's a field that is constantly evolving, and there is no single "right" way to do machine learning. Recent advances in machine learning have been driven by the development of deep learning, which at least started as a subfield of machine learning that uses deep neural networks to learn from data.
 
@@ -236,15 +235,13 @@ This training process also reveals the biases of neural networks.
 
 The power of neural networks lies in this combination of a highly expressive representation (low restriction bias) with a training process that prefers simpler solutions (a helpful preference bias).
 
-<details>
-  <summary>For more details, see the <a href="https://www.youtube.com/watch?v=1-4c0_gLSSg&list=PLTsf9UeqkReZbK7xqIYn_mXmsQZIb011T&index=2" target="_blank">Neural Networks lecture</a> which covers:</summary>
-  - How to manually set weights and thresholds for a single perceptron to compute logical functions like AND, OR, and NOT.
-  - The step-by-step construction of a two-layer network that can solve the non-linearly separable XOR problem.
-  - The Perceptron Training Rule for single units and its guarantee of convergence for linearly separable data.
-  - The distinction between the Perceptron Rule (using thresholded outputs) and the Delta Rule / Gradient Descent (using unthresholded activation).
-  - The common trick of using a "bias input" to allow the learning algorithm to learn the threshold as just another weight.
-  - The problem of getting stuck in local optima during training and advanced optimization techniques to mitigate it, such as momentum.
-</details>
+For more details, see the <a href="https://www.youtube.com/watch?v=1-4c0_gLSSg&list=PLTsf9UeqkReZbK7xqIYn_mXmsQZIb011T&index=2" target="_blank">Neural Networks lecture</a> which covers:
+- How to manually set weights and thresholds for a single perceptron to compute logical functions like AND, OR, and NOT.
+- The step-by-step construction of a two-layer network that can solve the non-linearly separable XOR problem.
+- The Perceptron Training Rule for single units and its guarantee of convergence for linearly separable data.
+- The distinction between the Perceptron Rule (using thresholded outputs) and the Delta Rule / Gradient Descent (using unthresholded activation).
+- The common trick of using a "bias input" to allow the learning algorithm to learn the threshold as just another weight.
+- The problem of getting stuck in local optima during training and advanced optimization techniques to mitigate it, such as momentum.
 
 
 ### Instance-based Learning
@@ -271,15 +268,12 @@ This simplicity is deceptive, as the real "learning" is encoded in two key desig
 
 The biggest challenge for k-NN, and a foundational problem in machine learning, is the **Curse of Dimensionality**. As you add more features (dimensions) to your data, the volume of the space grows exponentially. To maintain the same density of data points, you need an exponentially larger dataset. In a high-dimensional space, the concept of a "neighborhood" breaks down—every point is far away from every other point. Irrelevant features can easily drown out the signal from the important ones, making the distance metric less meaningful.
 
-<details>
-  <summary>For more details, see the <a href="https://www.youtube.com/watch?v=k_t3S8y3V-A&list=PLTsf9UeqkReZbK7xqIYn_mXmsQZIb011T&index=3" target="_blank">Instance-Based Learning lecture</a> which covers:</summary>
-  - A comparison of time and space complexity for "lazy" learners (like k-NN) vs. "eager" learners (like linear regression).
-  - The idea of using distance-weighted averaging or voting to give closer neighbors more influence.
-  - An example of how different distance metrics (Euclidean vs. Manhattan) can produce wildly different results for the same query.
-  - How k-NN's bias towards locality and smoothness means it can perform poorly when features have different levels of importance.
-  - The concept of **locally weighted regression**, where instead of just averaging neighbors, you fit a model (like a line) to them, allowing a simple local model to represent a complex global function.
-</details>
-
+For more details, see the <a href="https://www.youtube.com/watch?v=k_t3S8y3V-A&list=PLTsf9UeqkReZbK7xqIYn_mXmsQZIb011T&index=3" target="_blank">Instance-Based Learning lecture</a> which covers:
+- A comparison of time and space complexity for "lazy" learners (like k-NN) vs. "eager" learners (like linear regression).
+- The idea of using distance-weighted averaging or voting to give closer neighbors more influence.
+- An example of how different distance metrics (Euclidean vs. Manhattan) can produce wildly different results for the same query.
+- How k-NN's bias towards locality and smoothness means it can perform poorly when features have different levels of importance.
+- The concept of **locally weighted regression**, where instead of just averaging neighbors, you fit a model (like a line) to them, allowing a simple local model to represent a complex global function.
 
 ### Ensemble Learning
 
@@ -301,79 +295,194 @@ The two primary families of ensemble methods, Bagging and Boosting, are differen
 
 Perhaps the most remarkable property of boosting is its surprising resistance to overfitting. With most algorithms, as we continue to train, the model gets better and better on the training data, but at some point, the performance on unseen test data starts to get worse—the classic sign of overfitting. Boosting often defies this. In practice, even as the training error goes to zero, the test error can continue to improve as more weak learners are added. While the full explanation is complex, the intuition is that even after the model correctly classifies all training points, adding more weak learners can increase the *margin* of the classification, making the decision boundary more robust and improving generalization.
 
-<details>
-  <summary>For more details, see the <a href="https://www.youtube.com/watch?v=tAio4_2o5k8&list=PLTsf9UeqkReZbK7xqIYn_mXmsQZIb011T&index=4" target="_blank">Ensemble Learning lecture</a> which covers:</summary>
-  - The formal definition of a "weak learner" as a classifier that can always perform slightly better than chance (error < 0.5) on any distribution of data.
-  - A visual walkthrough of how boosting combines simple axis-aligned classifiers to create a complex, non-linear decision boundary.
-  - The specific formulas used in the AdaBoost algorithm to update the data distribution and calculate the `alpha` weights for each weak learner.
-</details>
+For more details, see the <a href="https://www.youtube.com/watch?v=tAio4_2o5k8&list=PLTsf9UeqkReZbK7xqIYn_mXmsQZIb011T&index=4" target="_blank">Ensemble Learning lecture</a> which covers:
+- The formal definition of a "weak learner" as a classifier that can always perform slightly better than chance (error < 0.5) on any distribution of data.
+- A visual walkthrough of how boosting combines simple axis-aligned classifiers to create a complex, non-linear decision boundary.
+- The specific formulas used in the AdaBoost algorithm to update the data distribution and calculate the `alpha` weights for each weak learner.
 
 ### Kernel Methods & Support Vector Machines
 
-Support Vector Machines (SVMs) are a powerful and versatile class of supervised learning models used for classification, regression, and outlier detection. The core idea of an SVM is to find the optimal hyperplane that best separates the classes in the feature space. The "best" hyperplane is the one that has the largest margin—the distance between the hyperplane and the nearest data points from either class. These nearest points are called the **support vectors**, as they are the critical elements that "support" the decision boundary.
+Support Vector Machines (SVMs) are a powerful and versatile class of supervised learning models. The lecture explains them beautifully, starting with a simple question: if you have two groups of points that can be separated by a straight line, what is the *best* line?
+
+The answer isn't just any line that separates the data. The best line is the one that shows the "least commitment" to the training data, giving us the best chance to generalize to new data. This line is the one that creates the widest possible "demilitarized zone" or street between the two classes. This zone is called the **margin**, and the goal of an SVM is to find the separating hyperplane that maximizes this margin. The data points that lie on the very edge of this margin—the ones that "support" the hyperplane—are called the **support vectors**. If you move any other point, the line doesn't change. But if you move a support vector, the optimal line will move with it.
 
 <Figure
   src={svmMargin}
   alt="Support Vector Machine Margin"
-  caption="Support Vector Machine Margin"
+  caption="An SVM finds the hyperplane that maximizes the margin between the two classes. The points on the edge are the support vectors."
 />
 
-One of the most powerful features of SVMs is the **kernel trick**. For data that is not linearly separable in its original feature space, SVMs can use a kernel function to implicitly map the data into a much higher-dimensional space where it *is* linearly separable. This is done without ever actually computing the coordinates of the data in this new space, which would be computationally very expensive.
+This intuition can be formalized into an optimization problem. The goal is to maximize the margin, which turns out to be equivalent to minimizing the squared norm of the weight vector ($1/2 ||w||^2$), subject to the constraint that every data point is correctly classified and lies outside the margin. This constraint for each point $i$ is captured by the elegant expression: $y_i(w^T x_i + b) \ge 1$. This is a well-defined quadratic programming problem that can be solved efficiently.
+
+But what happens when the data isn't linearly separable? Imagine a cluster of positive points surrounded by a ring of negative points. No straight line can separate them. This is where one of the most powerful ideas in machine learning comes into play: the **kernel trick**.
+
+The idea is to project the data into a higher-dimensional space where it *becomes* linearly separable. For the ring example, we could map our 2D data into a 3D space, lifting the points in the center up higher than the points in the ring, allowing us to slice a plane between them. The magic of the kernel trick is that we can achieve this without ever actually paying the computational cost of creating these higher-dimensional representations.
 
 <Figure
   src={kernelTrick}
-  alt="Kernel Trick"
-  caption="Kernel Trick"
+  alt="The Kernel Trick"
+  caption="The kernel trick maps data to a higher dimension to make it linearly separable, without ever explicitly computing the new coordinates."
 />
 
-Common kernel functions include:
-*   **Linear**: For linearly separable data.
-*   **Polynomial**: For data with polynomial relationships.
-*   **Radial Basis Function (RBF)**: A very popular and flexible kernel that can handle complex, non-linear relationships.
+Instead of transforming the data, we modify our optimization algorithm. The algorithm only ever needs to compute the dot product between pairs of data points ($x_i^T x_j$) to measure their similarity. The kernel trick involves replacing this simple dot product with a more complex **kernel function**, $K(x_i, x_j)$. For example, using the kernel $K(x_i, x_j) = (x_i^T x_j)^2$ is mathematically equivalent to mapping the data into a higher-dimensional space and computing the dot product there, but it's vastly more efficient.
 
-By using the kernel trick, SVMs can create highly complex, non-linear decision boundaries, making them effective for a wide range of problems.
+The kernel function is essentially a pluggable measure of similarity. This allows us to inject domain knowledge into the model. Common kernels include:
+*   **Linear**: The standard dot product, for data that is already linearly separable.
+*   **Polynomial**: $K(x,y) = (x^T y + c)^p$. Captures polynomial relationships in the data.
+*   **Radial Basis Function (RBF)**: $K(x,y) = \exp(-\gamma ||x-y||^2)$. A very popular and flexible kernel that can handle complex, non-linear relationships. It's a good default choice.
 
-### Computational Learning Theory + VC Dimensions
+By using the kernel trick, SVMs can learn highly complex, non-linear decision boundaries, making them effective for a wide range of problems.
 
-Computational Learning Theory (COLT) is a field of study that seeks to answer fundamental questions about machine learning from a theoretical perspective. It asks: How can we be sure that a learning algorithm will generalize to new data? How many training examples are needed to guarantee good performance? How complex can our model be before it starts to overfit?
+For more details, see the <a href="https://www.youtube.com/watch?v=k_t3S8y3V-A&list=PLTsf9UeqkReZbK7xqIYn_mXmsQZIb011T&index=5" target="_blank">Kernel Methods & SVMs lecture</a> which covers:
+- The derivation of maximizing the margin as an optimization problem.
+- The dual formulation of the SVM problem, which explicitly introduces the kernel function.
+- How support vectors are the data points with non-zero alpha values in the dual solution.
+- How kernels can be defined over non-vector data like strings and graphs.
 
-A key concept in COLT is the **Vapnik-Chervonenkis (VC) Dimension**. The VC dimension is a measure of the "capacity" or "expressive power" of a hypothesis class (the set of all possible models a learning algorithm can produce). Informally, it measures the most complex dataset that the model can "shatter"—that is, perfectly classify for every possible labeling of the data points.
+## Theoretical Foundations of Learning
 
-<Figure
-  src={vcDimension}
-  alt="VC Dimension"
-  caption="VC Dimension"
-/>
+These focus on the theoretical underpinnings that help explain why and when learning is possible, including generalization, capacity, and probabilistic modeling.
 
-A higher VC dimension means the model is more flexible and can fit more complex patterns. However, this comes at a cost. A model with a very high VC dimension requires more training data to learn effectively and is more prone to overfitting. The VC dimension provides a way to quantify the trade-off between the complexity of a model and its ability to generalize, giving us a theoretical handle on the bias-variance trade-off.
+> [!note]
+> These next four lectures were grouped under Supervised learning when taught. I've used a slightly different taxonomy which clicks better with me.
+
+### Computational Learning Theory
+
+Computational Learning Theory (COLT) provides the formal tools to answer fundamental questions about learning. It's not just about building models that work; it's about understanding *why* they work and when we can be confident in their predictions. The theory helps us define what a learning problem is, show that certain algorithms can solve it, and even prove that some problems are fundamentally hard.
+
+The key resource in machine learning is **data**. COLT helps us quantify how much data we need to learn effectively. This is called **sample complexity**. The goal is to learn a concept that is **Probably Approximately Correct (PAC)**. This framing acknowledges two realities:
+1.  **Approximately Correct**: We can't expect our learned model to be perfect. There will always be some error. The goal is to ensure the **true error** (the error on the underlying data distribution) is less than some small value, $\epsilon$.
+2.  **Probably**: We can never be 100% certain. There's always a chance we got a misleading set of training examples. The goal is to be at least $1 - \delta$ confident that our learned model has an error less than $\epsilon$.
+
+A key concept for understanding PAC learning is the **version space**. The version space is the set of all hypotheses in our hypothesis class that are consistent with the training data. The learning process is essentially a search for a good hypothesis within this space.
 
 <Figure
   src={pac}
   alt="PAC Learning"
-  caption="PAC Learning"
+  caption="PAC learning provides a theoretical framework for understanding when a machine learning model is likely to generalize well to new data."
 />
+
+A central result from COLT, Haussler's Theorem, gives us a concrete bound on the number of samples ($m$) needed to guarantee PAC-learnability for a finite hypothesis space ($H$):
+
+$$
+m \ge \frac{1}{\epsilon} \left( \ln|H| + \ln\frac{1}{\delta} \right)
+$$
+
+This is a powerful result. It tells us that the number of examples we need only grows linearly with $1/\epsilon$ and logarithmically with the size of our hypothesis space and $1/\delta$. However, it raises a critical question: what happens when our hypothesis space is infinite, as is the case for linear separators, neural networks, or decision trees with continuous features?
+
+### VC Dimension
+
+The **Vapnik-Chervonenkis (VC) Dimension** is the answer to that question. It's a way to measure the "effective" size or "expressive power" of a hypothesis class, even if it's infinite. The VC dimension is defined as the size of the largest set of points that the hypothesis class can **shatter**.
+
+To "shatter" a set of points means the hypothesis class can generate *every possible labeling* for those points.
+
+<Figure
+  src={vcDimension}
+  alt="VC Dimension of a linear separator"
+  caption="A linear separator can shatter any three non-collinear points, but not any set of four points. Therefore, its VC dimension in 2D is 3."
+/>
+
+For example, a linear separator in a 2D plane has a VC dimension of 3. You can arrange three points in a triangle, and a line can achieve all 8 possible +/- labelings. However, there is no arrangement of four points that a single line can shatter. Specifically, if you arrange four points in a way that forms a convex hull and assign alternating labels (like an XOR pattern), no single line can separate them.
+
+The VC dimension brilliantly replaces the $\ln|H|$ term in our sample complexity bound:
+
+$$
+m \ge \frac{1}{\epsilon} \left( 8 \cdot \text{VC}(H) \log_2\frac{13}{\epsilon} + 4 \log_2\frac{2}{\delta} \right)
+$$
+
+This theorem is profound. It tells us that as long as a hypothesis class has a finite VC dimension, it is PAC-learnable, regardless of whether it contains an infinite number of hypotheses. The VC dimension captures the true complexity of the model, and a finite VC dimension prevents the model from being *too* powerful and overfitting the data. It's the key that connects the expressive power of a model to its ability to generalize from a finite sample of data.
+
+For more details, see the <a href="https://www.youtube.com/watch?v=sR285k6i_K4&list=PLTsf9UeqkReZbK7xqIYn_mXmsQZIb011T&index=6" target="_blank">Computational Learning Theory</a> and <a href="https://www.youtube.com/watch?v=yBUb5V_S3gc&list=PLTsf9UeqkReZbK7xqIYn_mXmsQZIb011T&index=7" target="_blank">VC Dimension</a> lectures, which cover:
+- Different models of learning based on how training examples are selected (learner queries vs. helpful teacher vs. nature).
+- The mistake bound model of learning.
+- The concept of epsilon-exhausting the version space.
+- How to prove the VC dimension for different hypothesis classes like intervals and polygons.
+- The relationship between VC dimension and the number of parameters in a model.
 
 ### Bayesian Learning + Inference
 
-Bayesian learning is a probabilistic approach to machine learning that is based on **Bayes' Theorem**. Unlike frequentist methods that compute a single "best" model, Bayesian methods aim to calculate the full posterior probability distribution of the model's parameters, given the data.
+Bayesian learning offers a probabilistic view on machine learning, framing it as a quest to find the **most probable hypothesis** given our data. This shifts the perspective from finding a single "best" model to reasoning about a whole distribution of possible models. The foundation for this is the elegant **Bayes' Theorem**.
 
-$$
-P(A|B) = \frac{P(B|A)P(A)}{P(B)}
-$$
+{/* <Figure
+  src={bayesTheorem}
+  alt="Bayes' Theorem applied to machine learning"
+  caption="Bayes' Theorem: The heart of Bayesian Learning. We use it to update our beliefs about a hypothesis as we see more data."
+/> */}
 
-- $P(A|B)$ is the posterior probability of $A$ given $B$.
-- $P(B|A)$ is the likelihood of $B$ given $A$.
-- $P(A)$ is the prior probability of $A$.
-- $P(B)$ is the prior probability of $B$.
+Here's how it breaks down in a machine learning context:
+
+- **$P(h|D)$ (Posterior):** What we want to find. The probability of a hypothesis `h` being correct *after* seeing the data `D`.
+- **$P(D|h)$ (Likelihood):** How well the hypothesis `h` explains the data. It's the probability of observing data `D` if `h` were true. This is often easier to calculate.
+- **$P(h)$ (Prior):** Our prior belief about the hypothesis `h` *before* seeing any data. This is where we can inject domain knowledge, such as a preference for simpler models.
+- **$P(D)$ (Evidence):** The probability of the data. This term is a normalization constant and is often ignored when comparing hypotheses, as it doesn't depend on `h`.
+
+The core idea is to start with a prior belief ($P(h)$) and update it as we collect evidence ($D$), resulting in a more informed posterior belief ($P(h|D)$).
+
+#### Priors Matter: An Intuitive Example
+
+The power of the prior is beautifully illustrated by a classic example. Imagine a highly accurate test for a very rare disease. The test is 98% accurate for positive results and 97% for negative. The disease is incredibly rare, occurring in only 0.8% of the population.
+
+A patient tests positive. Do they have the disease?
+
+Surprisingly, no. The probability that they *don't* have the disease is much higher. The extremely low prior probability of having the disease outweighs the test's accuracy. The tiny chance of a false positive is more likely than the tiny chance of actually having the disease. This demonstrates that our initial beliefs (priors) are a critical component of our reasoning.
+
+#### From Probabilities to Practical Algorithms
+
+The Bayesian framework provides a theoretical foundation for many well-known machine learning concepts.
+
+##### MAP and Maximum Likelihood
+
+Our goal is to find the **Maximum a Posteriori (MAP)** hypothesis—the one that maximizes $P(h|D)$. This is equivalent to maximizing $P(D|h)P(h)$.
+
+If we don't have any prior beliefs and assume all hypotheses are equally likely (a uniform prior), the $P(h)$ term becomes a constant. Our task then simplifies to finding the **Maximum Likelihood (ML)** hypothesis, which just maximizes the likelihood $P(D|h)$.
+
+##### Connection to Sum of Squared Errors
+
+One of the most profound results from this framework is the justification for using **sum of squared errors**. If we assume that our data is generated by a deterministic function but corrupted by Gaussian (normal distribution) noise, then finding the Maximum Likelihood hypothesis is mathematically equivalent to minimizing the sum of squared errors between our model's predictions and the actual data.
+
+This means that whenever you use linear regression or train a neural network by minimizing mean squared error, you are implicitly making an assumption of Gaussian noise in your data!
+
+##### Connection to Occam's Razor
+
+Bayesian learning also provides a formal justification for **Occam's Razor**—the principle that simpler explanations are better. This is done through the **Minimum Description Length (MDL)** principle.
+
+By applying some information theory, finding the MAP hypothesis can be shown to be equivalent to finding the hypothesis that minimizes the sum of two things:
+1.  The "length" or complexity of the hypothesis itself (e.g., the number of nodes in a decision tree).
+2.  The "length" of the description of the data's errors, given the hypothesis.
+
+This creates a natural trade-off: a more complex model might reduce the error, but it pays a penalty for its own complexity. The best model is the one that finds the sweet spot, providing the most compact explanation for the data.
+
+#### The Real Goal: Bayesian Classification
+
+So far, we've focused on finding the single best hypothesis. But what if the goal is to make the most accurate prediction on a new data point?
+
+The most likely hypothesis (the MAP hypothesis) might not always give the most likely prediction. The lecture gives a great example:
+
+- `h1` predicts `+` with probability `0.4`
+- `h2` predicts `-` with probability `0.3`
+- `h3` predicts `-` with probability `0.3`
+
+The MAP hypothesis is `h1`, which predicts `+`. However, the total probability for the label `-` is `0.3 + 0.3 = 0.6`. The most probable *label* is actually `-`.
+
+{/* <Figure
+  src={bayesOptimalClassifier}
+  alt="Bayes Optimal Classifier"
+  caption="The Bayes Optimal Classifier combines predictions from all hypotheses, weighted by their probabilities, to find the most probable label."
+/> */}
+
+This leads to the **Bayes Optimal Classifier**. Instead of picking one hypothesis and discarding the others, we let every hypothesis "vote" on the final prediction, with their vote weighted by their posterior probability. On average, no other classifier can perform better. It provides a theoretical gold standard for classification.
+
+This is a powerful idea: finding the best model is just a means to an end. The ultimate goal is to make the best predictions.
 
 
-The core idea is to start with a prior belief about our model's parameters, and then update this belief as we observe more data. This allows us to incorporate domain knowledge into our models and to quantify uncertainty in our predictions. For example, instead of predicting a single class, a Bayesian model can output a probability for each class, giving us a better sense of how confident the model is in its prediction.
-
-<Figure
-  src={bayesianInference}
-  alt="Bayesian Inference"
-  caption="Bayesian Inference"
-/>
+For more detail, see the lectures on [Bayesian Learning](https://www.youtube.com/watch?v=s_s_1aG7-yY) and [Bayesian Inference](https://www.youtube.com/watch?v=q3d11e2-P7k). The lectures also cover:
+- The connection to **Version Spaces**, where in noise-free settings, all consistent hypotheses are equally probable.
+- Detailed mathematical derivations for the **Sum of Squared Error** (from Gaussian noise) and **Minimum Description Length** (from information theory).
+- The concept of a **Joint Probability Distribution** and the curse of dimensionality.
+- **Bayesian Networks** (Belief Networks) as a graphical way to represent conditional independencies.
+- **Exact and approximate inference** techniques for querying Bayesian Networks.
+- The **Naive Bayes Classifier**, including its strong ("naive") independence assumption and its practical effectiveness.
+- The need for **smoothing** (like Laplace smoothing) to handle zero-frequency problems in Naive Bayes.
 
 ## Unsupervised Learning
 {/* TODO: Add overview of unsupervised learning */}
