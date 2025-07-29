@@ -1,11 +1,11 @@
 ---
-title: 'Machine Learning Retro'
-description: 'A retrospective on my machine learning journey'
+title: 'Machine Learning'
+description: 'A survey of concepts covered in my graduate Machine Learning course'
 date: '2025-08-01'
 status: 'in-progress'
-type: 'project'
+type: 'retro'
 tags: ['machine-learning', 'python', 'supervised-learning', 'unsupervised-learning', 'reinforcement-learning', 'optimization']
-category: ['projects']
+category: ['mscs']
 draft: false
 audience: 'All'
 media_subpath: "/ideas/ml-retro/"
@@ -31,6 +31,8 @@ import decisionTree from "./decision-tree-placeholder.png";
 import inductiveBias from "./inductive-bias-placeholder.webp";
 import ann from "./ann-placeholder.webp";
 import nnWeights from "./nn-weights-placeholder.jpg";
+import xorSeparability from "./xor-separability-placeholder.png";
+import gradDescent from "./grad-descent-placeholder.jpg";
 import baggingBoosting from "./bagging-boosting-placeholder.jpg";
 import instanceBased from "./instance-based-placeholder.png";
 import kernelTrick from "./kernel-trick-placeholder.png";
@@ -86,16 +88,11 @@ Math is the language of machine learning. Feel free to gloss over it if it's off
 - **Labels ($y$)**: The correct answers we want to predict. A label is typically a single value, like a color ("red," "blue," "green") or a simple "yes" or "no." The output space $\mathcal{Y}$ is the set of all possible values of $y$ and $P(y)$ is the distribution of the labels. The big distinction between supervised and unsupervised learning is whether the labels are provided or not.
 - **Sample (or Training Set) ($\mathcal{D}$)**: This is the data we learn from. It's a set of instances that the learning algorithm uses to find a function within the hypothesis class that best fits the data.
 - **Concept ($f$)**: A concept is the function we are trying to learn. It's a mapping from input instances to outputs. Intuitively, a concept is the underlying idea we want our model to grasp. 
-$$
-f: \mathcal{X} \rightarrow \mathcal{Y}
-$$
-
-
+  - In **supervised learning** the classic formulation is $f: \mathcal{X} \rightarrow \mathcal{Y}$, the idea of learning a 'concept' from a 'hypothesis class'.
+  - In **unsupervised learning**, the concept is not a mapping to pre-defined labels, but a function that reveals underlying structure, like a clustering assignment ($f: \mathcal{X} \rightarrow \{c_1, ..., c_k\}$) or a lower-dimensional projection.
+  - In **reinforcement learning**, the core concept being learned is a **policy** ($\pi$), which is a function mapping states to actions ($\pi: S \rightarrow A$) to maximize long-term reward.
 *   **Target Concept ($f^*$)**: This is the *true*, ideal function that we aim to approximate. It's the perfect, ground-truth mapping that we will never truly know but strive to find.
 
-While the $f: \mathcal{X} \rightarrow \mathcal{Y}$ formulation is classic for supervised learning, the idea of learning a 'concept' from a 'hypothesis class' extends to the other pillars as well:
-- In **unsupervised learning**, the concept is not a mapping to pre-defined labels, but a function that reveals underlying structure, like a clustering assignment ($f: \mathcal{X} \rightarrow \{c_1, ..., c_k\}$) or a lower-dimensional projection.
-- In **reinforcement learning**, the core concept being learned is a **policy** ($\pi$), which is a function mapping states to actions ($\pi: S \rightarrow A$) to maximize long-term reward.
 
 With these terms in mind, the course is structured around the three core pillars of machine learning: Supervised Learning, Unsupervised Learning, and Reinforcement Learning, which this article will also explore.
 
@@ -196,61 +193,120 @@ However, this greedy approach can lead to **overfitting**. The tree might grow v
 
 ### Neural Networks
 
-Artificial Neural Networks (ANNs) are a type of models loosely inspired by the structure of the human brain. They are composed of layers of interconnected nodes, or "neurons." A typical network consists of an input layer, one or more hidden layers, and an output layer. Each connection between neurons has an associated weight, which is adjusted during the training process.
+Artificial Neural Networks (ANNs) are models loosely inspired by the structure of the human brain, but as the course amusingly puts it, they are more of a "cartoonish version of the neuron." The fundamental building block is the **perceptron**, a simple computational unit that takes several inputs, multiplies them by weights, sums them up, and fires (outputs a 1) if the sum exceeds a certain threshold, otherwise it outputs a 0.
 
 <Figure
   src={ann}
   alt="Artificial Neural Network"
-  caption="Artificial Neural Network"
+  caption="A single perceptron on the left, which can't solve XOR. A network of perceptrons on the right, which can."
 />
 
-When data is fed into the network, each neuron receives inputs from the previous layer, calculates a weighted sum, and then passes the result through an activation function (like Sigmoid, Tanh, or ReLU) to produce its output. This process continues through the network until the final output is produced.
+Modern neural networks build on this idea but replace the simple, sharp threshold of the perceptron with a smooth, differentiable **activation function** like the Sigmoid, Tanh, or ReLU.
+
+The shift from the simple threshold values to using activation functions took is uderpinned by the idea of **linear separability**. A single perceptron can act as a linear separator; for a 2D input space, it can draw a single straight line to divide the space into two halves. This is powerful enough to represent simple logical functions like AND, OR, and NOT, which are all linearly separable. However, a single perceptron fundamentally cannot solve problems that are *not* linearly separable. The classic example is the XOR function—there is no single straight line you can draw to separate the true cases from the false cases.
 
 <Figure
-  src={activationFunctions}
-  alt="Activation Functions"
-  caption="Activation Functions"
+  src={xorSeparability}
+  alt="XOR Separability"
+  caption="XOR is not linearly separable."
 />
 
-The network "learns" by adjusting its weights to minimize a loss function, which measures the difference between the network's predictions and the actual labels in the training data. The most common training algorithm is **backpropagation**, which uses gradient descent to efficiently compute the contribution of each weight to the overall error and adjust it accordingly.
+
+This limitation is what gives rise to the "network" in neural networks. To solve a problem like XOR, you need to combine perceptrons. For instance, you could use one layer of perceptrons to learn simpler functions (like AND and OR) and then feed their outputs into a final perceptron that combines them to produce the final, non-linear result. This layered structure allows ANNs to learn increasingly complex functions.
+
 
 <Figure
   src={nnWeights}
   alt="Neural Network Weights"
-  caption="Neural Network Weights"
+  caption="Weights in a neural network are adjusted during training to minimize error."
 />
 
-#### Inductive Bias and Overfitting in Neural Networks
-
-
-
-### Ensemble Learning
-
-Ensemble learning is a powerful technique that involves combining the predictions of multiple individual models to produce a more accurate and robust prediction than any single model. The core idea is that by aggregating the "votes" of a diverse set of models, we can reduce variance, mitigate bias, and improve generalization.
+Why the switch? The "pointy" nature of the threshold function isn't differentiable, which is a problem for training. A smooth function allows us to use calculus. The network "learns" by adjusting its weights to minimize a loss function, which measures the difference between the network's predictions and the actual labels in the training data. The most common training algorithm is **backpropagation**. At its heart, backpropagation is a clever application of the chain rule from calculus. It uses **gradient descent** to efficiently compute the contribution of each weight to the overall error and adjust it accordingly. This process is often visualized as error information "flowing" backward from the output layer through the hidden layers, hence the name.
 
 <Figure
-  src={baggingBoosting}
-  alt="Bagging and Boosting"
-  caption="Bagging and Boosting"
+  src={gradDescent}
+  alt="Gradient Descent"
+  caption="Gradient Descent"
 />
 
-There are two primary families of ensemble methods:
-*   **Bagging (Bootstrap Aggregating)**: This method involves training multiple instances of the same model (e.g., decision trees) on different random subsets of the training data (selected with replacement). The final prediction is made by averaging the outputs of all models (for regression) or by taking a majority vote (for classification). **Random Forests** are a popular and effective implementation of this approach.
-*   **Boosting**: This method builds models sequentially, where each new model attempts to correct the errors made by the previous ones. The algorithm places more weight on the training instances that were misclassified by earlier models, forcing the new model to focus on the "hard" cases. Popular boosting algorithms include **AdaBoost** and **Gradient Boosting Machines (GBMs)**.
+
+This training process also reveals the biases of neural networks.
+*   **Restriction Bias**: How much does the model's structure limit the functions it can represent? For ANNs, the restriction bias is very low. With enough layers and nodes, a neural network can approximate *any* continuous function (and with two hidden layers, any arbitrary function). This makes them universal approximators but also puts them at high risk of **overfitting**—modeling the noise in the training data instead of the underlying pattern.
+*   **Preference Bias**: What kinds of solutions does the learning algorithm prefer? The algorithm itself provides a bias. Training typically starts with small, random weights. As the network trains via gradient descent, it gradually explores more complex functions. This means the algorithm has a preference for simpler explanations, only adopting more complexity as the data requires it. This is a form of Occam's Razor, and techniques like **early stopping** (using a validation set to stop training before the model overfits) explicitly leverage this property.
+
+The power of neural networks lies in this combination of a highly expressive representation (low restriction bias) with a training process that prefers simpler solutions (a helpful preference bias).
+
+<details>
+  <summary>For more details, see the <a href="https://www.youtube.com/watch?v=1-4c0_gLSSg&list=PLTsf9UeqkReZbK7xqIYn_mXmsQZIb011T&index=2" target="_blank">Neural Networks lecture</a> which covers:</summary>
+  - How to manually set weights and thresholds for a single perceptron to compute logical functions like AND, OR, and NOT.
+  - The step-by-step construction of a two-layer network that can solve the non-linearly separable XOR problem.
+  - The Perceptron Training Rule for single units and its guarantee of convergence for linearly separable data.
+  - The distinction between the Perceptron Rule (using thresholded outputs) and the Delta Rule / Gradient Descent (using unthresholded activation).
+  - The common trick of using a "bias input" to allow the learning algorithm to learn the threshold as just another weight.
+  - The problem of getting stuck in local optima during training and advanced optimization techniques to mitigate it, such as momentum.
+</details>
+
 
 ### Instance-based Learning
 
-Instance-based learning, often called lazy learning, is a family of algorithms that, instead of building an explicit model from the training data, simply stores the entire dataset. When a new, unseen instance needs to be classified, the algorithm compares it to the stored instances and makes a prediction based on the most similar ones.
+Instance-based learning flips the script on the typical machine learning paradigm. Most models we've discussed so far are **eager learners**: they take the training data, learn a generalized function or model, and then effectively throw the original data away. When a new query comes in, they use this compact model to make a prediction. Instance-based learners, in contrast, are **lazy learners**. They do almost no work upfront, simply storing the entire training dataset. The real computation happens at query time.
+
+This approach is best understood through its most famous algorithm: **k-Nearest Neighbors (k-NN)**. Imagine you're trying to predict a house price. Instead of building a complex regression model for the whole city, you just find the 'k' most similar houses (the "neighbors") to the one you're interested in and see what they sold for.
 
 <Figure
   src={instanceBased}
   alt="Instance-based Learning"
-  caption="Instance-based Learning"
+  caption="k-Nearest Neighbors finds the 'k' closest points in the training data to make a prediction."
 />
 
-The most well-known instance-based learning algorithm is **k-Nearest Neighbors (k-NN)**. To classify a new data point, k-NN looks at the 'k' closest training examples in the feature space and assigns the new point the most common class among its neighbors. The "closeness" is typically measured using a distance metric like Euclidean distance.
+The algorithm is beautifully simple:
+1.  **Store** all the training data.
+2.  When you get a new query point, **calculate the distance** from that point to every single point in the training data.
+3.  **Identify the 'k' nearest neighbors**.
+4.  **Aggregate their outputs**. For classification, this means taking a majority vote among the neighbors' classes. For regression, it means averaging their values.
 
-The choice of 'k' is a critical hyperparameter. A small 'k' can make the model sensitive to noise, while a large 'k' can be computationally expensive and may oversmooth the decision boundary. Because they don't learn a "model" in the traditional sense, instance-based learners can easily adapt to new data but can also be very slow at prediction time, as they need to compare the new instance to every single training example.
+This simplicity is deceptive, as the real "learning" is encoded in two key design choices that represent crucial domain knowledge:
+*   **The distance metric**: How do you define "similarity"? For points on a map, Euclidean distance might work. But what about other features? Are all features equally important? A good distance function is critical and is a way to inject domain knowledge into the model. Using a standard metric like Euclidean or Manhattan distance implicitly assumes all features matter equally, which is rarely true.
+*   **The value of k**: How many neighbors should you consider? A small 'k' makes the model sensitive to noise (an outlier could become a nearest neighbor). A large 'k' smooths things out but can be computationally expensive and may blur the lines between distinct regions in your data.
+
+The biggest challenge for k-NN, and a foundational problem in machine learning, is the **Curse of Dimensionality**. As you add more features (dimensions) to your data, the volume of the space grows exponentially. To maintain the same density of data points, you need an exponentially larger dataset. In a high-dimensional space, the concept of a "neighborhood" breaks down—every point is far away from every other point. Irrelevant features can easily drown out the signal from the important ones, making the distance metric less meaningful.
+
+<details>
+  <summary>For more details, see the <a href="https://www.youtube.com/watch?v=k_t3S8y3V-A&list=PLTsf9UeqkReZbK7xqIYn_mXmsQZIb011T&index=3" target="_blank">Instance-Based Learning lecture</a> which covers:</summary>
+  - A comparison of time and space complexity for "lazy" learners (like k-NN) vs. "eager" learners (like linear regression).
+  - The idea of using distance-weighted averaging or voting to give closer neighbors more influence.
+  - An example of how different distance metrics (Euclidean vs. Manhattan) can produce wildly different results for the same query.
+  - How k-NN's bias towards locality and smoothness means it can perform poorly when features have different levels of importance.
+  - The concept of **locally weighted regression**, where instead of just averaging neighbors, you fit a model (like a line) to them, allowing a simple local model to represent a complex global function.
+</details>
+
+
+### Ensemble Learning
+
+Ensemble learning is a powerful technique that works by combining multiple individual models—often simple "rules of thumb"—to produce a more accurate and robust prediction than any single model could. The lecture uses the great example of classifying spam email. You could have a simple rule like "the email contains the word 'manly'", and another like "the email is very short". Neither is very accurate on its own, but by combining a large set of these weak indicators, you can build a highly effective classifier.
+
+The power of this approach is that the final combined hypothesis can be much more complex and expressive than any of the individual weak learners. By taking a weighted combination of many simple models (like shallow decision trees), the ensemble can form a sophisticated, non-linear decision boundary that it couldn't have represented otherwise. It's a way of getting a complex result from simple parts.
+
+The two primary families of ensemble methods, Bagging and Boosting, are different approaches to this same core idea.
+
+<Figure
+  src={baggingBoosting}
+  alt="Bagging and Boosting"
+  caption="Bagging trains models in parallel on random subsets. Boosting trains models sequentially, focusing on hard examples."
+/>
+
+*   **Bagging (Bootstrap Aggregating)**: This method follows a simple and surprisingly effective process. It involves training multiple instances of the same model (e.g., decision trees) on different random subsets of the training data. The subsets are created by **bootstrapping**, which means sampling with replacement. The final prediction is made by averaging the outputs of all models (for regression) or by taking a majority vote (for classification). **Random Forests** are a popular and effective implementation of this approach. The main benefit of bagging is that it reduces variance and helps prevent overfitting. By averaging out the "opinions" of models trained on different views of the data, it's less likely to be swayed by noise.
+
+*   **Boosting**: This method takes a more strategic approach. Instead of training on random subsets, boosting builds models sequentially, where each new model is explicitly tasked with correcting the errors made by the previous ones. The algorithm maintains a distribution of "weights" over the training examples. In each round, it trains a **weak learner**—an algorithm that only needs to be slightly better than random chance—on the weighted data. After each round, it increases the weights of the examples that were misclassified, forcing the next weak learner to focus on the "hard" cases. The final model is a weighted combination of all the weak learners, where models that performed better on their respective rounds are given a greater say in the final prediction. Popular boosting algorithms include **AdaBoost** and **Gradient Boosting Machines (GBMs)**.
+
+Perhaps the most remarkable property of boosting is its surprising resistance to overfitting. With most algorithms, as we continue to train, the model gets better and better on the training data, but at some point, the performance on unseen test data starts to get worse—the classic sign of overfitting. Boosting often defies this. In practice, even as the training error goes to zero, the test error can continue to improve as more weak learners are added. While the full explanation is complex, the intuition is that even after the model correctly classifies all training points, adding more weak learners can increase the *margin* of the classification, making the decision boundary more robust and improving generalization.
+
+<details>
+  <summary>For more details, see the <a href="https://www.youtube.com/watch?v=tAio4_2o5k8&list=PLTsf9UeqkReZbK7xqIYn_mXmsQZIb011T&index=4" target="_blank">Ensemble Learning lecture</a> which covers:</summary>
+  - The formal definition of a "weak learner" as a classifier that can always perform slightly better than chance (error < 0.5) on any distribution of data.
+  - A visual walkthrough of how boosting combines simple axis-aligned classifiers to create a complex, non-linear decision boundary.
+  - The specific formulas used in the AdaBoost algorithm to update the data distribution and calculate the `alpha` weights for each weak learner.
+</details>
 
 ### Kernel Methods & Support Vector Machines
 
