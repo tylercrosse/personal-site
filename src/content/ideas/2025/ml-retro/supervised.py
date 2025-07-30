@@ -42,6 +42,19 @@ ax1.contourf(xx, yy, Z, alpha=0.4, zorder=1)
 
 # Plot data points
 colors = ["#270037", "#06726d", "#d9c40b"]
+# colors = ["#CDDDCE", "#D4A64C", "#858AA4", "#ABAA50", "#C5805A", "#93A8A8", "#E2C4BC"]
+# colors =[
+#     "#35706C",
+#     "#CDDDCE",
+#     "#E2C4BC",
+#     "#D4A64C",
+#     "#CD7D3E",
+#     "#ABAA50",
+#     "#8FA0BB",
+#     "#6B75A4",
+#     "#8C6F5F",
+#     "#9E312F",
+# ]
 # colors = ["#BE829E", "#E8F1A0", "#FFDE59"]
 for i, color in enumerate(colors):
     idx = np.where(y_class == i)

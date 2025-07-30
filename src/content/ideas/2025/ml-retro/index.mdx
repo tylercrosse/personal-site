@@ -25,7 +25,8 @@ import aiModernApproach from "../../../books/ai-modern-approach-4th.jpg";
 import rlSuttonBarto from "../../../books/rl-sutton-barto.jpg";
 import grokkingDeepRL from "../../../books/grokking-deep-rl.jpg";
 
-import mlTaxonomy from "./ml-taxonomy2.png";
+import aiMlDl from "./ai-ml-dl2.png";
+import mlTaxonomy from "./ml-taxonomy3.png";
 import classificationRegression from "./classification-regression-placeholder.png";
 import decisionTree from "./decision-tree-placeholder.png";
 import inductiveBias from "./inductive-bias-placeholder.webp";
@@ -38,7 +39,6 @@ import instanceBased from "./instance-based-placeholder.png";
 import kernelTrick from "./kernel-trick-placeholder.png";
 import pac from "./pac-placeholder2.png";
 import activationFunctions from "./activation-funcs-placeholder.jpg";
-import aiMlDl from "./ai-ml-dl-placeholder.webp";
 import svmMargin from "./svm-margin-placeholder.png";
 import vcDimension from "./vc-dimension-placeholder.png";
 import bayesianInference from "./bayesian-inference-placeholder.jpg";
@@ -52,9 +52,9 @@ import rlModels from "./rl-models-placeholder.png";
 import nash from "./nash-placeholder.png";
 
 
-This article is part personal reflection, part technical summary. I recently completed Georgia Tech's [CS 7641: Machine Learning](https://omscs.gatech.edu/cs-7641-machine-learning), and I wanted to take the time to solidify what I've learned—both for myself, in the spirit of the Feynman technique, and for others who might be curious about the course or about me. This includes future OMSCS students, hiring managers, and peers who want a better sense of what this course covers and what I now know (and don't know yet). The majority of this article is a summary of the course. I've also included a section on the mechanics of the course, my experience and resources at the end.
+This piece serves as both a personal retrospective and a technical overview. I took Georgia Tech's [CS 7641: Machine Learning](https://omscs.gatech.edu/cs-7641-machine-learning) in the Fall 2024 semester. I'm revisiting the material to consolidate my learning—following the Feynman technique of teaching to understand, while also sharing insights for those interested in the course or my background. My audience includes prospective OMSCS students, potential employers, and colleagues seeking to understand the course content and my current knowledge (along with what I still need to learn). The bulk of this article summarizes the course material, with additional sections covering course logistics, my personal experience, and helpful resources.
 
-There's always a tension when writing something like this. I want to be honest about what I've learned and the depth of my understanding, while acknowledging that I'm still learning. This course was challenging and rewarding, and this write-up is my way of digesting the material and sharing it in a format that feels productive.
+Writing this kind of reflection involves balancing honesty about my learning journey and the extent of my understanding with the recognition that I'm still developing expertise. This course proved both demanding and enriching, and this writeup represents my attempt to process the material while presenting it in a way that benefits others.
 
 ## Machine Learning Introduction
 
@@ -64,6 +64,7 @@ Machine learning is often framed as a subfield of artificial intelligence (AI), 
   src={aiMlDl}
   alt="Machine Learning, AI, and Deep Learning"
   caption="Machine Learning, AI, and Deep Learning"
+  width={700}
 />
 
 The course is taught as a dialog between Dr. Michael Littman and Dr. Charles Isbell. It opens with a foundational discussion on the philosophy of machine learning. It's not simply "computational statistics," as Dr. Littman argues. Instead, Dr. Isbell proposes a broader definition:
@@ -83,6 +84,9 @@ This taxonomy provides our roadmap for exploration:
   caption="Machine Learning Taxonomy: The three core pillars that structure our exploration of machine learning"
 />
 
+We'll look at each pillar in turn—starting with supervised learning and its key algorithms, then stepping back for theoretical foundations, before exploring unsupervised learning tools and reinforcement learning. We'll formalize the mathematical notation as we dive into supervised learning, where these concepts become most concrete.
+
+### Mathematical Framing
 Math is the language of machine learning. Feel free to gloss over it if it's off putting, there's still value in building intuition. Defining a few key terms helps to enrich the discussion:
 
 - **Data point ($x$)**: The individual instances of data we want to make predictions about. An instance is typically represented as a vector of features or attributes. The data points are typically a finite sample drawn i.i.d. from some unknown distribution $P(x)$ over the inputs space $\mathcal{X}$  of all possible values of $x$.
@@ -93,17 +97,13 @@ Math is the language of machine learning. Feel free to gloss over it if it's off
   - In **unsupervised learning**, the concept is not a mapping to pre-defined labels, but a function that reveals underlying structure, like a clustering assignment ($f: \mathcal{X} \rightarrow \{c_1, ..., c_k\}$) or a lower-dimensional projection.
   - In **reinforcement learning**, the core concept being learned is a **policy** ($\pi$), which is a function mapping states to actions ($\pi: S \rightarrow A$) to maximize long-term reward.
 * **Target Concept ($f^*$)**: This is the *true*, ideal function that we aim to approximate. It's the perfect, ground-truth mapping that we will never truly know but strive to find.
-
-We'll look at each pillar in turn—starting with supervised learning and its key algorithms, then stepping back for theoretical foundations, before exploring unsupervised learning tools and reinforcement learning. We'll formalize the mathematical notation as we dive into supervised learning, where these concepts become most concrete.
-
-## Supervised Learning
-
-Supervised learning is a cornerstone of machine learning. The goal is to learn from labeled data. To understand how this works, it's helpful to define a few key terms that form the language of supervised learning:
-
-
 * **Hypothesis Class ($H$)**: This is the set of all possible concepts our learning algorithm is allowed to consider. By choosing a type of model (like decision trees or neural networks), we are implicitly defining our hypothesis class.
 * **Candidate Concept**: This is a concept from the hypothesis class that our algorithm believes might be the target concept. The learning process involves evaluating different candidate concepts.
 * **Testing Set**: This is a separate set of labeled instances, unseen during training, that we use to evaluate our final candidate concept. A model's performance on the testing set indicates its ability to **generalize** to new, unseen data, which is the ultimate goal of machine learning. The training and testing sets must be distinct to avoid "cheating."
+
+## Supervised Learning
+
+Supervised learning is a cornerstone of machine learning. The goal is to learn from labeled data.
 
 With these terms in mind, the process is to use a learning algorithm to search through the hypothesis class ($H$) using the training set to find a final candidate concept that is a good approximation of the target concept ($f^*$), as measured by its performance on the testing set.
 
@@ -130,6 +130,8 @@ The two main types of concepts $f$ that can be learned with supervised learning 
 />
 
 The fundamental difference lies in the output: classification models produce unordered, categorical outputs, while regression models produce ordered, continuous outputs. This distinction guides the choice of algorithms, loss functions, and evaluation metrics. A problem like predicting a person's age could be framed as either. If you predict their exact age (e.g., 23.7 years), it's regression. If you predict an age group (e.g., "high school," "college," "grad student"), it's a classification task.
+
+For more details on classification and regression take a look at the lectures<a href="https://www.youtube.com/watch?v=fFkd-zZjFi8&list=PLJ3qxo98eOh9cgbR0zIpx76qYS24CcqdA&index=3" target="_blank"> Classification and Regression</a>.
 
 ### Decision Trees
 
@@ -183,7 +185,8 @@ For example, decision trees assume that the data is split into a tree-like struc
 
 However, this greedy approach can lead to **overfitting**. The tree might grow very large to perfectly classify every training example, including noisy data. Such a tree would fail to generalize to new, unseen data. To combat this, a common technique is **pruning**, where parts of the tree are removed post-training to improve its ability to generalize. Another approach is to set a stopping criterion, such as a maximum tree depth or a minimum number of samples required at a leaf node.
 
-Decision trees excel at interpretable, axis-aligned splits but struggle with functions that trees represent inefficiently—like XOR, which requires an exponential number of nodes. This brings us to neural networks, which can learn non-linear functions that decision trees find challenging.
+Decision trees excel at interpretable, axis-aligned splits but struggle with functions that trees represent inefficiently—like XOR, which requires an exponential number of nodes. This brings us to neural networks, which can learn non-linear functions that decision trees find challenging. For more details checkout the lecture on <a href="https://www.youtube.com/watch?v=OYG5BswK8O4&list=PLJ3qxo98eOh9cgbR0zIpx76qYS24CcqdA&index=2" target="_blank">Decision Trees</a>.
+
 
 ### Neural Networks
 
@@ -232,7 +235,7 @@ This training process also reveals the biases of neural networks. Recall from De
 
 The power of neural networks lies in this combination of a highly expressive representation (low restriction bias) with a training process that prefers simpler solutions (a helpful preference bias).
 
-For more details, see the <a href="https://www.youtube.com/watch?v=1-4c0_gLSSg&list=PLTsf9UeqkReZbK7xqIYn_mXmsQZIb011T&index=2" target="_blank">Neural Networks lecture</a> which covers:
+For more details, see the <a href="https://www.youtube.com/watch?v=du7pM33dGr4&list=PLJ3qxo98eOh9cgbR0zIpx76qYS24CcqdA&index=4" target="_blank">Neural Networks lecture</a> which covers:
 - How to manually set weights and thresholds for a single perceptron to compute logical functions like AND, OR, and NOT.
 - The step-by-step construction of a two-layer network that can solve the non-linearly separable XOR problem.
 - The Perceptron Training Rule for single units and its guarantee of convergence for linearly separable data.
@@ -266,7 +269,7 @@ This simplicity is deceptive, as the real "learning" is encoded in two key desig
 
 The biggest challenge for k-NN, and a foundational problem in machine learning, is the **Curse of Dimensionality**. As you add more features (dimensions) to your data, the volume of the space grows exponentially. To maintain the same density of data points, you need an exponentially larger dataset. In a high-dimensional space, the concept of a "neighborhood" breaks down—every point is far away from every other point. Irrelevant features can easily drown out the signal from the important ones, making the distance metric less meaningful.
 
-For more details, see the <a href="https://www.youtube.com/watch?v=k_t3S8y3V-A&list=PLTsf9UeqkReZbK7xqIYn_mXmsQZIb011T&index=3" target="_blank">Instance-Based Learning lecture</a> which covers:
+For more details, see the <a href="https://www.youtube.com/watch?v=qWBHDkm-Nvk&list=PLJ3qxo98eOh9cgbR0zIpx76qYS24CcqdA&index=5" target="_blank">Instance-Based Learning lecture</a> which covers:
 - A comparison of time and space complexity for "lazy" learners (like k-NN) vs. "eager" learners (like linear regression).
 - The idea of using distance-weighted averaging or voting to give closer neighbors more influence.
 - An example of how different distance metrics (Euclidean vs. Manhattan) can produce wildly different results for the same query.
@@ -295,7 +298,7 @@ The two primary families of ensemble methods, Bagging and Boosting, are differen
 
 Perhaps the most remarkable property of boosting is its surprising resistance to overfitting. With most algorithms, as we continue to train, the model gets better and better on the training data, but at some point, the performance on unseen test data starts to get worse—the classic sign of overfitting. Boosting often defies this. In practice, even as the training error goes to zero, the test error can continue to improve as more weak learners are added. While the full explanation is complex, the intuition is that even after the model correctly classifies all training points, adding more weak learners can increase the *margin* of the classification, making the decision boundary more robust and improving generalization.
 
-For more details, see the <a href="https://www.youtube.com/watch?v=tAio4_2o5k8&list=PLTsf9UeqkReZbK7xqIYn_mXmsQZIb011T&index=4" target="_blank">Ensemble Learning lecture</a> which covers:
+For more details, see the <a href="https://www.youtube.com/watch?v=sNRjufiUqzI&list=PLJ3qxo98eOh9cgbR0zIpx76qYS24CcqdA&index=6" target="_blank">Ensemble Learning lecture</a> which covers:
 - The formal definition of a "weak learner" as a classifier that can always perform slightly better than chance (error < 0.5) on any distribution of data.
 - A visual walkthrough of how boosting combines simple axis-aligned classifiers to create a complex, non-linear decision boundary.
 - The specific formulas used in the AdaBoost algorithm to update the data distribution and calculate the `alpha` weights for each weak learner.
@@ -339,7 +342,7 @@ The kernel function is essentially a pluggable measure of similarity. This allow
 
 By using the kernel trick, SVMs can learn highly complex, non-linear decision boundaries, making them effective for a wide range of problems.
 
-For more details, see the <a href="https://www.youtube.com/watch?v=k_t3S8y3V-A&list=PLTsf9UeqkReZbK7xqIYn_mXmsQZIb011T&index=5" target="_blank">Kernel Methods & SVMs lecture</a> which covers:
+For more details, see the <a href="https://www.youtube.com/watch?v=zBN12pqkRoc&list=PLJ3qxo98eOh9cgbR0zIpx76qYS24CcqdA&index=7" target="_blank">Kernel Methods & SVMs lecture</a> which covers:
 - The derivation of maximizing the margin as an optimization problem.
 - The dual formulation of the SVM problem, which explicitly introduces the kernel function.
 - How support vectors are the data points with non-zero alpha values in the dual solution.
@@ -400,7 +403,7 @@ $$
 
 This theorem is profound. It tells us that as long as a hypothesis class has a finite VC dimension, it is PAC-learnable, regardless of whether it contains an infinite number of hypotheses. The VC dimension captures the true complexity of the model, and a finite VC dimension prevents the model from being *too* powerful and overfitting the data. It's the key that connects the expressive power of a model to its ability to generalize from a finite sample of data.
 
-For more details, see the <a href="https://www.youtube.com/watch?v=sR285k6i_K4&list=PLTsf9UeqkReZbK7xqIYn_mXmsQZIb011T&index=6" target="_blank">Computational Learning Theory</a> and <a href="https://www.youtube.com/watch?v=yBUb5V_S3gc&list=PLTsf9UeqkReZbK7xqIYn_mXmsQZIb011T&index=7" target="_blank">VC Dimension</a> lectures, which cover:
+For more details, see the <a href="https://www.youtube.com/watch?v=vD3-KFaixbE&list=PLJ3qxo98eOh9cgbR0zIpx76qYS24CcqdA&index=8" target="_blank">Computational Learning Theory</a> and <a href="https://www.youtube.com/watch?v=fNvc-xtSz2g&list=PLJ3qxo98eOh9cgbR0zIpx76qYS24CcqdA&index=9" target="_blank">VC Dimension</a> lectures, which cover:
 - Different models of learning based on how training examples are selected (learner queries vs. helpful teacher vs. nature).
 - The mistake bound model of learning.
 - The concept of epsilon-exhausting the version space.
@@ -485,7 +488,7 @@ This leads to the **Bayes Optimal Classifier**. Instead of picking one hypothesi
 This is a powerful idea: finding the best model is just a means to an end. The ultimate goal is to make the best predictions.
 
 
-For more detail, see the lectures on [Bayesian Learning](https://www.youtube.com/watch?v=s_s_1aG7-yY) and [Bayesian Inference](https://www.youtube.com/watch?v=q3d11e2-P7k). The lectures also cover:
+For more detail, see the lectures on <a href="https://www.youtube.com/watch?v=m9mUdJglpzA&list=PLJ3qxo98eOh9cgbR0zIpx76qYS24CcqdA&index=10" target="_blank">Bayesian Learning</a> and <a href="https://www.youtube.com/watch?v=WA-1IrFMMw4&list=PLJ3qxo98eOh9cgbR0zIpx76qYS24CcqdA&index=11" target="_blank">Bayesian Inference</a>. The lectures also cover:
 - The connection to **Version Spaces**, where in noise-free settings, all consistent hypotheses are equally probable.
 - Detailed mathematical derivations for the **Sum of Squared Error** (from Gaussian noise) and **Minimum Description Length** (from information theory).
 - The concept of a **Joint Probability Distribution** and the curse of dimensionality.
@@ -523,7 +526,7 @@ Randomized optimization algorithms are a class of methods used to find good appr
 
 * **MIMIC (Mutual-Information-Maximizing Input Clustering)**: MIMIC is a more "amnesiac" algorithm that, unlike its predecessors, tries to learn from its experience. Instead of just keeping track of the best points found so far, MIMIC builds a probabilistic model of the promising regions of the search space. It explicitly estimates the probability distribution of good solutions, and then samples new points from this model to generate the next generation. By modeling the *structure* of the good parts of the space, it can often find the optimum in far fewer iterations, which is a huge advantage when evaluating the fitness function is expensive (e.g., running a complex simulation or requiring human feedback).
 
-For more details, see the <a href="https://www.youtube.com/watch?v=ZIuXdAOhiEg" target="_blank">Randomized Optimization lecture</a>, which covers:
+For more details, see the <a href="https://www.youtube.com/watch?v=NwMgQvILYyM&list=PLJ3qxo98eOh9cgbR0zIpx76qYS24CcqdA&index=12" target="_blank">Randomized Optimization lecture</a>, which covers:
 - The fundamental trade-off between **exploration** (searching the space) and **exploitation** (using local information to improve).
 - How to define a **neighborhood function** for problems like guessing a bit string.
 - The concept of a **basin of attraction** and how its size affects the performance of random-restart hill climbing.
@@ -551,7 +554,7 @@ The lecture emphasizes that clustering isn't one single, well-defined problem; i
 
 A fascinating result from the theory of clustering is **Kleinberg's Impossibility Theorem**. It proves that no clustering algorithm can simultaneously satisfy three very desirable properties: richness (can produce any possible clustering), scale-invariance (result doesn't change if you switch from miles to kilometers), and consistency (shrinking distances within clusters and expanding them between clusters doesn't change the result). This highlights that there is no single "best" clustering algorithm, and the choice always involves trade-offs.
 
-For more details, see the <a href="https://www.youtube.com/watch?v=esmzYhuFnds" target="_blank">Clustering lecture</a> which covers:
+For more details, see the <a href="https://www.youtube.com/watch?v=qBzfOkG0v1c&list=PLJ3qxo98eOh9cgbR0zIpx76qYS24CcqdA&index=13" target="_blank">Clustering lecture</a> which covers:
 - Different ways to define the distance between clusters in hierarchical clustering, such as average-linkage and complete-linkage.
 - The connection between single-linkage clustering and finding a minimum spanning tree.
 - A proof of why the k-Means algorithm is guaranteed to converge.
@@ -568,6 +571,8 @@ There are three main types of feature selection methods:
 * **Filter Methods**: These methods rank features based on some statistical score (like correlation or mutual information with the target variable) and then select the top-ranked features. They are fast and independent of the chosen learning algorithm.
 * **Wrapper Methods**: These methods use a specific machine learning algorithm to evaluate the quality of different subsets of features. They search for the combination of features that results in the best model performance, but they can be computationally expensive.
 * **Embedded Methods**: These methods perform feature selection as part of the model training process itself. A classic example is L1 regularization (Lasso), which adds a penalty to the model's loss function based on the absolute value of the feature weights, effectively shrinking the weights of less important features to zero.
+
+For more details on feature selection, see the lecture on <a href="https://www.youtube.com/watch?v=kiqPaigK61I&list=PLJ3qxo98eOh9cgbR0zIpx76qYS24CcqdA&index=14" target="_blank">Feature Selection</a>.
 
 Feature selection chooses which existing features to keep, but sometimes we need to go further and create entirely new features that better capture the underlying patterns. This is where feature transformation techniques like PCA and ICA become powerful tools for dimensionality reduction and representation learning.
 
@@ -599,7 +604,7 @@ The lecture uses the example of information retrieval to illustrate the need for
 * **UMAP (Uniform Manifold Approximation and Projection)**: UMAP is another non-linear technique for manifold learning and dimensionality reduction. It is often faster than t-SNE and can better preserve the global structure of the data.
 
 
-For more details, see the lecture on <a href="https://www.youtube.com/watch?v=6QJjZoWknEI" target="_blank">Feature Transformation</a>, which covers:
+For more details, see the lecture on <a href="https://www.youtube.com/watch?v=avrS2xntBHs&list=PLJ3qxo98eOh9cgbR0zIpx76qYS24CcqdA&index=15" target="_blank">Feature Transformation</a>, which covers:
 - The distinction between feature transformation as a linear algebra problem (PCA) vs. a probability/information theory problem (ICA).
 - How PCA finds directions of maximal variance that are mutually orthogonal.
 - How ICA, by assuming non-Gaussian sources, can separate mixed signals where PCA cannot.
@@ -632,6 +637,8 @@ Building on this foundation, we can define other key concepts that are critical 
 * **Mutual Information ($I(X;Y)$):** This measures the *reduction* in uncertainty about Y that comes from knowing X. This should sound familiar: the **Information Gain** we used in our ID3 algorithm is precisely the **Mutual Information** between a feature and the class label. It quantifies how much a feature tells us about the final classification.
 * **Kullback-Leibler (KL) Divergence:** Measures the difference, or "distance," between two probability distributions. It's often used as a loss function in machine learning to measure how well a model's predicted distribution matches the true distribution of the data.
 
+For more details, see the lecture on <a href="https://www.youtube.com/watch?v=wZ3m-ZUUyt4&list=PLJ3qxo98eOh9cgbR0zIpx76qYS24CcqdA&index=16" target="_blank">Information Theory</a>.
+
 ## Reinforcement Learning
 
 The course then transitions to Reinforcement Learning (RL), the third major paradigm of machine learning. Unlike supervised or unsupervised learning, RL is concerned with how an agent can learn to make a sequence of decisions in an environment to maximize a cumulative reward. This section follows the course's structure, starting with the mathematical framework for decision-making, Markov Decision Processes (MDPs). It then delves into core RL algorithms that solve these problems when the environment's dynamics are unknown. Finally, it extends these concepts to scenarios with multiple agents using the principles of Game Theory.
@@ -663,7 +670,7 @@ $U(s) = R(s) + \gamma \max_{a \in A} \sum_{s' \in S} T(s, a, s') U(s')$
 
 This equation tells us that the utility of a state is the immediate reward plus the discounted expected utility of the best action from that state. We can find the optimal utilities, and thus the optimal policy, using algorithms like **Value Iteration** or **Policy Iteration**.
 
-For more details, see the <a href="https://www.youtube.com/watch?v=k_t3S8y3V-A&list=PLTsf9UeqkReZbK7xqIYn_mXmsQZIb011T&index=14" target="_blank">Markov Decision Processes lecture</a> which covers:
+For more details, see the <a href="https://www.youtube.com/watch?v=4eqi8Ost5cQ&list=PLJ3qxo98eOh9cgbR0zIpx76qYS24CcqdA&index=17" target="_blank">Markov Decision Processes lecture</a> which covers:
 - The distinction between plans and policies in deterministic vs. stochastic environments.
 - The difference between immediate rewards and long-term utility.
 - The concepts of finite vs. infinite time horizons and how they affect the optimal policy.
@@ -671,7 +678,7 @@ For more details, see the <a href="https://www.youtube.com/watch?v=k_t3S8y3V-A&l
 - A detailed walkthrough of the Value Iteration and Policy Iteration algorithms.
 - How to turn a non-Markovian problem into a Markovian one by expanding the state definition.
 
-### Reinforcement Learning Lecture
+### Reinforcement Learning
 
 The last section laid out the **planning** problem: if we know the complete model of the world—the transition probabilities $T(s, a, s')$ and the reward function $R(s, a, s')$—we can use algorithms like Value Iteration to find an optimal policy. But what happens when we don't have a model?
 
@@ -701,7 +708,7 @@ Here, $\alpha$ is the learning rate. This update moves the current Q-value for $
 
 A fundamental challenge in RL is the **exploration-exploitation dilemma**: the agent must decide whether to *exploit* its current knowledge to get high rewards or to *explore* new actions to potentially discover even better rewards. A common strategy is **epsilon-greedy**, where the agent chooses the best-known action most of the time but explores a random action with a small probability $\epsilon$.
 
-For more details, see the <a href="https://www.youtube.com/watch?v=k_t3S8y3V-A&list=PLTsf9UeqkReZbK7xqIYn_mXmsQZIb011T&index=15" target="_blank">Reinforcement Learning lecture</a> which covers:
+For more details, see the <a href="https://www.youtube.com/watch?v=G7TpJD5ik_Q&list=PLJ3qxo98eOh9cgbR0zIpx76qYS24CcqdA&index=18" target="_blank">Reinforcement Learning lecture</a> which covers:
 - The API of reinforcement learning and its components (modeler, simulator, planner, learner).
 - A brief history of the term "reinforcement learning" from psychology.
 - The concept of "optimism in the face of uncertainty" as an exploration strategy.
@@ -744,7 +751,7 @@ This leads to the **Folk Theorem**, which states that in a repeated game, any fe
 
 By modeling multi-agent problems as games, we can analyze the dynamics of competition and cooperation and design agents that can learn to behave strategically in the presence of other intelligent agents.
 
-For more details, see the lectures on <a href="https://www.youtube.com/watch?v=k_t3S8y3V-A&list=PLTsf9UeqkReZbK7xqIYn_mXmsQZIb011T&index=16" target="_blank">Game Theory I</a> and <a href="https://www.youtube.com/watch?v=k_t3S8y3V-A&list=PLTsf9UeqkReZbK7xqIYn_mXmsQZIb011T&index=17" target="_blank">Game Theory II</a>, which cover:
+For more details, see the lectures on <a href="https://www.youtube.com/watch?v=gBsiwT5aagI&list=PLJ3qxo98eOh9cgbR0zIpx76qYS24CcqdA&index=19" target="_blank">Game Theory I</a> and <a href="https://www.youtube.com/watch?v=pw4q2dKhdAw&list=PLJ3qxo98eOh9cgbR0zIpx76qYS24CcqdA&index=20" target="_blank">Game Theory II</a>, which cover:
 - The different types of games (zero-sum, non-zero-sum, deterministic, non-deterministic, perfect/hidden information).
 - The distinction between pure and mixed strategies.
 - The concept of a "security level profile" and how it's calculated.
@@ -756,7 +763,7 @@ For more details, see the lectures on <a href="https://www.youtube.com/watch?v=k
 
 ## Course Overview
 
-The projects were a great way to solidify the concepts learned in the course and took up a significant portion of the time I spent on the course.
+The course was taught with a huge focus on the projects. These emphasized the conceptual material presented in the lectures through hands on research and experimentation. They were a great way to solidify the concepts learned in the course and took up a significant portion of the time I spent on the course.
 
 Here are the projects from the course:
 - **Project 1:** Supervised Learning
@@ -768,16 +775,17 @@ I'm planning to write deeper dives on each of the projects.
 
 ### Grading
 
-Here's the grading breakdown from when I took the course in Spring 2024, based on the provided notes:
+Here's the grading breakdown from when I took the course in Fall 2024. There was a pretty generous curve at the end of the semester.
 
-| Component | Weight |
-|-----------|--------|
-| Project 1 | 12.5%  |
-| Project 2 | 12.5%  |
-| Project 3 | 12.5%  |
-| Project 4 | 12.5%  |
-| Midterm Exam | 25%    |
-| Final Exam | 25%    |
+| Component      | Weight | Mean   | Q1      | Median  | Q3      | High    |
+|----------------|--------|--------|---------|---------|---------|---------|
+| Hypothesis Quz | 5%     | 78.60% | 70.00%  | 80.00%  | 90.00%  | 100.00% |
+| Reading Quiz   | 5%     | 97.04% | 100.00% | 100.00% | 100.00% | 100.00% |
+| Project 1      | 15%    | 68.13% | 56.00%  | 73.00%  | 85.00%  | 105.00% |
+| Project 2      | 15%    | 69.26% | 60.00%  | 73.00%  | 83.00%  | 100.00% |
+| Project 3      | 15%    | 72.95% | 65.00%  | 79.00%  | 87.00%  | 105.00% |
+| Project 4      | 15%    | 75.83% | 71.00%  | 81.00%  | 91.00%  | 105.00% |
+| Final          | 30%    | 67.77% | 60.91%  | 70.93%  | 78.89%  | 102.42% |
 
 
 ### Books
@@ -859,13 +867,19 @@ These are some classic books in Machine Learning that complement the course mate
 ### Other Resources
 
 Here are some other posts I found helpful:
-{/* TODO: Add links to other resources */}
 
----
+- [Monzer Saleh's notes](https://monzersaleh.github.io/GeorgiaTech/CS7641_MachineLearning.html)
+- [George Kudrayvtsev's notes](https://teapowered.dev/assets/ml-notes.pdf)
+- [Swyx's posts that cover most of the lectures](https://dev.to/swyx/machine-learning-an-overview-216n)
+- [Yi Xiang's overview of the experience of taking the course](https://lowyx.com/posts/gt-ml/)
+- [Eugene Yan's Review and Tips](https://eugeneyan.com/writing/omscs-cs7641-machine-learning/)
+
 
 ## My Experience
 
-{/* TODO: Add personal experience with the course */}
+I took ML concurrently with High Performance Computer Architecture. I did a good job staying on top of my time and starting on when projects when they were released. This made the workload feel manageable despite the broad scope and open endedness of the course. Something I enjoyed and was also wary of was how easy it is to go deep on any of these topics. This broad survey was just an introduction to this rich and fascinating field. I've continued to dig in!
+
+---
 
 Thanks for reading!
 
