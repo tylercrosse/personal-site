@@ -75,10 +75,12 @@ This perspective—that machine learning is an interdisciplinary effort to creat
 
 Three core pillars of machine learning make up the foundation of the course: supervised learning, unsupervised learning, and reinforcement learning. Each of these pillars is a different way of learning from data. The most common and well-understood is **Supervised learning** which involves learning from labeled data. **Unsupervised learning** is a way to learn from data without labels, and **Reinforcement learning** is a way to learn from data by interacting with an environment.
 
+This taxonomy provides our roadmap for exploration:
+
 <Figure
   src={mlTaxonomy}
   alt="Machine Learning Taxonomy"
-  caption="Machine Learning Taxonomy"
+  caption="Machine Learning Taxonomy: The three core pillars that structure our exploration of machine learning"
 />
 
 Math is the language of machine learning. Feel free to gloss over it if it's off putting, there's still value in building intuition. Defining a few key terms helps to enrich the discussion:
@@ -92,14 +94,12 @@ Math is the language of machine learning. Feel free to gloss over it if it's off
   - In **reinforcement learning**, the core concept being learned is a **policy** ($\pi$), which is a function mapping states to actions ($\pi: S \rightarrow A$) to maximize long-term reward.
 * **Target Concept ($f^*$)**: This is the *true*, ideal function that we aim to approximate. It's the perfect, ground-truth mapping that we will never truly know but strive to find.
 
-
-With these terms in mind, the course is structured around the three core pillars of machine learning: Supervised Learning, Unsupervised Learning, and Reinforcement Learning, which this article will also explore.
+We'll look at each pillar in turn—starting with supervised learning and its key algorithms, then stepping back for theoretical foundations, before exploring unsupervised learning tools and reinforcement learning. We'll formalize the mathematical notation as we dive into supervised learning, where these concepts become most concrete.
 
 ## Supervised Learning
 
 Supervised learning is a cornerstone of machine learning. The goal is to learn from labeled data. To understand how this works, it's helpful to define a few key terms that form the language of supervised learning:
 
-{/* something about y, and the data in supervised learning be {x, y} etc. */}
 
 * **Hypothesis Class ($H$)**: This is the set of all possible concepts our learning algorithm is allowed to consider. By choosing a type of model (like decision trees or neural networks), we are implicitly defining our hypothesis class.
 * **Candidate Concept**: This is a concept from the hypothesis class that our algorithm believes might be the target concept. The learning process involves evaluating different candidate concepts.
@@ -144,24 +144,17 @@ The ID3 loop is as follows:
 4.  Sort the training examples down to the new branches.
 5.  If a branch contains perfectly classified examples, you're done for that path and can add a leaf node. Otherwise, you repeat the process on the remaining examples in that branch.
 
+The tree structure visually captures this recursive splitting process:
+
 <Figure
   src={decisionTree}
   alt="Decision Tree"
   caption="Decision Tree"
 />
 
-The "best" attribute is the one that provides the highest **Information Gain**. This metric measures how much a given attribute reduces uncertainty, or **entropy** ($H$), in the data. Entropy is a measure of randomness or impurity. A dataset with an even split of class labels (e.g., 50% "yes," 50% "no") has high entropy, while a dataset with only one class label (e.g., 100% "yes") has zero entropy. Information gain selects the attribute that leads to the "purest" child nodes—the splits that do the best job of separating the data by their class labels. More formally, the entropy of an attribute $X$ is defined as:
+The "best" attribute is the one that provides the highest **Information Gain**. This metric measures how much a given attribute reduces uncertainty, or **entropy**, in the data. Entropy is a measure of randomness or impurity—think of it as how "mixed up" the classes are. A dataset with an even split of class labels (e.g., 50% "yes," 50% "no") has high entropy, while a dataset with only one class label (e.g., 100% "yes") has zero entropy. Information gain selects the attribute that leads to the "purest" child nodes—the splits that do the best job of separating the data by their class labels.
 
-$$
-H(X) = -\sum_{i=1}^{n} p_i \log_2(p_i)
-$$
-
-- $H(X)$ is the entropy of the attribute $X$.
-- $n$ is the number of classes in the attribute $X$.
-- $p_i$ is the probability of the $i$th class in the attribute $X$.
-- $\log_2$ is the base-2 logarithm, reflecting the bits of information needed to specify the outcome. The base-2 is used because we split between two choices (e.g. binary, yes/no) at each node.
-
-Altogether, the entropy of an attribute $X$ is the sum of the probability of each class $i$ in $X$ multiplied by the logarithm of that probability. ID3 aims to maximize the reduction in this entropy at each step.
+ID3 aims to maximize the reduction in entropy at each step, effectively asking the most informative questions first. We'll revisit entropy with its formal mathematical foundation in the Information Theory section.
 
 {/* Maybe omit this paragraph? I'm not sure it adds much to the discussion. */}
 {/* The power of a decision tree lies in its expressiveness. It can represent any Boolean function. For simple logical functions like AND and OR, the tree is compact. For example, an OR function with inputs A and B can be represented with just a few nodes: if A is true, output true; otherwise, check B. However, the complexity can grow rapidly. For the "any of" function (an n-ary OR function), the tree has a linear number of nodes ($O(n)$) -- one for each option. But for the "if and only if" function a.k.a "parity" (an n-ary XOR function), the number of nodes is exponential ($O(2^n)$). For example, for the inputs A and B: you need to check both A and B at every level, creating branches for all combinations (A=true,B=false → true; A=false,B=true → true; otherwise false). This highlights a key challenge: some concepts are inherently "harder" for decision trees to learn and represent efficiently. If your problem has a parity-like structure, you might need a very deep tree or a different representation altogether. */}
@@ -176,7 +169,7 @@ This example also illustrates how decision trees can handle continuous attribute
 
 Every type of model (hypothesis class) has a different **inductive bias**. This is the set of assumptions the model makes about the data. Inductive bias can be thought of as the model's "prior" knowledge about the data. It comes from the model's design and structure.
 
-**Preference bias** is the model's tendency to favor certain types of solutions (hypotheses) over others within the chosen hypothesis space. **Restriction bias** is the model's tendency to favor solutions that are consistent with the data, limiting the set of possible hypotheses that the algorithm can even consider. Both are forms of inductive bias.
+**Preference bias** is the model's tendency to favor certain types of solutions (hypotheses) over others within the chosen hypothesis space. **Restriction bias** is the model's tendency to favor solutions that are consistent with the data, limiting the set of possible hypotheses that the algorithm can even consider. Both are forms of inductive bias. As we'll see, every algorithm we explore—from neural networks to ensemble methods—has its own unique inductive biases that shape what it can learn.
 
 <Figure
   src={inductiveBias}
@@ -190,9 +183,13 @@ For example, decision trees assume that the data is split into a tree-like struc
 
 However, this greedy approach can lead to **overfitting**. The tree might grow very large to perfectly classify every training example, including noisy data. Such a tree would fail to generalize to new, unseen data. To combat this, a common technique is **pruning**, where parts of the tree are removed post-training to improve its ability to generalize. Another approach is to set a stopping criterion, such as a maximum tree depth or a minimum number of samples required at a leaf node.
 
+Decision trees excel at interpretable, axis-aligned splits but struggle with functions that trees represent inefficiently—like XOR, which requires an exponential number of nodes. This brings us to neural networks, which can learn non-linear functions that decision trees find challenging.
+
 ### Neural Networks
 
 Artificial Neural Networks (ANNs) are models loosely inspired by the structure of the human brain, but as the course amusingly puts it, they are more of a "cartoonish version of the neuron." The fundamental building block is the **perceptron**, a simple computational unit that takes several inputs, multiplies them by weights, sums them up, and fires (outputs a 1) if the sum exceeds a certain threshold, otherwise it outputs a 0.
+
+This diagram illustrates the key limitation that drives the need for networks of perceptrons:
 
 <Figure
   src={ann}
@@ -229,9 +226,9 @@ Why the switch? The "pointy" nature of the threshold function isn't differentiab
 />
 
 
-This training process also reveals the biases of neural networks.
+This training process also reveals the biases of neural networks. Recall from Decision Trees that every algorithm has inductive biases—the assumptions it makes about the data. Neural networks have a very different bias profile:
 * **Restriction Bias**: How much does the model's structure limit the functions it can represent? For ANNs, the restriction bias is very low. With enough layers and nodes, a neural network can approximate *any* continuous function (and with two hidden layers, any arbitrary function). This makes them universal approximators but also puts them at high risk of **overfitting**—modeling the noise in the training data instead of the underlying pattern.
-* **Preference Bias**: What kinds of solutions does the learning algorithm prefer? The algorithm itself provides a bias. Training typically starts with small, random weights. As the network trains via gradient descent, it gradually explores more complex functions. This means the algorithm has a preference for simpler explanations, only adopting more complexity as the data requires it. This is a form of Occam's Razor, and techniques like **early stopping** (using a validation set to stop training before the model overfits) explicitly leverage this property.
+* **Preference Bias**: What kinds of solutions does the learning algorithm prefer? The algorithm itself provides a bias. Training typically starts with small, random weights. As the network trains via gradient descent, it gradually explores more complex functions. This means the algorithm has a preference for simpler explanations, only adopting more complexity as the data requires it. This is a form of Occam's Razor—we return to a formal justification for this principle later in the Bayesian Learning section. Techniques like **early stopping** (using a validation set to stop training before the model overfits) explicitly leverage this property.
 
 The power of neural networks lies in this combination of a highly expressive representation (low restriction bias) with a training process that prefers simpler solutions (a helpful preference bias).
 
@@ -243,10 +240,11 @@ For more details, see the <a href="https://www.youtube.com/watch?v=1-4c0_gLSSg&l
 - The common trick of using a "bias input" to allow the learning algorithm to learn the threshold as just another weight.
 - The problem of getting stuck in local optima during training and advanced optimization techniques to mitigate it, such as momentum.
 
+While neural networks offer powerful function approximation through learned representations, they require significant computation for training and can be complex to interpret. Instance-based learning takes a fundamentally different approach: rather than learning an explicit model, why not simply remember all the training examples and make predictions based on similarity?
 
 ### Instance-based Learning
 
-Instance-based learning flips the script on the typical machine learning paradigm. Most models we've discussed so far are **eager learners**: they take the training data, learn a generalized function or model, and then effectively throw the original data away. When a new query comes in, they use this compact model to make a prediction. Instance-based learners, in contrast, are **lazy learners**. They do almost no work upfront, simply storing the entire training dataset. The real computation happens at query time.
+Instance-based Learning is a fundamentally different approach to machine learning that flips the typical paradigm on its head. Most models we've discussed so far are **eager learners**: they take the training data, learn a generalized function or model, and then effectively throw the original data away. When a new query comes in, they use this compact model to make a prediction. Instance-based learners, in contrast, are **lazy learners**. They do almost no work upfront, simply storing the entire training dataset. The real computation happens at query time.
 
 This approach is best understood through its most famous algorithm: **k-Nearest Neighbors (k-NN)**. Imagine you're trying to predict a house price. Instead of building a complex regression model for the whole city, you just find the 'k' most similar houses (the "neighbors") to the one you're interested in and see what they sold for.
 
@@ -275,6 +273,8 @@ For more details, see the <a href="https://www.youtube.com/watch?v=k_t3S8y3V-A&l
 - How k-NN's bias towards locality and smoothness means it can perform poorly when features have different levels of importance.
 - The concept of **locally weighted regression**, where instead of just averaging neighbors, you fit a model (like a line) to them, allowing a simple local model to represent a complex global function.
 
+While instance-based learning leverages similarity between data points, individual models often have limitations and biases. What if we could combine multiple models to overcome their individual weaknesses? This leads us to ensemble methods, which harness the collective wisdom of multiple algorithms.
+
 ### Ensemble Learning
 
 Ensemble learning is a powerful technique that works by combining multiple individual models—often simple "rules of thumb"—to produce a more accurate and robust prediction than any single model could. The lecture uses the great example of classifying spam email. You could have a simple rule like "the email contains the word 'manly'", and another like "the email is very short". Neither is very accurate on its own, but by combining a large set of these weak indicators, you can build a highly effective classifier.
@@ -300,11 +300,15 @@ For more details, see the <a href="https://www.youtube.com/watch?v=tAio4_2o5k8&l
 - A visual walkthrough of how boosting combines simple axis-aligned classifiers to create a complex, non-linear decision boundary.
 - The specific formulas used in the AdaBoost algorithm to update the data distribution and calculate the `alpha` weights for each weak learner.
 
+Ensemble methods show how combining simple models can create sophisticated decision boundaries. But what if we want a single, elegant model that can also handle complex, non-linear relationships? Support Vector Machines achieve this through a different approach: finding the optimal separating boundary and using mathematical tricks to handle non-linearity.
+
 ### Kernel Methods & Support Vector Machines
 
 Support Vector Machines (SVMs) are a powerful and versatile class of supervised learning models. The lecture explains them beautifully, starting with a simple question: if you have two groups of points that can be separated by a straight line, what is the *best* line?
 
 The answer isn't just any line that separates the data. The best line is the one that shows the "least commitment" to the training data, giving us the best chance to generalize to new data. This line is the one that creates the widest possible "demilitarized zone" or street between the two classes. This zone is called the **margin**, and the goal of an SVM is to find the separating hyperplane that maximizes this margin. The data points that lie on the very edge of this margin—the ones that "support" the hyperplane—are called the **support vectors**. If you move any other point, the line doesn't change. But if you move a support vector, the optimal line will move with it.
+
+This visualization shows how SVMs balance between fitting the data and maximizing generalization:
 
 <Figure
   src={svmMargin}
@@ -317,6 +321,8 @@ This intuition can be formalized into an optimization problem. The goal is to ma
 But what happens when the data isn't linearly separable? Imagine a cluster of positive points surrounded by a ring of negative points. No straight line can separate them. This is where one of the most powerful ideas in machine learning comes into play: the **kernel trick**.
 
 The idea is to project the data into a higher-dimensional space where it *becomes* linearly separable. For the ring example, we could map our 2D data into a 3D space, lifting the points in the center up higher than the points in the ring, allowing us to slice a plane between them. The magic of the kernel trick is that we can achieve this without ever actually paying the computational cost of creating these higher-dimensional representations.
+
+This geometric transformation illustrates the elegance of the kernel approach:
 
 <Figure
   src={kernelTrick}
@@ -339,9 +345,11 @@ For more details, see the <a href="https://www.youtube.com/watch?v=k_t3S8y3V-A&l
 - How support vectors are the data points with non-zero alpha values in the dual solution.
 - How kernels can be defined over non-vector data like strings and graphs.
 
+We've now explored a diverse toolkit of supervised learning algorithms—from interpretable decision trees to powerful neural networks to elegant support vector machines. But a crucial question remains: why do these algorithms work? Before we shift to unsupervised learning and reinforcement learning, let's ground what we've seen in formal learning theory to understand the fundamental principles that govern when and why learning is possible.
+
 ## Theoretical Foundations of Learning
 
-These focus on the theoretical underpinnings that help explain why and when learning is possible, including generalization, capacity, and probabilistic modeling.
+These theoretical frameworks help explain why and when learning is possible, providing rigorous foundations for the algorithms we've explored and the principles that guide effective machine learning.
 
 > [!note]
 > These next four lectures were grouped under Supervised learning when taught. I've used a slightly different taxonomy which clicks better with me.
@@ -382,7 +390,7 @@ To "shatter" a set of points means the hypothesis class can generate *every poss
   caption="A linear separator can shatter any three non-collinear points, but not any set of four points. Therefore, its VC dimension in 2D is 3."
 />
 
-For example, a linear separator in a 2D plane has a VC dimension of 3. You can arrange three points in a triangle, and a line can achieve all 8 possible +/- labelings. However, there is no arrangement of four points that a single line can shatter. Specifically, if you arrange four points in a way that forms a convex hull and assign alternating labels (like an XOR pattern), no single line can separate them.
+For example, a linear separator in a 2D plane has a VC dimension of 3. You can arrange three points in a triangle, and a line can achieve all 8 possible +/- labelings. However, there is no arrangement of four points that a single line can shatter. Specifically, if you arrange four points in a way that forms a convex hull and assign alternating labels (like an XOR pattern), no single line can separate them—this is precisely the limitation that drove us to neural networks when we discussed the XOR problem.
 
 The VC dimension brilliantly replaces the $\ln|H|$ term in our sample complexity bound:
 
@@ -398,6 +406,8 @@ For more details, see the <a href="https://www.youtube.com/watch?v=sR285k6i_K4&l
 - The concept of epsilon-exhausting the version space.
 - How to prove the VC dimension for different hypothesis classes like intervals and polygons.
 - The relationship between VC dimension and the number of parameters in a model.
+
+VC dimension tells us *when* learning is possible by measuring model complexity. But it doesn't tell us *how* to choose between competing hypotheses that all fit the data. This brings us to Bayesian learning, which provides a principled framework for reasoning about uncertainty and choosing the most probable hypothesis.
 
 ### Bayesian Learning + Inference
 
@@ -484,13 +494,15 @@ For more detail, see the lectures on [Bayesian Learning](https://www.youtube.com
 - The **Naive Bayes Classifier**, including its strong ("naive") independence assumption and its practical effectiveness.
 - The need for **smoothing** (like Laplace smoothing) to handle zero-frequency problems in Naive Bayes.
 
+With these theoretical foundations in place—understanding when learning is possible, how much data we need, and how to reason about uncertainty—we can now turn to the second pillar of machine learning: learning from data without labels.
+
 ## Unsupervised Learning
 
 Unlike supervised learning, which relies on labeled data to learn a mapping from inputs to outputs, unsupervised learning ventures into the messier, more common world of unlabeled data. The goal shifts from prediction to discovery. Instead of approximating a known function, the aim is to perform "data description"—to find the inherent structure, patterns, and more compact representations hidden within the data itself. This makes it less of a single, crisply-defined problem and more a diverse set of tools for understanding data, including the topics we'll explore next: randomized optimization, clustering, and feature transformation.
 
 ### Randomized Optimization
 
-Randomized optimization algorithms are a class of methods used to find good approximate solutions to complex optimization problems, especially when the search space is vast or the objective function is "unfriendly"—meaning it's not smooth, continuous, or easily differentiable. The core idea is to introduce randomness into the search process to escape local optima and explore the solution space more effectively. As the lecture puts it, they are essential when you can't just use calculus to find the peak. They are often used in machine learning to tune the weights of a neural network, as an alternative to backpropagation.
+Randomized optimization algorithms are a class of methods used to find good approximate solutions to complex optimization problems, especially when the search space is vast or the objective function is "unfriendly"—meaning it's not smooth, continuous, or easily differentiable. The core idea is to introduce randomness into the search process to escape local optima and explore the solution space more effectively. As the lecture puts it, they are essential when you can't just use calculus to find the peak. They are often used in machine learning to tune the weights of a neural network, as an alternative to backpropagation—recall from our Neural Networks discussion how gradient descent can get stuck in local optima.
 
 * **Randomized Hill Climbing (RHC)**: This is the simplest algorithm, akin to a mountain climber in a thick fog who can only feel the ground immediately around them. It starts with a random solution and at each step, generates a random neighbor. If the neighbor is higher up the "hill" (i.e., has a better fitness score), the climber moves there. This process continues until no better neighbor can be found. The main drawback is that it can easily get stuck on a small hill (a local optimum), missing the highest peak (the global optimum). A common enhancement is **random-restart hill climbing**, where if the climber gets stuck, they are helicoptered to a new random spot on the mountain to start climbing again.
 * **Simulated Annealing (SA)**: SA improves on hill climbing by giving the climber the ability to occasionally take a step downhill. This helps it escape local optima and cross valleys to find bigger hills. The probability of accepting a worse solution is controlled by a "temperature" parameter. Initially, the temperature is high, and the climber is very energetic, willing to jump around and explore wildly. As the temperature gradually "cools," the climber becomes less likely to take downward steps, eventually settling into a final, hopefully optimal, position. This process is inspired by the metallurgical process of annealing, where a blacksmith heats and slowly cools a sword to allow its molecules to settle into a strong, low-energy crystal structure.
@@ -519,6 +531,8 @@ For more details, see the <a href="https://www.youtube.com/watch?v=ZIuXdAOhiEg" 
 - Different types of **crossover** operators in Genetic Algorithms, such as one-point and uniform crossover.
 - How MIMIC turns the optimization problem into a problem of finding a **maximum spanning tree** to model feature dependencies.
 
+Randomized optimization helps us find good solutions when the search space is complex. But sometimes we need to understand the data itself rather than optimize a function. This brings us to clustering, which seeks to discover the natural groupings hidden within our data.
+
 ### Clustering
 
 Clustering is a fundamental task in unsupervised learning where the goal is to group a set of objects in such a way that objects in the same group (or **cluster**) are more similar to each other than to those in other groups. Unlike supervised learning, there are no predefined labels. The algorithm must discover the inherent structure in the data on its own.
@@ -544,6 +558,8 @@ For more details, see the <a href="https://www.youtube.com/watch?v=esmzYhuFnds" 
 - The use of hidden variables in the Expectation-Maximization (EM) algorithm.
 - How EM can be seen as a "soft" version of k-Means.
 
+Clustering groups data points by similarity, but what if our data has too many dimensions or contains irrelevant noise? This is where feature selection and transformation become essential—helping us identify and work with the most meaningful aspects of our data.
+
 ### Feature Selection
 
 Feature selection is the process of selecting a subset of relevant features (variables, predictors) for use in model construction. The goal is to improve model performance by removing irrelevant or redundant features, which can reduce overfitting, improve accuracy, and reduce training time.
@@ -552,6 +568,8 @@ There are three main types of feature selection methods:
 * **Filter Methods**: These methods rank features based on some statistical score (like correlation or mutual information with the target variable) and then select the top-ranked features. They are fast and independent of the chosen learning algorithm.
 * **Wrapper Methods**: These methods use a specific machine learning algorithm to evaluate the quality of different subsets of features. They search for the combination of features that results in the best model performance, but they can be computationally expensive.
 * **Embedded Methods**: These methods perform feature selection as part of the model training process itself. A classic example is L1 regularization (Lasso), which adds a penalty to the model's loss function based on the absolute value of the feature weights, effectively shrinking the weights of less important features to zero.
+
+Feature selection chooses which existing features to keep, but sometimes we need to go further and create entirely new features that better capture the underlying patterns. This is where feature transformation techniques like PCA and ICA become powerful tools for dimensionality reduction and representation learning.
 
 ### Feature Transformation
 
@@ -591,9 +609,23 @@ For more details, see the lecture on <a href="https://www.youtube.com/watch?v=6Q
 
 Information theory is a mathematical framework for quantifying information, originally developed by Claude Shannon at Bell Labs to solve a very practical problem: how to charge for sending a message. The key insight was that a message's value isn't its length, but the amount of "surprise" or uncertainty it resolves.
 
-In our discussion of Decision Trees, we introduced the concepts of **entropy** and **information gain** as the tools for selecting the best attribute at each split. Information theory provides the formal mathematical foundation for these ideas. It was originally developed by Claude Shannon at Bell Labs to solve a very practical problem: how to charge for sending a message. The key insight was that a message's value isn't its length, but the amount of "surprise" or uncertainty it resolves.
+In our discussion of Decision Trees, we introduced the concepts of **entropy** and **information gain** as intuitive tools for selecting the best attribute at each split. Information theory provides the formal mathematical foundation for these ideas.
 
-This idea of uncertainty is formalized by the concept of **entropy**. As we saw with decision trees, entropy $H$ measures the average number of bits required to represent an event from a probability distribution, calculated using the formula we've already seen $H(X) = -\sum_{i=1}^{n} p_i \log_2(p_i)$. A fair coin flip has an entropy of 1 bit, while a biased coin has an entropy of 0. This concept is the heart of **variable-length encoding**, like Morse code, where more frequent letters (like 'E' and 'T') are given shorter codes to make messages more efficient.
+Recall from Decision Trees that entropy measures how "mixed up" or impure a dataset is. Now we can formalize this: **entropy** $H$ measures the average number of bits required to represent an event from a probability distribution, calculated as:
+
+$$
+H(X) = -\sum_{i=1}^{n} p_i \log_2(p_i)
+$$
+
+Where
+- $H(X)$ is the entropy of the attribute $X$.
+- $n$ is the number of classes in the attribute $X$.
+- $p_i$ is the probability of the $i$th class in the attribute $X$.
+- $\log_2$ is the base-2 logarithm, reflecting the bits of information needed 
+to specify the outcome. The base-2 is used because we split between two choices 
+(e.g. binary, yes/no) at each node.
+
+A fair coin flip has an entropy of 1 bit, while a biased coin has entropy closer to 0. This concept is the heart of **variable-length encoding**, like Morse code, where more frequent letters (like 'E' and 'T') are given shorter codes to make messages more efficient.
 
 Building on this foundation, we can define other key concepts that are critical in machine learning:
 * **Conditional Entropy ($H(Y|X)$):** Measures the remaining uncertainty about variable Y *after* you know variable X. For example, the uncertainty about whether you'll hear thunder ($Y$) is much lower if you already know it's raining ($X$).
@@ -601,9 +633,10 @@ Building on this foundation, we can define other key concepts that are critical 
 * **Kullback-Leibler (KL) Divergence:** Measures the difference, or "distance," between two probability distributions. It's often used as a loss function in machine learning to measure how well a model's predicted distribution matches the true distribution of the data.
 
 ## Reinforcement Learning
-{/* TODO: Add content for Reinforcement Learning */}
 
-### Markov Decision Processes
+The course then transitions to Reinforcement Learning (RL), the third major paradigm of machine learning. Unlike supervised or unsupervised learning, RL is concerned with how an agent can learn to make a sequence of decisions in an environment to maximize a cumulative reward. This section follows the course's structure, starting with the mathematical framework for decision-making, Markov Decision Processes (MDPs). It then delves into core RL algorithms that solve these problems when the environment's dynamics are unknown. Finally, it extends these concepts to scenarios with multiple agents using the principles of Game Theory.
+
+### Markov Decision Processes (MDPs)
 
 A Markov Decision Process (MDP) is a mathematical framework for modeling decision-making in situations where outcomes are partly random and partly under the control of a decision-maker. It is the formal foundation for reinforcement learning. The lecture introduces this concept using an intuitive **Grid World** example: imagine an agent on a grid, trying to reach a goal with a positive reward (+1) while avoiding a pitfall with a negative reward (-1).
 
@@ -619,7 +652,7 @@ An MDP is defined by a few key components:
 * A **transition model** $T(s, a, s')$: The probability of transitioning from state $s$ to state $s'$ after taking action $a$. This is where uncertainty comes in. An action might not always succeed; for example, trying to move "up" might only work 80% of the time, with a 10% chance of moving left and a 10% chance of moving right instead.
 * A **reward function** $R(s, a, s')$: The immediate reward received after a transition. In the grid world, this is mostly a small negative value (e.g., -0.04) for each step, encouraging efficiency, with a large positive or negative reward at the terminal states.
 
-The agent's behavior is governed by a **policy** $\pi(s)$, which is a mapping from states to actions. Unlike a fixed plan (e.g., "up, up, right, right"), a policy tells the agent what to do in any state it finds itself in, making it robust to the stochastic nature of the world.
+The agent's behavior is governed by a **policy** $\pi(s)$, which is a mapping from states to actions. Recall from our initial definitions that a policy ($\pi: S \rightarrow A$) is the core concept learned in reinforcement learning. Unlike a fixed plan (e.g., "up, up, right, right"), a policy tells the agent what to do in any state it finds itself in, making it robust to the stochastic nature of the world.
 
 The core assumption of an MDP is the **Markov Property**: the next state and reward depend only on the current state and action, not on the entire history of how the agent got there.
 
@@ -675,6 +708,7 @@ For more details, see the <a href="https://www.youtube.com/watch?v=k_t3S8y3V-A&l
 - How TD Gammon, a famous backgammon-playing program, used a simulator and a learner.
 - The conditions for Q-learning convergence (Greedy in the Limit with Infinite Exploration - GLIE). 
 
+So far we've focused on single agents learning in isolation. But what happens when multiple intelligent agents interact in the same environment, each pursuing their own goals? This is where game theory provides the mathematical framework for understanding strategic interaction and multi-agent learning.
 
 ### Game Theory
 
