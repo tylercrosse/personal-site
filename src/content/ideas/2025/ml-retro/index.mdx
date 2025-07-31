@@ -25,14 +25,14 @@ import aiModernApproach from "../../../books/ai-modern-approach-4th.jpg";
 import rlSuttonBarto from "../../../books/rl-sutton-barto.jpg";
 import grokkingDeepRL from "../../../books/grokking-deep-rl.jpg";
 
-import aiMlDl from "./ai-ml-dl2.png";
+import aiMlDl from "./ai-ml-dl4.png";
 import mlTaxonomy from "./ml-taxonomy3.png";
-import classificationRegression from "./classification-regression-placeholder.png";
-import decisionTree from "./decision-tree-placeholder.png";
-import inductiveBias from "./inductive-bias-placeholder.webp";
-import ann from "./ann-placeholder.webp";
+import classificationRegression from "./classification-regression2.png";
+import decisionTree from "./decision-tree2.png";
+import inductiveBias from "./inductive-bias.png";
+import ann from "./ann.png";
 import nnWeights from "./nn-weights-placeholder.jpg";
-import xorSeparability from "./xor-separability-placeholder.png";
+import xorSeparability from "./xor-separability.png";
 import gradDescent from "./grad-descent-placeholder.jpg";
 import baggingBoosting from "./bagging-boosting-placeholder.jpg";
 import instanceBased from "./instance-based-placeholder.png";
@@ -64,7 +64,6 @@ Machine learning is often framed as a subfield of artificial intelligence (AI), 
   src={aiMlDl}
   alt="Machine Learning, AI, and Deep Learning"
   caption="Machine Learning, AI, and Deep Learning"
-  width={700}
 />
 
 The course is taught as a dialog between Dr. Michael Littman and Dr. Charles Isbell. It opens with a foundational discussion on the philosophy of machine learning. It's not simply "computational statistics," as Dr. Littman argues. Instead, Dr. Isbell proposes a broader definition:
@@ -127,6 +126,7 @@ The two main types of concepts $f$ that can be learned with supervised learning 
   src={classificationRegression}
   alt="Classification and Regression"
   caption="Classification and Regression"
+  width={600}
 />
 
 The fundamental difference lies in the output: classification models produce unordered, categorical outputs, while regression models produce ordered, continuous outputs. This distinction guides the choice of algorithms, loss functions, and evaluation metrics. A problem like predicting a person's age could be framed as either. If you predict their exact age (e.g., 23.7 years), it's regression. If you predict an age group (e.g., "high school," "college," "grad student"), it's a classification task.
@@ -177,6 +177,7 @@ Every type of model (hypothesis class) has a different **inductive bias**. This 
   src={inductiveBias}
   alt="Inductive Bias"
   caption="Inductive Bias"
+  width={600}
 />
 
 For example, decision trees assume that the data is split into a tree-like structure. This is a form of restriction bias. The greedy nature of ID3 gives it a specific preference bias for:
@@ -192,17 +193,17 @@ Decision trees excel at interpretable, axis-aligned splits but struggle with fun
 
 Artificial Neural Networks (ANNs) are models loosely inspired by the structure of the human brain, but as the course amusingly puts it, they are more of a "cartoonish version of the neuron." The fundamental building block is the **perceptron**, a simple computational unit that takes several inputs, multiplies them by weights, sums them up, and fires (outputs a 1) if the sum exceeds a certain threshold, otherwise it outputs a 0.
 
-This diagram illustrates the key limitation that drives the need for networks of perceptrons:
-
 <Figure
   src={ann}
   alt="Artificial Neural Network"
-  caption="A single perceptron on the left, which can't solve XOR. A network of perceptrons on the right, which can."
+  caption="Left: an illustration of a neuron cell. Right: an artificial neuron."
 />
 
 Modern neural networks build on this idea but replace the simple, sharp threshold of the perceptron with a smooth, differentiable **activation function** like the Sigmoid, Tanh, or ReLU.
 
 The shift from the simple threshold values to using activation functions took is uderpinned by the idea of **linear separability**. A single perceptron can act as a linear separator; for a 2D input space, it can draw a single straight line to divide the space into two halves. This is powerful enough to represent simple logical functions like AND, OR, and NOT, which are all linearly separable. However, a single perceptron fundamentally cannot solve problems that are *not* linearly separable. The classic example is the XOR function—there is no single straight line you can draw to separate the true cases from the false cases.
+
+This diagram illustrates the key limitation that drives the need for networks of perceptrons:
 
 <Figure
   src={xorSeparability}
@@ -359,11 +360,11 @@ These theoretical frameworks help explain why and when learning is possible, pro
 
 ### Computational Learning Theory
 
-Computational Learning Theory (COLT) provides the formal tools to answer fundamental questions about learning. It's not just about building models that work; it's about understanding *why* they work and when we can be confident in their predictions. The theory helps us define what a learning problem is, show that certain algorithms can solve it, and even prove that some problems are fundamentally hard.
+Computational Learning Theory (CoLT) provides the formal tools to answer fundamental questions about learning. It's not just about building models that work; it's about understanding *why* they work and when we can be confident in their predictions. The theory helps us define what a learning problem is, show that certain algorithms can solve it, and even prove that some problems are fundamentally hard.
 
-The key resource in machine learning is **data**. COLT helps us quantify how much data we need to learn effectively. This is called **sample complexity**. The goal is to learn a concept that is **Probably Approximately Correct (PAC)**. This framing acknowledges two realities:
-1.  **Approximately Correct**: We can't expect our learned model to be perfect. There will always be some error. The goal is to ensure the **true error** (the error on the underlying data distribution) is less than some small value, $\epsilon$.
-2.  **Probably**: We can never be 100% certain. There's always a chance we got a misleading set of training examples. The goal is to be at least $1 - \delta$ confident that our learned model has an error less than $\epsilon$.
+The key resource in machine learning is **data**. CoLT helps us quantify how much data we need to learn effectively. This is called **sample complexity**. The goal is to learn a concept that is **Probably Approximately Correct (PAC)**. This framing acknowledges two realities:
+1.  **Approximately Correct**: We can't expect our learned model to be perfect. There will always be some error. The goal is to ensure the **true error** (the error on the underlying data distribution) is less than some small value, $\epsilon$ (pronounced "epsilon").
+2.  **Probably**: We can never be 100% certain. There's always a chance we got a misleading set of training examples. The goal is to be at least $1 - \delta$ (pronounced "delta") confident that our learned model has an error less than $\epsilon$.
 
 A key concept for understanding PAC learning is the **version space**. The version space is the set of all hypotheses in our hypothesis class that are consistent with the training data. The learning process is essentially a search for a good hypothesis within this space.
 
@@ -373,11 +374,34 @@ A key concept for understanding PAC learning is the **version space**. The versi
   caption="PAC learning provides a theoretical framework for understanding when a machine learning model is likely to generalize well to new data."
 />
 
-A central result from COLT, Haussler's Theorem, gives us a concrete bound on the number of samples ($m$) needed to guarantee PAC-learnability for a finite hypothesis space ($H$):
+#### Making It Concrete: What Do $\epsilon$ and $\delta$ Actually Mean?
+
+Before diving into the mathematical bounds, let's make these parameters concrete. Imagine you're building a spam email classifier:
+
+- **$\epsilon$ (error tolerance)**: You might set $\epsilon = 0.05$, meaning you want your classifier to have at most 5% error on new emails. This is your accuracy requirement.
+- **$\delta$ (confidence)**: You might set $\delta = 0.1$, meaning you want to be 90% confident (1 - 0.1 = 0.9) that your classifier will indeed achieve this 5% error bound. This accounts for the possibility that you got unlucky with your training data.
+
+The question CoLT answers is: **How many training emails do you need to achieve 5% error with 90% confidence?**
+
+#### Sample Complexity Bounds
+
+A central result from CoLT, Haussler's Theorem, gives us a concrete bound on the number of samples ($m$) needed to guarantee PAC-learnability for a finite hypothesis space ($H$):
 
 $$
 m \ge \frac{1}{\epsilon} \left( \ln|H| + \ln\frac{1}{\delta} \right)
 $$
+
+**Example**: Let's return to our spam classifier. Suppose you're using a simple decision tree that can ask 10 binary questions about an email (e.g., "Does it contain 'FREE!'?", "Is the sender address suspicious?"). Your hypothesis space has at most $2^{2^{10}} \approx 10^{308}$ possible trees. With $\epsilon = 0.05$ and $\delta = 0.1$:
+
+$$
+\begin{aligned}
+m &\ge \frac{1}{0.05} \left( \ln(10^{308}) + \ln(10) \right) \\
+&\approx 20 \left( 708.4 + 2.3 \right) \\
+&\approx 14,214 \text{ training emails}
+\end{aligned}
+$$
+
+This calculation shows you need at least 14,214 training examples to be 90% confident your classifier will have at most 5% error on new emails.
 
 This is a powerful result. It tells us that the number of examples we need only grows linearly with $1/\epsilon$ and logarithmically with the size of our hypothesis space and $1/\delta$. However, it raises a critical question: what happens when our hypothesis space is infinite, as is the case for linear separators, neural networks, or decision trees with continuous features?
 
@@ -390,16 +414,30 @@ To "shatter" a set of points means the hypothesis class can generate *every poss
 <Figure
   src={vcDimension}
   alt="VC Dimension of a linear separator"
-  caption="A linear separator can shatter any three non-collinear points, but not any set of four points. Therefore, its VC dimension in 2D is 3."
+  caption="A linear separator can shatter all sets of three non-collinear points, but not all sets of four points. Therefore, its VC dimension in 2D is 3."
 />
 
 For example, a linear separator in a 2D plane has a VC dimension of 3. You can arrange three points in a triangle, and a line can achieve all 8 possible +/- labelings. However, there is no arrangement of four points that a single line can shatter. Specifically, if you arrange four points in a way that forms a convex hull and assign alternating labels (like an XOR pattern), no single line can separate them—this is precisely the limitation that drove us to neural networks when we discussed the XOR problem.
 
-The VC dimension brilliantly replaces the $\ln|H|$ term in our sample complexity bound:
+#### VC Dimension and Sample Complexity
+
+The insight of VC dimension is that it provides a finite measure of complexity even for infinite hypothesis classes. The VC dimension cleverly replaces the $\ln|H|$ term in our sample complexity bound, giving us a practical way to compute how much data we need:
 
 $$
 m \ge \frac{1}{\epsilon} \left( 8 \cdot \text{VC}(H) \log_2\frac{13}{\epsilon} + 4 \log_2\frac{2}{\delta} \right)
 $$
+
+**Example**: Consider using a linear classifier for our spam detection problem. Since we're working with, say, 100 email features (word counts, sender patterns, etc.), our linear separator in 100D space has VC dimension = 101. Using the same $\epsilon = 0.05$ and $\delta = 0.1$:
+
+$$
+\begin{aligned}
+m &\ge \frac{1}{0.05} \left( 8 \cdot 101 \cdot \log_2\frac{13}{0.05} + 4 \cdot \log_2\frac{2}{0.1} \right) \\
+&\approx 20 \left( 808 \cdot 8.02 + 4 \cdot 4.32 \right) \\
+&\approx 129,940 \text{ emails}
+\end{aligned}
+$$
+
+Interestingly, this requires far more data than our finite decision tree example! This illustrates an important principle: **higher VC dimension means greater model complexity, which requires more data to learn reliably**.
 
 This theorem is profound. It tells us that as long as a hypothesis class has a finite VC dimension, it is PAC-learnable, regardless of whether it contains an infinite number of hypotheses. The VC dimension captures the true complexity of the model, and a finite VC dimension prevents the model from being *too* powerful and overfitting the data. It's the key that connects the expressive power of a model to its ability to generalize from a finite sample of data.
 
@@ -522,6 +560,7 @@ Randomized optimization algorithms are a class of methods used to find good appr
   src={geneticAlg}
   alt="Genetic Algorithm"
   caption="Genetic Algorithms evolve a population of solutions through selection, crossover, and mutation."
+  width={500}
 />
 
 * **MIMIC (Mutual-Information-Maximizing Input Clustering)**: MIMIC is a more "amnesiac" algorithm that, unlike its predecessors, tries to learn from its experience. Instead of just keeping track of the best points found so far, MIMIC builds a probabilistic model of the promising regions of the search space. It explicitly estimates the probability distribution of good solutions, and then samples new points from this model to generate the next generation. By modeling the *structure* of the good parts of the space, it can often find the optimum in far fewer iterations, which is a huge advantage when evaluating the fitness function is expensive (e.g., running a complex simulation or requiring human feedback).
@@ -678,7 +717,7 @@ For more details, see the <a href="https://www.youtube.com/watch?v=4eqi8Ost5cQ&l
 - A detailed walkthrough of the Value Iteration and Policy Iteration algorithms.
 - How to turn a non-Markovian problem into a Markovian one by expanding the state definition.
 
-### Reinforcement Learning
+### Reinforcement Learning Lecture
 
 The last section laid out the **planning** problem: if we know the complete model of the world—the transition probabilities $T(s, a, s')$ and the reward function $R(s, a, s')$—we can use algorithms like Value Iteration to find an optimal policy. But what happens when we don't have a model?
 
