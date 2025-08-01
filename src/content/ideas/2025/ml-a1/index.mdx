@@ -23,7 +23,13 @@ import islrImg from "../../../books/intro-to-statistical-learning.jpg";
 import handsOnMlImg from "../../../books/hands-on-ml.jpg";
 
 import mlProcess from './ml-process2.png';
-import comparativeAnalysisImg from "./comparative-analysis-of-supervised-learning-algori.png";
+import biasVariance from './bias-variance-placeholder2.png';
+import complexity from './complexity-placeholder.png';
+import dimensionality from './dimensionality-placeholder.webp';
+import eda from './eda-placeholder.jpg';
+import freeLunch from './free-lunch-placeholder.jpg';
+import testTrainSplit from './test-train-split-placeholder.jpg'
+
 
 ## Introduction: The Machine Learning Challenge
 
@@ -92,6 +98,12 @@ Non-parametric models make fewer assumptions about the underlying relationship. 
 
 Here's a fundamental truth: **there is no single algorithm that works best for all problems**. This isn't a limitation of current technology—it's a mathematical certainty known as the "No Free Lunch" theorem. The choice of algorithm depends entirely on your data characteristics, computational constraints, and tolerance for different types of errors.
 
+<Figure
+  src={freeLunch}
+  alt="The No Free Lunch Theorem"
+  caption="The No Free Lunch Theorem"
+/>
+
 This is why framing your problem correctly matters. Understanding whether you expect linear or non-linear relationships, whether you have abundant or scarce data, and what types of errors are most costly will guide your algorithm selection.
 
 ## Step 2: Get the Data - The Foundation of Everything
@@ -111,6 +123,12 @@ This process is iterative and often reveals surprises. A column that seemed impo
 ### The Curse of Dimensionality: A Critical Data Characteristic
 
 One of the most counterintuitive discoveries in machine learning is that **more features can actually make your problem harder, not easier**. This phenomenon is known as the **Curse of Dimensionality**, and recognizing it early in your data acquisition phase is crucial.
+
+<Figure
+  src={dimensionality}
+  alt="The Curse of Dimensionality"
+  caption="The Curse of Dimensionality"
+/>
 
 In low-dimensional space, our intuitions about distance and similarity work well. In 2D, we can easily visualize clusters and boundaries. But as we add more dimensions, strange things happen:
 
@@ -162,6 +180,12 @@ EDA isn't just about understanding your data—it's about forming hypotheses abo
 
 EDA is iterative. Initial visualizations often raise new questions, leading to deeper analysis. You might discover that what looked like a single problem is actually several sub-problems, or that features you thought were independent are actually measuring the same underlying phenomenon.
 
+<Figure
+  src={eda}
+  alt="Exploratory Data Analysis"
+  caption="Exploratory Data Analysis"
+/>
+
 This detective work pays dividends later. The insights you gain here will guide your feature engineering, algorithm selection, and evaluation strategy. It's much better to discover data quirks now than after you've spent hours training models that can't possibly work with your data structure.
 
 ## Step 4: Prepare the Data - Setting Up for Success
@@ -185,6 +209,12 @@ One of the most important decisions is how to split your data:
 2. **Validation set (15-20%):** Used to tune hyperparameters and compare models
 3. **Test set (15-20%):** Used only for final performance evaluation
 
+<Figure
+  src={testTrainSplit}
+  alt="The Test/Train/Validation Split"
+  caption="The Test/Train/Validation Split"
+/>
+
 **Critical principle:** Your test set should remain completely untouched until you've made all your modeling decisions. It represents unseen data and gives you an honest estimate of how your model will perform in the real world.
 
 ### Handling Data Imbalances
@@ -200,6 +230,12 @@ The approach you choose will depend on your specific problem and computational c
 ## Step 5: Explore Models - The Algorithm Showcase
 
 With your data prepared and your problem well-understood, it's time to experiment with different algorithms. This is where the theoretical knowledge from Step 1 meets the practical insights from your data exploration.
+
+<Figure
+  src={complexity}
+  alt="Model Complexity"
+  caption="Model Complexity"
+/>
 
 ### Neural Networks: Universal Function Approximators
 
@@ -240,12 +276,6 @@ With your data prepared and your problem well-understood, it's time to experimen
 ### The Experimental Mindset
 
 The key to this step is systematic experimentation. Start with simple baselines (like logistic regression) to establish a performance floor. Then try each algorithm with default parameters before diving into hyperparameter tuning. This helps you understand which algorithms are fundamentally suited to your problem before investing time in optimization.
-
-<Figure
-  src={comparativeAnalysisImg}
-  alt="Comparative analysis chart showing different supervised learning algorithms"
-  caption="A comparative analysis of supervised learning algorithms across different datasets reveals the importance of matching algorithm characteristics to problem requirements."
-/>
 
 ## Step 6: Evaluate and Fine-tune - Measuring What Matters
 
@@ -327,6 +357,12 @@ Cross-validation can simulate this by using different folds for training and val
 ### The Diagnostic Power of Bias-Variance Analysis
 
 Understanding why your models aren't performing as expected is crucial for improvement. The **bias-variance trade-off** provides a powerful diagnostic framework.
+
+<Figure
+  src={biasVariance}
+  alt="Bias-Variance Tradeoff"
+  caption="Bias-Variance Tradeoff"
+/>
 
 Every machine learning model's total error can be decomposed into three components:
 
