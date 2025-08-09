@@ -16,9 +16,10 @@ import { Image } from "astro:assets";
   <section class="intro slide-in-block">
     <h1>Hi, I'm Tyler 👋</h1>
     <p class="lead">
-      I'm a software engineer turned graduate student, currently pursuing my
-      passion for understanding how computers work — from the silicon to
-      systems.
+      I'm a software engineer turned graduate student, currently an MSCS student
+      at Georgia Tech focusing on <strong>AI safety</strong> and
+      <strong>mechanistic interpretability</strong>. I care about building
+      steerable, reliable AI systems—and the engineering that makes them real.
     </p>
   </section>
 
@@ -26,20 +27,24 @@ import { Image } from "astro:assets";
     <h2>My Journey</h2>
     <p>
       My path to computer science has been anything but conventional. I started
-      with a degree in <strong>Biomedical Engineering</strong> from VCU, thinking
-      I'd build medical devices. Instead, I found myself drawn to the software side—building
-      web applications, distributed systems, and eventually leading engineering teams.
+      with a degree in <strong>Biomedical Engineering</strong> (VCU), planning to
+      build medical devices. I was quickly drawn to software—shipping production
+      systems, leading engineering teams, and learning how to make complex systems
+      robust and maintainable.
     </p>
     <p>
-      After nearly a decade in industry, <a
+      After nearly a decade in industry, breakthroughs like
+      <a
         href="https://en.wikipedia.org/wiki/AlphaFold"
         target="_blank"
-        rel="noopener noreferrer">AlphaFold's breakthrough in 2018</a
-      >
-      crystallized something for me: machine learning wasn't just another tool—it
-      was going to revolutionize science in ways I hadn't imagined. That realization
-      sent me back to school to build the foundational knowledge I needed to be part
-      of that revolution.
+        rel="noopener noreferrer">AlphaFold</a
+      > and the rapid scaling of language models crystallized something for me: machine
+      learning wasn't just another tool—it was going to revolutionize science in
+      ways I hadn't imagined. That pushed me to deepen my foundations and focus on
+      <strong>alignment</strong>: making powerful systems <em>understandable</em
+      >, <em>steerable</em>, and
+      <em>trustworthy</em>. That sent me back to school to pair strong systems
+      skills with rigorous ML.
     </p>
   </section>
 
@@ -56,9 +61,12 @@ import { Image } from "astro:assets";
 
           <p class="description">
             Specializing in Machine Learning and High-Performance Computing.
-            Deep diving into operating systems, distributed systems, and the
-            mathematical foundations of ML. Building everything from
-            multithreaded servers in C to neural networks from scratch.
+            Coursework: Operating Systems, Machine Learning, High Dimensional
+            Data Analysis, Deep Learning, Reinforcement Learning. Built a
+            distributed, sequentially consistent file system in C++ (gRPC,
+            multithreading) and ran RL experiments (exact algorithms vs.
+            approximate algorithms). Current focus: mechanistic
+            interpretability, robustness & evaluation, and reproducible ML.
           </p>
         </div>
       </div>
@@ -72,10 +80,11 @@ import { Image } from "astro:assets";
           </p>
 
           <p class="description">
-            Led engineering initiatives on an audio learning platform. Built
-            scalable backend systems, mentored junior developers, and
-            architected solutions for millions of users. Worked across the full
-            stack from React frontends to distributed microservices.
+            Led the core engineering team for a legal knowledge platform using
+            search, LLMs, and structured data. Built event-driven microservices
+            on AWS (Lambda/SQS/SNS), OpenSearch, and PostgreSQL; improved CI/CD
+            to cut deployment time by 40%; mentored engineers and balanced
+            architecture with delivery.
           </p>
         </div>
       </div>
@@ -117,47 +126,117 @@ import { Image } from "astro:assets";
     <h2>What I'm Into</h2>
     <div class="interests-grid">
       <div class="interest-card">
-        <h3>🧠 Machine Learning</h3>
+        <h3>🧩 Mechanistic Interpretability</h3>
         <p>
-          From neural networks to optimization algorithms, I'm fascinated by how
-          we can teach machines to learn patterns and make decisions.
+          Sparse autoencoders, circuits, and tools to open up black boxes so we
+          can understand and steer models.
+        </p>
+      </div>
+      <div class="interest-card">
+        <h3>🎯 AI Safety & Alignment</h3>
+        <p>
+          Building systems that are steerable, reliable, and beneficial by
+          design.
+        </p>
+      </div>
+      <div class="interest-card">
+        <h3>🛡️ Robustness & Evaluation</h3>
+        <p>
+          Empirical evaluation under distribution shift; honesty/helpfulness
+          metrics; reproducibility and measurement.
+        </p>
+      </div>
+      <div class="interest-card">
+        <h3>🔧 Systems for ML</h3>
+        <p>
+          Operating systems, distributed systems, and tooling that make ML
+          research reliable, scalable, and repeatable.
         </p>
       </div>
       <div class="interest-card">
         <h3>⚡ High-Performance Computing</h3>
         <p>
-          There's something beautiful about squeezing every ounce of performance
-          out of hardware—parallel processing, GPU computing, distributed
-          systems.
-        </p>
-      </div>
-      <div class="interest-card">
-        <h3>🔧 Systems Programming</h3>
-        <p>
-          Getting close to the metal. Understanding how operating systems work,
-          how memory is managed, how processes communicate.
+          Squeezing performance from hardware: parallelism, GPU workloads,
+          memory systems.
         </p>
       </div>
       <div class="interest-card">
         <h3>📚 Learning in Public</h3>
         <p>
-          Sharing the journey, the failures, and the breakthroughs. Building
-          knowledge in the open where others can learn alongside me.
+          Sharing the journey—methods, failures, and breakthroughs—so others can
+          learn alongside me.
         </p>
       </div>
-      <div class="interest-card">
-        <h3>🧬 Computational Biology</h3>
-        <p>
-          Understanding the biological processes that underlie disease and
-          development.
-        </p>
-      </div>
+
       <div class="interest-card">
         <h3>⚖️ Economics</h3>
         <p>Understanding the economic forces that shape our world.</p>
       </div>
+      <div class="interest-card">
+        <h3>🧬 Computational Biology</h3>
+        <p>
+          Understanding the biological mechanisms that underlie disease and
+          development.
+        </p>
+      </div>
     </div>
   </section>
+
+  <!-- <section class="focus slide-in-block">
+    <h2>Focus: AI Safety & Interpretability</h2>
+    <p>
+      I'm interested in methods that make models more understandable and
+      controllable, and in the systems that support trustworthy deployment:
+    </p>
+    <ul>
+      <li>
+        <strong>Mechanistic Interpretability</strong>: sparse autoencoders,
+        circuits, representation shift
+      </li>
+      <li>
+        <strong>Robustness & Evaluation</strong>: honesty/helpfulness under
+        distribution shift; reproducible pipelines
+      </li>
+      <li>
+        <strong>Systems & Tooling</strong>: scalable data/experiment pipelines,
+        evaluation harnesses, and infra
+      </li>
+    </ul>
+  </section> -->
+
+  <!-- <section class="work slide-in-block">
+    <h2>Selected Writing & Projects</h2>
+    <ul>
+      <li>
+        <a href="/ideas/2025/ml-retro/">ML notes & interpretability readings</a>
+        — a growing index of methods, papers, and experiments
+      </li>
+      <li>
+        <a href="/ideas/2025/ml-a1/">Supervised learning study</a> — pipelines comparing
+        models across high/low dimensional regimes
+      </li>
+      <li>
+        <a href="/ideas/2021/nand2tetris-part1/">Nand-to-Tetris computer</a> — building
+        a computer and toy OS from first principles
+      </li>
+      <li>
+        Fine-tuning & representation shift (in progress) — exploring how
+        fine-tuning for reasoning/tool-use changes internal structure
+      </li>
+    </ul>
+  </section>
+
+  <section class="now slide-in-block">
+    <h2>Now</h2>
+    <ul>
+      <li>MSCS @ Georgia Tech (2024-2026): ML + systems</li>
+      <li>Building reproducible eval + interpretability tooling</li>
+      <li>
+        Availability: Oct 2025 - Apr 2026 for ML Alignment Fellowship
+        (extendable)
+      </li>
+    </ul>
+  </section> -->
 
   <section class="about-this-site slide-in-block">
     <h2>About This Digital Garden</h2>
@@ -175,7 +254,15 @@ import { Image } from "astro:assets";
     </p>
 
     <p>
-      Built with <a href="https://astro.build/" target="_blank" rel="noopener noreferrer">Astro</a>. Check out the <a href="https://github.com/tylercrosse/personal-site" target="_blank" rel="noopener noreferrer">source code</a>. It would be a little weird to just copy it wholesale.
+      Built with <a
+        href="https://astro.build/"
+        target="_blank"
+        rel="noopener noreferrer">Astro</a
+      >. Check out the <a
+        href="https://github.com/tylercrosse/personal-site"
+        target="_blank"
+        rel="noopener noreferrer">source code</a
+      >. It would be a little weird to just copy it wholesale.
     </p>
 
     <details class="inspiration-details">
@@ -293,6 +380,7 @@ import { Image } from "astro:assets";
       position: relative;
       margin-bottom: 2rem;
       /* padding-left: 60px; */
+      font-size: 1.1rem;
     }
 
     .timeline-marker {
@@ -333,7 +421,7 @@ import { Image } from "astro:assets";
     .interest-card h3 {
       margin: 0 0 1rem 0;
       color: var(--sol-base01);
-      font-size: 1.4rem;
+      font-size: 1.1rem;
     }
 
     .interest-card p {

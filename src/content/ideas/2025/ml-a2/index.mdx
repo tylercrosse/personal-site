@@ -1,0 +1,76 @@
+---
+title: 'Randomized Optimization on Discrete Landscapes and Neural Networks'
+description: 'Exploring randomized hill climbing, simulated annealing, and genetic algorithms across discrete fitness landscapes and as alternatives to backprop for neural network weight search.'
+date: '2025-08-11'
+status: 'draft'
+type: 'project'
+tags: ['machine-learning', 'python', 'optimization']
+category: ['projects']
+draft: false
+audience: 'All'
+media_subpath: "/ideas/ml-a2/"
+image:
+  path: "./signac-saint-tropez-optim.jpg"
+  alt: 'The Port of Saint-Tropez by Paul Signac'
+---
+
+> [!Warning] Early Draft
+> This is an early version of this project write-up. For now it's largely a placeholder. I'm actively working on it.
+
+## Introduction
+
+There is a whole world of optimization that begins where gradients fail. Rugged objectives, deceptive local maxima, noisy evaluations—these are the domains where simple calculus runs out of road and heuristic search takes over. This post is a concept-first look at how three randomized methods navigate those landscapes and when each shines in practice.
+
+I focus on the underlying ideas covered in the second assignment for Georgia Tech's Machine Learning course. These cover what shapes of search spaces favor simulated annealing over hill climbing, why genetic algorithms thrive on recombinable structure, and how any of these can stand in for backprop when tuning a small neural network.
+
+> [!note]
+> This post is part of my series from Georgia Tech's Machine Learning course. For a broader survey of the course material, see the companion post: [Machine Learning: A Retrospective](/ideas/2025/ml-retro/).
+
+## Overview
+
+Randomized optimization provides practical strategies for navigating rugged objective functions when gradients are unavailable or unhelpful. This piece compares three local/heuristic search methods:
+
+- Randomized Hill Climbing (RHC)
+- Simulated Annealing (SA)
+- Genetic Algorithm (GA)
+
+Looking at how these behave on common landscape archetypes and consider how they can stand in for gradient methods when searching continuous neural network weight spaces.
+
+## Canonical Problem Archetypes
+
+1) Discrete landscape with deceptive local structure: A rugged objective with many local maxima and a single narrow global basin. This stresses exploitation vs. controlled exploration.
+
+2) Discrete landscape with compositional substructures: A building-block objective where good partial solutions can be recombined. This emphasizes recombination and population diversity.
+
+3) Neural network weight optimization: Replace backprop with RHC/SA/GA to minimize classification loss on a small task. Evaluate training loss, validation accuracy, wall-clock time, and sample efficiency.
+
+{/* ## How to Think About Tuning
+
+- For each algorithm, explore multiple hyperparameters (e.g., random-restart counts for RHC; initial temperature and cooling schedules for SA; population size, mutation/crossover rates, and selection pressure for GA). Expect strong sensitivity to these choices.
+- Track convergence behavior (objective vs. evaluations), robustness across random seeds, and practical runtime. For learning tasks, track both loss and accuracy to avoid misleading single-metric conclusions.
+
+## What Tends to Happen in Practice
+
+- Simulated Annealing vs. RHC on rugged landscapes: With an appropriate cooling schedule, SA consistently escaped poor local optima that trapped RHC. Extremely aggressive cooling behaved like RHC; slower cooling improved final quality at the cost of more evaluations.
+- Genetic Algorithms on compositional problems: GA outperformed SA/RHC when the objective could be decomposed into interacting substructures. Maintaining population diversity (mutation rate and selection scheme) was crucial; premature convergence degraded performance.
+- Optimizing NN weights without gradients: None of the randomized methods matched backprop on speed/quality trade-offs, but SA was the most competitive among the three when tuned carefully. RHC frequently stalled; GA improved with tailored mutation scales but incurred significant compute due to the large parameter space.
+- Efficiency notes: Counting function evaluations and wall-clock time gave different rankings at times. SA often required fewer evaluations than GA but could still be slower depending on implementation and neighborhood operations.
+
+## Lessons and Practical Tips
+
+- Match method to landscape: SA for escaping deceptive basins; GA for recombinable building blocks; RHC as a strong baseline with restarts when the landscape is smooth or well-initialized.
+- Tune, don't assume: Small changes to temperature schedules (SA) or selection pressure (GA) materially affect outcomes.
+- Measure what matters: Track both objective value and runtime; for learning tasks include downstream accuracy, not just loss.
+- For NN weights: Gradient-free search is tractable for small models or when gradients are unreliable, but it scales poorly without careful parameterization and neighborhood design.
+
+## What to Remember
+
+- Exploration vs. exploitation must be engineered (temperature, mutation, restarts).
+- Population diversity counteracts premature convergence in GA.
+- Evaluation budgets and stopping criteria change the perceived "winner."
+- For neural networks, gradient methods remain the default; randomized search can be competitive in constrained settings or as a secondary tuner. */}
+
+> [!info] A Note on Code Availability
+> In accordance with Georgia Tech's academic integrity policy and the license for course materials, the source code for this project is kept in a private repository. I believe passionately in sharing knowledge, but I also firmly respect the university's policies. This document follows [Dean Joyner's advice on sharing projects](https://www.reddit.com/r/OMSCS/comments/zwdwns/comment/j1udv6w/) with a focus not on any particular solution and instead on an abstract overview of the problem and the underlying concepts I learned.
+>
+> I would be delighted to discuss the implementation details, architecture, or specific code sections in an interview. Please feel free to reach out to request private access to the repository.
