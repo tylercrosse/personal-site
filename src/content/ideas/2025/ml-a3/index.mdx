@@ -1,6 +1,6 @@
 ---
-title: 'Unsupervised Learning Techniques'
-description: 'Exploration of unsupervised learning techniques'
+title: 'Unsupervised Learning and Linear Dimensionality Reduction'
+description: 'K-Means and EM clustering on raw and reduced spaces (PCA, ICA, Random Projections), plus the impact on a downstream neural classifier.'
 date: '2025-08-12'
 status: 'draft'
 type: 'project'
@@ -19,9 +19,49 @@ image:
 
 ## Introduction
 
-This project is an exploration of unsupervised learning techniques. The goal is to understand the strengths and weaknesses of different algorithms and to provide a recommendation for the best algorithm for a given dataset.
+Unsupervised learning is about seeing the structure that labels hide. Clustering and linear dimensionality reduction give us two complementary lenses: one groups by similarity, the other reshapes the coordinate system to reveal simpler patterns. This post takes a concept-first tour of how PCA, ICA, and Random Projections change the geometry—and how that impacts K-Means, EM, and even a small neural network trained downstream. This outlines the concepts I learned while working the the third assignment for Georgia Tech's Machine Learning course.
 
-The project is implemented in Python and uses the scikit-learn library. The project is divided into two parts:
+> [!note]
+> This post sits alongside my broader course summary. For the full arc of topics covered, see: [Machine Learning: A Retrospective](/ideas/2025/ml-retro/).
 
-1. A comparative analysis of unsupervised learning techniques.
-2. A recommendation for the best algorithm for a given dataset.
+## Overview
+
+How does linear dimensionality reduction reshape data geometry, and how does that interact with clustering and downstream learning? This piece looks at the practical interplay:
+
+- Clustering: K-Means and Expectation-Maximization (Gaussian Mixtures)
+- Linear DR: PCA, ICA, Random Projections (RP)
+- Interaction studies: clustering on raw vs. reduced spaces; using cluster assignments as engineered features; retraining a small NN from A1 on reduced features.
+
+{/* ## Hypotheses (Data-agnostic)
+
+- Hypotheses:
+  - PCA will improve K-Means when dominant variance directions align with cluster separation; otherwise it may blur structure.
+  - ICA will help EM when latent sources are non-Gaussian and more independent than correlated.
+  - RP will act as a strong, cheap baseline that often preserves separability for classification, with modest run-to-run variance.
+
+## Methods and Diagnostics
+
+- Model selection: cluster counts via internal scores (silhouette, BIC/AIC for EM) and stability across seeds.
+- DR diagnostics:
+  - PCA: explained variance spectrum and reconstruction error.
+  - ICA: kurtosis of recovered components and qualitative interpretability of axes.
+  - RP: reconstruction error trends vs. target dimension; seed sensitivity.
+
+## What Typically Happens
+
+- Clustering in original space: EM excelled when clusters were elliptical with unequal covariances; K-Means did best when clusters were roughly spherical and well-separated.
+- Effect of PCA: When the top principal components aligned with class-structure, both K-Means and EM improved and stabilized. When variance was dominated by nuisance directions, PCA hindered separation.
+- Effect of ICA: Helped EM in datasets with visibly non-Gaussian marginals; component kurtosis provided a useful sanity check. Improvements were less pronounced when sources were close to Gaussian or strongly correlated.
+- Effect of RP: With sufficient target dimension, RP preserved clusterability surprisingly well at a fraction of compute; multiple seeds produced tight performance bands.
+- NN in reduced spaces: PCA often speeds training and reduces overfitting with small accuracy trade-offs or even gains; ICA occasionally matches PCA; RP provides a strong speed baseline with competitive accuracy when the projection dimension is large enough.
+
+## Takeaways
+
+- Choose DR aligned to data generating assumptions: variance (PCA), independence (ICA), or fast generic compression (RP).
+- Validate with both geometry-aware scores and downstream task performance.
+- Cluster-as-feature can add useful signals, but only when clusters are stable and interpretable. */}
+
+> [!info] A Note on Code Availability
+> In accordance with Georgia Tech's academic integrity policy and the license for course materials, the source code for this project is kept in a private repository. I believe passionately in sharing knowledge, but I also firmly respect the university's policies. This document follows [Dean Joyner's advice on sharing projects](https://www.reddit.com/r/OMSCS/comments/zwdwns/comment/j1udv6w/) with a focus not on any particular solution and instead on an abstract overview of the problem and the underlying concepts I learned.
+>
+> I would be delighted to discuss the implementation details, architecture, or specific code sections in an interview. Please feel free to reach out to request private access to the repository.

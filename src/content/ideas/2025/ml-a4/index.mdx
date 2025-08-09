@@ -1,6 +1,6 @@
 ---
-title: 'Reinforcement Learning on a Discrete & Continuous Environments'
-description: 'Comparison of reinforcement learning algorithms in discrete and continuous environments'
+title: 'Planning and Learning in Markov Decision Processes'
+description: 'Value Iteration and Policy Iteration on small vs. large MDPs, plus a model-free learner with exploration strategies.'
 date: '2025-08-13'
 status: 'draft'
 type: 'project'
@@ -19,9 +19,42 @@ image:
 
 ## Introduction
 
-This project is a comparison of reinforcement learning algorithms in discrete and continuous environments. The goal is to understand the strengths and weaknesses of different algorithms and to provide a recommendation for the best algorithm for a given dataset.
+Reinforcement learning asks a simple question with deep consequences: how should an agent act when outcomes are uncertain and feedback is delayed? Markov Decision Processes give us the formal playground to study that question. This post digs into the concepts covered in the fourth assignment for Georgia Tech's Machine Learning course. It compares the planner's toolkit (Value Iteration, Policy Iteration) with a learner's approach (Q-learning), focusing on what actually changes policies in practice and what to measure when environments scale.
 
-The project is implemented in Python and uses the scikit-learn library. The project is divided into two parts:
+> [!note]
+> For a broader survey of supervised, unsupervised, and reinforcement learning from the same course, see: [Machine Learning: A Retrospective](/ideas/2025/ml-retro/).
 
-1. A comparative analysis of reinforcement learning algorithms in discrete and continuous environments.
-2. A recommendation for the best algorithm for a given dataset.
+## Overview
+
+How do we act under uncertainty when we can model the world versus when we must learn from experience? Markov Decision Processes (MDPs) offer a clean lens. We compare two complementary approaches:
+
+- Planning with a known model: Value Iteration (VI) and Policy Iteration (PI)
+- Learning without a model: a model-free value-based learner (Q-learning) with exploration strategies
+
+## MDPs (Conceptual)
+
+- Small-state MDP: compact state space with stochastic transitions and shaped rewards to examine convergence criteria and policy structure.
+- Large-state MDP: expanded state space via factorization; highlights scaling behavior and the sensitivity of VI/PI to discount and stopping thresholds.
+
+{/* ## What to Measure
+
+- Convergence definitions: tolerance on successive value function deltas for VI; policy stability + evaluation tolerance for PI.
+- Metrics: iteration counts, wall-clock time, and policy quality (discounted return) under the same reward/transition models.
+- Model-free learner: Q-learning with epsilon-greedy vs. decaying epsilon; comparison to optimal planning solutions using identical reward structures when possible.
+
+## What Typically Happens
+
+- VI vs. PI: PI typically converged in fewer outer iterations on the small MDP; VI was simpler to tune and sometimes faster in wall-clock on the larger MDP depending on evaluation accuracy per sweep.
+- Discount and stopping criteria: tighter tolerances increased runtime and could change apparent winners; moderate discounts stabilized policies in stochastic dynamics.
+- Q-learning vs. planning: With adequate exploration and learning rate schedules, Q-learning approached the planned optimum on the small MDP; in the larger MDP it required significantly more interactions and careful exploration decay. Optimism and replay-style sampling improved stability.
+
+## Practical Guidance
+
+- Start with VI as a baseline; use PI when policy structure stabilizes quickly or when evaluation can be done efficiently.
+- Make convergence explicit and report sensitivities to tolerances/discounts.
+- For model-free learning, ensure sufficient exploration (GLIE-style decay) and monitor learning curves, not just final returns. */}
+
+> [!info] A Note on Code Availability
+> In accordance with Georgia Tech's academic integrity policy and the license for course materials, the source code for this project is kept in a private repository. I believe passionately in sharing knowledge, but I also firmly respect the university's policies. This document follows [Dean Joyner's advice on sharing projects](https://www.reddit.com/r/OMSCS/comments/zwdwns/comment/j1udv6w/) with a focus not on any particular solution and instead on an abstract overview of the problem and the underlying concepts I learned.
+>
+> I would be delighted to discuss the implementation details, architecture, or specific code sections in an interview. Please feel free to reach out to request private access to the repository.
