@@ -31,8 +31,8 @@ import classificationRegression from "./classification-regression2.png";
 import decisionTree from "./decision-tree2.png";
 import inductiveBias from "./inductive-bias.png";
 import ann from "./ann.png";
-import nnWeights from "./nn-weights-placeholder.jpg";
 import xorSeparability from "./xor-separability.png";
+import nnWeights from "./nn-weights-placeholder.jpg";
 import gradDescent from "./grad-descent-placeholder.jpg";
 import baggingBoosting from "./bagging-boosting-placeholder.jpg";
 import instanceBased from "./instance-based-placeholder.png";
@@ -56,9 +56,19 @@ This piece serves as both a personal retrospective and a technical overview. I t
 
 Writing this kind of reflection involves balancing honesty about my learning journey and the extent of my understanding with the recognition that I'm still developing expertise. This course proved both demanding and enriching, and this writeup represents my attempt to process the material while presenting it in a way that benefits others.
 
+> [!Important] Work In progress
+> This is a nearly complete draft. I'm still working creating more diagrams.
+
+### TL;DR
+
+- **Audience**: Prospective OMSCS students, colleagues, and hiring managers.
+- **Scope**: High-level survey of supervised, unsupervised, and reinforcement learning, plus theory (PAC/VC, Bayesian, information theory).
+- **Takeaways**: Understand core algorithms and trade-offs; know when to use each; connect practice to theory.
+- **Extras**: Course logistics, grading breakdown, recommended books and resources.
+
 ## Machine Learning Introduction
 
-Machine learning is often framed as a subfield of artificial intelligence (AI), but it's more than that. It's a broad field that encompasses a wide range of techniques and applications. It's a field that is constantly evolving, and there is no single "right" way to do machine learning. Recent advances in machine learning have been driven by the development of deep learning, which at least started as a subfield of machine learning that uses deep neural networks to learn from data.
+Machine learning is often framed as a subfield of AI, but it stands on its own: a fast-evolving toolkit and practice with no single 'right' approach. Recent advances in machine learning have been driven by the development of deep learning, which at least started as a subfield of machine learning that uses deep neural networks to learn from data.
 
 <Figure
   src={aiMlDl}
@@ -108,11 +118,11 @@ With these terms in mind, the process is to use a learning algorithm to search t
 
 The supervised learning hypothesis classes we will explore are:
 
-* **Decision Trees**: A tree-like model of decisions.
-* **Neural Networks**: A model that is inspired by the structure of the human brain.
-* **Ensemble Methods**: A model that is a combination of multiple models.
-* **Instance-based Learning**: A model that is a combination of multiple models.
-* **Kernel Methods & Support Vector Machines**: A model that is a combination of multiple models.
+* **Decision Trees**: Greedy, interpretable, axis-aligned splits.
+* **Neural Networks**: Layered nonlinear function approximators.
+* **Ensemble Methods**: Combine weak learners to reduce variance and bias.
+* **Instance-based Learning**: Memory-based prediction via similarity (e.g., k-NN).
+* **Kernel Methods & Support Vector Machines**: Max-margin classifiers with kernelized similarity.
 
 
 ### Classification and Regression
@@ -158,9 +168,6 @@ The "best" attribute is the one that provides the highest **Information Gain**. 
 
 ID3 aims to maximize the reduction in entropy at each step, effectively asking the most informative questions first. We'll revisit entropy with its formal mathematical foundation in the Information Theory section.
 
-{/* Maybe omit this paragraph? I'm not sure it adds much to the discussion. */}
-{/* The power of a decision tree lies in its expressiveness. It can represent any Boolean function. For simple logical functions like AND and OR, the tree is compact. For example, an OR function with inputs A and B can be represented with just a few nodes: if A is true, output true; otherwise, check B. However, the complexity can grow rapidly. For the "any of" function (an n-ary OR function), the tree has a linear number of nodes ($O(n)$) -- one for each option. But for the "if and only if" function a.k.a "parity" (an n-ary XOR function), the number of nodes is exponential ($O(2^n)$). For example, for the inputs A and B: you need to check both A and B at every level, creating branches for all combinations (A=true,B=false → true; A=false,B=true → true; otherwise false). This highlights a key challenge: some concepts are inherently "harder" for decision trees to learn and represent efficiently. If your problem has a parity-like structure, you might need a very deep tree or a different representation altogether. */}
-
 #### 20 Questions Example
 
 When playing 20 Questions, you want to ask the question that gives you the most information. For example, if you are trying to guess a person's name, you might ask if the first letter comes before or after "M". This is a binary question, and it gives you the most information because it splits the remaining possibilities in half.
@@ -201,7 +208,7 @@ Artificial Neural Networks (ANNs) are models loosely inspired by the structure o
 
 Modern neural networks build on this idea but replace the simple, sharp threshold of the perceptron with a smooth, differentiable **activation function** like the Sigmoid, Tanh, or ReLU.
 
-The shift from the simple threshold values to using activation functions took is uderpinned by the idea of **linear separability**. A single perceptron can act as a linear separator; for a 2D input space, it can draw a single straight line to divide the space into two halves. This is powerful enough to represent simple logical functions like AND, OR, and NOT, which are all linearly separable. However, a single perceptron fundamentally cannot solve problems that are *not* linearly separable. The classic example is the XOR function—there is no single straight line you can draw to separate the true cases from the false cases.
+The shift from a hard threshold to differentiable activations is underpinned by the idea of **linear separability**. A single perceptron can act as a linear separator; for a 2D input space, it can draw a single straight line to divide the space into two halves. This is powerful enough to represent simple logical functions like AND, OR, and NOT, which are all linearly separable. However, a single perceptron fundamentally cannot solve problems that are *not* linearly separable. The classic example is the XOR function—there is no single straight line you can draw to separate the true cases from the false cases.
 
 This diagram illustrates the key limitation that drives the need for networks of perceptrons:
 
@@ -215,19 +222,19 @@ This diagram illustrates the key limitation that drives the need for networks of
 This limitation is what gives rise to the "network" in neural networks. To solve a problem like XOR, you need to combine perceptrons. For instance, you could use one layer of perceptrons to learn simpler functions (like AND and OR) and then feed their outputs into a final perceptron that combines them to produce the final, non-linear result. This layered structure allows ANNs to learn increasingly complex functions.
 
 
-<Figure
+{/* <Figure
   src={nnWeights}
   alt="Neural Network Weights"
   caption="Weights in a neural network are adjusted during training to minimize error."
-/>
+/> */}
 
 Why the switch? The "pointy" nature of the threshold function isn't differentiable, which is a problem for training. A smooth function allows us to use calculus. The network "learns" by adjusting its weights to minimize a loss function, which measures the difference between the network's predictions and the actual labels in the training data. The most common training algorithm is **backpropagation**. At its heart, backpropagation is a clever application of the chain rule from calculus. It uses **gradient descent** to efficiently compute the contribution of each weight to the overall error and adjust it accordingly. This process is often visualized as error information "flowing" backward from the output layer through the hidden layers, hence the name.
 
-<Figure
+{/* <Figure
   src={gradDescent}
   alt="Gradient Descent"
   caption="Gradient Descent"
-/>
+/> */}
 
 
 This training process also reveals the biases of neural networks. Recall from Decision Trees that every algorithm has inductive biases—the assumptions it makes about the data. Neural networks have a very different bias profile:
@@ -252,11 +259,11 @@ Instance-based Learning is a fundamentally different approach to machine learnin
 
 This approach is best understood through its most famous algorithm: **k-Nearest Neighbors (k-NN)**. Imagine you're trying to predict a house price. Instead of building a complex regression model for the whole city, you just find the 'k' most similar houses (the "neighbors") to the one you're interested in and see what they sold for.
 
-<Figure
+{/* <Figure
   src={instanceBased}
   alt="Instance-based Learning"
   caption="k-Nearest Neighbors finds the 'k' closest points in the training data to make a prediction."
-/>
+/> */}
 
 The algorithm is beautifully simple:
 1.  **Store** all the training data.
@@ -287,11 +294,11 @@ The power of this approach is that the final combined hypothesis can be much mor
 
 The two primary families of ensemble methods, Bagging and Boosting, are different approaches to this same core idea.
 
-<Figure
+{/* <Figure
   src={baggingBoosting}
   alt="Bagging and Boosting"
   caption="Bagging trains models in parallel on random subsets. Boosting trains models sequentially, focusing on hard examples."
-/>
+/> */}
 
 * **Bagging (Bootstrap Aggregating)**: This method follows a simple and surprisingly effective process. It involves training multiple instances of the same model (e.g., decision trees) on different random subsets of the training data. The subsets are created by **bootstrapping**, which means sampling with replacement. The final prediction is made by averaging the outputs of all models (for regression) or by taking a majority vote (for classification). **Random Forests** are a popular and effective implementation of this approach. The main benefit of bagging is that it reduces variance and helps prevent overfitting. By averaging out the "opinions" of models trained on different views of the data, it's less likely to be swayed by noise.
 
@@ -314,11 +321,11 @@ The answer isn't just any line that separates the data. The best line is the one
 
 This visualization shows how SVMs balance between fitting the data and maximizing generalization:
 
-<Figure
+{/* <Figure
   src={svmMargin}
   alt="Support Vector Machine Margin"
   caption="An SVM finds the hyperplane that maximizes the margin between the two classes. The points on the edge are the support vectors."
-/>
+/> */}
 
 This intuition can be formalized into an optimization problem. The goal is to maximize the margin, which turns out to be equivalent to minimizing the squared norm of the weight vector ($1/2 ||w||^2$), subject to the constraint that every data point is correctly classified and lies outside the margin. This constraint for each point $i$ is captured by the elegant expression: $y_i(w^T x_i + b) \ge 1$. This is a well-defined quadratic programming problem that can be solved efficiently.
 
@@ -328,11 +335,11 @@ The idea is to project the data into a higher-dimensional space where it *become
 
 This geometric transformation illustrates the elegance of the kernel approach:
 
-<Figure
+{/* <Figure
   src={kernelTrick}
   alt="The Kernel Trick"
   caption="The kernel trick maps data to a higher dimension to make it linearly separable, without ever explicitly computing the new coordinates."
-/>
+/> */}
 
 Instead of transforming the data, we modify our optimization algorithm. The algorithm only ever needs to compute the dot product between pairs of data points ($x_i^T x_j$) to measure their similarity. The kernel trick involves replacing this simple dot product with a more complex **kernel function**, $K(x_i, x_j)$. For example, using the kernel $K(x_i, x_j) = (x_i^T x_j)^2$ is mathematically equivalent to mapping the data into a higher-dimensional space and computing the dot product there, but it's vastly more efficient.
 
@@ -351,6 +358,16 @@ For more details, see the <a href="https://www.youtube.com/watch?v=zBN12pqkRoc&l
 
 We've now explored a diverse toolkit of supervised learning algorithms—from interpretable decision trees to powerful neural networks to elegant support vector machines. But a crucial question remains: why do these algorithms work? Before we shift to unsupervised learning and reinforcement learning, let's ground what we've seen in formal learning theory to understand the fundamental principles that govern when and why learning is possible.
 
+### What to remember
+
+- Key takeaways before moving on:
+
+- **Classification vs. regression**: discrete labels vs. continuous values drive algorithm, loss, and metrics choices.
+- **Hypothesis classes**: trees (interpretable), neural nets (expressive), ensembles (variance/bias reduction), instance-based (similarity), SVMs (max-margin + kernels).
+- **Overfitting control**: pruning/early stopping, validation, and margins help generalization.
+- **Kernel trick**: compute similarity via kernels to model non-linear boundaries efficiently.
+- **Generalization**: always evaluate on held-out data; test performance is the goal.
+
 ## Theoretical Foundations of Learning
 
 These theoretical frameworks help explain why and when learning is possible, providing rigorous foundations for the algorithms we've explored and the principles that guide effective machine learning.
@@ -368,11 +385,11 @@ The key resource in machine learning is **data**. CoLT helps us quantify how muc
 
 A key concept for understanding PAC learning is the **version space**. The version space is the set of all hypotheses in our hypothesis class that are consistent with the training data. The learning process is essentially a search for a good hypothesis within this space.
 
-<Figure
+{/* <Figure
   src={pac}
   alt="PAC Learning"
   caption="PAC learning provides a theoretical framework for understanding when a machine learning model is likely to generalize well to new data."
-/>
+/> */}
 
 #### Making It Concrete: What Do $\epsilon$ and $\delta$ Actually Mean?
 
@@ -411,11 +428,11 @@ The **Vapnik-Chervonenkis (VC) Dimension** is the answer to that question. It's 
 
 To "shatter" a set of points means the hypothesis class can generate *every possible labeling* for those points.
 
-<Figure
+{/* <Figure
   src={vcDimension}
   alt="VC Dimension of a linear separator"
   caption="A linear separator can shatter all sets of three non-collinear points, but not all sets of four points. Therefore, its VC dimension in 2D is 3."
-/>
+/> */}
 
 For example, a linear separator in a 2D plane has a VC dimension of 3. You can arrange three points in a triangle, and a line can achieve all 8 possible +/- labelings. However, there is no arrangement of four points that a single line can shatter. Specifically, if you arrange four points in a way that forms a convex hull and assign alternating labels (like an XOR pattern), no single line can separate them—this is precisely the limitation that drove us to neural networks when we discussed the XOR problem.
 
@@ -537,6 +554,14 @@ For more detail, see the lectures on <a href="https://www.youtube.com/watch?v=m9
 
 With these theoretical foundations in place—understanding when learning is possible, how much data we need, and how to reason about uncertainty—we can now turn to the second pillar of machine learning: learning from data without labels.
 
+### What to remember
+
+- PAC learning: target small error (ε) with high confidence (1-δ); sample complexity scales with model complexity.
+- VC dimension: capacity measure that replaces ln|H| for infinite hypothesis classes.
+- Bayesian view: combine priors and likelihoods (MAP/ML); MDL formalizes Occam; SSE arises from Gaussian noise.
+- Information theory: entropy and mutual information justify splits and feature scoring.
+- Big picture: explains when learning is possible, how much data you need, and how to choose among hypotheses.
+
 ## Unsupervised Learning
 
 Unlike supervised learning, which relies on labeled data to learn a mapping from inputs to outputs, unsupervised learning ventures into the messier, more common world of unlabeled data. The goal shifts from prediction to discovery. Instead of approximating a known function, the aim is to perform "data description"—to find the inherent structure, patterns, and more compact representations hidden within the data itself. This makes it less of a single, crisply-defined problem and more a diverse set of tools for understanding data, including the topics we'll explore next: randomized optimization, clustering, and feature transformation.
@@ -548,20 +573,20 @@ Randomized optimization algorithms are a class of methods used to find good appr
 * **Randomized Hill Climbing (RHC)**: This is the simplest algorithm, akin to a mountain climber in a thick fog who can only feel the ground immediately around them. It starts with a random solution and at each step, generates a random neighbor. If the neighbor is higher up the "hill" (i.e., has a better fitness score), the climber moves there. This process continues until no better neighbor can be found. The main drawback is that it can easily get stuck on a small hill (a local optimum), missing the highest peak (the global optimum). A common enhancement is **random-restart hill climbing**, where if the climber gets stuck, they are helicoptered to a new random spot on the mountain to start climbing again.
 * **Simulated Annealing (SA)**: SA improves on hill climbing by giving the climber the ability to occasionally take a step downhill. This helps it escape local optima and cross valleys to find bigger hills. The probability of accepting a worse solution is controlled by a "temperature" parameter. Initially, the temperature is high, and the climber is very energetic, willing to jump around and explore wildly. As the temperature gradually "cools," the climber becomes less likely to take downward steps, eventually settling into a final, hopefully optimal, position. This process is inspired by the metallurgical process of annealing, where a blacksmith heats and slowly cools a sword to allow its molecules to settle into a strong, low-energy crystal structure.
 
-<Figure
+{/* <Figure
   src={simulatedAnnealing}
   alt="Simulated Annealing"
   caption="Simulated Annealing allows for occasional downhill moves to escape local optima, guided by a temperature parameter."
-/>
+/> */}
 
 * **Genetic Algorithms (GAs)**: Inspired by the process of natural selection, GAs work with a whole population of climbers scattered across the mountain. At each "generation," the "fittest" climbers (those with the best solutions) are selected to "reproduce." They combine their "genes" (features of their solutions) through an operation called **crossover**, creating new "offspring" solutions. To maintain diversity, small random changes (**mutation**) are also introduced. This creates a new generation of solutions, and the process is repeated. GAs are highly effective at exploring large and complex search spaces by sharing information between parallel searches.
 
-<Figure
+{/* <Figure
   src={geneticAlg}
   alt="Genetic Algorithm"
   caption="Genetic Algorithms evolve a population of solutions through selection, crossover, and mutation."
   width={500}
-/>
+/> */}
 
 * **MIMIC (Mutual-Information-Maximizing Input Clustering)**: MIMIC is a more "amnesiac" algorithm that, unlike its predecessors, tries to learn from its experience. Instead of just keeping track of the best points found so far, MIMIC builds a probabilistic model of the promising regions of the search space. It explicitly estimates the probability distribution of good solutions, and then samples new points from this model to generate the next generation. By modeling the *structure* of the good parts of the space, it can often find the optimum in far fewer iterations, which is a huge advantage when evaluating the fitness function is expensive (e.g., running a complex simulation or requiring human feedback).
 
@@ -581,11 +606,11 @@ Clustering is a fundamental task in unsupervised learning where the goal is to g
 
 The lecture emphasizes that clustering isn't one single, well-defined problem; it's a family of algorithms, each with its own notion of what a "good" cluster is. The choice of algorithm and its parameters (like the number of clusters, 'k') is a way to inject crucial domain knowledge into the process.
 
-<Figure
+{/* <Figure
   src={kMeansEmClustering}
   alt="k-Means and EM Clustering"
   caption="k-Means and EM Clustering"
-/>
+/> */}
 
 * **Single-Linkage Clustering (SLC)**: This is a type of **hierarchical agglomerative clustering (HAC)**. It's a "bottom-up" approach that starts by treating each data point as its own cluster. Then, it iteratively merges the two closest clusters until a stopping condition is met. The "single-linkage" part defines the distance between two clusters as the distance between their *closest* two points. This can lead to long, "stringy" clusters, as the algorithm can create chains of points, which may not always match our intuitive sense of a compact cluster.
 * **k-Means Clustering**: This is one of the most popular and intuitive clustering algorithms. It aims to partition the data into 'k' clusters by iteratively assigning each data point to the cluster with the nearest mean (or **centroid**) and then recalculating the centroids based on the new assignments. This process is a form of optimization; it's a hill-climbing algorithm that is guaranteed to converge by minimizing the sum of squared distances from each point to its assigned centroid. However, it can get stuck in local optima, so the initial random placement of centroids matters.
@@ -621,22 +646,22 @@ Feature transformation, or dimensionality reduction, is the process of transform
 
 The lecture uses the example of information retrieval to illustrate the need for feature transformation. If you're searching for "car," you also want documents that use the word "automobile" (**synonymy**), but you don't want documents about Lisp programming just because it uses a `car` function (**polysemy**). Simple feature selection (picking which words to use) can't solve this. Feature transformation addresses this by creating new, combined features from the original ones.
 
-<Figure
+{/* <Figure
   src={pcaIca}
   alt="PCA and ICA are two common feature transformation techniques."
   caption="PCA and ICA are two common feature transformation techniques."
-/>
+/> */}
 
 * **Principal Component Analysis (PCA)**: PCA is a linear technique that finds a new set of orthogonal axes, called principal components, that capture the maximum amount of variance in the data. The data is then projected onto a smaller number of these components. It's a powerful tool for dimensionality reduction because it provides the best possible reconstruction of the original data from a lower-dimensional projection, minimizing the L2 error. However, the directions of maximum variance may not always be the most useful for a classification task.
 * **Independent Component Analysis (ICA)**: ICA is another linear technique that, instead of maximizing variance, seeks to find a transformation where the new features are statistically independent. The classic example is the "cocktail party problem," where ICA can take mixed audio signals from multiple microphones and separate them back into the original, independent sources (e.g., individual voices). When applied to images, ICA tends to find "parts" like edges and noses, whereas PCA finds more global features like the "average face."
 * **Random Component Analysis (RCA)**: This method, also known as random projection, simply projects the data onto a random set of lower-dimensional vectors. Surprisingly, it works remarkably well. While it doesn't offer the same guarantees as PCA for reconstruction, it's extremely fast and can be very effective for classification tasks, as it still manages to preserve some of the correlational structure of the original data. It's a great example of a simple, "cheap" method that often provides a strong baseline.
 * **Linear Discriminant Analysis (LDA)**: Unlike the previous methods, LDA is a *supervised* dimensionality reduction technique. It explicitly uses the class labels to find a projection that maximizes the separability between the classes. This makes it a "wrapper" method in spirit, as it's concerned with how the features will be used for a downstream classification task, not just with the inherent structure of the data itself.
 
-<Figure
+{/* <Figure
   src={tsneUmap}
   alt="t-SNE and UMAP"
   caption="t-SNE and UMAP"
-/>
+/> */}
 
 
 * **t-SNE (t-Distributed Stochastic Neighbor Embedding)**: t-SNE is a non-linear technique that is particularly well-suited for visualizing high-dimensional datasets. It models each high-dimensional object by a two- or three-dimensional point in such a way that similar objects are modeled by nearby points and dissimilar objects are modeled by distant points with high probability.
@@ -678,6 +703,16 @@ Building on this foundation, we can define other key concepts that are critical 
 
 For more details, see the lecture on <a href="https://www.youtube.com/watch?v=wZ3m-ZUUyt4&list=PLJ3qxo98eOh9cgbR0zIpx76qYS24CcqdA&index=16" target="_blank">Information Theory</a>.
 
+### What to remember
+
+- Key takeaways before moving on:
+
+- **Randomized optimization**: explore search spaces when gradients fail (RHC, SA, GA, MIMIC).
+- **Clustering**: different objectives (SLC, k-Means, EM); no single best method (Kleinberg's theorem).
+- **Feature selection vs. transformation**: choose relevant features vs. create new representations (PCA/ICA/RCA/LDA).
+- **Visualization vs. structure**: t-SNE/UMAP for visualization; PCA/ICA for structure and compression.
+- **Information theory**: entropy, mutual information, and KL underpin feature selection and splitting criteria.
+
 ## Reinforcement Learning
 
 The course then transitions to Reinforcement Learning (RL), the third major paradigm of machine learning. Unlike supervised or unsupervised learning, RL is concerned with how an agent can learn to make a sequence of decisions in an environment to maximize a cumulative reward. This section follows the course's structure, starting with the mathematical framework for decision-making, Markov Decision Processes (MDPs). It then delves into core RL algorithms that solve these problems when the environment's dynamics are unknown. Finally, it extends these concepts to scenarios with multiple agents using the principles of Game Theory.
@@ -686,11 +721,11 @@ The course then transitions to Reinforcement Learning (RL), the third major para
 
 A Markov Decision Process (MDP) is a mathematical framework for modeling decision-making in situations where outcomes are partly random and partly under the control of a decision-maker. It is the formal foundation for reinforcement learning. The lecture introduces this concept using an intuitive **Grid World** example: imagine an agent on a grid, trying to reach a goal with a positive reward (+1) while avoiding a pitfall with a negative reward (-1).
 
-<Figure
+{/* <Figure
   src={mdp}
   alt="Markov Decision Process"
   caption="A simple Grid World. The agent starts at (1,1) and wants to reach the goal at (4,3) while avoiding the pitfall at (4,2)."
-/>
+/> */}
 
 An MDP is defined by a few key components:
 * A set of **states** ($S$): The agent's possible locations on the grid.
@@ -776,11 +811,11 @@ For two-player, zero-sum games with perfect information, the **Minimax** algorit
 
 However, in more complex, non-zero-sum games, a more general solution concept is needed: the **Nash Equilibrium**. A set of strategies is a Nash Equilibrium if no player can do better by unilaterally changing their strategy.
 
-<Figure
+{/* <Figure
   src={nash}
   alt="A diagram illustrating the concept of Nash Equilibrium in the Prisoner's Dilemma."
   caption="In the classic Prisoner's Dilemma, both players choosing to defect is a Nash Equilibrium, even though mutual cooperation would lead to a better collective outcome. This highlights the tension between individual and group rationality."
-/>
+/> */}
 
 #### Repeated Games and Cooperation
 
@@ -800,9 +835,19 @@ For more details, see the lectures on <a href="https://www.youtube.com/watch?v=g
 - Stochastic (or Markov) games as a generalization of MDPs for multi-agent reinforcement learning.
 - Reinforcement learning algorithms for multi-agent settings, such as Minimax-Q and Nash-Q.
 
+### What to remember
+
+- Key takeaways before moving on:
+
+- **MDP anatomy**: states, actions, transitions, rewards, discount; policies map states to actions.
+- **Bellman equation**: recursive definition of value enables planning (value/policy iteration).
+- **Q-learning**: model-free update toward TD target; derive policy from learned Q.
+- **Exploration**: epsilon-greedy and optimism trade off exploration vs. exploitation.
+- **Game theory**: beyond single-agent—Nash equilibrium, repeated games, cooperation dynamics.
+
 ## Course Overview
 
-The course was taught with a huge focus on the projects. These emphasized the conceptual material presented in the lectures through hands on research and experimentation. They were a great way to solidify the concepts learned in the course and took up a significant portion of the time I spent on the course.
+The course was taught with a huge focus on the projects. These emphasized the conceptual material presented in the lectures through hands-on research and experimentation. They were a great way to solidify the concepts learned in the course and took up a significant portion of the time I spent on the course.
 
 Here are the projects from the course:
 - **Project 1:** Supervised Learning
@@ -818,7 +863,7 @@ Here's the grading breakdown from when I took the course in Fall 2024. There was
 
 | Component      | Weight | Mean   | Q1      | Median  | Q3      | High    |
 |----------------|--------|--------|---------|---------|---------|---------|
-| Hypothesis Quz | 5%     | 78.60% | 70.00%  | 80.00%  | 90.00%  | 100.00% |
+| Hypothesis Quiz | 5%     | 78.60% | 70.00%  | 80.00%  | 90.00%  | 100.00% |
 | Reading Quiz   | 5%     | 97.04% | 100.00% | 100.00% | 100.00% | 100.00% |
 | Project 1      | 15%    | 68.13% | 56.00%  | 73.00%  | 85.00%  | 105.00% |
 | Project 2      | 15%    | 69.26% | 60.00%  | 73.00%  | 83.00%  | 100.00% |
@@ -849,7 +894,7 @@ These are some classic books in Machine Learning that complement the course mate
   img={introToStatLearning}
 >
   <p>
-    A great book for getting started with machine learning. It covers a lot of the same material as the course, but in a more statistical perspective. It's less rigorous than The Elements of Statistical Learning, but it's a great book for getting started.
+    Accessible statistical grounding that complements the course. It covers much of the same material from a statistical lens and is less rigorous than The Elements of Statistical Learning, making it a friendly on-ramp.
   </p>
 </BookCard>
 
@@ -859,7 +904,7 @@ These are some classic books in Machine Learning that complement the course mate
   img={handsOnMl}
 >
   <p>
-    A hands-on guide to machine learning with Python. This is a great book for getting started with machine learning. This was particularly helpful for the first project.
+    Practical, Python-first recipes for building models; especially helpful for Project 1.
   </p>
 </BookCard>
 
@@ -899,7 +944,7 @@ These are some classic books in Machine Learning that complement the course mate
   img={grokkingDeepRL}
 >
   <p>
-    A great book for getting started with reinforcement learning. It covers a lot of the same material as the course, but in a more mathematical perspective. This was particularly helpful for the fourth project.
+    An approachable introduction to reinforcement learning with clear visuals; useful scaffolding for Project 4.
   </p>
 </BookCard>
 
@@ -916,7 +961,7 @@ Here are some other posts I found helpful:
 
 ## My Experience
 
-I took ML concurrently with High Performance Computer Architecture. I did a good job staying on top of my time and starting on when projects when they were released. This made the workload feel manageable despite the broad scope and open endedness of the course. Something I enjoyed and was also wary of was how easy it is to go deep on any of these topics. This broad survey was just an introduction to this rich and fascinating field. I've continued to dig in!
+I took ML alongside High Performance Computer Architecture and stayed disciplined—starting projects as soon as they were released. That made the workload manageable despite the course's breadth and open-ended nature. I enjoyed—and was also wary of—how easy it is to go deep on any of these topics. This survey was just an introduction to a rich, fascinating field. I've continued to dig in!
 
 ---
 
