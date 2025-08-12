@@ -26,7 +26,8 @@
     "rehype-mermaid": "^3.0.0",
     "remark-gfm": "^4.0.1",
     "remark-math": "^6.0.0",
-    "sharp": "^0.34.2"
+    "sharp": "^0.34.2",
+    "three": "^0.179.1"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^8.38.0",

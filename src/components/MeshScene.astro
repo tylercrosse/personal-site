@@ -1,0 +1,289 @@
+---
+// MeshScene.astro - A client-only component that mounts a Three.js scene
+// Adapted from /Users/tylercrosse/dev/sandbox/mesh/mesh.html
+---
+
+<style>
+  .mesh-container {
+    width: 100%;
+    aspect-ratio: 16 / 10; /* keep a stable landscape aspect */
+    height: auto; /* let aspect-ratio control height */
+    max-height: 50vh; /* cap height on mobile */
+    min-height: 320px;
+    background: transparent; /* Let page background/gradient show through */
+    position: relative;
+    overflow: hidden;
+    border-radius: 12px;
+  }
+  @media (min-width: 960px) {
+    .mesh-container { max-height: 65vh; }
+  }
+
+  .mesh-canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+  .mesh-controls {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 2;
+  }
+  .mesh-button {
+    appearance: none;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(0, 0, 0, 0.4);
+    color: #fff;
+    padding: 6px 10px;
+    border-radius: 8px;
+    font-size: 12px;
+    cursor: pointer;
+  }
+</style>
+
+<div class="mesh-container" id="mesh-container">
+  <div class="mesh-controls">
+    <button class="mesh-button" id="mesh-toggle">Pause</button>
+  </div>
+</div>
+
+<script>
+  import * as THREE from "three";
+  import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+  import { ImprovedNoise } from "three/examples/jsm/math/ImprovedNoise.js";
+
+  const container = document.getElementById("mesh-container");
+  const toggleBtn = document.getElementById("mesh-toggle");
+
+  // Guard: SSR safe (script runs client-side only in Astro)
+  if (container) {
+    let scene, camera, renderer, controls, landscapeGroup;
+    let running = true;
+    let frameId = null;
+
+    const DPR = Math.min(window.devicePixelRatio || 1, 1.75);
+
+    function init() {
+      scene = new THREE.Scene();
+
+      camera = new THREE.PerspectiveCamera(
+        75,
+        container.clientWidth / container.clientHeight,
+        0.1,
+        1000
+      );
+      camera.position.set(0, 140, 200);
+
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      renderer.setPixelRatio(DPR);
+      renderer.setSize(container.clientWidth, container.clientHeight);
+      // Keep canvas transparent; container/background CSS provides background color
+      renderer.setClearColor(0x000000, 0);
+      container.appendChild(renderer.domElement);
+
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+      scene.add(ambientLight);
+      const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+      directionalLight.position.set(50, 50, 50);
+      scene.add(directionalLight);
+
+      controls = new OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.05;
+      controls.screenSpacePanning = false;
+      controls.maxPolarAngle = Math.PI / 1.5;
+      controls.enableZoom = false;
+
+      const worldWidth = 128,
+        worldDepth = 128;
+      const data = generateHeight(worldWidth, worldDepth);
+
+      const geometry = new THREE.PlaneGeometry(
+        200,
+        200,
+        worldWidth - 1,
+        worldDepth - 1
+      );
+      geometry.rotateX(-Math.PI / 2);
+
+      const vertices = geometry.attributes.position.array;
+      for (let i = 0, j = 0, l = vertices.length; i < l; i++, j += 3) {
+        vertices[j + 1] = data[i] * 0.2;
+      }
+      geometry.computeVertexNormals();
+
+      landscapeGroup = new THREE.Group();
+      scene.add(landscapeGroup);
+
+      const textureLoader = new THREE.TextureLoader();
+      const landscapeTexture = textureLoader.load(
+        "/mesh/dmitrii-shirnin-pm_pPVtJpXc-unsplash-small.jpeg"
+      );
+      const material = new THREE.MeshStandardMaterial({
+        map: landscapeTexture,
+        side: THREE.DoubleSide,
+      });
+      const landscapeMesh = new THREE.Mesh(geometry, material);
+      landscapeGroup.add(landscapeMesh);
+
+      const wireframeDivisions = 48;
+      const wireframeGeometry = new THREE.PlaneGeometry(
+        200,
+        200,
+        wireframeDivisions - 1,
+        wireframeDivisions - 1
+      );
+      wireframeGeometry.rotateX(-Math.PI / 2);
+
+      const wireframeVertices = wireframeGeometry.attributes.position.array;
+      const scale = (worldWidth - 1) / (wireframeDivisions - 1);
+      for (let i = 0; i < wireframeGeometry.attributes.position.count; i++) {
+        const wx = i % wireframeDivisions;
+        const wy = Math.floor(i / wireframeDivisions);
+        const dataX = Math.round(wx * scale);
+        const dataY = Math.round(wy * scale);
+        const dataIndex = dataY * worldWidth + dataX;
+        wireframeVertices[i * 3 + 1] = data[dataIndex] * 0.2;
+      }
+
+      wireframeGeometry.translate(0, 60, 0);
+      // Wireframe material color adapts to theme: black in light, white in dark
+      const wireframeMaterial = new THREE.MeshBasicMaterial({
+        color: 0xffffff,
+        wireframe: true,
+        transparent: true,
+        opacity: 0.7,
+      });
+      const wireframeMesh = new THREE.Mesh(
+        wireframeGeometry,
+        wireframeMaterial
+      );
+      landscapeGroup.add(wireframeMesh);
+
+      // Apply theme-dependent colors
+      function applyThemeColors() {
+        const theme = document.documentElement.getAttribute(
+          "data-effective-theme"
+        );
+        if (theme === "dark") {
+          wireframeMaterial.color.set(0xffffff);
+        } else {
+          wireframeMaterial.color.set(0x000000);
+        }
+      }
+      applyThemeColors();
+
+      // Observe theme changes
+      const themeObserver = new MutationObserver(applyThemeColors);
+      themeObserver.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ["data-effective-theme"],
+      });
+
+      landscapeGroup.rotation.y = Math.PI;
+
+      window.addEventListener("resize", onWindowResize, false);
+      document.addEventListener("visibilitychange", onVisibility, false);
+
+      const prefersReducedMotion = window.matchMedia(
+        "(prefers-reduced-motion: reduce)"
+      );
+      if (prefersReducedMotion.matches) {
+        running = false;
+        renderOnce();
+      } else {
+        start();
+      }
+
+      toggleBtn?.addEventListener("click", () => {
+        running ? stop() : start();
+        toggleBtn.textContent = running ? "Pause" : "Play";
+      });
+    }
+
+    function start() {
+      running = true;
+      if (!frameId) frameId = requestAnimationFrame(animate);
+    }
+
+    function stop() {
+      running = false;
+      if (frameId) {
+        cancelAnimationFrame(frameId);
+        frameId = null;
+      }
+    }
+
+    function onVisibility() {
+      if (document.hidden) stop();
+      else if (!running) start();
+    }
+
+    function onWindowResize() {
+      const w = container.clientWidth;
+      const h = container.clientHeight;
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+      renderer.setSize(w, h);
+    }
+
+    function animate() {
+      if (!running) return;
+      frameId = requestAnimationFrame(animate);
+      if (landscapeGroup) landscapeGroup.rotation.y += 0.001;
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    function renderOnce() {
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    function generateHeight(width, height) {
+      const size = width * height;
+      const data = new Float32Array(size);
+      const perlin = new ImprovedNoise();
+      const z = 35.8;
+      let quality = 1;
+      for (let j = 0; j < 4; j++) {
+        for (let i = 0; i < size; i++) {
+          const x = i % width;
+          const y = ~~(i / width);
+          data[i] += Math.abs(
+            perlin.noise(x / quality, y / quality, z) * quality * 3
+          );
+        }
+        quality *= 5;
+      }
+      return data;
+    }
+
+    init();
+
+    // Cleanup on hot-reload/nav
+    addEventListener("astro:before-prehydrate", () => {
+      try {
+        stop();
+        window.removeEventListener("resize", onWindowResize);
+        document.removeEventListener("visibilitychange", onVisibility);
+        themeObserver?.disconnect?.();
+        controls?.dispose?.();
+        scene?.traverse?.((obj) => {
+          if (obj.isMesh) {
+            obj.geometry?.dispose?.();
+            if (obj.material) {
+              const mats = Array.isArray(obj.material)
+                ? obj.material
+                : [obj.material];
+              mats.forEach((m) => m?.dispose?.());
+            }
+          }
+        });
+        renderer?.dispose?.();
+        container.querySelector("canvas")?.remove?.();
+      } catch (_) {}
+    });
+  }
+</script>

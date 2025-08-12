@@ -4,6 +4,7 @@ import { getCollection } from "astro:content";
 import BaseLayout from "../layouts/BaseLayout.astro";
 import FormattedDate from "../components/FormattedDate.astro";
 import readingTime from "reading-time";
+import MeshScene from "../components/MeshScene.astro";
 
 const posts = (await getCollection("ideas")).sort((a, b) => {
   const aDate = a.data.pubDate || a.data.date;
@@ -42,17 +43,26 @@ const allPostsData = posts.map((post) => {
 ---
 
 <BaseLayout title="Home">
-  <section class="heading">
-    <h1 class="animated-heading">
-      <span class="word">Hi,</span>
-      <span class="word">I'm</span>
-      <span class="word">Tyler</span>
-    </h1>
-    <p class="animated-subtitle slide-in-block">
-      I'm a software engineer with a passion for building things.<br />
-      I'm currently studying machine learning and systems at Georgia Tech. My research interests include: Mechanistic Interpretability, AI Alignment, Deep Learning Theory
-    </p>
+  <section class="hero">
+    <section class="heading">
+      <h1 class="animated-heading">
+        <span class="word">Hi,</span>
+        <span class="word">I'm</span>
+        <span class="word">Tyler</span>
+      </h1>
+      <p class="animated-subtitle slide-in-block">
+        I'm a software engineer with a passion for building things.<br />
+        I'm currently studying machine learning and systems at Georgia Tech. My research
+        interests include: Mechanistic Interpretability, AI Alignment, Deep Learning
+        Theory
+      </p>
+    </section>
+
+    <section class="mesh-section slide-in-block" aria-label="3D landscape demo">
+      <MeshScene client:load />
+    </section>
   </section>
+
   <section class="posts slide-in-block" data-pagefind-ignore>
     <h2>Writing</h2>
     <ul>
@@ -78,8 +88,9 @@ const allPostsData = posts.map((post) => {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    height: 40vh;
-    min-height: 200px;
+    /* Let container control height; avoid forcing large block height */
+    height: auto;
+    min-height: 0;
     text-align: center;
   }
 
@@ -129,6 +140,45 @@ const allPostsData = posts.map((post) => {
   }
   .animated-heading .word:nth-child(3) {
     --word-index: 2;
+  }
+
+  .hero {
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-areas: "heading mesh";
+    gap: 1.5rem;
+    align-items: center;
+    margin: 0 auto 2rem;
+    max-width: min(1400px, 96vw);
+  }
+
+  .heading {
+    grid-area: heading;
+  }
+  .mesh-section {
+    grid-area: mesh;
+  }
+
+  @media (min-width: 960px) {
+    .hero {
+      grid-template-columns: 1fr 1fr;
+      grid-template-areas: "mesh heading";
+      min-height: 65vh;
+    }
+    .heading {
+      align-items: flex-start;
+      text-align: left;
+      height: auto;
+    }
+    .mesh-section {
+      margin: 0;
+    }
+  }
+
+  .mesh-section {
+    /* Let grid control width/placement; remove standalone centering */
+    max-width: none;
+    margin: 0;
   }
 
   .posts {
