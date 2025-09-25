@@ -11,11 +11,17 @@ const capitalize = (s: string) => {
   return s.charAt(0).toUpperCase() + s.slice(1);
 };
 
-const posts = (await getCollection("ideas")).sort((a, b) => {
-  const aDate = a.data.pubDate || a.data.date;
-  const bDate = b.data.pubDate || b.data.date;
-  return new Date(bDate || 0).valueOf() - new Date(aDate || 0).valueOf();
-});
+const posts = (await getCollection("ideas"))
+  .filter((post) => {
+    // In development, show all posts including drafts
+    // In production, only show published posts (not drafts)
+    return import.meta.env.DEV || !post.data.draft;
+  })
+  .sort((a, b) => {
+    const aDate = a.data.pubDate || a.data.date;
+    const bDate = b.data.pubDate || b.data.date;
+    return new Date(bDate || 0).valueOf() - new Date(aDate || 0).valueOf();
+  });
 
 const allTags = [
   ...new Set(posts.flatMap((post) => post.data.tags || [])),
@@ -41,6 +47,7 @@ const allPostsData = posts.map((post) => {
     status: post.data.status,
     tags: post.data.tags || [],
     image: post.data.image,
+    draft: post.data.draft,
     readingTimeText: stats.text,
   };
 });
@@ -175,6 +182,17 @@ const allPostsData = posts.map((post) => {
       margin-bottom: 0.5rem;
     }
 
+    .draft-indicator {
+      background-color: var(--sol-yellow);
+      color: var(--green);
+      font-size: 0.6rem;
+      font-weight: bold;
+      padding: 2px 6px;
+      border-radius: 3px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
     .post-meta {
       display: flex;
       justify-content: space-between;
@@ -213,13 +231,13 @@ const allPostsData = posts.map((post) => {
       <div class="select-filters">
         <select id="type-filter">
           <option value="all">All types</option>
-          {allTypes.map((type) => <option value={type}>{capitalize(type)}</option>)}
+          {allTypes.map((type) => <option value={type}>{capitalize(type || '')}</option>)}
         </select>
         <select id="status-filter">
           <option value="all">All statuses</option>
           {
             allStatuses.map((status) => (
-              <option value={status}>{capitalize(status)}</option>
+              <option value={status}>{capitalize(status || '')}</option>
             ))
           }
         </select>
@@ -253,6 +271,7 @@ const allPostsData = posts.map((post) => {
           >
             <div class="post-card-content">
               <div class="post-card-content-header">
+                {post.draft && <span class="draft-indicator">DRAFT</span>}
                 {post.type && <span>{capitalize(post.type)}</span>}
                 {post.status && <span>{capitalize(post.status)}</span>}
                 <span>{post.readingTimeText}</span>
