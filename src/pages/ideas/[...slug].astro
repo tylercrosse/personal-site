@@ -6,7 +6,11 @@ import type { MarkdownHeading } from "astro";
 import readingTime from "reading-time";
 
 export async function getStaticPaths() {
-  const posts = await getCollection("ideas");
+  const posts = (await getCollection("ideas")).filter((post) => {
+    // In development, show all posts including drafts
+    // In production, only show published posts (not drafts)
+    return import.meta.env.DEV || !post.data.draft;
+  });
   
   const headings = await Promise.all(
     posts.map(async (post) => {
