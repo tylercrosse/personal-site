@@ -24,6 +24,7 @@ const {
   status,
   type,
   tags,
+  draft,
   readingTimeText,
   hideCaption,
 } = Astro.props;
@@ -64,6 +65,17 @@ const ogImage = image?.path || heroImage;
       text-transform: capitalize;
       margin-bottom: 1em;
       color: var(--sol-7);
+    }
+
+    .draft-indicator {
+      background-color: var(--sol-yellow);
+      color: var(--green);
+      font-size: 1em;
+      font-weight: bold;
+      padding: 3px 8px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
 
     .title h1 {
@@ -198,6 +210,7 @@ const ogImage = image?.path || heroImage;
     <header class="title slide-in-block">
       <div class="title-container">
         <div class="title-meta">
+          {draft && <span class="draft-indicator">DRAFT</span>}
           <span>{type}</span>
           <span>{status}</span>
           <span>{readingTimeText}</span>
