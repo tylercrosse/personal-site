@@ -173,17 +173,33 @@ const hierarchicalPosts = allPostsData
       }
     }
 
-    /* Hide columns 2 and 3 on mobile */
+    /* Without JS, only show first column (server-rendered) */
+    .masonry-column[data-column="1"],
+    .masonry-column[data-column="2"] {
+      display: none;
+    }
+
+    /* With JS, show columns based on screen size */
+    .js-enabled .masonry-column[data-column="1"] {
+      display: flex;
+    }
+
+    @media (min-width: 1200px) {
+      .js-enabled .masonry-column[data-column="2"] {
+        display: flex;
+      }
+    }
+
+    /* Hide columns on smaller screens even with JS */
     @media (max-width: 767px) {
-      .masonry-column[data-column="1"],
-      .masonry-column[data-column="2"] {
+      .js-enabled .masonry-column[data-column="1"],
+      .js-enabled .masonry-column[data-column="2"] {
         display: none;
       }
     }
 
-    /* Hide column 3 on tablet */
     @media (min-width: 768px) and (max-width: 1199px) {
-      .masonry-column[data-column="2"] {
+      .js-enabled .masonry-column[data-column="2"] {
         display: none;
       }
     }
@@ -477,15 +493,10 @@ const hierarchicalPosts = allPostsData
   </header>
 
   <section class="post-grid slide-in-block" data-pagefind-ignore>
-    <div class="masonry-column" data-column="0"></div>
-    <div class="masonry-column" data-column="1"></div>
-    <div class="masonry-column" data-column="2"></div>
-  </section>
-
-  <!-- Hidden template container for posts -->
-  <template id="post-items">
-    {
-      hierarchicalPosts.map((post) => {
+    <!-- Server-rendered single column - works without JS -->
+    <div class="masonry-column" data-column="0">
+      {
+        hierarchicalPosts.map((post) => {
         const typeClass = post.type ? `post-card--${post.type}` : '';
         const isRetro = post.type === 'retro';
         const hasChildren = post.children && post.children.length > 0;
@@ -591,19 +602,26 @@ const hierarchicalPosts = allPostsData
         );
       })
     }
-  </template>
+    </div>
+    <!-- Additional columns created by JS for masonry layout -->
+    <div class="masonry-column" data-column="1"></div>
+    <div class="masonry-column" data-column="2"></div>
+  </section>
 
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       // Initialize masonry layout
       const postGrid = document.querySelector('.post-grid') as HTMLElement;
-      const template = document.getElementById('post-items') as HTMLTemplateElement;
       const columns = Array.from(document.querySelectorAll('.masonry-column')) as HTMLElement[];
 
-      if (!postGrid || !template) return;
+      if (!postGrid || columns.length === 0) return;
 
-      // Get all post items from template
-      const postItems = Array.from(template.content.children) as HTMLElement[];
+      // Enable JS-enhanced layout
+      postGrid.classList.add('js-enabled');
+
+      // Get all post items from the first column (server-rendered)
+      const firstColumn = columns[0];
+      const postItems = Array.from(firstColumn.querySelectorAll('.post-card')) as HTMLElement[];
 
       // Function to get visible columns based on screen width
       function getVisibleColumns() {
@@ -613,23 +631,15 @@ const hierarchicalPosts = allPostsData
         return columns; // Desktop: 3 columns
       }
 
-      // Store references to created items to maintain consistent order
-      let createdItems: HTMLElement[] = [];
-
       // Distribute items into columns using "shortest column" algorithm
       function layoutMasonry() {
         const visibleColumns = getVisibleColumns();
 
-        // If we don't have created items yet, create them from template
-        if (createdItems.length === 0) {
-          createdItems = postItems.map(item => item.cloneNode(true) as HTMLElement);
-        }
-
         // Clear all columns
         columns.forEach(col => col.innerHTML = '');
 
-        // Use the consistent createdItems array
-        createdItems.forEach((item) => {
+        // Move existing DOM elements (preserves event listeners and state)
+        postItems.forEach((item) => {
           // Skip hidden items (filtered out) - don't count toward column height
           if (item.classList.contains('hidden')) {
             // Still add to a column but keep hidden class
@@ -669,8 +679,8 @@ const hierarchicalPosts = allPostsData
       let activeHierarchy = "all";
 
       function filterPosts() {
-        // Use the persistent createdItems array
-        createdItems.forEach((container) => {
+        // Use the server-rendered postItems array
+        postItems.forEach((container) => {
           // The container itself is now the post-card
           const parentTags = container.dataset.tags?.split(" ") || [];
           const parentType = container.dataset.type;
