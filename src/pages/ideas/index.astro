@@ -67,10 +67,19 @@ allPostsData.forEach((post) => {
 // Create hierarchical structure: top-level posts with their children
 const hierarchicalPosts = allPostsData
   .filter((post) => !post.parent) // Only top-level posts
-  .map((post) => ({
-    ...post,
-    children: childrenByParent.get(post.slug) || [],
-  }));
+  .map((post) => {
+    const children = childrenByParent.get(post.slug) || [];
+    // Sort children chronologically (oldest to newest)
+    children.sort((a, b) => {
+      const aDate = a.date;
+      const bDate = b.date;
+      return new Date(aDate || 0).valueOf() - new Date(bDate || 0).valueOf();
+    });
+    return {
+      ...post,
+      children,
+    };
+  });
 ---
 
 <BaseLayout title="Ideas">
@@ -138,19 +147,44 @@ const hierarchicalPosts = allPostsData
       color: var(--black);
     }
     .post-grid {
-      column-count: 1;
-      column-gap: 2rem;
+      display: flex;
+      gap: 2rem;
+      align-items: flex-start;
+      flex-direction: column;
     }
 
     @media (min-width: 768px) {
       .post-grid {
-        column-count: 2;
+        flex-direction: row;
       }
     }
 
-    @media (min-width: 1200px) {
-      .post-grid {
-        column-count: 3;
+    .masonry-column {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+      width: 100%;
+    }
+
+    @media (min-width: 768px) {
+      .masonry-column {
+        width: auto;
+      }
+    }
+
+    /* Hide columns 2 and 3 on mobile */
+    @media (max-width: 767px) {
+      .masonry-column[data-column="1"],
+      .masonry-column[data-column="2"] {
+        display: none;
+      }
+    }
+
+    /* Hide column 3 on tablet */
+    @media (min-width: 768px) and (max-width: 1199px) {
+      .masonry-column[data-column="2"] {
+        display: none;
       }
     }
     .post-card {
@@ -161,8 +195,6 @@ const hierarchicalPosts = allPostsData
       color: inherit;
       display: flex;
       flex-direction: column;
-      break-inside: avoid;
-      margin-bottom: 2rem;
     }
 
     .post-card-link {
@@ -444,7 +476,14 @@ const hierarchicalPosts = allPostsData
     </div>
   </header>
 
-  <section class="post-grid slide-in-block" id="post-grid" data-pagefind-ignore>
+  <section class="post-grid slide-in-block" data-pagefind-ignore>
+    <div class="masonry-column" data-column="0"></div>
+    <div class="masonry-column" data-column="1"></div>
+    <div class="masonry-column" data-column="2"></div>
+  </section>
+
+  <!-- Hidden template container for posts -->
+  <template id="post-items">
     {
       hierarchicalPosts.map((post) => {
         const typeClass = post.type ? `post-card--${post.type}` : '';
@@ -552,15 +591,64 @@ const hierarchicalPosts = allPostsData
         );
       })
     }
-  </section>
+  </template>
 
   <script>
     document.addEventListener("DOMContentLoaded", () => {
-      const postGrid = document.getElementById("post-grid");
-      if (!postGrid) return;
+      // Initialize masonry layout
+      const postGrid = document.querySelector('.post-grid') as HTMLElement;
+      const template = document.getElementById('post-items') as HTMLTemplateElement;
+      const columns = Array.from(document.querySelectorAll('.masonry-column')) as HTMLElement[];
 
-      // Get all parent containers
-      const parentContainers = Array.from(postGrid.children) as HTMLElement[];
+      if (!postGrid || !template) return;
+
+      // Get all post items from template
+      const postItems = Array.from(template.content.children) as HTMLElement[];
+
+      // Function to get visible columns based on screen width
+      function getVisibleColumns() {
+        const width = window.innerWidth;
+        if (width < 768) return [columns[0]]; // Mobile: 1 column
+        if (width < 1200) return [columns[0], columns[1]]; // Tablet: 2 columns
+        return columns; // Desktop: 3 columns
+      }
+
+      // Distribute items into columns using "shortest column" algorithm
+      function layoutMasonry() {
+        const visibleColumns = getVisibleColumns();
+
+        // Clear all columns
+        columns.forEach(col => col.innerHTML = '');
+
+        postItems.forEach((item) => {
+          // Clone the item from template
+          const clonedItem = item.cloneNode(true) as HTMLElement;
+
+          // Find the shortest visible column by comparing current heights
+          let shortestColumn = visibleColumns[0];
+          let shortestHeight = visibleColumns[0].offsetHeight;
+
+          visibleColumns.forEach(col => {
+            if (col.offsetHeight < shortestHeight) {
+              shortestHeight = col.offsetHeight;
+              shortestColumn = col;
+            }
+          });
+
+          // Add item to shortest column
+          shortestColumn.appendChild(clonedItem);
+        });
+      }
+
+      // Initial layout
+      layoutMasonry();
+
+      // Re-layout on window resize (debounced)
+      let resizeTimeout: ReturnType<typeof setTimeout>;
+      window.addEventListener('resize', () => {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(layoutMasonry, 150);
+      });
 
       let activeTag = "all";
       let activeType = "all";
@@ -568,6 +656,9 @@ const hierarchicalPosts = allPostsData
       let activeHierarchy = "all";
 
       function filterPosts() {
+        // Get containers dynamically since they're recreated on layout
+        const parentContainers = Array.from(postGrid.querySelectorAll('.post-card')) as HTMLElement[];
+
         parentContainers.forEach((container) => {
           // The container itself is now the post-card
           const parentTags = container.dataset.tags?.split(" ") || [];
