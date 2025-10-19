@@ -613,16 +613,29 @@ const hierarchicalPosts = allPostsData
         return columns; // Desktop: 3 columns
       }
 
+      // Store references to created items to maintain consistent order
+      let createdItems: HTMLElement[] = [];
+
       // Distribute items into columns using "shortest column" algorithm
       function layoutMasonry() {
         const visibleColumns = getVisibleColumns();
 
+        // If we don't have created items yet, create them from template
+        if (createdItems.length === 0) {
+          createdItems = postItems.map(item => item.cloneNode(true) as HTMLElement);
+        }
+
         // Clear all columns
         columns.forEach(col => col.innerHTML = '');
 
-        postItems.forEach((item) => {
-          // Clone the item from template
-          const clonedItem = item.cloneNode(true) as HTMLElement;
+        // Use the consistent createdItems array
+        createdItems.forEach((item) => {
+          // Skip hidden items (filtered out) - don't count toward column height
+          if (item.classList.contains('hidden')) {
+            // Still add to a column but keep hidden class
+            visibleColumns[0].appendChild(item);
+            return;
+          }
 
           // Find the shortest visible column by comparing current heights
           let shortestColumn = visibleColumns[0];
@@ -636,7 +649,7 @@ const hierarchicalPosts = allPostsData
           });
 
           // Add item to shortest column
-          shortestColumn.appendChild(clonedItem);
+          shortestColumn.appendChild(item);
         });
       }
 
@@ -656,10 +669,8 @@ const hierarchicalPosts = allPostsData
       let activeHierarchy = "all";
 
       function filterPosts() {
-        // Get containers dynamically since they're recreated on layout
-        const parentContainers = Array.from(postGrid.querySelectorAll('.post-card')) as HTMLElement[];
-
-        parentContainers.forEach((container) => {
+        // Use the persistent createdItems array
+        createdItems.forEach((container) => {
           // The container itself is now the post-card
           const parentTags = container.dataset.tags?.split(" ") || [];
           const parentType = container.dataset.type;
@@ -718,6 +729,11 @@ const hierarchicalPosts = allPostsData
               container.classList.add("hidden");
             }
           }
+        });
+
+        // Re-layout masonry after filtering to fix column distribution
+        requestAnimationFrame(() => {
+          layoutMasonry();
         });
       }
 
