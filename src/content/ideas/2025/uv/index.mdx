@@ -1,0 +1,246 @@
+---
+title: 'Using uv: A Modern Python Workflow'
+description: 'An introduction to uv, a fast, Rust-based tool for Python packaging'
+date: '2025-10-19'
+status: 'in-progress'
+type: 'idea'
+tags: ['python', 'tips', 'short']
+category: ['ideas']
+draft: false
+audience: 'All'
+media_subpath: "/ideas/python-uv/"
+image:
+  path: "./snek-2.jpeg"
+  alt: 'Purple UV python'
+hideCaption: true
+---
+
+import Figure from "../../../../components/Figure.astro";
+
+import uvSpeed from "./uv-speed.png";
+import pythonEnvironment from './python_environment_2x.png';
+
+## Introduction: What is `uv`?
+
+I've used `uv` on and off since it was released and have been consistently impressed by its speed. However, I still found myself confused about certain parts of its workflow, like when to use `uv run` versus `uvx`, or how it fit in with existing tools like `pip` and `venv`. I wrote this guide as a way to resolve those questions for myself, and hopefully, it can be helpful to others who are also exploring this powerful new tool.
+
+`uv` is a package and project manager for Python, written in Rust by Astral (the team behind `ruff`). It's designed to be an extremely fast, all-in-one replacement for `pip`, `venv`, `pip-tools`, and other utilities. It addresses three core areas:
+
+1.  **Speed**: It's orders of magnitude faster than `pip` and `pip-tools`.
+2.  **Simplicity**: It offers a single command-line interface for most packaging tasks.
+3.  **Reproducibility**: It encourages modern, lockfile-based workflows for deterministic builds.
+
+<Figure
+  src={uvSpeed}
+  alt="A bar chart comparing the installation speed of uv and pip, with uv being significantly faster."
+  caption="A conceptual comparison showing uv's speed advantage over traditional tools for a cold install of a large project like Django."
+  width={700}
+/>
+
+## The Philosophy of uv
+The core philosophy behind `uv` is to provide "one tool to manage (almost) everything." While it doesn't manage Python installations (a task left to tools like `pyenv` or `mise`), it handles nearly every other aspect of your project's lifecycle: managing dependencies, running scripts, and building and publishing packages.
+
+`uv` is designed to be:
+
+-   **Fast and Deterministic**: It uses a global cache and a high-performance resolver to make dependency installation incredibly fast. It defaults to generating a `uv.lock` file, ensuring that every developer on your team and your CI/CD pipeline uses the exact same package versions.
+-   **Minimal Setup**: Getting started is as simple as running `uv init`. You no longer need to manually create and activate virtual environments; `uv` handles it for you seamlessly.
+-   **Composable**: Despite its all-in-one nature, `uv` is built on and respects Python standards like PEP 517/518 (`pyproject.toml`). It's a drop-in replacement for `pip` and `pip-tools` and works with the existing ecosystem, not against it.
+
+## Core Concepts
+
+`uv`'s workflow is built on three fundamental components that work together to create a robust and reproducible project structure.
+
+-   **`pyproject.toml`**: This is the heart of your project's configuration. It's a standardized file where you declare your project's metadata (like its name and version) and its direct dependencies (e.g., `requests` or `pytest`). You define *what* you need, but not the exact versions of every sub-dependency.
+-   **`uv.lock`**: This is the lockfile automatically generated and managed by `uv`. It contains a complete, frozen list of every package and its exact version required to run your project. This file is the key to reproducibility, as it guarantees that `uv sync` will create the exact same environment every time, on any machine.
+-   **Virtual Environment (`.venv`)**: This is the isolated directory where `uv` installs all the packages listed in the lockfile. `uv` creates and manages this environment for you, and its `run` command automatically uses it without requiring you to manually `source .venv/bin/activate`.
+
+Here’s how these files compare to the traditional `requirements.txt`:
+
+| File               | Purpose                                                              | Managed By |
+| ------------------ | -------------------------------------------------------------------- | ---------- |
+| `pyproject.toml`   | Declares direct, high-level dependencies and project metadata.       | You        |
+| `requirements.txt` | Traditionally lists all dependencies, often without version pinning. | You/pip    |
+| `uv.lock`          | Locks the entire dependency tree to specific, exact versions.        | `uv`       |
+
+<Figure
+  src={pythonEnvironment}
+  alt="Obligatory xkcd comic on the mess of Python environments."
+  caption="Obligatory xkcd comic on the mess of Python environments."
+  width={800}
+/>
+
+## Everyday Workflows
+
+### Creating a new project
+
+Starting a new Python project with `uv` is refreshingly simple.
+
+```bash
+# 1. Initialize a new project
+uv init
+
+# 2. Add a dependency
+uv add requests
+
+# 3. Run your code
+uv run python main.py
+```
+
+This workflow replaces the traditional ceremony of `python -m venv .venv`, `source .venv/bin/activate`, and `pip install ...`. `uv` automatically creates the `.venv`, adds `requests` to your `pyproject.toml`, updates `uv.lock`, and installs the package.
+
+### Adding and removing dependencies
+
+`uv` makes dependency management a single-step process. When you add or remove a package, `uv` automatically updates both your `pyproject.toml` and `uv.lock` file, keeping everything in sync.
+
+```bash
+# Add a production dependency
+uv add "fastapi[all]"
+
+# Add a development-only dependency
+uv add --dev pytest
+
+# Remove a dependency
+uv remove fastapi
+```
+
+### Running code and tools
+
+The `uv run` command executes a command within the project's managed virtual environment, saving you from ever having to activate it manually. `uv` automatically detects the `.venv` in the current directory (or parent directories) and uses it.
+
+```bash
+# Run your main application script
+uv run python src/main.py
+
+# Run your tests with pytest
+uv run pytest
+
+# Run a linter or type checker
+uv run mypy src/
+```
+
+### Using one-off tools
+
+Sometimes you need to run a tool without adding it as a project dependency. `uvx` is the perfect command for this. It creates a temporary, cached environment, installs the tool, runs it, and then discards the environment.
+
+```bash
+# Check formatting with black without installing it in your project
+uvx black --check .
+
+# Run a code formatter
+uvx ruff format .
+```
+
+Think of `uv run` for tools *inside* your project (like `pytest`) and `uvx` for tools *outside* your project (like one-off scripts or formatters).
+
+### Reproducible installs
+
+The `uv sync` command is the cornerstone of reproducibility. It installs the exact versions of all dependencies specified in `uv.lock` into your virtual environment. This is the command you and your team will use to set up the project locally and what your CI pipeline will use to build it.
+
+```bash
+# Install all dependencies from the lockfile
+uv sync
+
+# In CI, use --frozen to ensure the lockfile is up-to-date
+uv sync --frozen
+```
+
+Using `uv sync --frozen` in CI will cause the build to fail if `pyproject.toml` has been changed without regenerating the lockfile, preventing "it works on my machine" issues.
+
+### Publishing a package
+
+If your project is a library meant to be published, `uv` provides standard build and publish commands.
+
+```bash
+# Build the source distribution and wheel
+uv build
+
+# Publish the package to PyPI (or a custom index)
+uv publish
+```
+
+
+## Integrating uv into Existing Workflows
+
+### Migrating from pip or Poetry
+Migrating an existing project to `uv` is straightforward.
+
+1.  **Initialize `uv`**: Run `uv init` in your project root.
+2.  **Import Dependencies**: If you have a `requirements.txt` file, you can import your dependencies directly:
+    ```bash
+    # Import production dependencies
+    uv add -r requirements.txt
+
+    # Import development dependencies
+    uv add -r requirements-dev.txt --dev
+    ```
+3.  **Update Your Workflow**:
+    -   Replace `pip install <pkg>` with `uv add <pkg>`.
+    -   Replace `pip install -r requirements.txt` with `uv sync`.
+    -   Replace `python -m pytest` with `uv run pytest`.
+
+### `uv add` vs. `uv pip install`
+
+Another point confusion for me was the difference between `uv add` and `uv pip install`. While they seem similar, they serve fundamentally different purposes.
+
+-   **`uv add <package>`**: This is the **declarative** way to manage your project's dependencies. When you use `uv add`, you are telling `uv` that `<package>` is a dependency of your project. `uv` will:
+    1.  Add the package to your `pyproject.toml`.
+    2.  Resolve the full dependency tree.
+    3.  Update the `uv.lock` file with the exact versions.
+    4.  Install the package into your `.venv`.
+
+    Use `uv add` for any package that is a long-term dependency of your project.
+
+-   **`uv pip install <package>`**: This is an **imperative** command that behaves much like `pip install`. It directly installs a package into the virtual environment without modifying your `pyproject.toml` or `uv.lock` files. This is useful for:
+    -   Temporarily trying out a library.
+    -   Installing a tool for a one-off task within the virtual environment.
+    -   Situations where you need to install something without making it a formal dependency.
+
+In short: `uv add` manages your project's dependencies, while `uv pip install` is for imperative, one-off installations into the environment. For reproducible projects, you should almost always prefer `uv add`.
+
+### Working with Docker
+`uv` can significantly speed up your Docker builds and reduce image size. By copying only the `pyproject.toml` and `uv.lock` files first, you can leverage Docker's layer caching.
+
+```dockerfile
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install uv
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+ENV PATH="/root/.cargo/bin:$PATH"
+
+# Copy only the dependency files to leverage caching
+COPY pyproject.toml uv.lock ./
+
+# Install dependencies
+RUN uv sync --frozen --system
+
+# Copy the rest of the application code
+COPY . .
+
+CMD ["uv", "run", "python", "src/main.py"]
+```
+
+## Other Questions I had
+
+| Question                               | Short Answer                                                              |
+| -------------------------------------- | ------------------------------------------------------------------------- |
+| When to use `uv add` vs `uv pip`?      | Use `uv add` to manage project dependencies. Use `uv pip` for one-off tasks. |
+| Do I still need virtualenvs?           | Yes, but `uv` creates and manages them for you automatically.             |
+| Do I need to activate `.venv`?         | No. `uv run` and `uvx` handle environment activation for you.             |
+| What happens when I change directories?| `uv` automatically detects the nearest `pyproject.toml` and its `.venv`.  |
+
+## Cheatsheet (quick reference)
+
+Here is a quick reference for the most common `uv` commands.
+
+```sh
+uv init               # Create a new project
+uv add requests       # Add a dependency
+uv add --dev pytest   # Add a dev dependency
+uv sync               # Install from lockfile
+uv run pytest         # Run a command in venv
+uvx black .           # Run a one-off tool
+uv build              # Build a package
+uv publish            # Publish a package
+```

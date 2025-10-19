@@ -34,6 +34,8 @@ const ideas = defineCollection({
     }).optional(),
     hideCaption: z.boolean().optional(),
     media_subpath: z.string().optional(),
+    // Parent post relationship (for grouping project posts under retro posts)
+    parent: z.string().optional(),
   }).transform((data) => {
     // Transform Gatsby 'date' field to Astro 'pubDate' if needed
     if (data.date && !data.pubDate) {
