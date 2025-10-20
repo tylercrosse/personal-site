@@ -1,0 +1,108 @@
+---
+title: 'Notes on Effective ML Research'
+description: 'A summary of my takeaways from three influential articles on conducting effective empirical AI alignment research.'
+date: '2025-10-18'
+status: 'in-progress'
+type: 'note'
+tags: ['machine-learning', 'research', 'ai-alignment', 'mechanistic-interpretability']
+category: ['ideas']
+draft: false
+audience: 'All'
+media_subpath: "/ideas/ml-research-notes/"
+image:
+  path: "./waves-2.png"
+  alt: 'Waves rolling in'
+hideCaption: true
+---
+
+In early September I was accepted to the 2025 Fall cohort of the [Supervised Program for Alignment Research (SPAR)](https://sparai.org/) to work on a project on [Goal Drift Quantification in Long-Horizon Tasks](https://airtable.com/appypGt9DhCljq3Gh/shrpaJMUhvElTxcI8?detail=eyJwYWdlSWQiOiJwYWd5SURLVXg5WHk4bHlmMCIsInJvd0lkIjoicmVjOHA3ZFFXd2doMlBvcnAiLCJzaG93Q29tbWVudHMiOmZhbHNlLCJxdWVyeU9yaWdpbkhpbnQiOnsidHlwZSI6InBhZ2VFbGVtZW50IiwiZWxlbWVudElkIjoicGVsbERlelBkb0FhQTZzaWIiLCJxdWVyeUNvbnRhaW5lcklkIjoicGVsUlNqc0xIbWhUVmJOaE4iLCJzYXZlZEZpbHRlclNldElkIjoic2ZzRGNnMUU3Mk9xSXVhYlgifX0). As part of the my ramp up I read a handful of articles on how to conduct Research, mostly with a focus on the kind of Emperical Alignment Research that I'm focused on. Here are some of my notes on them.
+
+
+## [“Research as a Stochastic Decision Process” 2018-12 by Jacob Steinhart](https://cs.stanford.edu/~jsteinhardt/ResearchasaStochasticDecisionProcess.html)
+  * Outcome \- pulled out most valuable quotes:  
+    * Framed prioritization of research activities as “**Do the components in order from most informative per unit time to least informative per unit time.**”  
+    * “we think of research as a multi-round game, where in each round we take some action that gives us some information; the information we get is stochastic, and well as perhaps the time needed to complete the action. We have **two competing goals**:  
+      * **Maximize probability of eventual success** (don't give up if it turns out we can eventually solve the problem).  
+      * **Minimize expected time spent** (give up early if the problem is not feasible, and solve the problem quickly if it is feasible).”  
+    * “For empirical work, measuring "**ceilings**" (an upper bound of how high performance could possibly be) is often useful.”  
+    * “The counterpart to ceilings are **baselines**\--simple or off-the-shelf methods that give a quick lower bound on achievable accuracy. Baselines provide an important sanity check, as complicated methods often underperform simple baselines.”  
+    * “It's much more useful to prune branches of the search tree at the level of conceptual approaches \[...\] than at the level of a specific instantiation.”  
+    * “Whenever something doesn't work, I ask why it didn't work. My goal is to avoid trying similar things that will fail for the same reason.”  
+    * “it is often not obvious that multiple approaches to a problem all have the same issue.”  
+    * **“We often conflate a high-level approach with a low-level instantiation of the approach.”**  
+    * **“We are often too slow to try to disprove our own ideas.”**  
+  * Reflection    
+    * This post motivates a more critical examination of what we’re trying to solve for (the research questions we’re answering) and then evaluating different research trajectories using time estimates and success confidence.  
+    * I want to try to keep a running task list of research questions \+ tasks with their time estimates and success confidence.
+
+## [“Tips for Emperical Alignment Research” 2024-02 by Ethan Perez](https://www.alignmentforum.org/posts/dZFpEdKyb9Bf4xYn7/tips-for-empirical-alignment-research)  
+  * Outcome \-   
+    * outline of “rough success criteria”  
+      * \[70%\] **Getting ideas to work quickly**  
+        * \[45%\] **Implementation speed**. Running a high volume of experiments. Designing minimal experiments to test ideas Trading off code quality vs. implementation speed w/ heavy bias towards speed. Notice when you’re going slowly and quickly/shameless ask for help.  
+        * \[25%\] **Ability to get things to work.** Ex. ‘able to make numbers go up if you want’. Diagnosing why something’s not working and make fixes. Able to get things working that others couldn’t.  
+      * \[20%\] **Driving the project direction**  
+        * \[10%\] **Medium/low-level, day-to-day direction.** Knowing/determining well-motivated research questions and prioritizing/designing experiments to answer those questions. Decisions about approach, metrics, experiments, etc. Notice when you’re not sure you’re not tackling the most important research question & quickly asking for help. Proactive about suggesting great next steps w/ good prioritization.  
+        * \[10%\] **High-level/conceptual direction.** Determining which research directions are important to pursue (sourcing ideas from others, ideating based on reading/experiments) and filtering them for quality/importance/tractability. “Noticing when we could probably answer a more important research question or when we’re somewhat lost in direction, then taking the initiative to deconfuse us and e.g. write a doc, lead a discussion, have a 1:1 chat with other team members, or organize a meeting with external discussion to unblock us”  
+      * \[5%\] **Communicating ideas clearly**  
+        * “Your slack messages/plots and live presentations/discussions of results are clear and easy to understand. It takes very little time to process information you send over Slack, and a minimal number of back and forths to understand the results”  
+      * \[5%\] **Other** – Varies by person, but includes things like:  
+        * Being a good teammate \- helping others, taking initiative to improve things, do what needs to get done even if it’s not exciting.  
+        * Being easy to manage \- receptive to feedback, emotional energy add vs. require, transparent about issues you’re facing.  
+        * “Great at noticing and calling out room for improvement, e.g. in how we’re working together, things I could be doing better, ways our team could be coordinating better.”  
+    * Workflow \+ Reading Papers \+ General  
+      * “Always be thinking about what the best next experiment you run should be: When you show experimental results (in meetings or in Slack), you should also include a discussion of your proposed next possible steps immediately after (and proposed prioritization). The best researchers are able to iterate between running experiments and deciding on the best next step independently.”  
+      * Suggests reading research papers is “not very important — low value of information relative to running your own experiments.” Exceptions are starting a new project (US lol) 
+        * Read tangentially related work only to get the main idea  
+        * Read related research thoroughly  
+      * Every experiment is a win \- what matters is whether or not you’re learning about a problem. If you’re hitting diminishing returns on the project, then it’s totally fine and great to switch things up.  
+    * Three modes of research \- similar to other articles by Perez & Steinhart.  
+      * **Exploratory Phase** (beginning of a new project)  
+        * Determine what the important problems to work on are and which are tractable. Do quick experiments. Read/skim papers to prototype ideas.  
+      * **Execution phase** (vast majority of the time on a project)  
+        * Generally, aim to always have some experiments running 24/7. Tailor experiments to take no longer than \~16h to run (overnight). Shorter feedback cycles are better  
+      * **Writing phase**  
+        * Internal communication: research log/doc (example of [research log](https://docs.google.com/document/d/1grG2ua929j_X5dA5bdX26kS6YkddnCDHUa8CstQcoCM/edit#bookmark=id.umt8exaarrp7))  
+        * External: takes \~2-4+ weeks to run additional experiments & clarify results.  
+        * Writing Tips: See [https://ethanperez.net/easy-paper-writing-tips/](https://ethanperez.net/easy-paper-writing-tips/)   
+    * Work Habits  
+      * **Hard work pays off.** Often, there are a lot of reasonable-sounding ideas to try, and it’s just actually unclear what will work, so you need to take a lot of shots on goal to find something that works. What matters is the number of productive hours you’re spending (often in empirical research, basically how much time you’re spending coding and running experiments), rather than the absolute number of hours.  
+      * **Work sustainably.** Take care of yourself & don’t burn out\!  
+    * Ethan’s Project Norms  
+      * Daily Slack updates  
+      * At least monthly 1:1 meetings  
+      * Weekly meetings:  
+        * Default to presenting results as a slideshow. This helps streamline discussions and minimize the time required to dig up relevant results.  
+        * It helps ot have a concrete agenda for what to discuss during meetings.  
+          * Plots, tables, or other concrete results to show  
+          * A concrete list of proposed, prioritized next steps, given your existing results and the overall project goal.  
+          * A concrete list of questions and places where it’d be helpful to get input from others at the meeting.  
+          * A sense of how long to spend discussing each point above, so that everything gets discussed without running over time. It’s common to spend disproportionately more time on points brought up early on in a meeting (less time for others)  
+          * [**Other great advice on how to run research meetings**](https://medium.com/@jurgens_24580/reflections-on-strategies-for-successful-meetings-with-undergraduate-researchers-ae22306ecd8d) (didn’t read yet)  
+      * Take agency\! DMs, feedback  
+  * Reflection  
+    * Helpful additional context on what the research process looks like.
+
+## [“Tips and Code for Empirical Research Workflows” 2025-01 by John Hughes & Ethan Perez](https://www.lesswrong.com/posts/6P8GYb4AjtPXx6LLB/tips-and-code-for-empirical-research-workflows)
+  * Outcome  
+    * Explored tools a bit (Parts 1 & 2\) \- many are old hat. Going through all of them feels like exploring a rabbit hole with some marginal long-term benefit. Especially for the workflow tools. Some maybe worth exploring more:  
+      * OpenWeights: A python sdk for LLM finetuning and inference on runpod infrastructure [https://github.com/longtermrisk/openweights](https://github.com/longtermrisk/openweights)   
+      * Inspect: A framework for large language model evaluations [https://github.com/UKGovernmentBEIS/inspect\_ai](https://github.com/UKGovernmentBEIS/inspect_ai)   
+    * Part 3: Experiment Tips \- echoed Jacob Steinhart’s advice. \-\> Switch between two modes. They offer helpful tips for both modes.  
+      * **1\. De-risk** (focuses on rapidly answering high-priority questions with minimal overhead. Mostly done in python notebooks) and   
+      * **2\. Extended project** (emphasizes engineering rigour and longer-term maintainability).  
+      * Link to [Apollo Reseach’s Engieering Guide](https://docs.google.com/document/d/1LJedFJKrGs7vi-xA1ucQQxj_y85Z9x4lEmf4sFgeX6g/edit?tab=t.0%20) (\~12 pgs). A rapid skim makes it look similar to this doc.  
+    * Part 4: repos created for MATS scholars  
+      * [**Safety-tooling**](https://github.com/safety-research/safety-tooling) \- Inference API for many LLMs and other useful tools for empirical research  
+      * [**Safety-examples**](https://github.com/safety-research/safety-examples) \- a template repo to clone at the start of a project that has examples of using the shared tooling.  
+  * Reflection  
+    * This was a helpful guide. It confirmed many of my priors and gave some exposure to tools and techniques I hadn’t seen before.
+
+## Final Thoughts
+
+Across all three articles, a few key themes emerge:
+1.  **Speed is a feature:** The ability to iterate on ideas and experiments quickly is paramount. This means prioritizing minimal experiments, being willing to write "fast" vs. "quality" code initially, and knowing when to ask for help.
+2.  **Be strategic:** Frame research as a process of reducing uncertainty. Prioritize experiments that provide the most information per unit of time, and actively try to disprove your own hypotheses early.
+3.  **Modes of work:** It's useful to distinguish between different phases of research, like exploration/de-risking vs. execution/extended projects. Each mode has different goals and requires a different approach to engineering and rigor.
+
+Keeping these principles in mind seems like a good way to stay focused and productive.
