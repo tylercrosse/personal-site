@@ -1,0 +1,195 @@
+---
+title: 'Deep Learning'
+description: 'A survey of concepts covered in my graduate Deep Learning course'
+date: '2025-10-20'
+updated: '2025-10-20'
+status: 'in-progress'
+type: 'retro'
+tags: ['deep-learning', 'python', 'pytorch', 'neural-networks', 'computer-vision', 'NLP', 'computer-science', 'learning-in-public', 'MSCS']
+category: ['mscs']
+draft: true
+audience: 'All'
+media_subpath: "/ideas/dl-retro/"
+image:
+  path: "./geologic-layers.png"
+  alt: 'Geologic Layers'
+hideCaption: true
+---
+
+import BookCard from "../../../../components/BookCard.astro";
+import Figure from "../../../../components/Figure.astro";
+
+import mathematicsForMachineLearning from "../../../books/math-for-ml.jpg";
+import elementaryLinearAlgebra from "../../../books/elementary-linear-algebra.jpg";
+import deepLearningGoodfellow from "../../../books/dl-goodfellow.jpg";
+import deepLearningPrince from "../../../books/dl-prince.jpg";
+import handsOnMl from "../../../books/hands-on-ml.jpg";
+
+import computationalGraph from "./computational-graph-placeholder.png";
+import backprop from "./backprop-placeholder.png";
+import cnn from "./convolution-placeholder.png";
+// import transformer from "./transformer-placeholder.png";
+// import gan from "./gan-placeholder.png";
+
+
+This piece serves as both a personal retrospective and a technical overview. I took Georgia Tech's [CS 7643: Deep Learning](https://omscs.gatech.edu/cs-7643-deep-learning) in the Spring 2025 semester. I'm revisiting the material to consolidate my learning - following the Feynman technique of teaching to understand, while also sharing insights for those interested in the course or my background. My audience includes prospective OMSCS students, potential employers, and colleagues seeking to understand the course content and my current knowledge. The bulk of this article summarizes the course material, with additional sections covering course logistics, my personal experience, and helpful resources.
+
+## Introduction to Deep Learning
+
+Deep learning has become the driving force behind the recent explosion in AI capabilities, from image recognition to natural language understanding. This course provides a comprehensive tour of the field, starting with the foundational principles of neural networks and progressing through the advanced architectures that power today's most sophisticated models.
+
+The course is structured into four main modules, each building on the last:
+1.  **Introduction to Neural Networks**: The fundamentals of neural networks, from linear classifiers to backpropagation.
+2.  **Convolutional Neural Networks (CNNs)**: The workhorses of computer vision.
+3.  **Structured Neural Representations**: Handling sequential data with RNNs, LSTMs, and the revolutionary Transformer architecture.
+4.  **Advanced Topics**: A look at the cutting edge, including Deep Reinforcement Learning and Generative Models.
+
+We'll look at each module in turn, connecting the lecture concepts to the hands-on assignments that form the core of the learning experience.
+
+## Module 1: Introduction to Neural Networks
+
+This module lays the groundwork for the entire course, starting from first principles. It begins with simple linear classifiers and the core optimization algorithm that powers deep learning: gradient descent. From there, we build up to a full understanding of a "vanilla" neural network. The key concept is the **computational graph**, which represents the network's operations as a directed graph, making it possible to efficiently calculate gradients for all the model's parameters using the chain rule—a process known as **backpropagation**.
+
+<Figure
+  src={computationalGraph}
+  alt="Computational Graph"
+  caption="A computational graph illustrates how inputs are transformed by a series of operations to produce an output, enabling efficient backpropagation. Credit Justin Johnson."
+/>
+
+<Figure
+  src={backprop}
+  alt="Backpropagation"
+  caption="Backpropagation is a technique for efficiently computing the gradients of a neural network. Credit Justin Johnson."
+/>
+
+**Assignment 1** solidifies these concepts by having you build a neural network from scratch using only NumPy. This includes implementing:
+*   Forward and backward passes for various layers (e.g., ReLU, Softmax).
+*   Loss functions like Cross-Entropy.
+*   An optimizer using Stochastic Gradient Descent (SGD).
+
+This hands-on experience provides a deep intuition for how neural networks learn, before moving on to higher-level frameworks like PyTorch.
+
+## Module 2: Convolutional Neural Networks
+
+This module dives into Convolutional Neural Networks (CNNs), the architecture that revolutionized computer vision. We learn about the key building blocks: **convolutional layers**, which apply learnable filters to input images to detect features like edges and textures, and **pooling layers**, which downsample the feature maps to reduce dimensionality and create translational invariance. We explore classic CNN architectures and the techniques used to visualize what they've learned.
+
+<Figure
+  src={cnn}
+  alt="Convolutional Neural Network"
+  caption="A typical CNN architecture, showing the flow from input image through convolutional and pooling layers to the final classification. Credit Justin Johnson."
+/>
+
+**Assignment 2** is a two-part challenge. First, you implement the forward and backward passes for convolutional and max-pooling layers in NumPy, reinforcing the fundamentals. Then, you transition to PyTorch to build a more complex CNN, gaining familiarity with the framework that will be used for the rest of the course.
+
+**Assignment 3** focuses on understanding what happens inside the "black box" of a CNN. You implement techniques to visualize the network's learned features and create adversarial examples to fool the model, providing insight into its strengths and weaknesses.
+
+## Module 3: Structured Neural Representations
+
+This module shifts focus from images to sequential data, like text and time series. We begin with **Recurrent Neural Networks (RNNs)** and their more powerful variant, **Long Short-Term Memory (LSTM)** networks, which are designed to handle long-range dependencies in data.
+
+The highlight of this module is the **Transformer architecture**, introduced in the seminal paper "Attention Is All You Need." Transformers dispense with recurrence entirely and rely on a mechanism called **self-attention** to weigh the importance of different words in a sequence. This allows for massive parallelization and has made Transformers the state-of-the-art for nearly all NLP tasks.
+
+{/* <Figure
+  src={transformer}
+  alt="The Transformer Architecture"
+  caption="The Transformer architecture, based on self-attention, has become the dominant model for natural language processing tasks."
+/> */}
+
+**Assignment 4** is an extensive project where you implement several sequence models:
+*   RNN and LSTM networks.
+*   A Sequence-to-Sequence (Seq2Seq) model with attention.
+*   The full Transformer model (encoder and decoder).
+
+The final part of the assignment involves training a model to translate German to English, comparing the performance of the traditional Seq2Seq model against the more advanced Transformer.
+
+## Module 4: Advanced Topics
+
+The final module provides a glimpse into the broader applications of deep learning.
+*   **Deep Reinforcement Learning**: Combining deep neural networks with reinforcement learning to learn complex behaviors in environments like video games.
+*   **Unsupervised and Semi-Supervised Learning**: Techniques for learning from data with few or no labels.
+*   **Generative Models**: We explore models like **Generative Adversarial Networks (GANs)**, which consist of two competing neural networks—a generator and a discriminator—that learn to produce realistic new data, such as images.
+
+{/* <Figure
+  src={gan}
+  alt="Generative Adversarial Network"
+  caption="A GAN consists of a Generator that creates fake images and a Discriminator that tries to distinguish them from real images. Through this competition, both networks improve."
+/> */}
+
+## Group Project
+
+The course culminates in a group project where students can apply their knowledge to a real-world problem. This could involve reproducing the results of a research paper, exploring a novel architecture, or participating in a Kaggle-style competition. A popular project is the "Hateful Memes Challenge," which requires building a multimodal model that can understand the combination of text and images to detect hate speech.
+
+## Course Overview
+
+The course is demanding and time-consuming, particularly the assignments. Access to a GPU is highly recommended for Assignments 2 and 4, as well as the group project. The course provides guidance on using services like Google Colab.
+
+### Grading
+
+The grading breakdown from the Spring 2022 semester was as follows:
+
+| Component      | Weight |
+|----------------|--------|
+| Assignments (4)| 55%    |
+| Quizzes (6)    | 20%    |
+| Final Project  | 20%    |
+| Participation  | 5%     |
+
+### Books
+
+These are some of the key texts that are highly relevant to the course material.
+
+<BookCard
+  title="Mathematics for Machine Learning"
+  author="Marc Peter Deisenroth, A. Aldo Faisal, and Cheng Soon Ong"
+  img={mathematicsForMachineLearning}
+>
+  <p>
+    A comprehensive introduction to the mathematics of machine learning, covering the concepts covered in the course. It's an excellent reference for the mathematical concepts covered in the course.
+  </p>
+</BookCard>
+
+<BookCard
+  title="Elementary Linear Algebra"
+  author="Howard Anton"
+  img={elementaryLinearAlgebra}
+>
+  <p>
+    A classic textbook on elementary linear algebra.
+  </p>
+</BookCard>
+
+<BookCard
+  title="Deep Learning"
+  author="Ian Goodfellow, Yoshua Bengio, and Aaron Courville"
+  img={deepLearningGoodfellow}
+>
+  <p>
+    Often called the "bible" of deep learning, this book provides a comprehensive and rigorous mathematical treatment of the field. It's an excellent reference for the theoretical concepts covered in the course.
+  </p>
+</BookCard>
+
+<BookCard
+  title="Understanding Deep Learning"
+  author="Simon J. D. Prince"
+  img={deepLearningPrince}
+>
+  <p>
+    A more accessible introduction to deep learning, this book provides a clear and intuitive explanation of the concepts covered in the course. It's an excellent reference for the practical concepts covered in the course.
+  </p>
+</BookCard>
+
+### Other Resources
+
+Here are some of the excellent resources from other students that I found helpful:
+
+- [yxlow's Course Review](https://lowyx.com/posts/gt-dl/)
+- [yxlow's Course Notes](https://lowyx.com/posts/gt-dl-notes/)
+- [Monzer Saleh's Course Notes](https://monzersaleh.github.io/GeorgiaTech/CS7643_DeepLearning.html)
+
+## My Experience
+
+{/* TODO: Add personal experience here. */}
+
+Thanks for reading!
+
+## References
