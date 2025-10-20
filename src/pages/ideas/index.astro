@@ -211,6 +211,16 @@ const hierarchicalPosts = allPostsData
       color: inherit;
       display: flex;
       flex-direction: column;
+      transition: all 0.2s ease-in-out;
+    }
+
+    .post-card:focus-within {
+      outline: 2px solid var(--blue);
+      outline-offset: 2px;
+    }
+
+    .post-card:has(.post-card-link:focus:not(:focus-visible)) {
+      outline: none;
     }
 
     .post-card-link {
@@ -223,6 +233,10 @@ const hierarchicalPosts = allPostsData
 
     .post-card-link:hover {
       opacity: 0.8;
+    }
+
+    .post-card-link:focus {
+      outline: none;
     }
 
     :global([data-effective-theme="dark"]) .post-card {
@@ -260,7 +274,7 @@ const hierarchicalPosts = allPostsData
       color: inherit;
       font-size: 0.9rem;
       border-bottom: 1px solid var(--main-border-color);
-      transition: background-color 0.2s ease-in-out;
+      transition: all 0.2s ease-in-out;
     }
 
     .child-post-item:last-child {
@@ -272,15 +286,20 @@ const hierarchicalPosts = allPostsData
     }
 
     .child-post-item:hover {
-      background-color: var(--base3);
+      opacity: 0.8;
+    }
+
+    .child-post-item:focus {
+      outline: 2px solid var(--blue);
+      outline-offset: 2px;
+    }
+
+    .child-post-item:focus:not(:focus-visible) {
+      outline: none;
     }
 
     :global([data-effective-theme="dark"]) .child-post-item {
       border-bottom-color: var(--base03);
-    }
-
-    :global([data-effective-theme="dark"]) .child-post-item:hover {
-      background-color: var(--base01);
     }
 
     .child-post-content {
