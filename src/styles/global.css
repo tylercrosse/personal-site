@@ -201,18 +201,22 @@ h6 {
 h2, h3, h4, h5, h6 {
   margin: 0.5em 0 0.5rem 0;
 }
+/* These used the Golden Ratio but that felt a little too large */
 h1 {
-  font-size: 3.052em;
+  /* font-size: 3.052em; */
+  font-size: 3.0em;
   margin: 0 0 0.5rem 0;
 }
 h2 {
-  font-size: 2.441em;
+  /* font-size: 2.441em; */
+  font-size: 2.3em;
 }
 h3 {
-  font-size: 1.953em;
+  /* font-size: 1.953em; */
+  font-size: 1.8em;
 }
 h4 {
-  font-size: 1.563em;
+  font-size: 1.5em;
 }
 h5 {
   font-size: 1.25em;
