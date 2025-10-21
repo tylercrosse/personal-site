@@ -64,6 +64,9 @@ The `src/content/ideas/` directory contains the main content, organized by year 
 
 ## Development
 
+Requirements:
+- Node >=20
+
 All commands are run from the root of the project:
 
 | Command | Action |
