@@ -2,7 +2,7 @@
 title: 'BlueDot AI Safety Evals Paper Club Notes'
 description: 'My notes and takeaways from the BlueDot AI Safety Evals paper club, covering recent papers on AI alignment, security, and evaluations.'
 date: '2025-09-09'
-updated: '2025-10-14'
+updated: '2025-10-21'
 status: 'in-progress'
 type: 'note'
 tags: ['machine-learning', 'research', 'AI-alignment', 'mechanistic-interpretability']
@@ -31,7 +31,7 @@ First, here are some helpful links for the group:
 
 ### 2025-09-09 - Chain-of-Thought Reasoning In The Wild Is Not Always Faithful
 
-[2025-03-11 by Iván Arcuschin, Jett Janiak, Robert Krzyzanowski, et al.](https://arxiv.org/abs/2503.08679 )
+- [published 2025-03-11 by Iván Arcuschin, Jett Janiak, Robert Krzyzanowski, et al.](https://arxiv.org/abs/2503.08679 )
 
 import argumentSwitching from "./2025-09-09-argument-switching.png";
 import unfaithful from "./2025-09-09-unfaithful-illogicial.png";
@@ -82,7 +82,7 @@ import unfaithful from "./2025-09-09-unfaithful-illogicial.png";
 ### 2025-09-16 - CoT May Be Highly Informative Despite “Unfaithfulness”
 
 
-[2025-08-08 by Amy Deng, Sydney Von Arx, et al.](https://metr.org/blog/2025-08-08-cot-may-be-highly-informative-despite-unfaithfulness/)
+- [published 2025-08-08 by Amy Deng, Sydney Von Arx, et al.](https://metr.org/blog/2025-08-08-cot-may-be-highly-informative-despite-unfaithfulness/)
 
 This article has some great visualizations on the website is worth a visit just to play with them.
 
@@ -130,7 +130,7 @@ import failDetect from "./2025-09-16-fail-detect.png";
 
 import secretCollusion from "./2025-09-30-secret-collusion.png";
 
-[2024-02-12 by Sumeet Ramesh Motwani et al.](https://arxiv.org/abs/2402.07510)
+- [published 2024-02-12 by Sumeet Ramesh Motwani et al.](https://arxiv.org/abs/2402.07510)
 
 ##### Core Idea
 
@@ -165,7 +165,7 @@ import secretCollusion from "./2025-09-30-secret-collusion.png";
 
 import redTeam from "./2025-10-07-red-team.png";
 
-[2025-07-28 by Andy Zou et al.](https://arxiv.org/abs/2507.20526)
+- [published 2025-07-28 by Andy Zou et al.](https://arxiv.org/abs/2507.20526)
 
 ##### Core Idea
 
@@ -205,8 +205,8 @@ import redTeam from "./2025-10-07-red-team.png";
 import modelOrganism from "./2025-10-14-model-organism.png";
 import investigatorWins from "./2025-10-14-investigator-wins.png";
 
-[2025-07-24 by Trenton Bricken, Rowan Wang, Sam Bowman, et al.](https://alignment.anthropic.com/2025/automated-auditing/)
-[GDoc used for the presentation](https://docs.google.com/document/d/1E5XFddoL1h7o21BQOtUYNuczadOqrofvYlKy29TYbI4/edit?tab=t.0#heading=h.j0uijoqeqyfc)
+- [published 2025-07-24 by Trenton Bricken, Rowan Wang, Sam Bowman, et al.](https://alignment.anthropic.com/2025/automated-auditing/)
+- [GDoc used for the BlueDot presentation](https://docs.google.com/document/d/1E5XFddoL1h7o21BQOtUYNuczadOqrofvYlKy29TYbI4/edit?tab=t.0#heading=h.j0uijoqeqyfc)
 
 ##### Core Idea
 
@@ -261,3 +261,61 @@ import investigatorWins from "./2025-10-14-investigator-wins.png";
 - **Connections / Questions**:
 	- **Connections**: This work is a direct follow-up to [Marks et al. (2025)](https://arxiv.org/abs/2503.10965), which introduced the human-based auditing game that this work automates. It heavily connects to mechanistic interpretability (by using sparse autoencoders as a tool) and the broader field of AI safety evaluations.
 	- **Questions (Future Work)**: The key next steps are to test these agents on new, unseen environments (to prove generalization) and to find ways to use them to discover unknown or natural alignment failures, not just pre-implanted ones. The authors are open-sourcing parts of their work to stimulate more research in this area.
+
+### 2025-10-21 Evidence for Limited Metacognition in LLMs
+
+- [published 2025-09-25 by Christopher Ackerman](https://arxiv.org/abs/2509.21545)
+
+import delegateGame from "./2025-10-21-is_pc_by_model_notrend.png";
+import nonIntrospective from "./2025-10-21-controls_correctness_correl_by_model_notrend.png"
+
+##### Core Idea
+- **Problem:** The paper addresses the growing question of whether sophisticated **Large Language Models (LLMs)** possess **metacognition**—the ability to think about their own thinking. This includes capabilities like **introspection** (examining one's own mental states), **self-modeling** (understanding one's own capabilities and limitations), and accurately judging their **uncertainty** or confidence in their knowledge. Assessing this is crucial for debates around potential **AI consciousness** and sentience, as well as for practical **AI safety** concerns (e.g., preventing confident incorrect answers).
+- **Contribution:** The author claims that, based on behavioral tests adapted from animal cognition studies, current LLMs (including models like Claude 4, GPT-4o, Gemini 1.5 Pro) demonstrate only **limited metacognitive abilities**. Their performance suggests they rely more on **simple uncertainty monitoring** (e.g., using output probabilities or learned heuristics) rather than genuine introspection or a robust self-model to assess their performance, especially on novel tasks. They propose that LLMs' confidence judgments are often poorly correlated with their actual accuracy.
+
+##### Method & Key Results
+- **Approach:**
+    - The core method involves testing LLMs using two behavioral paradigms borrowed from **animal metacognition research**:
+        1.  **Delegate Game:** The LLM answers a question and then decides whether to "delegate" (pass) the question to a hypothetical expert or submit its own answer, simulating seeking help when uncertain.
+        2.  **Second Chance Game:** The LLM answers a question and then decides whether to try answering again (get a "second chance") or stick with its first answer, simulating confidence in its initial response.
+    - A crucial aspect was manipulating **question difficulty** in ways the models likely hadn't encountered during training. This included using established benchmarks (like **GPQA**) and also generating questions with controlled "objective difficulty" vectors or "surface cues" (like adding hints or distractions) to test if the LLMs could assess difficulty beyond familiar patterns.
+    - Multiple state-of-the-art LLMs were tested, including **Claude 3 Opus**, **Claude 4** (a hypothetical advanced model used in the study), **GPT-4o**, **Llama 3 70B Instruct**, and **Gemini 1.5 Pro**.
+- **Evaluation:**
+    - **Datasets:** Questions were drawn from **GPQA** (a difficult dataset requiring expert knowledge), **TriviaQA**, and custom datasets designed to control difficulty using objective vectors or surface cues.
+    - **Baselines:** Performance was compared across different LLMs. Implicitly, the baseline for strong metacognition would be a high correlation between the model's decision (delegate/retry) and its correctness, similar to benchmarks seen in some animal studies. Chance performance (random delegation/retry) serves as a lower bound.
+    - **Metrics:** Key metrics included **accuracy** on the primary questions, the **rate** at which models chose to delegate or retry, and, most importantly, metacognitive **sensitivity** measured by correlations (like **AUC**, **phi coefficient**, **gamma**) between the choice (delegate/retry, reflecting confidence) and actual correctness. A high correlation indicates good metacognitive ability.
+
+<Figure
+  src={delegateGame}
+	caption="Partial correlations between baseline correctness and Delegate Game answer decision. Positive coefficients represent an estimate of each model’s introspective ability - information extracted from internal signals about its own confidence, here proxied by baseline correctness, that it is able to use in decision-making - after removing variance that can be explained by surface difficulty cues. Models are ordered roughly in order of overall capabilities (aggregated across datasets)."
+	alt="Partial correlations between baseline correctness and Delegate Game answer decision."
+/>
+
+<Figure
+  src={nonIntrospective}
+	caption="Impact of surface cues on model delegation, controlling for correctness. This figure shows the correlation between 'surface cues' (e.g., question length, topic) and a model's decision to delegate a question. This analysis controls for whether the model's answer was actually correct, isolating the influence of the cues themselves. A higher bar means the model's decision to 'give up' is more strongly predicted by these superficial cues. Notably, about 30% of the cues that led models to delegate were actually associated with correct answers, indicating their self-assessment can be unreliable."
+	alt="Use of Non-Introspective Information: Surface Cues of Difficulty."
+/>
+
+- **Key Result:** The most significant finding was the consistently **weak correlation** between the LLMs' decisions (delegate/retry) and their actual accuracy, particularly on harder questions or those with manipulated difficulty cues. While models showed *some* ability to distinguish easier from harder questions (e.g., delegating more on GPQA than trivia), their performance often dropped near chance levels when difficulty cues were novel or misleading. This suggests their self-assessment relies heavily on familiar patterns or simple heuristics (like output token probabilities) rather than robust introspection. For example, results showed lower-than-expected metacognitive correlation (phi) across models in the Delegate Game, and performance degraded when surface cues conflicted with objective difficulty.
+
+##### Takeaways & Critique
+- **Main Takeaway:** Don't mistake fluency or pattern recognition for genuine self-awareness in current LLMs; their ability to "know what they know" appears superficial and breaks down under novel challenges, indicating limited introspection.
+- **Strengths / Weaknesses:**
+    - **Strengths:**
+        - Innovative use of established animal cognition paradigms to probe LLM metacognition.
+        - Systematic testing across several major LLMs enhances generalizability.
+        - Careful manipulation of task difficulty beyond standard benchmarks.
+        - Publicly available code promotes reproducibility.
+    - **Weaknesses:**
+        - Behavioral tests provide only **indirect evidence**; they don't definitively prove or disprove internal states like introspection.
+        - Results might depend heavily on the specific **prompts** used to elicit decisions.
+        - The influence of **pre-training data** is hard to control; models might have seen similar tasks or developed heuristics that mimic metacognition without true self-awareness.
+        - The study focuses on specific uncertainty-monitoring tasks, potentially missing other facets of metacognition.
+- **Connections / Questions:**
+    - **Connections:** This work directly informs the debate on **AI consciousness** by providing empirical evidence against strong metacognitive claims. It links to research on **LLM calibration** (how well confidence scores match probabilities) and **uncertainty quantification**. It also builds upon the rich field of **comparative animal cognition**.
+    - **Questions:**
+        - How can we design tests that more directly probe **introspective mechanisms** rather than just behavioral outcomes in LLMs?
+        - Is robust metacognition an **emergent property** that might appear with scale, or does it require fundamentally different architectures or training objectives?
+        - How much do factors like **Reinforcement Learning from Human Feedback (RLHF)** influence these apparent metacognitive heuristics?
+        - Could alternative paradigms (beyond delegation/retry) reveal different aspects of LLM self-assessment?
