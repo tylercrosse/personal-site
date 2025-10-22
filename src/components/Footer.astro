@@ -2,154 +2,73 @@
 const today = new Date();
 ---
 
-<footer aria-label="Site Info">
-  <div class="footer-content">
-    <div class="social-links">
+<footer
+  aria-label="Site Info"
+  class="mt-auto border-t border-border-light bg-white/60 text-muted transition-colors duration-300 dark:border-border-dark dark:bg-surface-dark/80 dark:text-muted-light"
+>
+  <div class="mx-auto flex w-full max-w-screen-md flex-wrap items-center justify-center gap-6 px-4 py-6 text-sm sm:justify-between">
+    <div class="flex items-center gap-3">
       <a
         href="https://github.com/tylercrosse"
         aria-label="github"
         target="_blank"
         rel="noopener noreferrer"
+        class="inline-flex h-9 w-9 items-center justify-center rounded-full text-muted transition hover:text-accent dark:text-muted-light"
       >
-        <svg viewBox="0 0 16 16" aria-hidden="true" width="20" height="20"
-          ><path
+        <svg viewBox="0 0 16 16" aria-hidden="true" width="20" height="20">
+          <path
             fill="currentColor"
             d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"
-          ></path></svg
-        >
+          ></path>
+        </svg>
       </a>
-
       <a
         href="https://linkedin.com/in/tylercrosse"
         aria-label="linkedin"
         target="_blank"
         rel="noopener noreferrer"
+        class="inline-flex h-9 w-9 items-center justify-center rounded-full text-muted transition hover:text-accent dark:text-muted-light"
       >
         <svg viewBox="0 0 24 24" aria-hidden="true" width="20" height="20" fill="currentColor">
-          <path d="M19 0h-14c-2.76 0-5 2.24-5 5v14c0 2.76 2.24 5 5 5h14c2.76 0 5-2.24 5-5v-14c0-2.76-2.24-5-5-5zm-11.75 20h-3v-10h3v10zm-1.5-11.27c-.97 0-1.75-.79-1.75-1.76 0-.97.78-1.76 1.75-1.76s1.75.79 1.75 1.76c0 .97-.78 1.76-1.75 1.76zm15.25 11.27h-3v-5.6c0-1.34-.03-3.07-1.87-3.07-1.87 0-2.16 1.46-2.16 2.97v5.7h-3v-10h2.88v1.36h.04c.4-.76 1.38-1.56 2.84-1.56 3.04 0 3.6 2 3.6 4.59v5.61z"/>
+          <path d="M19 0h-14c-2.76 0-5 2.24-5 5v14c0 2.76 2.24 5 5 5h14c2.76 0 5-2.24 5-5v-14c0-2.76-2.24-5-5-5zm-11.75 20h-3v-10h3v10zm-1.5-11.27c-.97 0-1.75-.79-1.75-1.76 0-.97.78-1.76 1.75-1.76s1.75.79 1.75 1.76c0 .97-.78 1.76-1.75 1.76zm15.25 11.27h-3v-5.6c0-1.34-.03-3.07-1.87-3.07-1.87 0-2.16 1.46-2.16 2.97v5.7h-3v-10h2.88v1.36h.04c.4-.76 1.38-1.56 2.84-1.56 3.04 0 3.6 2 3.6 4.59v5.61z" />
         </svg>
       </a>
-
       <a
         href="javascript:location.href = 'mailto:' + ['tylerscottcrosse','gmail.com'].join('@')"
         aria-label="email"
+        class="inline-flex h-9 w-9 items-center justify-center rounded-full text-muted transition hover:text-accent dark:text-muted-light"
       >
-        <svg viewBox="0 0 16 16" aria-hidden="true" width="20" height="20"
-          ><path
+        <svg viewBox="0 0 16 16" aria-hidden="true" width="20" height="20">
+          <path
             fill="currentColor"
             d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V4Zm2-1a1 1 0 0 0-1 1v.217l7 4.2 7-4.2V4a1 1 0 0 0-1-1H2Zm13 2.383-4.708 2.825L15 11.105V5.383Zm-.034 6.876-5.64-3.471L8 9.583l-1.326-.795-5.64 3.47A1 1 0 0 0 2 13h12a1 1 0 0 0 .966-.741ZM1 11.105l4.708-2.897L1 5.383v5.722Z"
-          ></path></svg
-        >
+          ></path>
+        </svg>
       </a>
-
-      <a href="/rss.xml" aria-label="rss">
-        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="20" height="20"
-          ><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g
-            id="SVGRepo_tracerCarrier"
+      <a
+        href="/rss.xml"
+        aria-label="rss"
+        class="inline-flex h-9 w-9 items-center justify-center rounded-full text-muted transition hover:text-accent dark:text-muted-light"
+      >
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="20" height="20">
+          <path
+            d="M4 11C6.38695 11 8.67613 11.9482 10.364 13.636C12.0518 15.3239 13 17.6131 13 20M4 4C8.24346 4 12.3131 5.68571 15.3137 8.68629C18.3143 11.6869 20 15.7565 20 20M6 19C6 19.5523 5.55228 20 5 20C4.44772 20 4 19.5523 4 19C4 18.4477 4.44772 18 5 18C5.55228 18 6 18.4477 6 19Z"
+            fill="currentColor"
             stroke-linecap="round"
-            stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier">
-            <path
-              d="M4 11C6.38695 11 8.67613 11.9482 10.364 13.636C12.0518 15.3239 13 17.6131 13 20M4 4C8.24346 4 12.3131 5.68571 15.3137 8.68629C18.3143 11.6869 20 15.7565 20 20M6 19C6 19.5523 5.55228 20 5 20C4.44772 20 4 19.5523 4 19C4 18.4477 4.44772 18 5 18C5.55228 18 6 18.4477 6 19Z"
-              fill="currentColor"
-              stroke-linecap="round"
-              stroke-linejoin="round"></path>
-          </g></svg
-        >
+            stroke-linejoin="round"
+          ></path>
+        </svg>
       </a>
     </div>
 
-    <div class="divider"></div>
+    <span class="hidden h-10 w-px bg-border-light dark:bg-border-dark sm:block" aria-hidden="true"></span>
 
-    <div class="copyright">
-      <p>
+    <div class="text-center sm:text-right">
+      <p class="text-sm leading-relaxed">
         © <time>{today.getFullYear()}</time>
-        <a href="https://github.com/tylercrosse">Tyler Crosse</a>.
-        <span>Some rights reserved.</span>
+        <a href="https://github.com/tylercrosse" class="font-medium text-accent hover:text-accent-dark">Tyler Crosse</a>.
+        <span class="block text-xs text-muted-light dark:text-muted">Some rights reserved.</span>
       </p>
     </div>
   </div>
 </footer>
-
-<style>
-  footer {
-    padding: 1rem;
-    color: rgb(var(--gray));
-  }
-
-  .footer-content {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 2rem;
-    max-width: 800px;
-    margin: 0 auto;
-    flex-wrap: wrap;
-    padding-top: 1rem;
-    border-top: 1px solid var(--base4);
-  }
-
-  :global([data-effective-theme="dark"]) .footer-content {
-    border-top: 1px solid var(--base01);
-  }
-
-  .social-links {
-    display: flex;
-    gap: 0.5rem;
-  }
-
-  .social-links a {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0.5rem;
-    text-decoration: none;
-    color: rgb(var(--gray));
-    transition: color 0.2s ease;
-  }
-
-  .social-links a:hover {
-    color: rgb(var(--gray-dark));
-  }
-
-  .divider {
-    width: 1px;
-    height: 2rem;
-    background-color: var(--base4);
-  }
-
-  :global([data-effective-theme="dark"]) .divider {
-    background-color: var(--base01);
-  }
-
-  .copyright {
-    color: var(--base01);
-    font-size: 0.9rem;
-  }
-
-  .copyright p {
-    margin: 0;
-    line-height: 1.5;
-  }
-
-  .copyright a {
-    color: rgb(var(--gray));
-    text-decoration: none;
-  }
-
-  .copyright a:hover {
-    color: rgb(var(--gray-dark));
-    text-decoration: underline;
-  }
-
-  @media (max-width: 600px) {
-    .footer-content {
-      flex-direction: column;
-      gap: 1rem;
-    }
-
-    .divider {
-      width: 2rem;
-      height: 1px;
-    }
-  }
-</style>
