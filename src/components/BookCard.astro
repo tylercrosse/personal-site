@@ -9,117 +9,58 @@ import { Image } from "astro:assets";
       href={url}
       target="_blank"
       rel="noopener noreferrer"
-      class="book-card-link"
+      class="book-card-link block text-inherit no-underline transition hover:underline"
     >
-      <div class="book-card">
-        <div class="book-cover">
+      <div
+        class="book-card flex items-start gap-5 rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition-colors duration-150 dark:border-slate-700 dark:bg-slate-900 sm:flex-col sm:p-4"
+      >
+        <div class="book-cover w-[150px] flex-shrink-0 sm:w-full">
           <Image
             src={img || "https://via.placeholder.com/150x220.png"}
             alt={alt || title}
             width="150"
             height="220"
+            class="h-auto w-full rounded-md object-cover"
           />
         </div>
-        <div class="book-info">
-          <h4>{title}</h4>
-          <p>{author}</p>
-          <div class="description">
+        <div class="book-info flex-1">
+          <h4 class="mt-4 text-xl font-semibold text-slate-900 dark:text-white sm:mt-2">
+            {title}
+          </h4>
+          <p class="mt-2 text-base italic text-slate-500 dark:text-slate-300">
+            {author}
+          </p>
+          <div class="description text-base leading-relaxed text-slate-600 dark:text-slate-300">
             <slot />
           </div>
         </div>
       </div>
     </a>
   ) : (
-    <div class="book-card">
-      <div class="book-cover">
+    <div
+      class="book-card flex items-start gap-5 rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition-colors duration-150 dark:border-slate-700 dark:bg-slate-900 sm:flex-col sm:p-4"
+    >
+      <div class="book-cover w-[150px] flex-shrink-0 sm:w-full">
         <Image
           src={img || "https://via.placeholder.com/150x220.png"}
           alt={alt || title}
           width="150"
           height="220"
+          class="h-auto w-full rounded-md object-cover"
         />
       </div>
-      <div class="book-info">
-        <h4>{title}</h4>
-        <p>{author}</p>
-        <div class="description">
+      <div class="book-info flex-1">
+        <h4 class="mt-4 text-xl font-semibold text-slate-900 dark:text-white sm:mt-2">
+          {title}
+        </h4>
+        <p class="mt-2 text-base italic text-slate-500 dark:text-slate-300">
+          {author}
+        </p>
+        <div class="description text-base leading-relaxed text-slate-600 dark:text-slate-300">
           <slot />
         </div>
       </div>
     </div>
   )
 }
-
-<style>
-  .book-card-link {
-    text-decoration: none;
-    color: inherit;
-    display: block;
-  }
-
-  .book-card-link:hover {
-    text-decoration: underline;
-  }
-
-  .book-card {
-    display: flex;
-    align-items: flex-start;
-    gap: 20px;
-    padding: 1rem 2rem;
-    border: 1px solid var(--theme-divider);
-    border-radius: 12px;
-    background-color: var(--theme-bg);
-    height: 100%;
-  }
-
-  .book-cover {
-    flex-shrink: 0;
-    width: 150px;
-  }
-
-  .book-cover img {
-    border-radius: 4px;
-    width: 100%;
-    height: auto;
-    display: block;
-  }
-
-  .book-info {
-    flex-grow: 1;
-  }
-
-  .book-info h4 {
-    margin: 1em 0 0.25rem;
-    font-size: 1.4rem;
-    font-weight: 600;
-  }
-
-  @media (max-width: 720px) {
-    .book-card {
-      padding: 1em 0;
-    }
-
-    .book-info h4 {
-      margin: 0 0 0.25rem;
-      font-size: 1.2rem;
-    }
-  }
-
-  .book-info p {
-    margin: 0 0 1rem;
-    font-size: 1rem;
-    font-weight: 400;
-    font-style: italic;
-    color: var(--theme-text-light);
-  }
-
-  .description {
-    font-size: 1rem;
-    line-height: 1.6;
-  }
-
-  .description :global(p) {
-    margin-bottom: 0;
-  }
-</style>
 
