@@ -40,7 +40,11 @@ if (numbered) {
 ---
 
 <figure
-  class:list={["figure", className, fullWidth && "full-width"]}
+  class:list={[
+    "my-6 text-center",
+    className,
+    fullWidth && "col-span-full",
+  ]}
 >
   {
     isImagePath ? (
@@ -50,6 +54,7 @@ if (numbered) {
         width={width}
         height={height}
         loading="lazy"
+        class="mx-auto w-full rounded-xl shadow-sm"
       />
     ) : (
       <Image
@@ -66,62 +71,14 @@ if (numbered) {
   }
   {
     caption && (
-      <figcaption class="caption">
-        {numbered && figureNumber && <strong>Figure {figureNumber}: </strong>}
+      <figcaption class="mt-3 text-sm italic text-muted-light dark:text-muted">
+        {numbered && figureNumber && (
+          <strong class="font-semibold not-italic text-text-base dark:text-text-light">
+            Figure {figureNumber}:{" "}
+          </strong>
+        )}
         {caption}
       </figcaption>
     )
   }
 </figure>
-
-<style>
-  .full-width {
-    grid-column: 1 / 4 !important;
-  }
-  .figure {
-    margin: 1rem 0;
-    text-align: center;
-  }
-
-  .figure img {
-    max-width: 100%;
-    height: auto;
-    border-radius: 8px;
-  }
-
-  .caption {
-    margin-top: 0.75rem;
-    font-size: 0.9rem;
-    font-style: italic;
-    color: var(--sol-1);
-    line-height: 1.4;
-    max-width: min(90%, 800px);
-    margin-left: auto;
-    margin-right: auto;
-  }
-
-  .caption strong {
-    font-style: normal;
-    color: var(--sol-9);
-  }
-
-  /* Dark theme caption color */
-  [data-effective-theme="dark"] .caption {
-    color: var(--sol-0);
-  }
-
-  [data-effective-theme="dark"] .caption strong {
-    color: var(--sol-10);
-  }
-
-  @media (max-width: 720px) {
-    .figure {
-      margin: 1.5rem 0;
-    }
-
-    .caption {
-      font-size: 0.85rem;
-      max-width: 90%;
-    }
-  }
-</style>

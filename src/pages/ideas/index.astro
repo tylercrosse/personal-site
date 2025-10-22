@@ -83,410 +83,32 @@ const hierarchicalPosts = allPostsData
 ---
 
 <BaseLayout title="Ideas">
-  <style>
-    .hero {
-      padding: 2rem 0;
-    }
-    .hero h1 {
-      font-size: 4rem;
-      margin-bottom: 1rem;
-    }
-    .select-filters {
-      display: flex;
-      margin-bottom: 1rem;
-    }
-
-    .select-filters select {
-      background: none;
-      border: none;
-      border-radius: 4px;
-      padding: 0.25rem 1.25rem;
-      cursor: pointer;
-      background: rgba(var(--gray-light), 0.8);
-    }
-    .tag-list {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.25rem;
-      list-style: none;
-      padding: 0;
-      margin: 0;
-      margin-bottom: 2rem;
-    }
-    .tag-list button {
-      background: none;
-      border: none;
-      border-radius: 4px;
-      padding: 0.25rem 0.75rem;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      text-transform: capitalize;
-      color: var(--sol-8);
-    }
-
-    .tag-list button:hover {
-      color: var(--sol-8);
-      background-color: var(--base4);
-    }
-
-    :global([data-effective-theme="dark"]) .tag-list button:hover {
-      color: var(--black);
-      background-color: var(--base01);
-    }
-
-    .tag-list button.active {
-      background-color: var(--accent);
-      color: var(--black);
-    }
-    .select-filters {
-      display: flex;
-      gap: 1rem;
-    }
-    .select-filters select {
-      text-transform: capitalize;
-      color: var(--black);
-    }
-    .post-grid {
-      display: flex;
-      gap: 2rem;
-      align-items: flex-start;
-      flex-direction: column;
-    }
-
-    @media (min-width: 768px) {
-      .post-grid {
-        flex-direction: row;
-      }
-    }
-
-    .masonry-column {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      gap: 2rem;
-      width: 100%;
-    }
-
-    @media (min-width: 768px) {
-      .masonry-column {
-        width: auto;
-      }
-    }
-
-    /* Without JS, only show first column (server-rendered) */
-    .masonry-column[data-column="1"],
-    .masonry-column[data-column="2"] {
-      display: none;
-    }
-
-    /* With JS, show columns based on screen size */
-    .js-enabled .masonry-column[data-column="1"] {
-      display: flex;
-    }
-
-    @media (min-width: 1200px) {
-      .js-enabled .masonry-column[data-column="2"] {
-        display: flex;
-      }
-    }
-
-    /* Hide columns on smaller screens even with JS */
-    @media (max-width: 767px) {
-      .js-enabled .masonry-column[data-column="1"],
-      .js-enabled .masonry-column[data-column="2"] {
-        display: none;
-      }
-    }
-
-    @media (min-width: 768px) and (max-width: 1199px) {
-      .js-enabled .masonry-column[data-column="2"] {
-        display: none;
-      }
-    }
-    .post-card {
-      border: 1px solid var(--main-border-color);
-      background-color: var(--base4);
-      border-radius: 8px;
-      overflow: hidden;
-      color: inherit;
-      display: flex;
-      flex-direction: column;
-      transition: all 0.2s ease-in-out;
-    }
-
-    .post-card:focus-within {
-      outline: 2px solid var(--blue);
-      outline-offset: 2px;
-    }
-
-    .post-card:has(.post-card-link:focus:not(:focus-visible)) {
-      outline: none;
-    }
-
-    .post-card-link {
-      text-decoration: none;
-      color: inherit;
-      display: flex;
-      flex-direction: column;
-      transition: all 0.2s ease-in-out;
-    }
-
-    .post-card-link:hover {
-      opacity: 0.8;
-    }
-
-    .post-card-link:focus {
-      outline: none;
-    }
-
-    :global([data-effective-theme="dark"]) .post-card {
-      border: 1px solid var(--base03);
-      background-color: var(--base02);
-    }
-
-    .post-card.hidden {
-      display: none;
-    }
-
-    .post-card img {
-      width: 100%;
-      height: 200px;
-      object-fit: cover;
-    }
-
-    /* Child posts container - inside parent card */
-    .child-posts {
-      display: flex;
-      flex-direction: column;
-      gap: 0;
-      border-top: 1px solid var(--main-border-color);
-    }
-
-    :global([data-effective-theme="dark"]) .child-posts {
-      border-top-color: var(--base03);
-    }
-
-    /* Individual child post items */
-    .child-post-item {
-      display: flex;
-      flex-direction: row;
-      text-decoration: none;
-      color: inherit;
-      font-size: 0.9rem;
-      border-bottom: 1px solid var(--main-border-color);
-      transition: all 0.2s ease-in-out;
-    }
-
-    .child-post-item:last-child {
-      border-bottom: none;
-    }
-
-    .child-post-item.hidden {
-      display: none;
-    }
-
-    .child-post-item:hover {
-      opacity: 0.8;
-    }
-
-    .child-post-item:focus {
-      outline: 2px solid var(--blue);
-      outline-offset: 2px;
-    }
-
-    .child-post-item:focus:not(:focus-visible) {
-      outline: none;
-    }
-
-    :global([data-effective-theme="dark"]) .child-post-item {
-      border-bottom-color: var(--base03);
-    }
-
-    .child-post-content {
-      padding: 0.75rem;
-      flex: 1;
-    }
-
-    .child-post-content h3 {
-      font-size: 1rem;
-      margin-bottom: 0.25rem;
-    }
-
-    .child-post-content p {
-      font-size: 0.85rem;
-      margin-bottom: 0.5rem;
-    }
-
-    .child-post-item img {
-      width: 120px;
-      height: 100%;
-      min-height: 100px;
-      max-height: 120px;
-      object-fit: cover;
-      flex-shrink: 0;
-    }
-    .post-card-content {
-      padding: 1rem;
-      display: flex;
-      flex-direction: column;
-      flex-grow: 1;
-    }
-    .post-card-content h3 {
-      margin: 0 0 0.5rem 0;
-      font-size: 1.25rem;
-    }
-    .post-card-content p {
-      margin: 0 0 1rem 0;
-      flex-grow: 1;
-      font-size: 1rem;
-    }
-
-    .post-card-content-header span {
-      padding-right: 1em;
-    }
-
-    .post-meta,
-    .post-card-content-header {
-      font-size: 0.75rem;
-      text-transform: capitalize;
-      color: var(--sol-7);
-      margin-bottom: 0.5rem;
-    }
-
-        /* Retro posts - larger, more prominent */
-    .post-card--retro {
-      /* border-width: 2px;
-      border-color: var(--accent); */
-    }
-
-    .post-card--retro .post-card-content {
-      /* padding: 1.5rem; */
-    }
-
-    .post-card--retro .post-card-content h3 {
-      font-size: 1.75rem;
-      font-weight: 700;
-      margin-bottom: 0.75rem;
-    }
-
-    .post-card--retro .post-card-content p {
-      font-size: 1.05rem;
-      line-height: 1.6;
-    }
-
-    .post-card--retro img {
-      height: 300px;
-    }
-
-    :global([data-effective-theme="dark"]) .post-card--retro {
-      /* border-color: var(--accent); */
-    }
-
-    /* Note posts - compact, minimal */
-    .post-card--note {
-      /* background-color: var(--base3);
-      border-style: dashed;
-      border-color: var(--sol-7); */
-    }
-
-    :global([data-effective-theme="dark"]) .post-card--note {
-      /* background-color: var(--base01);
-      border-color: var(--sol-7); */
-    }
-
-    .post-card--note .post-card-content {
-      padding: 0.75rem;
-    }
-
-    .post-card--note .post-card-content h3 {
-      font-size: 1rem;
-      font-weight: 500;
-    }
-
-    .post-card--note .post-card-content p {
-      font-size: 0.875rem;
-      margin-bottom: 0.5rem;
-    }
-
-    /* Hide images in note cards */
-    .post-card--note img {
-      display: none;
-    }
-
-    /* Project posts - standard with slight emphasis */
-    .post-card--project {
-      /* border-left-width: 3px;
-      border-left-color: var(--sol-blue); */
-    }
-
-    /* Article posts - standard style (default) */
-    .post-card--article {
-      /* Uses default post-card styles */
-    }
-
-    .draft-indicator {
-      background-color: var(--sol-yellow);
-      color: var(--green);
-      font-size: 0.6rem;
-      font-weight: bold;
-      padding: 2px 6px;
-      border-radius: 3px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .child-count {
-      background-color: var(--sol-blue);
-      color: var(--base3);
-      font-size: 0.6rem;
-      font-weight: bold;
-      padding: 2px 6px;
-      border-radius: 3px;
-      text-transform: none;
-      letter-spacing: 0.5px;
-    }
-
-    .post-meta {
-      display: flex;
-      justify-content: space-between;
-    }
-
-    .slide-in-block {
-      opacity: 0;
-      filter: blur(10px);
-      transform: scale(0.95);
-      will-change: transform, opacity, filter;
-      animation: slideInBlock 0.4s cubic-bezier(0.43, 0.195, 0.02, 1) forwards;
-    }
-
-    .slide-in-block:nth-child(1) {
-      /* animation-delay: 0.3s; */
-    }
-    .slide-in-block:nth-child(2) {
-      animation-delay: 0.2s;
-    }
-    @keyframes slideInBlock {
-      to {
-        opacity: 1;
-        filter: blur(0px);
-        transform: scale(1);
-      }
-    }
-  </style>
-
-  <header class="slide-in-block">
-    <div class="hero">
-      <h1>Digital Garden</h1>
-      <p>The notes, thoughts, and projects I've been working on.</p>
+  <header class="space-y-8 animate-slide-in">
+    <div class="space-y-4 py-10">
+      <h1 class="font-serif text-4xl font-semibold tracking-tight text-text-base sm:text-5xl dark:text-text-light">
+        Digital Garden
+      </h1>
+      <p class="max-w-2xl text-lg text-muted dark:text-muted-dark">
+        The notes, thoughts, and projects I've been working on.
+      </p>
     </div>
 
-    <div class="js-required">
-      <div class="select-filters">
-        <select id="type-filter">
+    <div class="js-required space-y-6">
+      <div class="flex flex-col gap-4 sm:flex-row sm:items-center">
+        <label class="sr-only" for="type-filter">Filter by type</label>
+        <select
+          id="type-filter"
+          class="flex-1 rounded-lg border border-border-light bg-surface-light px-4 py-2 text-sm capitalize text-text-base shadow-soft transition focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/40 dark:border-border-dark dark:bg-surface-dark dark:text-text-light"
+        >
           <option value="all">All types</option>
           {allTypes.map((type) => <option value={type}>{capitalize(type || '')}</option>)}
         </select>
-        <select id="status-filter">
+
+        <label class="sr-only" for="status-filter">Filter by status</label>
+        <select
+          id="status-filter"
+          class="flex-1 rounded-lg border border-border-light bg-surface-light px-4 py-2 text-sm capitalize text-text-base shadow-soft transition focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/40 dark:border-border-dark dark:bg-surface-dark dark:text-text-light"
+        >
           <option value="all">All statuses</option>
           {
             allStatuses.map((status) => (
@@ -497,12 +119,35 @@ const hierarchicalPosts = allPostsData
       </div>
 
       <div class="filters" data-pagefind-ignore>
-        <ul class="tag-list">
-          <li><button class="active" id="all-tags">All Topics</button></li>
+        <ul class="tag-list flex flex-wrap gap-2">
+          <li>
+            <button
+              type="button"
+              id="all-tags"
+              class="rounded-full border border-border-light px-3 py-1 text-sm capitalize text-muted transition-colors duration-200 hover:border-accent hover:text-text-base focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 dark:border-border-dark dark:text-muted-dark dark:hover:text-text-light"
+              class:list={{
+                "border-transparent": true,
+                "bg-accent": true,
+                "ring-2": true,
+                "ring-accent/40": true,
+                "text-site-light": true,
+              }}
+              aria-pressed="true"
+            >
+              All Topics
+            </button>
+          </li>
           {
             allTags.map((tag) => (
               <li>
-                <button data-tag={tag}>{tag}</button>
+                <button
+                  type="button"
+                  data-tag={tag}
+                  class="rounded-full border border-border-light px-3 py-1 text-sm capitalize text-muted transition-colors duration-200 hover:border-accent hover:text-text-base focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 dark:border-border-dark dark:text-muted-dark dark:hover:text-text-light"
+                  aria-pressed="false"
+                >
+                  {tag}
+                </button>
               </li>
             ))
           }
@@ -511,9 +156,12 @@ const hierarchicalPosts = allPostsData
     </div>
   </header>
 
-  <section class="post-grid slide-in-block" data-pagefind-ignore>
+  <section
+    class="post-grid animate-scale-fade flex flex-col gap-8 lg:flex-row lg:items-start"
+    data-pagefind-ignore
+  >
     <!-- Server-rendered single column - works without JS -->
-    <div class="masonry-column" data-column="0">
+    <div class="masonry-column flex w-full flex-col gap-8 lg:flex-1" data-column="0">
       {
         hierarchicalPosts.map((post) => {
         const typeClass = post.type ? `post-card--${post.type}` : '';
@@ -522,7 +170,7 @@ const hierarchicalPosts = allPostsData
 
         return (
           <div
-            class={`post-card ${typeClass} ${hasChildren ? "post-card--with-children" : ""}`}
+            class={`post-card ${typeClass} ${hasChildren ? "post-card--with-children" : ""} group flex w-full flex-col overflow-hidden rounded-2xl border border-border-light bg-surface-light shadow-soft transition-transform duration-200 hover:-translate-y-1 hover:shadow-xl focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-accent dark:border-border-dark dark:bg-surface-dark`}
             data-parent-slug={post.slug}
             data-tags={post.tags?.join(" ")}
             data-type={post.type}
@@ -532,7 +180,7 @@ const hierarchicalPosts = allPostsData
             {/* Parent post link and content */}
             <a
               href={`/ideas/${post.slug}/`}
-              class="post-card-link"
+              class="post-card-link flex flex-1 flex-col focus:outline-none"
             >
               {/* Show image at top for all posts */}
               {post.image?.path && (
@@ -541,19 +189,41 @@ const hierarchicalPosts = allPostsData
                   alt={post.image.alt || ""}
                   width={800}
                   height={isRetro ? 300 : 200}
+                  class:list={{
+                    "h-52 w-full object-cover": true,
+                    "h-72": isRetro,
+                    hidden: post.type === "note",
+                  }}
                 />
               )}
 
-              <div class="post-card-content">
-                <div class="post-card-content-header">
-                  {post.draft && <span class="draft-indicator">DRAFT</span>}
+              <div
+                class="post-card-content flex flex-1 flex-col gap-4 p-6"
+                class:list={{ "p-4": post.type === "note" }}
+              >
+                <div class="post-card-content-header flex flex-wrap items-center gap-3 text-xs uppercase tracking-wide text-muted dark:text-muted-dark">
+                  {post.draft && (
+                    <span class="draft-indicator inline-flex items-center rounded-md bg-yellow-400 px-2 py-0.5 text-[0.65rem] font-semibold uppercase tracking-wide text-green-900">
+                      Draft
+                    </span>
+                  )}
                   {post.type && <span>{capitalize(post.type)}</span>}
                   {post.status && <span>{capitalize(post.status)}</span>}
                   <span>{post.readingTimeText}</span>
                 </div>
-                <h3>{post.title}</h3>
-                <p>{post.description}</p>
-                <div class="post-meta">
+                <h3
+                  class="font-serif text-2xl font-semibold tracking-tight text-text-base dark:text-text-light"
+                  class:list={{ "text-xl": post.type === "note", "text-3xl": isRetro }}
+                >
+                  {post.title}
+                </h3>
+                <p
+                  class="text-base text-muted dark:text-muted-dark"
+                  class:list={{ "text-sm": post.type === "note" }}
+                >
+                  {post.description}
+                </p>
+                <div class="post-meta mt-auto flex flex-wrap items-center justify-between gap-3 text-xs uppercase tracking-wide text-muted dark:text-muted-dark">
                   <span>
                     <FormattedDate date={post.date || new Date()} />
                   </span>
@@ -568,14 +238,17 @@ const hierarchicalPosts = allPostsData
 
             {/* Child posts - inside the same card */}
             {hasChildren && (
-              <div class="child-posts" data-parent={post.slug}>
+              <div
+                class="child-posts flex flex-col divide-y divide-border-light dark:divide-border-dark"
+                data-parent={post.slug}
+              >
                 {post.children.map((child) => {
                   const childTypeClass = child.type ? `post-card--${child.type}` : '';
 
                   return (
                     <a
                       href={`/ideas/${child.slug}/`}
-                      class={`child-post-item ${childTypeClass}`}
+                      class={`child-post-item ${childTypeClass} flex gap-4 bg-transparent p-4 transition-colors duration-200 hover:bg-surface-light focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 dark:hover:bg-surface-dark`}
                       data-tags={child.tags?.join(" ")}
                       data-type={child.type}
                       data-status={child.status}
@@ -589,19 +262,32 @@ const hierarchicalPosts = allPostsData
                           alt={child.image.alt || ""}
                           width={400}
                           height={120}
+                          class:list={{
+                            "h-28 w-32 flex-none rounded-lg object-cover": true,
+                            hidden: child.type === "note",
+                          }}
                         />
                       )}
 
-                      <div class="child-post-content">
-                        <div class="post-card-content-header">
-                          {child.draft && <span class="draft-indicator">DRAFT</span>}
+                      <div class="child-post-content flex flex-1 flex-col gap-3">
+                        <div class="post-card-content-header flex flex-wrap items-center gap-3 text-xs uppercase tracking-wide text-muted dark:text-muted-dark">
+                          {child.draft && (
+                            <span class="draft-indicator inline-flex items-center rounded-md bg-yellow-400 px-2 py-0.5 text-[0.65rem] font-semibold uppercase tracking-wide text-green-900">
+                              Draft
+                            </span>
+                          )}
                           {child.type && <span>{capitalize(child.type)}</span>}
                           {child.status && <span>{capitalize(child.status)}</span>}
                           <span>{child.readingTimeText}</span>
                         </div>
-                        <h3>{child.title}</h3>
-                        <p>{child.description}</p>
-                        <div class="post-meta">
+                        <h3
+                          class="font-serif text-lg font-semibold tracking-tight text-text-base dark:text-text-light"
+                          class:list={{ "text-base": child.type === "note" }}
+                        >
+                          {child.title}
+                        </h3>
+                        <p class="text-sm text-muted dark:text-muted-dark">{child.description}</p>
+                        <div class="post-meta flex flex-wrap items-center justify-between gap-3 text-xs uppercase tracking-wide text-muted dark:text-muted-dark">
                           <span>
                             <FormattedDate date={child.date || new Date()} />
                           </span>
@@ -623,8 +309,8 @@ const hierarchicalPosts = allPostsData
     }
     </div>
     <!-- Additional columns created by JS for masonry layout -->
-    <div class="masonry-column" data-column="1"></div>
-    <div class="masonry-column" data-column="2"></div>
+    <div class="masonry-column hidden w-full flex-col gap-8 lg:flex-1" data-column="1"></div>
+    <div class="masonry-column hidden w-full flex-col gap-8 lg:flex-1" data-column="2"></div>
   </section>
 
   <script>
@@ -654,23 +340,36 @@ const hierarchicalPosts = allPostsData
       function layoutMasonry() {
         const visibleColumns = getVisibleColumns();
 
-        // Clear all columns
-        columns.forEach(col => col.innerHTML = '');
+        columns.forEach((col) => {
+          col.innerHTML = '';
+          if (visibleColumns.includes(col)) {
+            col.classList.remove('hidden');
+            col.classList.add('flex');
+          } else {
+            col.classList.add('hidden');
+            col.classList.remove('flex');
+          }
+        });
 
-        // Move existing DOM elements (preserves event listeners and state)
+        const activeColumns = visibleColumns.length ? visibleColumns : [columns[0]];
+
         postItems.forEach((item) => {
+          const [primaryColumn] = activeColumns;
+          if (!primaryColumn) {
+            return;
+          }
+
           // Skip hidden items (filtered out) - don't count toward column height
           if (item.classList.contains('hidden')) {
-            // Still add to a column but keep hidden class
-            visibleColumns[0].appendChild(item);
+            primaryColumn.appendChild(item);
             return;
           }
 
           // Find the shortest visible column by comparing current heights
-          let shortestColumn = visibleColumns[0];
-          let shortestHeight = visibleColumns[0].offsetHeight;
+          let shortestColumn = primaryColumn;
+          let shortestHeight = primaryColumn.offsetHeight;
 
-          visibleColumns.forEach(col => {
+          activeColumns.forEach((col) => {
             if (col.offsetHeight < shortestHeight) {
               shortestHeight = col.offsetHeight;
               shortestColumn = col;
@@ -768,10 +467,36 @@ const hierarchicalPosts = allPostsData
 
       // Tag filtering
       const tagButtons = document.querySelectorAll(".tag-list button");
+      const ACTIVE_TAG_CLASSES = [
+        "border-transparent",
+        "bg-accent",
+        "text-site-light",
+        "ring-2",
+        "ring-accent/40",
+      ];
+
+      function setTagButtonState(button: HTMLElement, isActive: boolean) {
+        ACTIVE_TAG_CLASSES.forEach((cls) => {
+          if (isActive) {
+            button.classList.add(cls);
+          } else {
+            button.classList.remove(cls);
+          }
+        });
+        button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+      }
+
       tagButtons.forEach((button) => {
+        const element = button as HTMLElement;
+        const isInitialActive = element.id === 'all-tags';
+        setTagButtonState(element, isInitialActive);
+
         button.addEventListener("click", () => {
-          tagButtons.forEach((btn) => btn.classList.remove("active"));
-          button.classList.add("active");
+          tagButtons.forEach((btn) => {
+            const btnElement = btn as HTMLElement;
+            setTagButtonState(btnElement, btn === button);
+          });
+
           const b = button as HTMLElement;
           activeTag = b.id === "all-tags" ? "all" : b.dataset.tag || "all";
           filterPosts();

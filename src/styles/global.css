@@ -165,7 +165,7 @@ body {
 body {
   font-family: var(--font-body);
   margin: 0;
-  padding: 0;
+  padding: 4.5rem 0 0 0;
   text-align: left;
   background: linear-gradient(var(--gray-gradient)) no-repeat;
   background-size: 100% 600px;
@@ -184,9 +184,24 @@ body {
 }
 
 main {
-  max-width: calc(100% - 2em);
-  margin: auto;
-  padding: 3em 1em;
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 0;
+}
+
+header {
+  transition:
+    background-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.3s ease;
+}
+
+header.headroom--unpinned {
+  transform: translateY(-100%);
+}
+
+header.headroom--pinned {
+  transform: translateY(0);
 }
 h1,
 h2,

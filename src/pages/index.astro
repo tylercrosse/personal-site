@@ -49,29 +49,62 @@ const allPostsData = posts.map((post) => {
 ---
 
 <BaseLayout title="Home">
-  <section class="heading">
-    <h1 class="animated-heading">
-      <span class="word">Hi,</span>
-      <span class="word">I'm</span>
-      <span class="word">Tyler</span>
+  <section class="flex min-h-[40vh] flex-col items-center justify-center gap-6 text-center">
+    <h1 class="overflow-hidden text-5xl font-serif font-semibold tracking-tight text-text-base dark:text-text-light sm:text-6xl">
+      <span
+        class="inline-block translate-y-full opacity-0 blur-lg animate-word-slide"
+        style="--word-index:0"
+      >
+        Hi,
+      </span>
+      <span
+        class="inline-block translate-y-full opacity-0 blur-lg animate-word-slide"
+        style="--word-index:1"
+      >
+        I'm
+      </span>
+      <span
+        class="inline-block translate-y-full opacity-0 blur-lg animate-word-slide"
+        style="--word-index:2"
+      >
+        Tyler
+      </span>
     </h1>
-    <p class="animated-subtitle slide-in-block">
+    <p class="max-w-2xl text-lg text-muted-light opacity-0 blur-md animate-scale-fade [animation-delay:0.2s] dark:text-muted">
       I'm a software engineer with a passion for building things.<br />
-      I'm currently studying machine learning and systems at Georgia Tech. My research interests include: Mechanistic Interpretability, AI Alignment, Deep Learning Theory
+      I'm currently studying machine learning and systems at Georgia Tech. My research interests include mechanistic interpretability, AI alignment, and deep learning theory.
     </p>
   </section>
-  <section class="posts slide-in-block" data-pagefind-ignore>
-    <h2>Writing</h2>
-    <ul>
+  <section
+    class="mt-16 space-y-8 rounded-2xl border border-border-light bg-white/70 p-6 shadow-sm transition dark:border-border-dark dark:bg-surface-dark/70"
+    data-pagefind-ignore
+  >
+    <h2 class="text-2xl font-semibold text-text-base dark:text-text-light">Writing</h2>
+    <ul class="space-y-4">
       {
         allPostsData.map((post) => (
           <li>
-            <a href={`/ideas/${post.slug}/`}>
-              {post.date && <FormattedDate date={post.date} />} -
-              {post.draft && <span class="draft-indicator">DRAFT</span>}
-              <span class="title">{post.title}</span>
-              <span class="reading-time">{post.readingTimeText}</span>
-              <div class="description">{post.description}</div>
+            <a
+              href={`/ideas/${post.slug}/`}
+              class="group block rounded-xl border border-border-light bg-white/80 p-5 shadow-sm transition hover:border-accent hover:shadow-soft dark:border-border-dark dark:bg-surface-dark/70 dark:hover:border-accent-dark"
+            >
+              <div class="flex flex-wrap items-center gap-2 text-sm text-muted dark:text-muted-light">
+                {post.date && <FormattedDate date={post.date} />}
+                {post.draft && (
+                  <span class="rounded-full bg-amber-100 px-3 py-0.5 text-xs font-semibold uppercase tracking-wider text-amber-700 dark:bg-amber-500/10 dark:text-amber-300">
+                    Draft
+                  </span>
+                )}
+                <span class="ml-auto font-medium text-muted dark:text-muted-light">
+                  {post.readingTimeText}
+                </span>
+              </div>
+              <h3 class="mt-3 text-xl font-semibold text-text-base transition-colors group-hover:text-accent dark:text-text-light">
+                {post.title}
+              </h3>
+              <p class="mt-2 text-base text-text-base/80 dark:text-text-light/80">
+                {post.description}
+              </p>
             </a>
           </li>
         ))
@@ -79,134 +112,3 @@ const allPostsData = posts.map((post) => {
     </ul>
   </section>
 </BaseLayout>
-
-<style>
-  .heading {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 40vh;
-    min-height: 200px;
-    text-align: center;
-  }
-
-  @media (max-width: 768px) {
-    .heading {
-      height: 70vh;
-    }
-  }
-
-  .heading h1 {
-    font-size: 5rem;
-  }
-
-  .animated-heading,
-  .animated-subtitle {
-    overflow: hidden;
-  }
-
-  .animated-subtitle {
-    max-width: 600px;
-  }
-
-  .word {
-    display: inline-block;
-    opacity: 0;
-    transform: translateY(100%) translateZ(0);
-    filter: blur(20px);
-    animation: wordSlideIn 0.4s cubic-bezier(0.43, 0.195, 0.02, 1) forwards;
-  }
-
-  .animated-heading .word {
-    animation-delay: calc(var(--word-index, 0) * 0.05s);
-  }
-
-  .animated-subtitle .word {
-    animation-delay: calc(0.15s + var(--word-index, 0) * 0.05s);
-  }
-
-  @keyframes wordSlideIn {
-    to {
-      opacity: 1;
-      transform: translateY(0) translateZ(0);
-      filter: blur(0px);
-    }
-  }
-
-  /* Set CSS custom properties for animation delays */
-  .animated-heading .word:nth-child(1) {
-    --word-index: 0;
-  }
-  .animated-heading .word:nth-child(2) {
-    --word-index: 1;
-  }
-  .animated-heading .word:nth-child(3) {
-    --word-index: 2;
-  }
-
-  .posts {
-    max-width: 800px;
-    margin: 0 auto;
-  }
-
-  .posts ul {
-    padding: 0;
-  }
-
-  .posts li {
-    list-style: none;
-    font-size: 1rem;
-    padding: 0.5rem 0;
-  }
-
-  .posts a {
-    text-decoration: none;
-    color: var(--sol-8);
-  }
-
-  .posts a:hover {
-    color: var(--sol-9);
-    text-decoration: underline;
-  }
-
-  .posts a .title {
-    font-weight: bold;
-    font-family: var(--font-heading);
-  }
-
-  .draft-indicator {
-    background-color: var(--sol-yellow);
-    color: var(--green);
-    font-size: 0.7rem;
-    font-weight: bold;
-    padding: 2px 6px;
-    border-radius: 3px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-
-  .slide-in-block {
-    opacity: 0;
-    filter: blur(10px);
-    transform: scale(0.95);
-    will-change: transform, opacity, filter;
-    animation: slideInBlock 0.4s cubic-bezier(0.43, 0.195, 0.02, 1) forwards;
-  }
-
-  .animated-subtitle.slide-in-block {
-    animation-delay: 0.4s;
-  }
-
-  .posts.slide-in-block {
-    animation-delay: 0.6s;
-  }
-
-  @keyframes slideInBlock {
-    to {
-      opacity: 1;
-      filter: blur(0px);
-      transform: scale(1);
-    }
-  }
-</style>

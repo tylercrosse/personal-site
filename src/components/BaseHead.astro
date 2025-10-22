@@ -54,6 +54,65 @@ const getImageURL = async (imageInput: string | ImageMetadata | undefined) => {
 const imageURL = await getImageURL(image);
 ---
 
+<!-- Tailwind CSS setup -->
+<script is:inline>
+  window.tailwind = window.tailwind || {};
+  window.tailwind.config = {
+    darkMode: ["class", '[data-effective-theme="dark"]'],
+    theme: {
+      extend: {
+        colors: {
+          site: { light: "#fdf6e3", dark: "#002b36" },
+          surface: { light: "#ffffff", dark: "#073642" },
+          accent: { DEFAULT: "#268bd2", dark: "#2aa198" },
+          muted: { DEFAULT: "#586e75", light: "#93a1a1", dark: "#839496" },
+          border: { light: "#e6e6e6", dark: "#586e75" },
+          text: { base: "#001f29", light: "#fdf6e3" },
+        },
+        boxShadow: {
+          soft: "0 10px 30px rgba(0, 0, 0, 0.08)",
+        },
+        fontFamily: {
+          sans: ['"IBM Plex Sans"', "system-ui", "sans-serif"],
+          serif: ['"Source Serif 4"', "serif"],
+          mono: ['"IBM Plex Mono"', "monospace"],
+        },
+        keyframes: {
+          "slide-in": {
+            "0%": { opacity: "0", transform: "translateY(16px)" },
+            "100%": { opacity: "1", transform: "translateY(0)" },
+          },
+          "word-slide": {
+            "0%": {
+              opacity: "0",
+              transform: "translateY(100%)",
+              filter: "blur(20px)",
+            },
+            "100%": {
+              opacity: "1",
+              transform: "translateY(0)",
+              filter: "blur(0)",
+            },
+          },
+          "scale-fade": {
+            "0%": { opacity: "0", transform: "scale(0.95)" },
+            "100%": { opacity: "1", transform: "scale(1)" },
+          },
+        },
+        animation: {
+          "slide-in":
+            "slide-in 0.4s cubic-bezier(0.43, 0.195, 0.02, 1) forwards",
+          "word-slide":
+            "word-slide 0.4s cubic-bezier(0.43, 0.195, 0.02, 1) forwards",
+          "scale-fade":
+            "scale-fade 0.4s cubic-bezier(0.43, 0.195, 0.02, 1) forwards",
+        },
+      },
+    },
+  };
+</script>
+<script src="https://cdn.tailwindcss.com/3.4.14"></script>
+
 <!-- Theme script to prevent FOUC -->
 <script is:inline>
   // This script runs before the page renders to prevent flash of unstyled content
