@@ -1,6 +1,6 @@
 <button
   id="omnibar-trigger"
-  class="search-trigger"
+  class="search-trigger inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 shadow-sm transition-colors duration-150 hover:border-accent hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
   title="Search"
   aria-label="Search"
 >
@@ -17,13 +17,23 @@
     <circle cx="11" cy="11" r="8"></circle>
     <path d="m21 21-4.35-4.35"></path>
   </svg>
-  <span class="search-placeholder">Search...</span>
-  <kbd class="search-kbd">⌘K</kbd>
+  <span class="search-placeholder hidden text-sm font-medium text-slate-500 sm:inline">
+    Search...
+  </span>
+  <kbd class="search-kbd ml-2">⌘K</kbd>
 </button>
 
-<div id="omnibar-overlay" class="omnibar-overlay" style="display: none;">
-  <div class="omnibar-container">
-    <div class="omnibar-input-container">
+<div
+  id="omnibar-overlay"
+  class="omnibar-overlay fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 px-4 py-8"
+  style="display: none;"
+>
+  <div
+    class="omnibar-container w-full max-w-2xl rounded-2xl bg-white p-6 shadow-2xl ring-1 ring-black/5 dark:bg-slate-900 dark:ring-white/10"
+  >
+    <div
+      class="omnibar-input-container flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-800"
+    >
       <svg
         width="16"
         height="16"
@@ -33,7 +43,7 @@
         stroke-width="2"
         stroke-linecap="round"
         stroke-linejoin="round"
-        class="search-icon"
+        class="text-slate-400 dark:text-slate-500"
       >
         <circle cx="11" cy="11" r="8"></circle>
         <path d="m21 21-4.35-4.35"></path>
@@ -42,81 +52,81 @@
         id="omnibar-input"
         type="text"
         placeholder="Search pages and posts..."
-        class="omnibar-input"
+        class="omnibar-input w-full bg-transparent text-base text-slate-900 outline-none placeholder:text-slate-400 dark:text-slate-100"
         autocomplete="off"
         spellcheck="false"
       />
     </div>
-    <div id="omnibar-results" class="omnibar-results">
-      <div class="results-section" id="pages-default-section">
-        <div class="section-title">Pages</div>
-        <div class="result-item" data-href="/" data-index="0">
-          <div class="result-title">Home</div>
-          <div class="result-description">Welcome to my personal site</div>
+    <div id="omnibar-results" class="omnibar-results mt-4 max-h-96 space-y-4 overflow-y-auto">
+      <div class="results-section space-y-2" id="pages-default-section">
+        <div class="section-title text-xs font-semibold uppercase tracking-wide text-slate-500">
+          Pages
         </div>
-        <div class="result-item" data-href="/ideas" data-index="1">
-          <div class="result-title">Ideas</div>
-          <div class="result-description">My thoughts and writings</div>
+        <div
+          class="result-item cursor-pointer rounded-lg border border-transparent bg-white px-4 py-3 shadow-sm transition hover:border-accent hover:bg-accent/10 dark:bg-slate-900 dark:hover:bg-accent/20"
+          data-href="/"
+          data-index="0"
+        >
+          <div class="result-title font-medium text-slate-800 dark:text-slate-100">Home</div>
+          <div class="result-description text-sm text-slate-500 dark:text-slate-300">
+            Welcome to my personal site
+          </div>
         </div>
-        <div class="result-item" data-href="/about" data-index="2">
-          <div class="result-title">About</div>
-          <div class="result-description">Learn more about me</div>
+        <div
+          class="result-item cursor-pointer rounded-lg border border-transparent bg-white px-4 py-3 shadow-sm transition hover:border-accent hover:bg-accent/10 dark:bg-slate-900 dark:hover:bg-accent/20"
+          data-href="/ideas"
+          data-index="1"
+        >
+          <div class="result-title font-medium text-slate-800 dark:text-slate-100">Ideas</div>
+          <div class="result-description text-sm text-slate-500 dark:text-slate-300">
+            My thoughts and writings
+          </div>
+        </div>
+        <div
+          class="result-item cursor-pointer rounded-lg border border-transparent bg-white px-4 py-3 shadow-sm transition hover:border-accent hover:bg-accent/10 dark:bg-slate-900 dark:hover:bg-accent/20"
+          data-href="/about"
+          data-index="2"
+        >
+          <div class="result-title font-medium text-slate-800 dark:text-slate-100">About</div>
+          <div class="result-description text-sm text-slate-500 dark:text-slate-300">
+            Learn more about me
+          </div>
         </div>
       </div>
-      <div class="results-section" id="recent-posts-section">
-        <div class="section-title">Recent Posts</div>
+      <div class="results-section space-y-2" id="recent-posts-section">
+        <div class="section-title text-xs font-semibold uppercase tracking-wide text-slate-500">
+          Recent Posts
+        </div>
         <!-- Recent posts will be populated by JavaScript -->
       </div>
       <div
-        class="results-section"
+        class="results-section space-y-2"
         id="search-results-section"
         style="display: none;"
       >
-        <div class="section-title">Search Results</div>
-        <div id="search-results-container"></div>
+        <div class="section-title text-xs font-semibold uppercase tracking-wide text-slate-500">
+          Search Results
+        </div>
+        <div id="search-results-container" class="space-y-3"></div>
       </div>
     </div>
-    <div class="keyboard-shortcuts">
-      <div class="shortcut-item">
+    <div class="keyboard-shortcuts mt-6 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500">
+      <div class="shortcut-item flex items-center gap-2">
         <kbd>↑</kbd>
         <kbd>↓</kbd>
         <span>Navigate</span>
       </div>
-      <div class="shortcut-item">
+      <div class="shortcut-item flex items-center gap-2">
         <kbd>Enter</kbd>
         <span>Open</span>
       </div>
-      <div class="shortcut-item">
+      <div class="shortcut-item flex items-center gap-2">
         <kbd>Esc</kbd>
         <span>Close</span>
       </div>
     </div>
   </div>
 </div>
-
-<script>
-  class Omnibar {
-    private overlay: HTMLElement;
-    private input: HTMLInputElement;
-    private results: HTMLElement;
-    private trigger: HTMLElement;
-    private selectedIndex: number = 0;
-    private resultItems: HTMLElement[] = [];
-    private searchTimeout: number | null = null;
-    private isSearching: boolean = false;
-
-    constructor() {
-      this.overlay = document.getElementById("omnibar-overlay")!;
-      this.input = document.getElementById("omnibar-input") as HTMLInputElement;
-      this.results = document.getElementById("omnibar-results")!;
-      this.trigger = document.getElementById("omnibar-trigger")!;
-      this.resultItems = Array.from(
-        this.results.querySelectorAll(
-          "#pages-default-section .result-item, #recent-posts-section .result-item"
-        )
-      ) as HTMLElement[];
-      this.init();
-    }
 
     private async init() {
       this.setupEventListeners();

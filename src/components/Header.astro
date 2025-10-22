@@ -5,138 +5,38 @@ import Omnibar from "./Omnibar.astro";
 import { SITE_TITLE } from "../consts";
 ---
 
-<header>
-  <nav>
-    <a href="/" class="logo"
-      ><img
-        style="width: 28px; height: 28px;"
+<header
+  class="fixed inset-x-0 top-0 z-50 transform bg-white shadow-header transition-all duration-200 ease-in-out dark:bg-brand-dark"
+>
+  <nav
+    class="mx-auto flex max-w-screen-2xl items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8"
+  >
+    <a href="/" class="logo inline-flex items-center" aria-label={SITE_TITLE}>
+      <img
+        class="h-7 w-7"
         src="/img/favicons/favicon-96x96.png"
         alt="Logo"
-      /></a
-    >
-    <div class="internal-links">
+      />
+    </a>
+    <div class="internal-links flex items-center gap-2 text-sm sm:text-base">
       <HeaderLink href="/">Home</HeaderLink>
       <HeaderLink href="/ideas">Ideas</HeaderLink>
       <HeaderLink href="/about">About</HeaderLink>
       <div
-        class="js-missing"
+        class="js-missing hidden rounded-md bg-amber-100 px-2 py-1 text-xs font-semibold uppercase tracking-wide text-amber-700"
         title="Search and other important features require JavaScript"
       >
         ⚠️ JavaScript Disabled
       </div>
-      <div class="search-wrapper js-required">
+      <div class="search-wrapper js-required hidden items-center sm:flex">
         <Omnibar />
       </div>
-      <div class="theme-toggle-wrapper">
+      <div class="theme-toggle-wrapper flex items-center">
         <ThemeToggle />
       </div>
     </div>
   </nav>
 </header>
-<style>
-  header {
-    margin: 0;
-    padding: 0 1em;
-    background: white;
-    box-shadow: 0 2px 8px rgba(var(--black), 5%);
-    transition:
-      background-color 0.2s ease,
-      box-shadow 0.2s ease,
-      transform 0.3s ease;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    z-index: 1000;
-    transform: translateY(0);
-  }
-
-  /* Headroom states */
-  header.headroom--unpinned {
-    transform: translateY(-100%);
-  }
-
-  header.headroom--pinned {
-    transform: translateY(0);
-  }
-
-  /* Dark theme header */
-  :global([data-effective-theme="dark"]) header {
-    background: #073642; /* Solarized base02 - slightly lighter than base03 */
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 30%);
-  }
-
-  /* Add padding to body to account for fixed header */
-  :global(body) {
-    padding-top: 4rem; /* Adjust this value based on your header height */
-  }
-
-  /* h2 {
-    margin: 0;
-    font-size: 1em;
-  }
-
-  h2 a,
-  h2 a.active {
-    text-decoration: none;
-  } */
-  nav {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    max-width: 1600px;
-    margin: 0 auto;
-  }
-  nav a {
-    padding: 0.7em;
-    font-size: 16px;
-    color: rgb(var(--black));
-    border-bottom: 4px solid transparent;
-    text-decoration: none;
-  }
-  nav a.active {
-    text-decoration: none;
-    border-bottom-color: var(--accent);
-  }
-
-  nav a.logo {
-    padding: 0;
-    margin: 0;
-    border-bottom: none;
-    display: flex;
-    align-items: center;
-  }
-
-  .internal-links {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-  .search-wrapper {
-    display: flex;
-    align-items: center;
-  }
-  .theme-toggle-wrapper {
-    display: flex;
-    align-items: center;
-  }
-  .social-links,
-  .social-links a {
-    display: flex;
-  }
-  @media (max-width: 720px) {
-    .social-links {
-      display: none;
-    }
-    nav {
-      gap: 0.5rem;
-    }
-    .internal-links {
-      gap: 0.25rem;
-    }
-  }
-</style>
 
 <script>
   function initHeadroom() {

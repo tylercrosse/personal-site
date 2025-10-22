@@ -4,561 +4,149 @@ import { Image } from "astro:assets";
 ---
 
 <BaseLayout title="About">
-  <div class="headshot slide-in-block">
-    <Image
-      src="/img/headshot.jpeg"
-      alt="Tyler Crosse"
-      width={300}
-      height={300}
-    />
+  <div class="space-y-16">
+    <div
+      class="flex flex-col items-center gap-6 text-center animate-fade-scale"
+      style={{ animationDelay: "0.1s" }}
+    >
+      <div class="overflow-hidden rounded-full border-4 border-slate-200 shadow-xl dark:border-slate-700">
+        <Image
+          src="/img/headshot.jpeg"
+          alt="Tyler Crosse"
+          width={300}
+          height={300}
+          class="h-48 w-48 object-cover sm:h-64 sm:w-64"
+        />
+      </div>
+      <div class="space-y-4">
+        <h1 class="text-4xl font-serif font-bold text-slate-900 dark:text-white">Hi, I'm Tyler 👋</h1>
+        <p class="max-w-3xl text-lg leading-relaxed text-slate-600 dark:text-slate-300">
+          I'm a software engineer turned graduate student, currently an MSCS student at Georgia Tech focusing on
+          <strong class="font-semibold text-slate-900 dark:text-white">AI safety</strong> and
+          <strong class="font-semibold text-slate-900 dark:text-white">mechanistic interpretability</strong>. I care about
+          building steerable, reliable AI systems—and the engineering that makes them real.
+        </p>
+      </div>
+    </div>
+
+    <section class="space-y-4 animate-fade-scale" style={{ animationDelay: "0.2s" }}>
+      <h2 class="text-2xl font-serif font-semibold text-slate-900 dark:text-white">My Journey</h2>
+      <div class="space-y-4 text-base leading-relaxed text-slate-600 dark:text-slate-300">
+        <p>
+          My path to computer science has been anything but conventional. I started with a degree in
+          <strong class="font-semibold text-slate-900 dark:text-white">Biomedical Engineering</strong> (VCU), planning to
+          build medical devices. I was quickly drawn to software—shipping production systems, leading engineering teams, and
+          learning how to make complex systems robust and maintainable.
+        </p>
+        <p>
+          After nearly a decade in industry, breakthroughs like
+          <a
+            href="https://en.wikipedia.org/wiki/AlphaFold"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="font-medium text-accent hover:text-accent-dark"
+          >
+            AlphaFold
+          </a>
+          and the rapid scaling of language models crystallized something for me: machine learning wasn't just another tool—it
+          was going to revolutionize science in ways I hadn't imagined. That pushed me to deepen my foundations and focus on
+          <strong class="font-semibold text-slate-900 dark:text-white">alignment</strong>: making powerful systems
+          <em>understandable</em>, <em>steerable</em>, and <em>trustworthy</em>. That sent me back to school to pair strong systems
+          skills with rigorous ML.
+        </p>
+      </div>
+    </section>
+
+    <section class="space-y-8 animate-fade-scale" style={{ animationDelay: "0.3s" }}>
+      <h2 class="text-2xl font-serif font-semibold text-slate-900 dark:text-white">Experience</h2>
+      <div class="space-y-6">
+        <div class="rounded-2xl border border-slate-200 bg-white/60 p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900/60">
+          <h3 class="text-xl font-semibold text-slate-900 dark:text-white">Georgia Institute of Technology</h3>
+          <p class="text-sm font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+            MS Computer Science <span class="font-normal normal-case">| 2024 - Present</span>
+          </p>
+          <p class="mt-3 text-base leading-relaxed text-slate-600 dark:text-slate-300">
+            Specializing in Machine Learning and High-Performance Computing. Coursework: Operating Systems, Machine Learning,
+            High Dimensional Data Analysis, Deep Learning, Reinforcement Learning. Built a distributed, sequentially consistent
+            file system in C++ (gRPC, multithreading) and ran RL experiments (exact algorithms vs. approximate algorithms).
+            Current focus: mechanistic interpretability, robustness & evaluation, and reproducible ML.
+          </p>
+        </div>
+        <div class="rounded-2xl border border-slate-200 bg-white/60 p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900/60">
+          <h3 class="text-xl font-semibold text-slate-900 dark:text-white">Knowable</h3>
+          <p class="text-sm font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+            Lead Software Engineer <span class="font-normal normal-case">| 5 years</span>
+          </p>
+          <p class="mt-3 text-base leading-relaxed text-slate-600 dark:text-slate-300">
+            Led the core engineering team for a legal knowledge platform using search, LLMs, and structured data. Built
+            event-driven microservices on AWS (Lambda/SQS/SNS), OpenSearch, and PostgreSQL; improved CI/CD to cut deployment
+            time by 40%; mentored engineers and balanced architecture with delivery.
+          </p>
+        </div>
+        <div class="rounded-2xl border border-slate-200 bg-white/60 p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900/60">
+          <h3 class="text-xl font-semibold text-slate-900 dark:text-white">Rosetta Stone</h3>
+          <p class="text-sm font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+            Senior Software Engineer <span class="font-normal normal-case">| 2 years</span>
+          </p>
+          <p class="mt-3 text-base leading-relaxed text-slate-600 dark:text-slate-300">
+            Contributed to the language learning platform that's helped millions of people learn new languages. Focused on
+            backend systems and API development, working with international teams across multiple time zones.
+          </p>
+        </div>
+        <div class="rounded-2xl border border-slate-200 bg-white/60 p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900/60">
+          <h3 class="text-xl font-semibold text-slate-900 dark:text-white">Virginia Commonwealth University</h3>
+          <p class="text-sm font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">BS Biomedical Engineering</p>
+          <p class="mt-3 text-base leading-relaxed text-slate-600 dark:text-slate-300">
+            Where it all started. Studied the intersection of engineering and medicine, but discovered my true passion lay in the
+            computational side of solving complex problems.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="space-y-6 animate-fade-scale" style={{ animationDelay: "0.4s" }}>
+      <h2 class="text-2xl font-serif font-semibold text-slate-900 dark:text-white">What I'm Into</h2>
+      <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+        {[
+          {
+            title: "🧩 Mechanistic Interpretability",
+            body: "Sparse autoencoders, circuits, and tools to open up black boxes so we can understand and steer models.",
+          },
+          {
+            title: "🎯 AI Safety & Alignment",
+            body: "Building systems that are steerable, reliable, and beneficial by design.",
+          },
+          {
+            title: "🛡️ Robustness & Evaluation",
+            body: "Empirical evaluation under distribution shift; honesty/helpfulness metrics; reproducibility and measurement.",
+          },
+          {
+            title: "🔧 Systems for ML",
+            body: "Operating systems, distributed systems, and tooling that make ML research reliable, scalable, and repeatable.",
+          },
+          {
+            title: "⚡ High-Performance Computing",
+            body: "Squeezing performance from hardware: parallelism, GPU workloads, memory systems.",
+          },
+          {
+            title: "📚 Learning in Public",
+            body: "Sharing the journey—methods, failures, and breakthroughs—so others can learn alongside me.",
+          },
+          {
+            title: "⚖️ Economics",
+            body: "Understanding the economic forces that shape our world.",
+          },
+          {
+            title: "🧬 Computational Biology",
+            body: "Understanding the biological mechanisms that underlie disease and development.",
+          },
+        ].map((interest) => (
+          <div class="rounded-2xl border border-slate-200 bg-white/60 p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg dark:border-slate-700 dark:bg-slate-900/60">
+            <h3 class="text-lg font-semibold text-slate-900 dark:text-white">{interest.title}</h3>
+            <p class="mt-2 text-sm leading-relaxed text-slate-600 dark:text-slate-300">{interest.body}</p>
+          </div>
+        ))}
+      </div>
+    </section>
   </div>
-
-  <section class="intro slide-in-block">
-    <h1>Hi, I'm Tyler 👋</h1>
-    <p class="lead">
-      I'm a software engineer turned graduate student, currently an MSCS student
-      at Georgia Tech focusing on <strong>AI safety</strong> and
-      <strong>mechanistic interpretability</strong>. I care about building
-      steerable, reliable AI systems—and the engineering that makes them real.
-    </p>
-  </section>
-
-  <section class="journey slide-in-block">
-    <h2>My Journey</h2>
-    <p>
-      My path to computer science has been anything but conventional. I started
-      with a degree in <strong>Biomedical Engineering</strong> (VCU), planning to
-      build medical devices. I was quickly drawn to software—shipping production
-      systems, leading engineering teams, and learning how to make complex systems
-      robust and maintainable.
-    </p>
-    <p>
-      After nearly a decade in industry, breakthroughs like
-      <a
-        href="https://en.wikipedia.org/wiki/AlphaFold"
-        target="_blank"
-        rel="noopener noreferrer">AlphaFold</a
-      > and the rapid scaling of language models crystallized something for me: machine
-      learning wasn't just another tool—it was going to revolutionize science in
-      ways I hadn't imagined. That pushed me to deepen my foundations and focus on
-      <strong>alignment</strong>: making powerful systems <em>understandable</em
-      >, <em>steerable</em>, and
-      <em>trustworthy</em>. That sent me back to school to pair strong systems
-      skills with rigorous ML.
-    </p>
-  </section>
-
-  <section class="experience slide-in-block">
-    <h2>Experience</h2>
-    <div class="timeline">
-      <div class="timeline-item current">
-        <div class="timeline-marker"></div>
-        <div class="timeline-content">
-          <h3>Georgia Institute of Technology</h3>
-          <p class="company">
-            MS Computer Science <span class="period">| 2024 - Present</span>
-          </p>
-
-          <p class="description">
-            Specializing in Machine Learning and High-Performance Computing.
-            Coursework: Operating Systems, Machine Learning, High Dimensional
-            Data Analysis, Deep Learning, Reinforcement Learning. Built a
-            distributed, sequentially consistent file system in C++ (gRPC,
-            multithreading) and ran RL experiments (exact algorithms vs.
-            approximate algorithms). Current focus: mechanistic
-            interpretability, robustness & evaluation, and reproducible ML.
-          </p>
-        </div>
-      </div>
-
-      <div class="timeline-item">
-        <div class="timeline-marker"></div>
-        <div class="timeline-content">
-          <h3>Knowable</h3>
-          <p class="company">
-            Lead Software Engineer <span class="period">| 5 years</span>
-          </p>
-
-          <p class="description">
-            Led the core engineering team for a legal knowledge platform using
-            search, LLMs, and structured data. Built event-driven microservices
-            on AWS (Lambda/SQS/SNS), OpenSearch, and PostgreSQL; improved CI/CD
-            to cut deployment time by 40%; mentored engineers and balanced
-            architecture with delivery.
-          </p>
-        </div>
-      </div>
-
-      <div class="timeline-item">
-        <div class="timeline-marker"></div>
-        <div class="timeline-content">
-          <h3>Rosetta Stone</h3>
-          <p class="company">
-            Senior Software Engineer <span class="period">| 2 years</span>
-          </p>
-
-          <p class="description">
-            Contributed to the language learning platform that's helped millions
-            of people learn new languages. Focused on backend systems and API
-            development, working with international teams across multiple time
-            zones.
-          </p>
-        </div>
-      </div>
-
-      <div class="timeline-item">
-        <div class="timeline-marker"></div>
-        <div class="timeline-content">
-          <h3>Virginia Commonwealth University</h3>
-          <p class="company">BS Biomedical Engineering</p>
-
-          <p class="description">
-            Where it all started. Studied the intersection of engineering and
-            medicine, but discovered my true passion lay in the computational
-            side of solving complex problems.
-          </p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section class="interests slide-in-block">
-    <h2>What I'm Into</h2>
-    <div class="interests-grid">
-      <div class="interest-card">
-        <h3>🧩 Mechanistic Interpretability</h3>
-        <p>
-          Sparse autoencoders, circuits, and tools to open up black boxes so we
-          can understand and steer models.
-        </p>
-      </div>
-      <div class="interest-card">
-        <h3>🎯 AI Safety & Alignment</h3>
-        <p>
-          Building systems that are steerable, reliable, and beneficial by
-          design.
-        </p>
-      </div>
-      <div class="interest-card">
-        <h3>🛡️ Robustness & Evaluation</h3>
-        <p>
-          Empirical evaluation under distribution shift; honesty/helpfulness
-          metrics; reproducibility and measurement.
-        </p>
-      </div>
-      <div class="interest-card">
-        <h3>🔧 Systems for ML</h3>
-        <p>
-          Operating systems, distributed systems, and tooling that make ML
-          research reliable, scalable, and repeatable.
-        </p>
-      </div>
-      <div class="interest-card">
-        <h3>⚡ High-Performance Computing</h3>
-        <p>
-          Squeezing performance from hardware: parallelism, GPU workloads,
-          memory systems.
-        </p>
-      </div>
-      <div class="interest-card">
-        <h3>📚 Learning in Public</h3>
-        <p>
-          Sharing the journey—methods, failures, and breakthroughs—so others can
-          learn alongside me.
-        </p>
-      </div>
-
-      <div class="interest-card">
-        <h3>⚖️ Economics</h3>
-        <p>Understanding the economic forces that shape our world.</p>
-      </div>
-      <div class="interest-card">
-        <h3>🧬 Computational Biology</h3>
-        <p>
-          Understanding the biological mechanisms that underlie disease and
-          development.
-        </p>
-      </div>
-    </div>
-  </section>
-
-  <!-- <section class="focus slide-in-block">
-    <h2>Focus: AI Safety & Interpretability</h2>
-    <p>
-      I'm interested in methods that make models more understandable and
-      controllable, and in the systems that support trustworthy deployment:
-    </p>
-    <ul>
-      <li>
-        <strong>Mechanistic Interpretability</strong>: sparse autoencoders,
-        circuits, representation shift
-      </li>
-      <li>
-        <strong>Robustness & Evaluation</strong>: honesty/helpfulness under
-        distribution shift; reproducible pipelines
-      </li>
-      <li>
-        <strong>Systems & Tooling</strong>: scalable data/experiment pipelines,
-        evaluation harnesses, and infra
-      </li>
-    </ul>
-  </section> -->
-
-  <!-- <section class="work slide-in-block">
-    <h2>Selected Writing & Projects</h2>
-    <ul>
-      <li>
-        <a href="/ideas/2025/ml-retro/">ML notes & interpretability readings</a>
-        — a growing index of methods, papers, and experiments
-      </li>
-      <li>
-        <a href="/ideas/2025/ml-a1/">Supervised learning study</a> — pipelines comparing
-        models across high/low dimensional regimes
-      </li>
-      <li>
-        <a href="/ideas/2021/nand2tetris-part1/">Nand-to-Tetris computer</a> — building
-        a computer and toy OS from first principles
-      </li>
-      <li>
-        Fine-tuning & representation shift (in progress) — exploring how
-        fine-tuning for reasoning/tool-use changes internal structure
-      </li>
-    </ul>
-  </section>
-
-  <section class="now slide-in-block">
-    <h2>Now</h2>
-    <ul>
-      <li>MSCS @ Georgia Tech (2024-2026): ML + systems</li>
-      <li>Building reproducible eval + interpretability tooling</li>
-      <li>
-        Availability: Oct 2025 - Apr 2026 for ML Alignment Fellowship
-        (extendable)
-      </li>
-    </ul>
-  </section> -->
-
-  <section class="about-this-site slide-in-block">
-    <h2>About This Digital Garden</h2>
-    <p>
-      This site is my <strong>digital garden</strong>—a place where ideas can
-      grow and evolve over time. Unlike a traditional blog, content here isn't
-      organized chronologically but by connections and themes. Some pieces are
-      polished articles, others are rough notes or works in progress.
-    </p>
-    <p>
-      I believe in <strong>learning in public</strong>, sharing not just the
-      final results but the messy process of figuring things out. If you see
-      something interesting, wrong, or want to discuss an idea,
-      <a href="mailto:hello@tylercrosse.com">drop me a line</a>!
-    </p>
-
-    <p>
-      Built with <a
-        href="https://astro.build/"
-        target="_blank"
-        rel="noopener noreferrer">Astro</a
-      >. Check out the <a
-        href="https://github.com/tylercrosse/personal-site"
-        target="_blank"
-        rel="noopener noreferrer">source code</a
-      >. It would be a little weird to just copy it wholesale.
-    </p>
-
-    <details class="inspiration-details">
-      <summary>Sites that inspired this one</summary>
-      <ul class="inspiration-list">
-        <li>
-          <a
-            href="https://distill.pub/"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <strong>Distill.pub</strong>
-          </a> - Interactive machine learning research papers
-        </li>
-        <li>
-          <a
-            href="https://maggieappleton.com/"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <strong>Maggie Appleton</strong>
-          </a> - The digital garden philosophy and beautiful visual thinking
-        </li>
-        <li>
-          <a
-            href="https://www.arlenmccluskey.com/"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <strong>Arlen McCluskey</strong>
-          </a> - Clean technical writing and site structure
-        </li>
-        <li>
-          <a
-            href="https://eugeneyan.com/"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <strong>Eugene Yan</strong>
-          </a> - Thoughtful ML content and career insights
-        </li>
-        <li>
-          <a
-            href="https://www.swyx.io/"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <strong>Swyx</strong>
-          </a> - Learning in public and developer advocacy
-        </li>
-        <li>
-          <a
-            href="https://lowyx.com/"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <strong>Yxlow</strong>
-          </a> - Minimalist design and thoughtful curation
-        </li>
-      </ul>
-    </details>
-  </section>
-
-  <style>
-    section {
-      max-width: 800px;
-      margin: 2rem auto;
-      padding: 0 1rem;
-    }
-
-    .headshot {
-      margin: 2rem auto;
-      max-width: 300px;
-      text-align: center;
-    }
-
-    .headshot img {
-      border: 8px solid #fff;
-    }
-
-    .intro {
-      text-align: center;
-      margin-bottom: 3rem;
-    }
-
-    .intro h1 {
-      font-size: 2.5rem;
-      margin-bottom: 1rem;
-      color: var(--sol-base01);
-    }
-
-    .lead {
-      font-size: 1.25rem;
-      line-height: 1.6;
-      color: var(--sol-base0);
-      max-width: 600px;
-      margin: 0 auto;
-    }
-
-    .journey {
-      margin-bottom: 3rem;
-    }
-
-    .journey p {
-      font-size: 1.1rem;
-      line-height: 1.7;
-      margin-bottom: 1.5rem;
-    }
-
-    .timeline {
-      position: relative;
-      /* margin: 2rem 0; */
-    }
-    .timeline-item {
-      position: relative;
-      margin-bottom: 2rem;
-      /* padding-left: 60px; */
-      font-size: 1.1rem;
-    }
-
-    .timeline-marker {
-      position: absolute;
-      left: 11px;
-      top: 8px;
-      width: 18px;
-      height: 18px;
-      border-radius: 50%;
-      background: var(--sol-base2);
-      border: 3px solid var(--sol-base3);
-    }
-
-    .timeline-content h3 {
-      color: var(--sol-base01);
-      font-size: 1.4rem;
-    }
-
-    .company {
-      color: var(--sol-blue);
-      font-weight: 600;
-      margin: 0 0 0.25rem 0;
-    }
-
-    .description {
-      color: var(--sol-base0);
-      line-height: 1.6;
-      margin: 0;
-    }
-
-    .interests-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 1.5rem;
-      margin: 2rem 0;
-    }
-
-    .interest-card h3 {
-      margin: 0 0 1rem 0;
-      color: var(--sol-base01);
-      font-size: 1.1rem;
-    }
-
-    .interest-card p {
-      margin: 0;
-      color: var(--sol-base0);
-      line-height: 1.5;
-    }
-
-    /* .about-this-site {
-        background: var(--sol-base3);
-        border-radius: 12px;
-        padding: 2rem;
-        border: 1px solid var(--sol-base2);
-      } */
-
-    .about-this-site p {
-      font-size: 1.1rem;
-      line-height: 1.7;
-      margin-bottom: 1.5rem;
-    }
-
-    .inspiration-details {
-      margin-top: 2rem;
-    }
-
-    .inspiration-details summary {
-      cursor: pointer;
-      font-weight: 600;
-      color: var(--sol-base01);
-      padding: 0.5rem 0;
-      border-bottom: 1px solid var(--sol-base2);
-    }
-
-    .inspiration-details summary:hover {
-      color: var(--sol-blue);
-    }
-    .inspiration-list li {
-      margin-bottom: 0.75rem;
-      padding-left: 1rem;
-      position: relative;
-    }
-
-    .inspiration-list a {
-      color: var(--sol-blue);
-      text-decoration: none;
-    }
-
-    .inspiration-list a:hover {
-      text-decoration: underline;
-    }
-
-    .slide-in-block {
-      opacity: 0;
-      filter: blur(10px);
-      transform: scale(0.95);
-      will-change: transform, opacity, filter;
-      animation: slideInBlock 0.4s cubic-bezier(0.43, 0.195, 0.02, 1) forwards;
-    }
-
-    .slide-in-block:nth-child(1) {
-      animation-delay: 0s;
-    }
-    .slide-in-block:nth-child(2) {
-      animation-delay: 0.1s;
-    }
-    .slide-in-block:nth-child(3) {
-      animation-delay: 0.2s;
-    }
-    .slide-in-block:nth-child(4) {
-      animation-delay: 0.3s;
-    }
-    .slide-in-block:nth-child(5) {
-      animation-delay: 0.4s;
-    }
-    .slide-in-block:nth-child(6) {
-      animation-delay: 0.5s;
-    }
-
-    @keyframes slideInBlock {
-      to {
-        opacity: 1;
-        filter: blur(0px);
-        transform: scale(1);
-      }
-    }
-
-    /* Dark theme adjustments */
-    @media (prefers-color-scheme: dark) {
-      .headshot img {
-        /* border-color: var(--sol-base02); */
-      }
-
-      .interest-card {
-        background: var(--sol-base02);
-        border-color: var(--sol-base01);
-      }
-
-      .about-this-site {
-        background: var(--sol-base02);
-        border-color: var(--sol-base01);
-      }
-
-      .timeline::before {
-        background: var(--sol-base01);
-      }
-
-      .timeline-marker {
-        background: var(--sol-base01);
-        border-color: var(--sol-base02);
-      }
-    }
-
-    /* Mobile responsive */
-    @media (max-width: 768px) {
-      .intro h1 {
-        font-size: 2rem;
-      }
-
-      .lead {
-        font-size: 1.1rem;
-      }
-
-      .interests-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .timeline-item {
-        padding-left: 50px;
-      }
-
-      .timeline::before {
-        left: 15px;
-      }
-
-      .timeline-marker {
-        left: 6px;
-      }
-    }
-  </style>
 </BaseLayout>

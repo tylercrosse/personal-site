@@ -7,20 +7,18 @@ interface Props {
 
 const { headings } = Astro.props;
 
-// Filter headings to only include H2-H4, with safety check for undefined headings
 const filteredHeadings = headings?.filter(({ depth }) => depth >= 2 && depth <= 4) || [];
 
-// Build hierarchical structure
 function buildHierarchy(headings: MarkdownHeading[]) {
   const toc: any[] = [];
   const parentHeadings = new Map();
-  
+
   if (!headings) return toc;
-  
+
   headings.forEach((h) => {
     const heading = { ...h, subheadings: [] };
     parentHeadings.set(heading.depth, heading);
-    
+
     if (heading.depth === 2) {
       toc.push(heading);
     } else {
@@ -30,7 +28,7 @@ function buildHierarchy(headings: MarkdownHeading[]) {
       }
     }
   });
-  
+
   return toc;
 }
 
@@ -39,34 +37,65 @@ const toc = buildHierarchy(filteredHeadings);
 
 {toc.length > 0 && (
   <>
-    <!-- Desktop Table of Contents -->
-    <nav class="desktop-toc" aria-label="Table of Contents">
-      <div class="toc-header">
-        <h4>Contents</h4>
-        <button class="toc-collapse-btn" id="desktop-toc-toggle" aria-label="Toggle table of contents" title="Toggle table of contents">
+    <nav
+      class="desktop-toc sticky top-24 hidden h-[calc(100vh-6rem)] w-60 overflow-y-auto rounded-xl border border-slate-200 bg-white/80 p-4 text-sm shadow-lg backdrop-blur transition dark:border-slate-700 dark:bg-slate-900/80 xl:block"
+      aria-label="Table of Contents"
+    >
+      <div class="toc-header mb-4 flex items-center justify-between gap-2 border-b border-slate-200 pb-3 text-slate-600 dark:border-slate-700 dark:text-slate-300">
+        <h4 class="text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">Contents</h4>
+        <button
+          class="toc-collapse-btn inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-500 transition hover:bg-slate-100 hover:text-accent dark:text-slate-300 dark:hover:bg-slate-800"
+          id="desktop-toc-toggle"
+          aria-label="Toggle table of contents"
+          title="Toggle table of contents"
+        >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M9 18l6-6-6-6"/>
+            <path d="M9 18l6-6-6-6" />
           </svg>
         </button>
       </div>
-      <ul class="toc-list">
+      <ul class="toc-list space-y-2">
         {toc.map((heading) => (
           <li class="toc-item" data-level={heading.depth}>
-            <a href={`#${heading.slug}`} class="toc-link" data-heading={heading.slug}>
+            <a
+              href={`#${heading.slug}`}
+              class:list={[
+                "toc-link block border-l-2 border-transparent pl-3 text-sm text-slate-600 transition hover:border-accent hover:text-accent dark:text-slate-300",
+                heading.depth === 3 && "text-xs opacity-80",
+                heading.depth === 4 && "text-xs opacity-70 pl-5",
+              ]}
+              data-heading={heading.slug}
+            >
               {heading.text}
             </a>
             {heading.subheadings.length > 0 && (
-              <ul class="toc-sublist">
+              <ul class="toc-sublist ml-3 space-y-2 overflow-hidden max-h-0 transition-[max-height] duration-300 ease-in-out">
                 {heading.subheadings.map((subheading: any) => (
                   <li class="toc-item" data-level={subheading.depth}>
-                    <a href={`#${subheading.slug}`} class="toc-link" data-heading={subheading.slug}>
+                    <a
+                      href={`#${subheading.slug}`}
+                      class:list={[
+                        "toc-link block border-l-2 border-transparent pl-4 text-sm text-slate-600 transition hover:border-accent hover:text-accent dark:text-slate-300",
+                        subheading.depth === 3 && "text-xs opacity-80",
+                        subheading.depth === 4 && "text-xs opacity-70 pl-6",
+                      ]}
+                      data-heading={subheading.slug}
+                    >
                       {subheading.text}
                     </a>
                     {subheading.subheadings && subheading.subheadings.length > 0 && (
-                      <ul class="toc-sublist">
+                      <ul class="toc-sublist ml-3 space-y-2 overflow-hidden max-h-0 transition-[max-height] duration-300 ease-in-out">
                         {subheading.subheadings.map((subsubheading: any) => (
                           <li class="toc-item" data-level={subsubheading.depth}>
-                            <a href={`#${subsubheading.slug}`} class="toc-link" data-heading={subsubheading.slug}>
+                            <a
+                              href={`#${subsubheading.slug}`}
+                              class:list={[
+                                "toc-link block border-l-2 border-transparent pl-6 text-sm text-slate-600 transition hover:border-accent hover:text-accent dark:text-slate-300",
+                                subsubheading.depth === 3 && "text-xs opacity-80",
+                                subsubheading.depth === 4 && "text-xs opacity-70 pl-8",
+                              ]}
+                              data-heading={subsubheading.slug}
+                            >
                               {subsubheading.text}
                             </a>
                           </li>
@@ -82,47 +111,86 @@ const toc = buildHierarchy(filteredHeadings);
       </ul>
     </nav>
 
-    <!-- Mobile Table of Contents -->
-    <div class="mobile-toc-container">
-      <!-- Sticky header that appears when scrolling -->
-      <div class="mobile-toc-header" id="mobile-toc-header">
-        <span class="current-heading" id="current-heading">Table of Contents</span>
-        <button class="toc-toggle" id="toc-toggle" aria-label="Toggle table of contents">
+    <div class="mobile-toc-container block xl:hidden">
+      <div
+        class="mobile-toc-header fixed left-0 right-0 top-0 z-40 flex items-center justify-between border-b border-slate-200 bg-white/80 px-4 py-3 text-sm font-medium text-slate-600 backdrop-blur transition-transform duration-300 dark:border-slate-700 dark:bg-slate-900/80"
+        id="mobile-toc-header"
+      >
+        <span class="current-heading flex-1 truncate text-sm font-medium text-slate-700 dark:text-slate-200" id="current-heading">
+          Table of Contents
+        </span>
+        <button
+          class="toc-toggle inline-flex h-9 w-9 items-center justify-center rounded-md text-slate-600 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
+          id="toc-toggle"
+          aria-label="Toggle table of contents"
+        >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M3 12h18M3 6h18M3 18h18"/>
+            <path d="M3 12h18M3 6h18M3 18h18" />
           </svg>
         </button>
       </div>
 
-      <!-- Full mobile ToC overlay -->
-      <div class="mobile-toc-overlay" id="mobile-toc-overlay">
-        <div class="mobile-toc-content">
-          <div class="mobile-toc-header-full">
-            <h4>Table of Contents</h4>
-            <button class="toc-close" id="toc-close" aria-label="Close table of contents">
+      <div
+        class="mobile-toc-overlay invisible fixed inset-0 z-50 bg-black/40 opacity-0 transition duration-300 ease-in-out dark:bg-black/70"
+        id="mobile-toc-overlay"
+      >
+        <div
+          class="mobile-toc-content absolute right-0 top-0 flex h-full w-4/5 max-w-xs translate-x-full flex-col overflow-y-auto bg-white shadow-2xl transition-transform duration-300 dark:bg-slate-900"
+        >
+          <div class="mobile-toc-header-full flex items-center justify-between border-b border-slate-200 px-4 py-3 dark:border-slate-700">
+            <h4 class="text-base font-semibold text-slate-700 dark:text-slate-100">Table of Contents</h4>
+            <button
+              class="toc-close inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-600 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
+              id="toc-close"
+              aria-label="Close table of contents"
+            >
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M18 6L6 18M6 6l12 12"/>
+                <path d="M18 6L6 18M6 6l12 12" />
               </svg>
             </button>
           </div>
-          <ul class="mobile-toc-list">
+          <ul class="mobile-toc-list space-y-2 px-4 py-4">
             {toc.map((heading) => (
               <li class="mobile-toc-item" data-level={heading.depth}>
-                <a href={`#${heading.slug}`} class="mobile-toc-link" data-heading={heading.slug}>
+                <a
+                  href={`#${heading.slug}`}
+                  class:list={[
+                    "mobile-toc-link block border-l-2 border-transparent pl-3 text-base text-slate-600 transition hover:border-accent hover:text-accent dark:text-slate-200",
+                    heading.depth === 3 && "text-sm opacity-80",
+                    heading.depth === 4 && "text-xs opacity-70 pl-5",
+                  ]}
+                  data-heading={heading.slug}
+                >
                   {heading.text}
                 </a>
                 {heading.subheadings.length > 0 && (
-                  <ul class="mobile-toc-sublist">
+                  <ul class="mobile-toc-sublist ml-3 space-y-2">
                     {heading.subheadings.map((subheading: any) => (
                       <li class="mobile-toc-item" data-level={subheading.depth}>
-                        <a href={`#${subheading.slug}`} class="mobile-toc-link" data-heading={subheading.slug}>
+                        <a
+                          href={`#${subheading.slug}`}
+                          class:list={[
+                            "mobile-toc-link block border-l-2 border-transparent pl-4 text-base text-slate-600 transition hover:border-accent hover:text-accent dark:text-slate-200",
+                            subheading.depth === 3 && "text-sm opacity-80",
+                            subheading.depth === 4 && "text-xs opacity-70 pl-6",
+                          ]}
+                          data-heading={subheading.slug}
+                        >
                           {subheading.text}
                         </a>
                         {subheading.subheadings && subheading.subheadings.length > 0 && (
-                          <ul class="mobile-toc-sublist">
+                          <ul class="mobile-toc-sublist ml-3 space-y-2">
                             {subheading.subheadings.map((subsubheading: any) => (
                               <li class="mobile-toc-item" data-level={subsubheading.depth}>
-                                <a href={`#${subsubheading.slug}`} class="mobile-toc-link" data-heading={subsubheading.slug}>
+                                <a
+                                  href={`#${subsubheading.slug}`}
+                                  class:list={[
+                                    "mobile-toc-link block border-l-2 border-transparent pl-6 text-base text-slate-600 transition hover:border-accent hover:text-accent dark:text-slate-200",
+                                    subsubheading.depth === 3 && "text-sm opacity-80",
+                                    subsubheading.depth === 4 && "text-xs opacity-70 pl-8",
+                                  ]}
+                                  data-heading={subsubheading.slug}
+                                >
                                   {subsubheading.text}
                                 </a>
                               </li>
@@ -141,415 +209,6 @@ const toc = buildHierarchy(filteredHeadings);
     </div>
   </>
 )}
-
-<style>
-  /* Desktop Table of Contents */
-  .desktop-toc {
-    position: sticky;
-    /* HACK: force ToC to the right above the content and not push the content down */
-    grid-column: 3 !important;
-    grid-row: 1 / -1; 
-    height: 0;
-    top: 4rem;
-    right: calc(-260px - 2rem);
-    max-height: calc(100vh - 5rem);
-    margin-top: 0;
-    overflow-y: visible;
-    width: 240px;
-    min-width: 240px;
-    padding: 1rem;
-    z-index: 0;
-    /* background: rgba(var(--gray-light), 0.5);
-    border-radius: 8px;
-    border: 1px solid rgba(var(--gray), 0.2);
-    backdrop-filter: blur(10px); */
-  }
-
-  [data-effective-theme="dark"] .desktop-toc {
-    background: rgba(var(--base02), 0.8);
-    border-color: rgba(var(--gray), 0.3);
-  }
-
-  .toc-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.5rem;
-    margin-bottom: 1rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 1px solid rgba(var(--gray), 0.2);
-  }
-
-  .toc-header h4 {
-    margin: 0;
-    margin-left: 0.5rem;
-    font-size: 0.9rem;
-    font-weight: 600;
-    color: rgb(var(--gray-dark));
-  }
-
-  .toc-collapse-btn {
-    background: none;
-    border: none;
-    color: rgb(var(--gray));
-    cursor: pointer;
-    padding: 0.25rem;
-    border-radius: 4px;
-    transition: all 0.2s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .toc-collapse-btn:hover {
-    color: var(--accent);
-    background: rgba(var(--gray), 0.1);
-  }
-
-  [data-effective-theme="dark"] .toc-collapse-btn {
-    color: rgb(var(--gray));
-  }
-
-  [data-effective-theme="dark"] .toc-collapse-btn:hover {
-    color: var(--accent);
-    background: rgba(var(--gray), 0.2);
-  }
-
-  .toc-list {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-  }
-
-  .toc-item {
-    margin: 0;
-  }
-
-  .toc-link {
-    display: block;
-    padding: 0.25rem 0;
-    font-size: 0.85rem;
-    line-height: 1.4;
-    color: rgb(var(--gray));
-    text-decoration: none;
-    border-left: 2px solid transparent;
-    padding-left: 0.5rem;
-    /* margin-left: -0.5rem; */
-    transition: all 0.2s ease;
-  }
-
-  .toc-link:hover {
-    color: var(--accent);
-    border-left-color: var(--accent);
-  }
-
-  .toc-link.active {
-    color: var(--accent);
-    border-left-color: var(--accent); font-weight: 500;
-  }
-
-  .toc-sublist {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    /* margin-left: 1rem; */
-    max-height: 0;
-    overflow: hidden;
-    transition: max-height 0.3s ease;
-  }
-
-  .toc-sublist a {
-    padding-left: 1rem;
-  }
-
-  .toc-sublist.expanded {
-    max-height: 500px;
-  }
-
-  .toc-item[data-level="3"] .toc-link {
-    font-size: 0.8rem;
-    opacity: 0.8;
-  }
-
-  .toc-item[data-level="3"] .toc-link.active {
-    opacity: 1;
-  }
-
-  .toc-item[data-level="4"] .toc-link {
-    font-size: 0.75rem;
-    opacity: 0.7;
-    margin-left: 1rem;
-  }
-
-  .toc-item[data-level="4"] .toc-link.active {
-    opacity: 1;
-  }
-
-  /* Mobile Table of Contents */
-  .mobile-toc-container {
-    display: none;
-  }
-
-  .mobile-toc-header {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    background: rgba(255, 255, 255, 0.7);
-    backdrop-filter: blur(10px);
-    border-bottom: 1px solid rgba(var(--gray), 0.8);
-    padding: 0.75rem 1rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    z-index: 100;
-    transform: translateY(-100%);
-    transition: transform 0.3s ease;
-    box-shadow: 0 2px 8px rgba(var(--black),5%);
-  }
-
-  :global([data-effective-theme="dark"] .mobile-toc-header) {
-    background: rgba(7, 54, 65, 0.7); /* --base02 */
-    border-bottom-color: rgba(var(--gray), 0.3);
-    box-shadow: none;
-  }
-
-  .mobile-toc-header.visible {
-    transform: translateY(0);
-  }
-
-  .current-heading {
-    font-size: 0.9rem;
-    font-weight: 500;
-    color: rgb(var(--gray-dark));
-    max-width: calc(100% - 3rem);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  [data-effective-theme="dark"] .current-heading {
-    color: rgb(var(--gray-dark));
-  }
-
-  .toc-toggle {
-    background: none;
-    border: none;
-    color: rgb(var(--gray-dark));
-    cursor: pointer;
-    padding: 0.25rem;
-    border-radius: 4px;
-    transition: background-color 0.2s ease;
-  }
-
-  [data-effective-theme="dark"] .toc-toggle {
-    color: rgb(var(--gray-dark));
-  }
-
-  .toc-toggle:hover {
-    background: rgba(var(--gray), 0.1);
-  }
-
-  [data-effective-theme="dark"] .toc-toggle:hover {
-    background: rgba(var(--gray), 0.2);
-  }
-
-  .mobile-toc-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
-    z-index: 200;
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.3s ease, visibility 0.3s ease;
-  }
-
-  [data-effective-theme="dark"] .mobile-toc-overlay {
-    background: rgba(0, 0, 0, 0.7);
-  }
-
-  .mobile-toc-overlay.visible {
-    opacity: 1;
-    visibility: visible;
-  }
-
-  .mobile-toc-content {
-    position: absolute;
-    top: 0;
-    right: 0;
-    width: 80%;
-    max-width: 320px;
-    height: 100%;
-    background: white;
-    transform: translateX(100%);
-    transition: transform 0.3s ease;
-    overflow-y: auto;
-  }
-
-  :global([data-effective-theme="dark"] .mobile-toc-content) {
-    background: var(--base02);
-    border-left: 1px solid rgba(var(--gray), 0.2);
-  }
-
-  .mobile-toc-overlay.visible .mobile-toc-content {
-    transform: translateX(0);
-  }
-
-  .mobile-toc-header-full {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.75rem 1rem;
-    border-bottom: 1px solid rgba(var(--gray), 0.2);
-  }
-
-  [data-effective-theme="dark"] .mobile-toc-header-full {
-    border-bottom-color: rgba(var(--gray), 0.3);
-  }
-
-  .mobile-toc-header-full h4 {
-    margin: 0;
-    font-size: 1rem;
-    font-weight: 600;
-    color: rgb(var(--gray-dark));
-  }
-
-  [data-effective-theme="dark"] .mobile-toc-header-full h4 {
-    color: rgb(var(--gray-dark));
-  }
-
-  .toc-close {
-    background: none;
-    border: none;
-    color: rgb(var(--gray-dark));
-    cursor: pointer;
-    border-radius: 4px;
-    transition: background-color 0.2s ease;
-  }
-
-  [data-effective-theme="dark"] .toc-close {
-    color: rgb(var(--gray-dark));
-  }
-
-  .toc-close:hover {
-    background: rgba(var(--gray), 0.1);
-  }
-
-  [data-effective-theme="dark"] .toc-close:hover {
-    background: rgba(var(--gray), 0.2);
-  }
-
-  .mobile-toc-list {
-    list-style: none;
-    margin: 0;
-    padding: 1rem;
-  }
-
-  .mobile-toc-item {
-    margin: 0;
-  }
-
-  .mobile-toc-link {
-    display: block;
-    padding: 0.5rem 0;
-    font-size: 0.9rem;
-    line-height: 1.4;
-    color: rgb(var(--gray));
-    text-decoration: none;
-    border-left: 2px solid transparent;
-    padding-left: 0.5rem;
-    margin-left: -0.5rem;
-    transition: all 0.2s ease;
-  }
-
-  [data-effective-theme="dark"] .mobile-toc-link {
-    color: rgb(var(--gray));
-  }
-
-  .mobile-toc-link:hover,
-  .mobile-toc-link.active {
-    color: var(--accent);
-    border-left-color: var(--accent);
-  }
-
-  [data-effective-theme="dark"] .mobile-toc-link:hover,
-  [data-effective-theme="dark"] .mobile-toc-link.active {
-    color: var(--accent);
-    border-left-color: var(--accent);
-  }
-
-  .mobile-toc-sublist {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    margin-left: 1rem;
-  }
-
-  .mobile-toc-item[data-level="3"] .mobile-toc-link {
-    font-size: 0.85rem;
-    opacity: 0.8;
-  }
-
-  .mobile-toc-item[data-level="3"] .mobile-toc-link.active {
-    opacity: 1;
-  }
-
-  .mobile-toc-item[data-level="4"] .mobile-toc-link {
-    font-size: 0.8rem;
-    opacity: 0.7;
-    margin-left: 1rem;
-  }
-
-  .mobile-toc-item[data-level="4"] .mobile-toc-link.active {
-    opacity: 1;
-  }
-
-  /* Responsive breakpoints */
-  @media (max-width: 1179px) {
-    .desktop-toc {
-      display: none;
-    }
-    
-    .mobile-toc-container {
-      display: block;
-    }
-  }
-
-  @media (min-width: 1180px) {
-    .mobile-toc-container {
-      display: none;
-    }
-  }
-
-  /* Hide ToC if there's not enough space */
-  @media (max-width: calc(66ch + 280px + 8rem)) {
-    .desktop-toc {
-      display: none;
-    }
-  }
-
-  .desktop-toc.collapsed {
-    width: 20px;
-    min-width: 20px;
-    justify-self: end;
-  }
-
-  .desktop-toc.collapsed .toc-header h4 {
-    display: none;
-  }
-
-  .desktop-toc.collapsed .toc-list {
-    display: none;
-  }
-
-  .desktop-toc.collapsed .toc-collapse-btn {
-    transform: rotate(180deg);
-  }
-</style>
-
 <script>
   class TableOfContents {
     private observer!: IntersectionObserver;
