@@ -14,13 +14,73 @@ import { Image } from "astro:assets";
   </div>
 
   <section class="intro slide-in-block">
-    <h1>Hi, I'm Tyler 👋</h1>
+    <p class="eyebrow">Tyler Crosse</p>
+    <h1>Engineer & researcher building reliable, interpretable ML systems.</h1>
     <p class="lead">
-      I'm a software engineer turned graduate student, currently an MSCS student
-      at Georgia Tech focusing on <strong>AI safety</strong> and
-      <strong>mechanistic interpretability</strong>. I care about building
-      steerable, reliable AI systems—and the engineering that makes them real.
+      I bridge distributed systems craftsmanship with mechanistic interpretability and
+      empirical AI safety. Right now I’m pairing my MSCS work at Georgia Tech with
+      my role as a research fellow at the Supervised Program for Alignment Research
+      (SPAR), running hands-on experiments that make model evaluation reproducible at
+      scale.
     </p>
+    <div class="quick-links">
+      <a class="pill" href="/research">Research →</a>
+      <a class="pill" href="/projects">Projects →</a>
+      <a class="pill" href="/ideas">Writing →</a>
+      <a
+        class="pill"
+        href="https://github.com/tylercrosse"
+        target="_blank"
+        rel="noopener noreferrer"
+        >GitHub ↗</a
+      >
+    </div>
+  </section>
+
+  <section class="now slide-in-block">
+    <h2>Currently</h2>
+    <ul class="now-list">
+      <li>
+        Building a goal-drift evaluation harness for reasoning models as part of the
+        SPAR fellowship, instrumenting activation drift alongside behavioral metrics.
+      </li>
+      <li>
+        Writing interpretability experiment logs and BlueDot eval notes to turn paper
+        insights into practical measurement checklists.
+      </li>
+      <li>
+        Exploring 2026 roles that compound research engineering skills—ML platform,
+        interpretability tooling, or evaluation teams in industry labs, alongside
+        fellowship applications.
+      </li>
+    </ul>
+  </section>
+
+  <section class="trajectory slide-in-block">
+    <h2>Where I'm Heading</h2>
+    <p>
+      My long-term aim is to contribute to mechanistic interpretability and empirical
+      safety teams like Anthropic, GDM, or Redwood Research. The near-term plan is a
+      deliberate “career-capital” loop: sharpen large-scale ML engineering inside a
+      high-bar environment while continuing public research work that keeps me close to
+      safety communities.
+    </p>
+    <ul class="trajectory-list">
+      <li>
+        <strong>Fellowships & labs.</strong> Applying to MATS, SPAR, Constellation, and
+        similar programs to stay grounded in research questions that matter.
+      </li>
+      <li>
+        <strong>Industry experience.</strong> Targeting ML/SWE roles focused on model
+        reliability, eval infrastructure, or interpretability tooling to expand my
+        production instincts.
+      </li>
+      <li>
+        <strong>Communities.</strong> Active in BlueDot AI Safety Evals, ARENA-style
+        study groups, and open-source interpretability tooling—working in public keeps
+        feedback loops short.
+      </li>
+    </ul>
   </section>
 
   <section class="journey slide-in-block">
@@ -41,10 +101,10 @@ import { Image } from "astro:assets";
       > and the rapid scaling of language models crystallized something for me: machine
       learning wasn't just another tool—it was going to revolutionize science in
       ways I hadn't imagined. That pushed me to deepen my foundations and focus on
-      <strong>alignment</strong>: making powerful systems <em>understandable</em
-      >, <em>steerable</em>, and
-      <em>trustworthy</em>. That sent me back to school to pair strong systems
-      skills with rigorous ML.
+      <strong>alignment</strong>: making powerful systems <em>understandable</em>,
+      <em>steerable</em>, and <em>trustworthy</em>. Grad school became a laboratory for
+      pairing systems rigor with interpretability research, and it set the stage for
+      contributing to safety labs full time.
     </p>
   </section>
 
@@ -62,11 +122,27 @@ import { Image } from "astro:assets";
           <p class="description">
             Specializing in Machine Learning and High-Performance Computing.
             Coursework: Operating Systems, Machine Learning, High Dimensional
-            Data Analysis, Deep Learning, Reinforcement Learning. Built a
-            distributed, sequentially consistent file system in C++ (gRPC,
-            multithreading) and ran RL experiments (exact algorithms vs.
-            approximate algorithms). Current focus: mechanistic
-            interpretability, robustness & evaluation, and reproducible ML.
+            Data Analysis, Deep Learning, Reinforcement Learning. Building
+            evaluation tooling for goal drift, maintaining research logs, and
+            collaborating with safety reading groups to translate theory into
+            experiments.
+          </p>
+        </div>
+      </div>
+
+      <div class="timeline-item current">
+        <div class="timeline-marker"></div>
+        <div class="timeline-content">
+          <h3>Supervised Program for Alignment Research (SPAR)</h3>
+          <p class="company">
+            Research Fellow <span class="period">| 2025</span>
+          </p>
+
+          <p class="description">
+            Working under mentor guidance on mechanistic interpretability
+            experiments: building the goal drift evaluation harness, maintaining
+            reproducible research logs, and translating BlueDot eval discussions
+            into actionable measurement plans.
           </p>
         </div>
       </div>
@@ -84,7 +160,9 @@ import { Image } from "astro:assets";
             search, LLMs, and structured data. Built event-driven microservices
             on AWS (Lambda/SQS/SNS), OpenSearch, and PostgreSQL; improved CI/CD
             to cut deployment time by 40%; mentored engineers and balanced
-            architecture with delivery.
+            architecture with delivery. The culture of instrumentation,
+            measurement, and clean interfaces still shapes how I design research
+            tooling.
           </p>
         </div>
       </div>
@@ -142,8 +220,8 @@ import { Image } from "astro:assets";
       <div class="interest-card">
         <h3>🛡️ Robustness & Evaluation</h3>
         <p>
-          Empirical evaluation under distribution shift; honesty/helpfulness
-          metrics; reproducibility and measurement.
+          Designing measurement suites for honesty, goal drift, and reasoning
+          faithfulness under distribution shift.
         </p>
       </div>
       <div class="interest-card">
@@ -154,29 +232,24 @@ import { Image } from "astro:assets";
         </p>
       </div>
       <div class="interest-card">
+        <h3>📊 Interpretability Interfaces</h3>
+        <p>
+          Building dashboards, visualization layers, and UX that make internal
+          model structure legible to researchers and decision-makers.
+        </p>
+      </div>
+      <div class="interest-card">
         <h3>⚡ High-Performance Computing</h3>
         <p>
-          Squeezing performance from hardware: parallelism, GPU workloads,
-          memory systems.
+          Squeezing performance from hardware: GPU kernels, memory hierarchies,
+          and distributed training pipelines.
         </p>
       </div>
       <div class="interest-card">
         <h3>📚 Learning in Public</h3>
         <p>
-          Sharing the journey—methods, failures, and breakthroughs—so others can
-          learn alongside me.
-        </p>
-      </div>
-
-      <div class="interest-card">
-        <h3>⚖️ Economics</h3>
-        <p>Understanding the economic forces that shape our world.</p>
-      </div>
-      <div class="interest-card">
-        <h3>🧬 Computational Biology</h3>
-        <p>
-          Understanding the biological mechanisms that underlie disease and
-          development.
+          Sharing experiments, mistakes, and processes so others can build on
+          them—and so collaborators can spot new angles.
         </p>
       </div>
     </div>
@@ -354,12 +427,97 @@ import { Image } from "astro:assets";
       color: var(--sol-base01);
     }
 
+    .intro .eyebrow {
+      font-size: 0.85rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--sol-base1);
+      margin-bottom: 0.75rem;
+    }
+
+    .intro h1 {
+      font-size: clamp(2.2rem, 5vw, 3.1rem);
+      line-height: 1.15;
+      margin-bottom: 1.5rem;
+      color: var(--sol-base01);
+      font-family: var(--font-heading);
+    }
+
     .lead {
       font-size: 1.25rem;
       line-height: 1.6;
       color: var(--sol-base0);
       max-width: 600px;
       margin: 0 auto;
+    }
+
+    .quick-links {
+      margin-top: 1.75rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      justify-content: center;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      border-radius: 999px;
+      border: 1px solid rgba(var(--black), 0.12);
+      padding: 0.45rem 1rem;
+      font-size: 0.95rem;
+      text-decoration: none;
+      color: var(--sol-base00);
+      transition:
+        border-color 0.2s ease,
+        color 0.2s ease,
+        background-color 0.2s ease;
+    }
+
+    .pill:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: rgba(var(--accent-rgb, 35, 131, 226), 0.08);
+    }
+
+    .now,
+    .trajectory {
+      background: rgba(var(--black), 0.03);
+      border: 1px solid rgba(var(--black), 0.08);
+      border-radius: 16px;
+      padding: 2rem;
+    }
+
+    .now h2,
+    .trajectory h2 {
+      margin-top: 0;
+      font-family: var(--font-heading);
+      font-size: 1.8rem;
+      color: var(--sol-base01);
+    }
+
+    .now-list,
+    .trajectory-list {
+      list-style: none;
+      padding: 0;
+      margin: 1.25rem 0 0 0;
+      display: grid;
+      gap: 1rem;
+      font-size: 1.05rem;
+      line-height: 1.6;
+      color: var(--sol-base0);
+    }
+
+    .trajectory p {
+      font-size: 1.1rem;
+      line-height: 1.7;
+      color: var(--sol-base0);
+    }
+
+    .trajectory-list strong {
+      font-family: var(--font-heading);
+      font-size: 1rem;
     }
 
     .journey {
@@ -514,6 +672,12 @@ import { Image } from "astro:assets";
         /* border-color: var(--sol-base02); */
       }
 
+      .now,
+      .trajectory {
+        background: rgba(255, 255, 255, 0.04);
+        border-color: rgba(255, 255, 255, 0.08);
+      }
+
       .interest-card {
         background: var(--sol-base02);
         border-color: var(--sol-base01);
@@ -542,6 +706,11 @@ import { Image } from "astro:assets";
 
       .lead {
         font-size: 1.1rem;
+      }
+
+      .now,
+      .trajectory {
+        padding: 1.5rem;
       }
 
       .interests-grid {

@@ -1,0 +1,347 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+
+interface ProjectLink {
+  label: string;
+  href: string;
+  external?: boolean;
+}
+
+interface ProjectItem {
+  title: string;
+  timeframe: string;
+  status: "Active" | "Complete" | "Draft" | "Exploratory";
+  description: string;
+  links?: ProjectLink[];
+}
+
+const sections: Array<{
+  title: string;
+  summary: string;
+  items: ProjectItem[];
+}> = [
+  {
+    title: "Mechanistic Interpretability",
+    summary:
+      "Experiments and tooling aimed at exposing how reasoning-focused language models represent goals and intermediate computations.",
+    items: [
+      {
+        title: "Goal Drift Evaluation Harness",
+        timeframe: "2025 · SPAR Fellowship",
+        status: "Active",
+        description:
+          "Building a reproducible evaluation pipeline that measures representation drift in reasoning models under long-horizon fine-tuning. Tracking neuron activations, embedding shifts, and task success metrics side by side.",
+        links: [
+          {
+            label: "Research log",
+            href: "/ideas/2025/ml-research-notes/",
+          },
+        ],
+      },
+      {
+        title: "Cross-Coder Feature Study",
+        timeframe: "2025",
+        status: "Exploratory",
+        description:
+          "Designing comparative experiments across sparse autoencoders, activation patching, and probing to benchmark feature stability on chain-of-thought tasks.",
+      },
+    ],
+  },
+  {
+    title: "Empirical AI Safety",
+    summary:
+      "Notes, benchmarks, and takeaways distilled from safety eval literature and hands-on measurement work.",
+    items: [
+      {
+        title: "BlueDot AI Safety Evals Paper Club Notes",
+        timeframe: "2025",
+        status: "Complete",
+        description:
+          "Annotated reviews of recent eval papers on chain-of-thought faithfulness, collusion detection, and automated auditing. Includes open questions and follow-up experiments to run next.",
+        links: [
+          {
+            label: "Read notes",
+            href: "/ideas/2025/ai-safety-evals-paper-club-notes/",
+          },
+        ],
+      },
+      {
+        title: "Notes on Effective ML Research",
+        timeframe: "2025",
+        status: "Active",
+        description:
+          "Synthesis of best practices for fast empirical iteration, distilled from Steinhardt, Perez, and research-operations playbooks. Guiding how I scope experiments and track hypotheses.",
+        links: [
+          {
+            label: "Read synthesis",
+            href: "/ideas/2025/ml-research-notes/",
+          },
+        ],
+      },
+    ],
+  },
+  {
+    title: "Systems & Infrastructure",
+    summary:
+      "Projects that ground my research in production-grade engineering—distributed systems, concurrency, and tooling for reliable ML workflows.",
+    items: [
+      {
+        title: "Distributed File System in C++",
+        timeframe: "2025 · Georgia Tech GIOS",
+        status: "Complete",
+        description:
+          "Designed and implemented a multi-client file system with sequential consistency guarantees, gRPC-based replication, and conflict resolution under failure.",
+        links: [
+          {
+            label: "Project write-up",
+            href: "/ideas/2025/gios-pr4/",
+          },
+        ],
+      },
+      {
+        title: "Concurrency & Parallelism Notes",
+        timeframe: "2025",
+        status: "Complete",
+        description:
+          "Deep dive into structuring responsive systems, covering Go-style concurrency, thread pools, and hardware-level parallelism trade-offs.",
+        links: [
+          {
+            label: "Read notes",
+            href: "/ideas/2025/parallelism-concurrency/",
+          },
+        ],
+      },
+      {
+        title: "uv + Hatch ML Workflow",
+        timeframe: "2025",
+        status: "Active",
+        description:
+          "Modern Python workflow for experiment reproducibility—pinning dependencies, templating projects, and integrating with GPU-backed runners.",
+        links: [
+          {
+            label: "Tooling guide",
+            href: "/ideas/2025/uv/",
+          },
+        ],
+      },
+    ],
+  },
+  {
+    title: "Machine Learning Experiments",
+    summary:
+      "Course-inspired projects that probe optimization, learning dynamics, and decision-making under uncertainty.",
+    items: [
+      {
+        title: "Randomized Optimization for Neural Nets",
+        timeframe: "2025 · ML A2",
+        status: "Draft",
+        description:
+          "Benchmarking hill climbing, simulated annealing, and genetic algorithms on discrete landscapes and as gradient-free neural network trainers.",
+        links: [
+          {
+            label: "Draft write-up",
+            href: "/ideas/2025/ml-a2/",
+          },
+        ],
+      },
+      {
+        title: "Planning & Learning in MDPs",
+        timeframe: "2025 · ML A4",
+        status: "Draft",
+        description:
+          "Comparing policy iteration, value iteration, and Q-learning on blackjack-style environments. Emphasis on instrumentation and evaluation metrics.",
+        links: [
+          {
+            label: "Draft write-up",
+            href: "/ideas/2025/ml-a4/",
+          },
+        ],
+      },
+    ],
+  },
+];
+---
+
+<BaseLayout title="Projects">
+  <section class="header-block slide-in-block">
+    <h1>Projects & Research Artifacts</h1>
+    <p>
+      A curated view of the work that bridges my systems engineering background with
+      current interpretability and safety research. Each project highlights a concrete
+      artifact—code, experimental logs, or in-depth write-ups—that I use to iterate
+      toward reliable, interpretable ML systems.
+    </p>
+  </section>
+
+  {sections.map((section) => (
+    <section class="category slide-in-block">
+      <header class="category-header">
+        <h2>{section.title}</h2>
+        <p>{section.summary}</p>
+      </header>
+      <div class="card-grid">
+        {section.items.map((item) => (
+          <article class="card">
+            <div class="card-meta">
+              <span class:list={["status-pill", item.status.toLowerCase()]}>{item.status}</span>
+              <span class="timeframe">{item.timeframe}</span>
+            </div>
+            <h3>{item.title}</h3>
+            <p>{item.description}</p>
+            {item.links && item.links.length > 0 && (
+              <div class="card-links">
+                {item.links.map((link) => (
+                  <a
+                    href={link.href}
+                    target={link.external ? "_blank" : undefined}
+                    rel={link.external ? "noopener noreferrer" : undefined}
+                  >
+                    {link.label}
+                  </a>
+                ))}
+              </div>
+            )}
+          </article>
+        ))}
+      </div>
+    </section>
+  ))}
+</BaseLayout>
+
+<style>
+  .header-block {
+    max-width: 880px;
+    margin: 3.5rem auto 2rem;
+    padding: 0 0.5rem;
+  }
+
+  .header-block h1 {
+    font-size: clamp(2.25rem, 4vw, 3rem);
+    font-family: var(--font-heading);
+    margin-bottom: 1rem;
+  }
+
+  .header-block p {
+    font-size: 1.1rem;
+    color: var(--sol-7);
+    line-height: 1.6;
+  }
+
+  .category {
+    max-width: 1100px;
+    margin: 0 auto 3.5rem;
+    padding: 0 0.5rem;
+  }
+
+  .category-header {
+    margin-bottom: 1.5rem;
+  }
+
+  .category-header h2 {
+    font-size: 1.9rem;
+    font-family: var(--font-heading);
+    margin-bottom: 0.5rem;
+  }
+
+  .category-header p {
+    color: var(--sol-7);
+    max-width: 70ch;
+    line-height: 1.6;
+  }
+
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .card {
+    background: rgba(var(--black), 0.02);
+    border: 1px solid rgba(var(--black), 0.06);
+    border-radius: 16px;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    min-height: 240px;
+    transition: transform 0.2s ease, border-color 0.2s ease;
+  }
+
+  .card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(var(--black), 0.12);
+  }
+
+  .card-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    font-size: 0.85rem;
+    color: var(--sol-6);
+  }
+
+  .status-pill {
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    border-radius: 999px;
+    padding: 0.2rem 0.7rem;
+    border: 1px solid rgba(var(--black), 0.1);
+  }
+
+  .status-pill.active {
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .status-pill.complete {
+    color: var(--sol-7);
+    border-color: rgba(var(--black), 0.2);
+  }
+
+  .status-pill.draft {
+    color: #b58900;
+    border-color: rgba(181, 137, 0, 0.4);
+  }
+
+  .status-pill.exploratory {
+    color: #d33682;
+    border-color: rgba(211, 54, 130, 0.4);
+  }
+
+  .timeframe {
+    font-style: italic;
+  }
+
+  .card h3 {
+    font-size: 1.3rem;
+    font-family: var(--font-heading);
+    margin: 0;
+  }
+
+  .card p {
+    flex: 1;
+    color: var(--sol-8);
+    line-height: 1.5;
+  }
+
+  .card-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .card-links a {
+    font-size: 0.95rem;
+    text-decoration: none;
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  @media (max-width: 720px) {
+    .card {
+      min-height: unset;
+    }
+  }
+</style>

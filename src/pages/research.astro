@@ -1,0 +1,392 @@
+---
+import { getCollection } from "astro:content";
+import readingTime from "reading-time";
+
+import BaseLayout from "../layouts/BaseLayout.astro";
+import FormattedDate from "../components/FormattedDate.astro";
+
+const ideas = await getCollection("ideas");
+
+const normaliseSlug = (id: string) => id.replace(/(\/index)?\.(md|mdx)$/, "");
+const postLookup = new Map(
+  ideas.map((post) => [normaliseSlug(post.id), post] as const),
+);
+
+const toTitleCase = (value: string) =>
+  value
+    .split(/[\s_-]+/)
+    .map((token) => token.charAt(0).toUpperCase() + token.slice(1))
+    .join(" ");
+
+interface ResearchItem {
+  title: string;
+  summary: string;
+  status: string;
+  href?: string;
+  date?: Date | string;
+  readingTimeText?: string;
+  draft?: boolean;
+  tags?: string[];
+  placeholder?: boolean;
+}
+
+const fromSlug = (
+  slug: string,
+  overrides: Partial<ResearchItem> = {},
+): ResearchItem | undefined => {
+  const post = postLookup.get(slug);
+
+  if (!post) {
+    if (!overrides.title) {
+      return undefined;
+    }
+    return {
+      title: overrides.title,
+      summary: overrides.summary ?? "Draft in progress.",
+      status: overrides.status ?? "Planned",
+      href: overrides.href,
+      placeholder: true,
+    };
+  }
+
+  const stats = readingTime(post.body || "");
+
+  return {
+    title: overrides.title ?? post.data.title,
+    summary: overrides.summary ?? post.data.description ?? "",
+    status:
+      overrides.status ??
+      (post.data.draft
+        ? "Draft"
+        : post.data.status
+          ? toTitleCase(post.data.status.toString())
+          : "Published"),
+    href: overrides.href ?? `/ideas/${slug}/`,
+    date: overrides.date ?? (post.data.updated || post.data.date),
+    readingTimeText: overrides.readingTimeText ?? stats.text,
+    draft: overrides.draft ?? post.data.draft,
+    tags: overrides.tags ?? post.data.tags ?? [],
+    placeholder: overrides.placeholder ?? false,
+  };
+};
+
+const sectionConfig: Array<{
+  title: string;
+  summary: string;
+  items: (ResearchItem | undefined)[];
+}> = [
+  {
+    title: "Reading & Analysis",
+    summary:
+      "Synthesis pieces distilling interpretability and safety literature into actionable insights and next-step experiments.",
+    items: [
+      fromSlug("2025/ai-safety-evals-paper-club-notes"),
+      fromSlug("2025/ml-research-notes"),
+    ],
+  },
+  {
+    title: "Experiments & Logs",
+    summary:
+      "Hands-on work testing interpretability tooling, evaluation harnesses, and learning algorithms. These entries track methodology and instrumentation over polish.",
+    items: [
+      fromSlug("2025/ml-a2", {
+        status: "Draft",
+        summary:
+          "Gradient-free optimization experiments comparing hill climbing, simulated annealing, and genetic algorithms on neural network tasks.",
+      }),
+      fromSlug("2025/ml-a4", {
+        status: "Draft",
+        summary:
+          "Reinforcement learning study benchmarking value iteration, policy iteration, and Q-learning with detailed instrumentation on convergence.",
+      }),
+    ],
+  },
+  {
+    title: "Retrospectives & Essays",
+    summary:
+      "Long-form writing that frames my research direction and learning trajectory from systems engineering into mechanistic interpretability.",
+    items: [
+      fromSlug("2025/ml-retro"),
+      fromSlug("2025/dl-retro", {
+        status: "Draft",
+        summary:
+          "Course retrospective for graduate deep learning—covering optimization, CNNs, and transformer fundamentals with plans for interpretability spin-offs.",
+      }),
+      {
+        title: "From Understanding to Control (coming soon)",
+        summary:
+          "A research vision note outlining why mechanistic interpretability and evaluation infrastructure should co-evolve. Drafting now.",
+        status: "Planned",
+        placeholder: true,
+      },
+    ],
+  },
+];
+---
+
+<BaseLayout title="Research">
+  <section class="intro slide-in-block">
+    <h1>Research Direction</h1>
+    <p>
+      I am building toward mechanistic interpretability and empirical AI safety that
+      scales: mapping internal representations, stress-testing reasoning traces, and
+      grounding the work in production-grade evaluation infrastructure. As a current
+      research fellow with the Supervised Program for Alignment Research (SPAR), I’m
+      translating those goals into experiments and tools. This page curates the
+      research artifacts, experiment logs, and essays that track that trajectory.
+    </p>
+  </section>
+
+  <section class="focus slide-in-block">
+    <h2>Current focus areas</h2>
+    <ul>
+      <li>
+        <strong>Goal drift quantification</strong>: measuring representational shift
+        in fine-tuned reasoning models using activation tracking and embedding
+        metrics.
+      </li>
+      <li>
+        <strong>Feature interpretability</strong>: comparing sparse autoencoders,
+        activation patching, and probing across models to surface stable features.
+      </li>
+      <li>
+        <strong>Evaluation infrastructure</strong>: designing reproducible harnesses
+        and dashboards that connect interpretability findings to actionable safety
+        audits.
+      </li>
+    </ul>
+  </section>
+
+  {sectionConfig.map((section) => {
+    const items = section.items.filter(Boolean) as ResearchItem[];
+    if (items.length === 0) return null;
+    return (
+      <section class="collection slide-in-block">
+        <header>
+          <h2>{section.title}</h2>
+          <p>{section.summary}</p>
+        </header>
+        <div class="collection-grid">
+          {items.map((item) => {
+            const statusClass = item.status.toLowerCase().replace(/\s+/g, "-");
+            return (
+              <article
+                class:list={["research-card", { placeholder: item.placeholder }]}
+              >
+                <header>
+                  <div class="meta">
+                    <span class:list={["status", statusClass]}>
+                      {item.status}
+                    </span>
+                    {item.date && (
+                      <span class="date">
+                        <FormattedDate date={item.date} />
+                      </span>
+                    )}
+                    {item.readingTimeText && (
+                      <span class="reading-time">{item.readingTimeText}</span>
+                    )}
+                  </div>
+                  <h3>
+                    {item.href ? <a href={item.href}>{item.title}</a> : item.title}
+                  </h3>
+                </header>
+                <p>{item.summary}</p>
+                {item.tags && item.tags.length > 0 && (
+                  <ul class="tag-list">
+                    {item.tags.slice(0, 4).map((tag) => (
+                      <li>{tag}</li>
+                    ))}
+                  </ul>
+                )}
+              </article>
+            );
+          })}
+        </div>
+      </section>
+    );
+  })}
+</BaseLayout>
+
+<style>
+  .intro {
+    max-width: 880px;
+    margin: 3.5rem auto 2rem;
+    padding: 0 0.5rem;
+  }
+
+  .intro h1 {
+    font-size: clamp(2.25rem, 4vw, 3rem);
+    font-family: var(--font-heading);
+    margin-bottom: 1rem;
+  }
+
+  .intro p {
+    font-size: 1.1rem;
+    color: var(--sol-7);
+    line-height: 1.7;
+  }
+
+  .focus {
+    max-width: 880px;
+    margin: 0 auto 3rem;
+    padding: 0 0.5rem;
+  }
+
+  .focus h2 {
+    font-size: 1.8rem;
+    font-family: var(--font-heading);
+    margin-bottom: 1rem;
+  }
+
+  .focus ul {
+    list-style: none;
+    padding: 0;
+    display: grid;
+    gap: 0.9rem;
+  }
+
+  .focus li {
+    background: rgba(var(--black), 0.02);
+    border: 1px solid rgba(var(--black), 0.05);
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    line-height: 1.6;
+    color: var(--sol-8);
+  }
+
+  .focus strong {
+    font-family: var(--font-heading);
+  }
+
+  .collection {
+    max-width: 1100px;
+    margin: 0 auto 3.5rem;
+    padding: 0 0.5rem;
+  }
+
+  .collection header {
+    margin-bottom: 1.5rem;
+  }
+
+  .collection h2 {
+    font-size: 1.9rem;
+    font-family: var(--font-heading);
+    margin-bottom: 0.5rem;
+  }
+
+  .collection p {
+    color: var(--sol-7);
+    max-width: 70ch;
+    line-height: 1.6;
+  }
+
+  .collection-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .research-card {
+    border: 1px solid rgba(var(--black), 0.08);
+    border-radius: 16px;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    background: rgba(var(--black), 0.015);
+    transition: transform 0.2s ease, border-color 0.2s ease;
+  }
+
+  .research-card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(var(--black), 0.14);
+  }
+
+  .research-card.placeholder {
+    border-style: dashed;
+    background: rgba(var(--accent-rgb, 38, 139, 210), 0.05);
+  }
+
+  .research-card header .meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    color: var(--sol-6);
+  }
+
+  .research-card h3 {
+    font-size: 1.3rem;
+    font-family: var(--font-heading);
+    margin: 0;
+  }
+
+  .research-card h3 a {
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .research-card h3 a:hover {
+    color: var(--accent);
+  }
+
+  .status {
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    border-radius: 999px;
+    padding: 0.2rem 0.6rem;
+    border: 1px solid rgba(var(--black), 0.1);
+  }
+
+  .status.draft {
+    color: #b58900;
+    border-color: rgba(181, 137, 0, 0.4);
+  }
+
+  .status.published,
+  .status.complete {
+    color: var(--sol-7);
+    border-color: rgba(var(--black), 0.18);
+  }
+
+  .status.in-progress,
+  .status.active {
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .status.planned {
+    color: #d33682;
+    border-color: rgba(211, 54, 130, 0.4);
+  }
+
+  .reading-time {
+    font-style: italic;
+  }
+
+  .tag-list {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+
+  .tag-list li {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border: 1px solid rgba(var(--black), 0.08);
+    border-radius: 999px;
+    padding: 0.2rem 0.6rem;
+  }
+
+  @media (max-width: 768px) {
+    .collection-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
