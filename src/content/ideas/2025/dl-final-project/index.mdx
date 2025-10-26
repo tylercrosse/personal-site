@@ -1,0 +1,49 @@
+---
+title: 'DL Final Project — Crosscoding Reasoning Upgrades'
+description: 'Comparing base vs. s1K-finetuned Qwen2.5-0.5B-Instruct with Crosscoders and math benchmarks.'
+date: '2025-05-05'
+updated: '2025-10-20'
+status: 'in-progress'
+type: 'project'
+tags: ['deep-learning', 'large-language-models', 'mechanistic-interpretability', 'reasoning', 'cs7643', 'MSCS']
+category: ['projects']
+draft: true
+audience: 'All'
+media_subpath: "/ideas/dl-final-project/"
+parent: '2025/dl-retro'
+image:
+  path: "../dl-retro/hero-green-ripples.png"
+  alt: 'Green ripples abstract art'
+---
+
+## TL;DR
+For the final project our team fine-tuned **Qwen2.5-0.5B-Instruct** on the publicly released s1k reasoning traces and then used Crosscoders—a sparse autoencoder variant—to compare mid-layer activations between the base and fine-tuned checkpoints. We confirmed that scaling test-time reasoning steps improves accuracy on gsm8k and MATH-500, but the Crosscoder showed that the latent geometry at layer 12 remains largely conserved, suggesting downstream utilization changes rather than wholesale feature rewrites.
+
+## What we built
+- Training pipeline in LoRA/QLoRA that squeezed 5 epochs of s1k fine-tuning into a 16 GB GPU by capping block size at 2048, enabling a 0.38 final training loss in ~30 minutes.
+- Evaluation harness that sweeps chain-of-thought token budgets to estimate *scaling slopes* (accuracy delta per additional 256 generated tokens) on gsm8k, boolq, and math-500.
+- Crosscoder atop frozen activations: encoder $B$, decoder $W$, and sparse ReLU features that reconstruct both model states so we can compare which features activate exclusively after fine-tuning.
+
+## Key results
+| Dataset  | Model      | Scaling | Accuracy |
+|----------|------------|---------|----------|
+| gsm8k    | Pretrained | -0.0014 | 41.8     |
+| gsm8k    | Fine-tuned | 0.0277  | 51.6     |
+| boolq    | Pretrained | 0.0020  | 11.7     |
+| boolq    | Fine-tuned | 0.0078  | 10.5     |
+| math-500 | Pretrained | 0.0115  | 34.8     |
+| math-500 | Fine-tuned | 0.0253  | 48.0     |
+
+We saw the biggest lift on math-500, while boolq slightly regressed—likely because the s1k traces are math-heavy.
+
+## Representative objective
+The Crosscoder fits a sparse autoencoder to both activation sets simultaneously:
+
+$$
+\min_{W,B} \; \|X - W\,\sigma(B^\top X)\|_2^2 + \|Y - W\,\sigma(B^\top Y)\|_2^2 + \lambda \|\sigma(B^\top X)\|_1,
+$$
+
+where $X$ and $Y$ are activations from the base and fine-tuned models, respectively, and $\sigma$ is ReLU. High reconstruction fidelity (>93% cross-entropy recovery) implied that shared features dominate even after fine-tuning.
+
+## Artifact
+- [Project paper (PDF)](../dl-retro/DL_Final_Project.pdf)

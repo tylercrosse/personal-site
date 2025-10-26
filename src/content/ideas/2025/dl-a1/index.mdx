@@ -1,0 +1,37 @@
+---
+title: 'DL A1 — Backprop from Scratch'
+description: 'Hand-built MNIST classifiers, theory proofs, and paper reviews for CS7643 Assignment 1.'
+date: '2025-01-27'
+updated: '2025-10-20'
+status: 'in-progress'
+type: 'project'
+tags: ['deep-learning', 'python', 'numpy', 'mnist', 'cs7643', 'MSCS']
+category: ['projects']
+draft: true
+audience: 'All'
+media_subpath: "/ideas/dl-a1/"
+parent: '2025/dl-retro'
+image:
+  path: "../dl-retro/hero-green-ripples.png"
+  alt: 'Green ripples abstract art'
+---
+
+## TL;DR
+Assignment 1 forced me to implement every component of a supervised learning pipeline in pure NumPy: data loading for MNIST, softmax regression, a two-layer MLP, SGD with L2 regularization, and full training/validation/test evaluation. The deliverable coupled a detailed report (theory problems + paper reviews) with experiments on hyperparameter sweeps, making this the deepest “from first principles” refresher I have done since enrolling in OMSCS.
+
+## Why it mattered
+- Re-derived the gradient of the softmax function and the XOR non-separability proof, which anchored the later computational-graph work in the course.
+- Implemented forward/backward passes for linear, ReLU, and sigmoid layers plus cross-entropy loss, proving to myself that PyTorch is a convenience, not a crutch.
+- Tuned learning rate, weight decay, and hidden width to reach >98% validation accuracy on MNIST while keeping the code unit-testable.
+
+## Representative objective
+The full loss combined cross-entropy with L2 regularization across weight matrices:
+
+$$
+J(\theta) = -\frac{1}{N}\sum_{i=1}^N y_i^\top \log \hat{y}_i + \lambda \sum_{l} \|W_l\|_2^2,
+$$
+
+which my vanilla SGD optimizer minimized via $\theta_{t+1} = \theta_t - \eta \nabla_\theta J(\theta_t)$.
+
+## Artifact
+- [Full write-up (PDF)](../dl-retro/DL_A1_Writeups.pdf)

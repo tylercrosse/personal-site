@@ -2,7 +2,7 @@
 title: 'Building a Scalable Multithreaded File Server in C'
 description: 'A project that explores multithreading, sockets, and the basics of operating systems'
 date: '2025-06-23'
-updated: '2025-07-22'
+updated: '2025-10-24'
 status: 'complete'
 type: 'project'
 tags: ['GIOS', 'operating-systems', 'c', 'multithreading', 'socket-programming', 'MSCS']
@@ -39,7 +39,7 @@ Ever wondered what *really* happens when you click a download link? It seems lik
 
 The goal was to build a complete system: a server capable of handling multiple file requests simultaneously and a client that could download multiple files concurrently. This wasn't just about writing code; it was about a head-first dive into the core concepts that make the modern internet possible: network sockets, system calls, concurrency, and protocol design.
 
-Going in, I was comfortable with C's syntax but had never touched the Berkeley socket API. Networking was a black box I'd only ever interacted with through the convenient abstractions like Python's `requests` library. This project was my opportunity to pry open that box. This post documents that journey, not just what I built, but the fundamental *whys* behind the code.
+Going in, I was comfortable with C's syntax but had never touched the Berkeley socket API. Networking was a black box I'd only ever interacted with through convenient abstractions like Python's `requests` library. This project was my chance to pry open that box. In this post, I want to walk you through that journey—not just what I built, but the fundamental *whys* behind the code and the lessons learned along the way.
 
 > [!note]
 > This post is meant to be a showcase of the work I did on the project and the concepts I learned from it. For a broader overview of all concepts covered in the course, please see the companion post: [GIOS: A Retrospective](/ideas/2025/gios-retro/).
@@ -74,7 +74,7 @@ This abstraction is necessary because network hardware is a protected resource. 
   caption="When your program calls send(), it's a request to the OS kernel. The CPU switches from User Mode to Kernel Mode, where the kernel handles the network communication."
 />
 
-When your program calls a function like `send()`, it's not an ordinary function call. It's a request to the OS kernel. The CPU switches from **User Mode** to **Kernel Mode**, a privileged state where it has full access to the hardware. The kernel takes your data, breaks it into packets, adds the necessary TCP/IP headers, and sends it to the network card. This user/kernel separation is a fundamental security and stability feature of all modern operating systems.
+When your program calls a function like `send()`, it's not an ordinary function call. It's a request to the OS kernel. The CPU switches from **User Mode** to **Kernel Mode**, a privileged state where it has full access to the hardware. The kernel takes your data, breaks it into packets, adds the necessary TCP/IP headers, and sends it to the network card. This user/kernel separation is a fundamental security and stability feature of all modern operating systems, and seeing it in action makes the theory tangible.
 
 ### The Socket API in Action (C)
 
@@ -201,7 +201,7 @@ The pattern has two main components:
 *   **The Boss Thread:** Its sole responsibility is to accept incoming work and place it into a shared queue. It doesn't perform the work itself. This makes it highly responsive and prevents it from becoming a bottleneck.
 *   **Worker Threads:** A pool of one or more worker threads waits for work to appear in the queue. When a task is available, a worker takes it, processes it to completion, and then returns to the queue to wait for another task.
 
-This decouples the act of receiving a request from the work of processing it. You can scale the application's throughput by simply changing the number of worker threads.
+This decouples the act of receiving a request from the work of processing it, allowing the system's throughput to be scaled by simply adjusting the number of worker threads. There's a certain elegance to seeing it in action: the boss thread, laser-focused on one task, feeding a pool of workers that spring to life as jobs arrive. It's a beautiful, efficient division of labor.
 
 <Figure
   src={bossWorker}
@@ -222,7 +222,7 @@ This model is powerful, but it introduces the classic challenges of concurrency.
 
 The work queue is shared state. If the Boss thread tries to add to the queue at the same time a Worker is trying to remove from it, you get a **race condition** that can corrupt the queue's state, leading to crashes or bizarre bugs.
 
-To solve this, you must protect the shared data. The project required using two key mechanisms from `pthreads`:
+To solve this, you must protect the shared data structure. The project required using two key synchronization primitives from the `pthreads` library:
 
 1.  **Mutexes (`pthread_mutex_t`):** A mutex (short for **mut**ual **ex**clusion) acts as a lock. Before accessing the queue (the *critical section*), a thread must acquire the lock. If another thread already holds it, the thread will block until the lock is released. This ensures only one thread can modify the queue at a time.
 
@@ -233,8 +233,8 @@ To solve this, you must protect the shared data. The project required using two 
 A C project of this complexity demands proper tooling for building and testing.
 
 *   **Environment:** The project had specific Linux dependencies, so I used **Docker** to create a consistent, reproducible virtual machine, mirroring the official testing environment. This saved me from countless "works on my machine" headaches.
-*   **Build System:** You can't just run `gcc` over and over. A `Makefile` is essential. It automates the process of compiling, linking, and cleaning up object files. It's also the perfect place to store compiler flags like `-Wall` (turn on all warnings), `-g` (include debugging symbols), and `-pthread` (link the pthreads library).
-*   **Automated and Stress Testing:** How do you know your server *really* works? You write tests—and not just simple ones. The best way to test a server is to write a client in a completely different language, which forces you to follow your protocol specification to the letter. I used Python and `pytest` (with its `socket` library, a thin wrapper around the same C APIs) to build a test suite that connected to my C server and exercised a range of scenarios: successful file downloads, requests for non-existent files, and malformed protocol requests, all while asserting that the server's responses were byte-for-byte compliant with the `GETFILE` specification.
+*   **Build System:** You can't just run `gcc` over and over. A `Makefile` is essential for any serious C project. It automates the tedious process of compiling, linking, and cleaning up object files. More importantly, it serves as a canonical place to define compiler flags like `-Wall` (turn on all warnings), `-g` (include debugging symbols for `gdb`), and `-pthread` (link the pthreads library).
+*   **Automated and Stress Testing:** How do you prove your concurrent server *really* works? You write tests—and not just simple ones. I took two approaches here that were critical to my success.
 
 
     To push the server to its limits, I used the multithreaded C client itself as a stress-testing tool. By configuring it to request dozens of files concurrently, I could simulate real-world load, uncovering subtle race conditions or deadlocks in the server. I also played with `valgrind` to check for memory leaks and invalid memory accesses, which is essential in C projects—especially when handling many threads and dynamic buffers. These tools together gave me confidence that my server was not only correct, but also robust and leak-free under heavy use.
@@ -284,7 +284,7 @@ The key technical takeaways include:
 *   **The Central Role of Protocols:** The foundation of any network service is a clear, unambiguous, and strictly-defined protocol.
 *   **The Necessity of External Testing:** A robust test suite that acts as a true client is the most effective way to validate protocol compliance, handle edge cases, and ensure system reliability under load.
 
-The patterns used here—thread pools, work queues, custom protocols—are the building blocks for the massive, distributed systems we use every day. While a production web server like Nginx uses far more advanced techniques (like event-driven I/O with `epoll` or `kqueue`), the fundamental goal is the same: handle as many concurrent clients as possible, as efficiently as possible. This project provided a tangible look at how that goal is achieved, connecting the high-level concept of a network request to the low-level logic of a `send()` system call.
+The patterns I used here—thread pools, work queues, custom protocols—are the building blocks for the massive, distributed systems we use every day. While a production web server like Nginx uses far more advanced techniques (like event-driven I/O with `epoll` or `kqueue`), the fundamental goal remains the same: handle as many concurrent clients as possible, as efficiently as possible. This project provided a tangible, low-level look at how that goal is achieved, connecting the high-level "magic" of a network request to the concrete logic of a `send()` system call.
 
 ## Additional resources
 

@@ -1,0 +1,41 @@
+---
+title: 'DL A4 — VAEs, GANs, and Diffusion on FashionMNIST'
+description: 'A generative-models lab covering VAEs, conditional GANs, and DDPMs for MNIST/FashionMNIST.'
+date: '2025-04-10'
+updated: '2025-10-20'
+status: 'in-progress'
+type: 'project'
+tags: ['deep-learning', 'generative-models', 'vae', 'gan', 'diffusion', 'fashion-mnist', 'cs7643', 'MSCS']
+category: ['projects']
+draft: true
+audience: 'All'
+media_subpath: "/ideas/dl-a4/"
+parent: '2025/dl-retro'
+image:
+  path: "../dl-retro/hero-geologic-layers.png"
+  alt: 'Layered mineral photograph'
+---
+
+## TL;DR
+Assignment 4 was a tour through three generative paradigms. I implemented and trained a variational autoencoder (VAE), DCGAN-style adversarial model, and a lightweight diffusion model, running each on MNIST and FashionMNIST. The shared trainer infrastructure meant I could isolate the effect of latent dimensionality, discriminator updates, or diffusion noise schedules without rewriting boilerplate.
+
+## Highlights
+- Verified the reparameterization trick and KL annealing in the VAE to stabilize reconstructions while keeping disentangled latent traversals.
+- Implemented GAN training loops with alternating generator/discriminator steps, label smoothing, and gradient clipping to tame early-mode collapse on FashionMNIST coats/bags.
+- Built a DDPM from scratch: linear $\beta_t$ schedule, cached $\alpha_t$/$\bar{\alpha}_t$, forward diffusion sampler, UNet noise predictor, and reverse-time sampling to produce crisp samples with competitive FID for such a small model.
+
+## Representative equations
+Both the probabilistic and diffusion perspectives were front and center:
+
+$$
+\mathcal{L}_{\text{ELBO}} = \mathbb{E}_{q_\phi(z|x)}[\log p_\theta(x|z)] - D_{\text{KL}}\big(q_\phi(z|x) \parallel p(z)\big),
+$$
+
+$$
+x_t = \sqrt{\bar{\alpha}_t}\, x_0 + \sqrt{1-\bar{\alpha}_t}\,\epsilon, \qquad \epsilon \sim \mathcal{N}(0, I),
+$$
+
+followed by a learned denoiser $\epsilon_\theta(x_t, t)$ for the reverse process.
+
+## Artifact
+- [Full write-up (PDF)](../dl-retro/DL_A4_generative_models_v1-1.pdf)

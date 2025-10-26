@@ -1,7 +1,8 @@
 ---
-title: 'Syncing Up: Building a Distributed File System in C++'
-description: 'A deep dive into the challenges of remote communication and data consistency, inspired by systems like Google Drive.'
+title: 'Building a Distributed File System: A Study in C++'
+description: 'An exploration of remote communication, data consistency, and synchronization in a C++ distributed file system project.'
 date: '2025-07-22'
+updated: '2025-10-24'
 status: 'complete'
 type: 'project'
 tags: ['GIOS', 'operating-systems', 'c++', 'multithreading', 'RPC', 'distributed-systems', 'MSCS']
@@ -31,13 +32,13 @@ import protobufExample from "./protobuf-bytes.png";
 import remoteAccess from "./remote-access.png";
 import copyDownload from "./copy-download.png";
 
-## Introduction: The "Magic" of Google Drive
+## Introduction: The Challenge of Distributed File Systems
 
-The seamless sync of Google Drive feels like magic. I can edit a document on my laptop, and it instantly appears on my phone. This seamless synchronization feels effortless, but it's the result of a complex, carefully engineered **Distributed File System (DFS)**.
+The ability to edit a document on a laptop and see the changes instantly on a phone is a common feature of modern cloud services like Google Drive. This seamless synchronization is made possible by a **Distributed File System (DFS)**, a complex system that manages files across multiple machines.
 
-A DFS is the backbone of modern cloud storage and collaboration. It allows multiple, geographically dispersed clients to access and modify a shared set of files as if they were stored on a single, local machine. For my final project in Georgia Tech's [CS 6200: Graduate Introduction to Operating Systems (GIOS)](https://omscs.gatech.edu/cs-6200-introduction-operating-systems), I built one from the ground up in C++.
+A DFS allows geographically dispersed clients to access and modify a shared set of files as if they were stored on a single, local machine. For my final project in Georgia Tech's [CS 6200: Graduate Introduction to Operating Systems (GIOS)](https://omscs.gatech.edu/cs-6200-introduction-operating-systems), I built a DFS from the ground up in C++.
 
-In the [first project](/ideas/2025/gios-pr1/), I built a simple file system with a single client and server. In the [second project](/ideas/2025/gios-pr3/), I extended it to add a proxy and cache server. This final project was a fantastic opportunity to tackle the challenges of distributed computing, and this post explores the key lessons from that journey, focusing on the three pillars of any DFS: remote communication, data consistency, and synchronization.
+This project was the culmination of a series of projects that started with a [simple client-server file system](/ideas/2025/gios-pr1/) and was later extended with a [proxy and cache](/ideas/2025/gios-pr3/). This final project provided an opportunity to tackle the challenges of distributed computing. This post explores the key lessons from that journey, focusing on the three pillars of any DFS: remote communication, data consistency, and synchronization.
 
 > [!note]
 > This post is meant to be a showcase of the work I did on the project and the concepts I learned from it. For a broader overview of all concepts covered in the course, please see the companion post: [GIOS: A Retrospective](/ideas/2025/gios-retro/).

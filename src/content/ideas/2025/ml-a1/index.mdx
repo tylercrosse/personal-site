@@ -33,21 +33,21 @@ import freeLunch from './free-lunch-placeholder.jpg';
 import testTrainSplit from './test-train-split-placeholder.jpg'
 
 
-## Introduction: The Machine Learning Challenge
+## Introduction: A Workflow for Supervised Learning
 
 Classification is a fundamental task that we perform constantly, such as identifying spam emails or assessing whether a transaction is fraudulent. In machine learning, teaching a computer to make these same judgments is the domain of **supervised learning**. Given a dataset of examples with known outcomes (labeled data), the goal is to train a model that can make accurate predictions on new, unseen data.
 
-However, machine learning is not a black box; it is a systematic, iterative process with well-defined steps. For my first project in Georgia Tech's [CS 7641: Machine Learning](https://omscs.gatech.edu/cs-7641-machine-learning), I found that success came not from selecting a single "best" algorithm, but from a methodical application of the machine learning workflow.
+I've come to see machine learning not as a "black box," but as a systematic, iterative process with well-defined steps. For my first project in Georgia Tech's [CS 7641: Machine Learning](https://omscs.gatech.edu/cs-7641-machine-learning), I found that success came not from selecting a single "best" algorithm, but from a methodical application of the machine learning workflow.
 
-This post outlines that workflow, using a practical project as a running example. For this project, I selected two contrasting classification datasets: one was low-dimensional (few features, ample examples), and the other was extremely high-dimensional (thousands of features, few examples). This approach was designed to test how data characteristics, particularly dimensionality, would influence algorithm performance.
+This post outlines that workflow, using a practical project as a case study. For this project, I selected two contrasting classification datasets: one was low-dimensional (few features, ample examples), and the other was extremely high-dimensional (thousands of features, few examples). This approach was designed to test how data characteristics, particularly dimensionality, would influence algorithm performance.
 
 <Figure
   src={mlProcess}
   alt="Machine Learning Process"
-  caption="The major steps involved in creating a machine learning model."
+  caption="The major steps involved in creating a machine learning model. This workflow is heavily influenced by the process outlined in Aurélien Géron's *Hands-On Machine Learning*."
 />
 
-This post follows that workflow—from understanding your problem and data, through model selection and evaluation, to the iterative refinement that separates robust models from brittle ones. Each step reveals fundamental principles that apply regardless of which specific algorithms you choose.
+This post follows that workflow—from problem formulation and data analysis, through model selection and evaluation, to the iterative refinement that, in my experience, distinguishes robust models from brittle ones. Each step revealed fundamental principles that seem to apply regardless of which specific algorithms you choose.
 
 
 > [!note]
@@ -56,9 +56,9 @@ This post follows that workflow—from understanding your problem and data, thro
 > [!Important] Work In progress
 > This is a nearly complete draft. I'm still working creating more diagrams.
 
-## Step 1: Frame the Problem - Understanding What We're Solving
+## Step 1: Problem Formulation
 
-Before diving into data or algorithms, the first step is understanding what type of problem you're solving and what approaches might work. This isn't just about defining your target variable—it's about understanding the fundamental nature of your learning task.
+Before working with data or algorithms, the first step is to understand the type of problem being solved and which approaches might be suitable. This isn't just about defining your target variable—it's about understanding the fundamental nature of your learning task.
 
 ### The Algorithm Landscape: Different Approaches to Learning
 
@@ -80,7 +80,7 @@ Parametric models assume that the relationship between features and target can b
   - **High bias:** If your assumptions are wrong, the model will consistently make systematic errors.
   - **Limited flexibility:** They can't capture relationships that don't fit their assumed form.
 
-**Non-Parametric Models: Letting the Data Speak**
+**Non-Parametric Models: Data-Driven Approaches**
 Non-parametric models make fewer assumptions about the underlying relationship. The number of parameters grows with the amount of training data, allowing them to capture more complex patterns.
 
 - **Examples:**
@@ -107,11 +107,11 @@ This theorem formed the basis for my experimental hypothesis: flexible, non-para
   caption="The No Free Lunch Theorem"
 />
 
-This is why framing your problem correctly matters. Understanding whether you expect linear or non-linear relationships, whether you have abundant or scarce data, and what types of errors are most costly will guide your algorithm selection.
+This is why I believe framing the problem correctly matters. Understanding whether you expect linear or non-linear relationships, whether you have abundant or scarce data, and what types of errors are most costly will guide your algorithm selection.
 
-## Step 2: Get the Data - The Foundation of Everything
+## Step 2: Data Acquisition and Understanding
 
-With your problem framed, the next step is acquiring and understanding your data. This isn't just about downloading a CSV file—it's about ensuring your data is suitable for machine learning and understanding its fundamental characteristics.
+With the problem framed, the next step is acquiring and understanding the data. This isn't just about downloading a CSV file—it's about ensuring the data is suitable for machine learning and understanding its fundamental characteristics.
 
 ### The ETL Process: From Raw Data to ML-Ready Format
 
@@ -155,9 +155,9 @@ No algorithm can overcome fundamentally flawed data. During data acquisition, wa
 
 These characteristics will influence every subsequent step in your ML pipeline.
 
-## Step 3: Explore the Data - Detective Work
+## Step 3: Exploratory Data Analysis
 
-With your data acquired and cleaned, the next crucial step is **Exploratory Data Analysis (EDA)**—the detective work of machine learning. This isn't just about creating visualizations; it's about building intuition for your dataset and forming hypotheses about what approaches might work.
+With the data acquired and cleaned, the next crucial step is **Exploratory Data Analysis (EDA)**. This isn't just about creating visualizations; it's about building intuition for the dataset and forming hypotheses about what approaches might work.
 
 ### Understanding Your Data's Structure
 
@@ -188,11 +188,11 @@ EDA is iterative. Initial visualizations often raise new questions, leading to d
   width={600}
 />
 
-This detective work pays dividends later. The insights you gain here will guide your feature engineering, algorithm selection, and evaluation strategy. It's much better to discover data quirks now than after you've spent hours training models that can't possibly work with your data structure.
+This analytical work paid dividends later in the project. The insights I gained guided my feature engineering, algorithm selection, and evaluation strategy. I've found it's much better to discover data quirks early on than after spending hours training models that are incompatible with the data's structure.
 
-## Step 4: Prepare the Data - Setting Up for Success
+## Step 4: Data Preparation and Feature Engineering
 
-Armed with insights from your EDA, you can now prepare your data for machine learning. This step transforms your raw, cleaned data into a format optimized for the algorithms you plan to use.
+Armed with insights from EDA, you can now prepare the data for machine learning. This step transforms the raw, cleaned data into a format optimized for the algorithms you plan to use.
 
 ### Feature Engineering and Selection
 
@@ -229,9 +229,9 @@ If your EDA revealed class imbalances, now is the time to address them:
 
 The approach you choose will depend on your specific problem and computational constraints.
 
-## Step 5: Explore Models - The Algorithm Showcase
+## Step 5: Model Selection and Experimentation
 
-With your data prepared and your problem well-understood, it's time to experiment with different algorithms. This is where the theoretical knowledge from Step 1 meets the practical insights from your data exploration.
+With the data prepared and the problem well-understood, it's time to experiment with different algorithms. This is where theoretical knowledge meets the practical insights from data exploration.
 
 <Figure
   src={complexity}
@@ -278,11 +278,11 @@ With your data prepared and your problem well-understood, it's time to experimen
 
 ### The Experimental Mindset
 
-The key to this step is systematic experimentation. Start with simple baselines (like logistic regression) to establish a performance floor. Then try each algorithm with default parameters before diving into hyperparameter tuning. This helps you understand which algorithms are fundamentally suited to your problem before investing time in optimization.
+The key to this step, I found, was systematic experimentation. Start with simple baselines (like logistic regression) to establish a performance floor. Then try each algorithm with default parameters before diving into hyperparameter tuning. This helps you understand which algorithms are fundamentally suited to your problem before investing time in optimization.
 
-## Step 6: Evaluate and Fine-tune - Measuring What Matters
+## Step 6: Model Evaluation and Fine-Tuning
 
-Now comes the critical phase: properly evaluating your models and fine-tuning the most promising ones. This step separates successful machine learning projects from those that fail in production.
+Now comes the critical phase: properly evaluating the models and fine-tuning the most promising ones. This step separates successful machine learning projects from those that fail in production.
 
 ### Beyond Simple Accuracy: Choosing the Right Metrics
 
@@ -402,23 +402,23 @@ This diagnostic framework helps you understand not just how well your models are
 
 ## Conclusion: The Iterative Nature of Machine Learning
 
-Machine learning is not a linear process where you follow steps 1-6 once and arrive at a perfect model. It's an iterative cycle where insights from later steps often send you back to earlier ones. Your evaluation results might reveal data quality issues that require revisiting Step 2. Your model performance might suggest different feature engineering approaches, sending you back to Step 4. This is not failure—it's the natural flow of machine learning.
+My experience suggests that machine learning is not a linear process where you follow steps 1-6 once and arrive at a perfect model. It's an iterative cycle where insights from later steps often send you back to earlier ones. My evaluation results might reveal data quality issues that require revisiting Step 2. My model performance might suggest different feature engineering approaches, sending me back to Step 4. I was reminded that this is not failure, it's the natural flow of machine learning.
 
-The workflow presented here provides a structured approach to this inherently messy process:
+The workflow presented here provides a structured approach to this process:
 
-- **Start with Understanding:** Before touching any algorithms, deeply understand your problem and data. The time invested here pays dividends throughout the project.
+- **Start with Understanding:** Before touching any algorithms, deeply understand the problem and data. The time invested here pays dividends throughout the project.
 
 - **Embrace the Scientific Method:** Form hypotheses during EDA, test them with models, and use the results to refine your understanding. Machine learning is fundamentally about systematic experimentation.
 
-- **Evaluation is Everything:** A model is only as good as your ability to evaluate it properly. Choose metrics that align with your business goals, use robust validation techniques, and be honest about limitations.
+- **Evaluation is Key:** A model is only as good as the ability to evaluate it properly. I found that choosing metrics that align with the project goals, using robust validation techniques, and being honest about limitations were all crucial.
 
-- **No Free Lunch:** There is no single algorithm that works best for all problems. Success comes from matching algorithm characteristics to problem requirements, not from finding the "best" algorithm.
+- **No Free Lunch:** There is no single algorithm that works best for all problems. Success comes from matching algorithm characteristics to problem requirements, not from finding a single "best" algorithm.
 
-- **Iteration Leads to Insight:** Each cycle through the workflow deepens your understanding of both your data and the problem domain. What seems like "going backwards" is actually progress toward a more robust solution.
+- **Iteration Leads to Insight:** Each cycle through the workflow deepens the understanding of both the data and the problem domain. What seems like "going backwards" is actually progress toward a more robust solution.
 
 The main takeaway from the project was the confirmation that while theory provides a critical foundation, empirical testing is necessary to validate assumptions. The success of k-NN did not invalidate the theory of the "Curse of Dimensionality," but rather highlighted that in applied machine learning, the specific characteristics of a dataset can create conditions where one model's weaknesses are less detrimental than another's.
 
-The most important skill in machine learning isn't knowing every algorithm or technique. It's knowing how to systematically work through this process, learning from each iteration, and gradually building solutions that actually work in the real world.
+The most important skill I'm taking away from this project isn't knowing every algorithm or technique. It's knowing how to systematically work through this process, learning from each iteration, and gradually building solutions that are effective and reliable.
 
 ## Additional Resources
 

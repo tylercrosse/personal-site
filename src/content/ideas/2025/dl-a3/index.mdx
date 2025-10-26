@@ -1,0 +1,37 @@
+---
+title: 'DL A3 — Sequence Models, Attention, and Translation'
+description: 'Implementing LSTMs, Seq2Seq with attention, and Transformers for German→English translation.'
+date: '2025-03-14'
+updated: '2025-10-20'
+status: 'in-progress'
+type: 'project'
+tags: ['deep-learning', 'rnn', 'transformer', 'seq2seq', 'machine-translation', 'cs7643', 'MSCS']
+category: ['projects']
+draft: true
+audience: 'All'
+media_subpath: "/ideas/dl-a3/"
+parent: '2025/dl-retro'
+image:
+  path: "../dl-retro/hero-green-ripples.png"
+  alt: 'Green ripples abstract art'
+---
+
+## TL;DR
+Assignment 3 compressed the semester’s sequential modeling content into one deliverable: theory work on RNN backprop, LSTM implementations from scratch, a Seq2Seq translator with cosine-similarity attention, and both lightweight and full Transformers. The tasks culminated in benchmarking German→English translation quality (perplexity + BLEU) before and after hyperparameter tuning.
+
+## Key moves
+- Derived $\partial L / \partial U$ for a length-3 RNN, matching the provided computation-graph derivation and reinforcing how vanishing gradients appear in practice.
+- Implemented an LSTM cell, Seq2Seq encoder/decoder with attention, and a one-layer Transformer encoder manually (multi-head attention, feed-forward, residual + LayerNorm), then contrasted them with PyTorch’s built-in `nn.Transformer`.
+- Tuned embedding size, hidden width, teacher forcing ratio, and label smoothing to push the Transformer’s perplexity below the Seq2Seq baseline while reducing exposure bias.
+
+## Representative equation
+The custom attention module followed a cosine-similarity variant of Bahdanau attention:
+
+$$
+\alpha_t = \text{softmax}\left(\frac{q_t k_s^\top}{\|q_t\|\,\|k_s\|}\right), \qquad c_t = \sum_s \alpha_{t,s} v_s,
+$$
+
+where $q_t$ is the decoder query, $k_s$ encoder keys, and $v_s$ encoder values. Feeding $[c_t; h_t]$ through a linear layer noticeably improved rare-word recall.
+
+## Artifact
+- [Full write-up (PDF)](../dl-retro/DL_A3.pdf)
