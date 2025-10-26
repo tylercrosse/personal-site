@@ -1,0 +1,37 @@
+---
+title: 'DL A2 — Practical CNNs and Imbalanced Data'
+description: 'From NumPy convolutions to PyTorch ResNets and class-balanced focal loss on CIFAR-10.'
+date: '2025-02-17'
+updated: '2025-10-20'
+status: 'in-progress'
+type: 'project'
+tags: ['deep-learning', 'cnn', 'pytorch', 'cifar10', 'class-imbalance', 'cs7643', 'MSCS']
+category: ['projects']
+draft: true
+audience: 'All'
+media_subpath: "/ideas/dl-a2/"
+parent: '2025/dl-retro'
+image:
+  path: "../dl-retro/hero-geologic-layers.png"
+  alt: 'Layered mineral photograph'
+---
+
+## TL;DR
+Assignment 2 transitions the course from NumPy-only pedagogy to PyTorch-first workflows. Part I required hand-coding convolution and max-pooling layers plus a vanilla CNN in NumPy, reinforcing the tensor algebra behind `im2col`. Part II moved to PyTorch for CIFAR-10, where I trained baseline models (two-layer MLP + canonical CNN), designed a custom network, and experimented with class-balanced focal loss on an imbalanced split using ResNet-32.
+
+## Highlights
+- Implemented a reusable training loop that tracked loss/accuracy for both NumPy-based layers and PyTorch models, ensuring numerical parity between the two implementations.
+- Designed a lightweight custom CNN (stacked 3×3 convolutions, BatchNorm, GELU, and Dropout) that surpassed the >50% accuracy requirement on the CIFAR-10 holdout set while keeping checkpoints well under the 100 MB limit.
+- Derived and implemented the softmax version of class-balanced focal loss to stabilize minority-class gradients in the long-tailed CIFAR-10 variant.
+
+## Representative equation
+For class-balanced focal loss, each example with label $y$ is reweighted by the “effective number” of samples $E_y = \frac{1 - \beta^{n_y}}{1 - \beta}$, yielding:
+
+$$
+\mathcal{L}_{\text{CB-Focal}} = - \frac{1 - \beta}{1 - \beta^{n_y}} (1 - p_t)^\gamma \log p_t,
+$$
+
+where $p_t$ is the predicted probability assigned to the ground-truth class. Sweeping $\beta$ in $[0.7, 0.999]$ showed how aggressive reweighting trades stability for recall.
+
+## Artifact
+- [Full write-up (PDF)](../dl-retro/DL_A2.pdf)

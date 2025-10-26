@@ -2,7 +2,7 @@
 title: 'Machine Learning'
 description: 'A survey of concepts covered in my graduate Machine Learning course'
 date: '2025-08-09'
-updated: '2025-09-25'
+updated: '2025-10-20'
 status: 'in-progress'
 type: 'retro'
 tags: ['machine-learning', 'python', 'supervised-learning', 'unsupervised-learning', 'reinforcement-learning', 'optimization', 'computer-science', 'learning-in-public', 'MSCS']
@@ -55,7 +55,7 @@ import nash from "./nash-equilibrium.png";
 
 This piece serves as both a personal retrospective and a technical overview. I took Georgia Tech's [CS 7641: Machine Learning](https://omscs.gatech.edu/cs-7641-machine-learning) in the Fall 2024 semester. I'm revisiting the material to consolidate my learning - following the Feynman technique of teaching to understand, while also sharing insights for those interested in the course or my background. My audience includes prospective OMSCS students, potential employers, and colleagues seeking to understand the course content and my current knowledge (along with what I still need to learn). The bulk of this article summarizes the course material, with additional sections covering course logistics, my personal experience, and helpful resources.
 
-Writing this kind of reflection involves balancing honesty about my learning journey and the extent of my understanding with the recognition that I'm still developing expertise. This course proved both demanding and enriching, and this writeup represents my attempt to process the material while presenting it in a way that benefits others.
+Writing this kind of reflection involves balancing honesty about my learning journey and the extent of my understanding with the recognition that I'm still developing expertise. This course proved both demanding and rewarding, and this writeup represents my attempt to process the material.
 
 ### TL;DR
 
@@ -66,7 +66,7 @@ Writing this kind of reflection involves balancing honesty about my learning jou
 
 ## Machine Learning Introduction
 
-Machine learning is often framed as a subfield of AI, but it stands on its own: a fast-evolving toolkit and practice with no single 'right' approach. Recent advances in machine learning have been driven by the development of deep learning, which at least started as a subfield of machine learning that uses deep neural networks to learn from data.
+Machine learning is often framed as a subfield of AI, but it stands on its own: a developing toolkit and practice with no single 'right' approach. Recent advances in machine learning have been driven by the development of deep learning, which at least started as a subfield of machine learning that uses deep neural networks to learn from data.
 
 <Figure
   src={aiMlDl}
@@ -79,11 +79,11 @@ The course is taught as a dialog between Dr. Michael Littman and Dr. Charles Isb
 > [!quote]
 > "Machine learning is about this broader notion of building artifacts, computational artifacts typically, that learn over time based on experience. And then in particular, it's not just the act of building these artifacts that matter. It's the math behind it, it's the science behind it, it's the engineering behind it, and it's the computing behind it. It's everything that goes into building intelligent artifacts that almost by necessity have to learn over time." - Dr. Charles Isbell
 
-This perspective - that machine learning is an interdisciplinary effort to create systems that genuinely learn - shapes the entire curriculum. The goal isn't just to use algorithms, but to understand them, to "think about data," and to "build artifacts that you know will learn." 
+This perspective - that machine learning is an interdisciplinary effort to create systems that learn - shapes the entire curriculum. The goal isn't just to use algorithms, but to understand them, to "think about data," and to "build artifacts that you know will learn." 
 
 Three core pillars of machine learning make up the foundation of the course: supervised learning, unsupervised learning, and reinforcement learning. Each of these pillars is a different way of learning from data. The most common and well-understood is **Supervised learning** which involves learning from labeled data. **Unsupervised learning** is a way to learn from data without labels, and **Reinforcement learning** is a way to learn from data by interacting with an environment.
 
-This taxonomy provides our roadmap for exploration:
+This taxonomy provides the structure for the following sections:
 
 <Figure
   src={mlTaxonomy}
@@ -125,10 +125,10 @@ The supervised learning hypothesis classes we will explore are:
 
 ### Classification and Regression
 
-The two main types of concepts $f$ that can be learned with supervised learning are classification and regression. The key distinction is the nature of the output.
+The two main types of concepts $f$ that can be learned with supervised learning are classification and regression. The key distinction is the nature of the output space $\mathcal{Y}$.
 
-* **Classification** aims to predict a discrete class label. The output is a category, like a color ("red," "blue," "green") or a simple "yes" or "no." The learned function is a decision boundary that separates the classes. For example, a bank might use a classification model to decide whether to lend money based on a person's credit history. The output is a discrete choice: lend or not. We evaluate classification models with metrics like accuracy, precision, recall, and F1-score.
-* **Regression** aims to predict a continuous numerical value. The output is a real number, like a stock price, temperature, or a person's age. The learned function is a curve or line that best fits the data points. We evaluate regression models with metrics like Mean Squared Error (MSE) or R-squared.
+* **Classification** aims to predict a discrete class label, where the output space $\mathcal{Y}$ is a finite, unordered set (e.g., {`red`, `blue`, `green`}). The learned function is a decision boundary that separates the classes. For example, a bank might use a classification model to decide whether to lend money based on a person's credit history. The output is a discrete choice: lend or not. We evaluate classification models with metrics like accuracy, precision, recall, and F1-score.
+* **Regression** aims to predict a continuous numerical value, where the output space $\mathcal{Y}$ is a set of real numbers (e.g., a subset of $\mathbb{R}$). The learned function is a curve or line that best fits the data points. We evaluate regression models with metrics like Mean Squared Error (MSE) or R-squared.
 
 <Figure
   src={classificationRegression}
@@ -143,7 +143,7 @@ For more details on classification and regression take a look at the lectures<a 
 
 ### Decision Trees
 
-A Decision Tree is a non-parametric supervised learning method that approximates a target function with a tree-like model of decisions. It's an intuitive model, much like a game of **20 Questions**. Each internal node in the tree represents a question about a feature, and the branches represent the answers, leading you down a path to a final decision at a leaf node.
+A Decision Tree is a non-parametric supervised learning method that approximates a target concept $f^*$ with a tree-like model of decisions. It's an intuitive model, much like a game of **20 Questions**. Each internal node in the tree represents a question about a feature, and the branches represent the answers, leading you down a path to a final decision at a leaf node.
 
 The most common algorithm for building decision trees is **ID3**, which follows a simple, greedy, top-down approach. It's best understood through the "20 Questions" analogy: at each step, you want to ask the question that gives you the most information, splitting the remaining possibilities as cleanly as possible.
 
@@ -151,8 +151,8 @@ The ID3 loop is as follows:
 1.  Select the "best" attribute to split the data on.
 2.  Create a new decision node for that attribute.
 3.  For each possible value of the attribute, create a new branch.
-4.  Sort the training examples down to the new branches.
-5.  If a branch contains perfectly classified examples, you're done for that path and can add a leaf node. Otherwise, you repeat the process on the remaining examples in that branch.
+4.  Sort the training instances from $\mathcal{D}$ down to the new branches.
+5.  If a branch contains perfectly classified examples (i.e., all instances belong to the same class), you're done for that path and can add a leaf node. Otherwise, you repeat the process on the subset of $\mathcal{D}$ in that branch.
 
 The tree structure visually captures this recursive splitting process:
 
@@ -162,7 +162,21 @@ The tree structure visually captures this recursive splitting process:
   caption="Decision Tree"
 />
 
-The "best" attribute is the one that provides the highest **Information Gain**. This metric measures how much a given attribute reduces uncertainty, or **entropy**, in the data. Entropy is a measure of randomness or impurity - think of it as how "mixed up" the classes are. A dataset with an even split of class labels (e.g., 50% "yes," 50% "no") has high entropy, while a dataset with only one class label (e.g., 100% "yes") has zero entropy. Information gain selects the attribute that leads to the "purest" child nodes - the splits that do the best job of separating the data by their class labels.
+The "best" attribute is the one that provides the highest **Information Gain**. This metric, rooted in information theory, quantifies how much a given attribute reduces uncertainty about the class label. To understand information gain, we first need to define **entropy**, which measures the impurity or randomness in a set of examples, $S$. For a binary classification problem, the entropy is:
+
+$$
+\text{Entropy}(S) = -p_{\oplus} \log_2(p_{\oplus}) - p_{\ominus} \log_2(p_{\ominus})
+$$
+
+Where $p_{\oplus}$ and $p_{\ominus}$ are the proportions of positive and negative examples in $S$. A dataset with an even split of class labels (e.g., 50% "yes," 50% "no") has a maximum entropy of 1, while a dataset with only one class label (e.g., 100% "yes") has an entropy of 0.
+
+**Information Gain** is then the expected reduction in entropy achieved by partitioning the data on an attribute $A$:
+
+$$
+\text{Gain}(S, A) = \text{Entropy}(S) - \sum_{v \in \text{Values}(A)} \frac{|S_v|}{|S|} \text{Entropy}(S_v)
+$$
+
+Where $\text{Values}(A)$ is the set of all possible values for attribute $A$, and $S_v$ is the subset of $S$ for which attribute $A$ has value $v$. ID3 selects the attribute that maximizes this gain, leading to the "purest" child nodes and the most informative splits.
 
 ID3 aims to maximize the reduction in entropy at each step, effectively asking the most informative questions first. We'll revisit entropy with its formal mathematical foundation in the Information Theory section.
 
@@ -226,7 +240,15 @@ This limitation is what gives rise to the "network" in neural networks. To solve
   caption="Weights in a neural network are adjusted during training to minimize error."
 />
 
-Why the switch? The "pointy" nature of the threshold function isn't differentiable, which is a problem for training. A smooth function allows us to use calculus. The network "learns" by adjusting its weights to minimize a loss function, which measures the difference between the network's predictions and the actual labels in the training data. The most common training algorithm is **backpropagation**. At its heart, backpropagation is a clever application of the chain rule from calculus. It uses **gradient descent** to efficiently compute the contribution of each weight to the overall error and adjust it accordingly. This process is often visualized as error information "flowing" backward from the output layer through the hidden layers, hence the name.
+Why the switch? The "pointy" nature of the threshold function isn't differentiable, which is a problem for training. A smooth function allows us to use calculus. The network "learns" by adjusting its weights to minimize a loss function, which measures the difference between the network's predictions ($o$) and the actual labels ($t$) in the training data $\mathcal{D}$. A common choice is the sum-of-squared errors: $E = \frac{1}{2} \sum_{d \in \mathcal{D}} (t_d - o_d)^2$.
+
+The most common training algorithm is **gradient descent**. The goal is to find the set of weights that minimizes this error. We do this by iteratively adjusting each weight in the direction opposite to the gradient of the error with respect to that weight. The update rule for a weight $w_i$ is:
+
+$$
+w_i \leftarrow w_i - \eta \frac{\partial E}{\partial w_i}
+$$
+
+Where $\eta$ is the **learning rate**, a small positive constant that controls the step size. The core challenge is to compute the partial derivative $\frac{\partial E}{\partial w_i}$ efficiently. This is where **backpropagation** comes in. It is an algorithm that uses the chain rule from calculus to efficiently compute the gradient of the error with respect to every weight in the network. This process involves a forward pass, where the input is fed through the network to compute the output and the error, followed by a backward pass, where the error is propagated from the output layer back through the hidden layers to update the weights.
 
 <Figure
   src={gradDescent}
@@ -253,7 +275,7 @@ While neural networks offer powerful function approximation through learned repr
 
 ### Instance-based Learning
 
-Instance-based Learning is a fundamentally different approach to machine learning that flips the typical paradigm on its head. Most models we've discussed so far are **eager learners**: they take the training data, learn a generalized function or model, and then effectively throw the original data away. When a new query comes in, they use this compact model to make a prediction. Instance-based learners, in contrast, are **lazy learners**. They do almost no work upfront, simply storing the entire training dataset. The real computation happens at query time.
+Instance-based Learning is a different approach to machine learning. Most models we've discussed so far are **eager learners**: they take the training data, learn a generalized function or model, and then effectively throw the original data away. When a new query comes in, they use this compact model to make a prediction. Instance-based learners, in contrast, are **lazy learners**. They do almost no work upfront, simply storing the entire training dataset. The real computation happens at query time.
 
 This approach is best understood through its most famous algorithm: **k-Nearest Neighbors (k-NN)**. Imagine you're trying to predict a house price. Instead of building a complex regression model for the whole city, you just find the 'k' most similar houses (the "neighbors") to the one you're interested in and see what they sold for.
 
@@ -264,11 +286,11 @@ This approach is best understood through its most famous algorithm: **k-Nearest 
   width={700}
 />
 
-The algorithm is beautifully simple:
-1.  **Store** all the training data.
-2.  When you get a new query point, **calculate the distance** from that point to every single point in the training data.
+The algorithm is simple:
+1.  **Store** the entire training set $\mathcal{D}$.
+2.  When given a new query instance $x_q$, **calculate the distance** from $x_q$ to every instance in $\mathcal{D}$.
 3.  **Identify the 'k' nearest neighbors**.
-4.  **Aggregate their outputs**. For classification, this means taking a majority vote among the neighbors' classes. For regression, it means averaging their values.
+4.  **Aggregate their outputs** to produce the final prediction, $f(x_q)$. For classification, this means taking a majority vote among the neighbors' classes. For regression, it means averaging their values.
 
 This simplicity is deceptive, as the real "learning" is encoded in two key design choices that represent crucial domain knowledge:
 * **The distance metric**: How do you define "similarity"? For points on a map, Euclidean distance might work. But what about other features? Are all features equally important? A good distance function is critical and is a way to inject domain knowledge into the model. Using a standard metric like Euclidean or Manhattan distance implicitly assumes all features matter equally, which is rarely true.
@@ -287,9 +309,9 @@ While instance-based learning leverages similarity between data points, individu
 
 ### Ensemble Learning
 
-Ensemble learning is a powerful technique that works by combining multiple individual models - often simple "rules of thumb" - to produce a more accurate and robust prediction than any single model could. The lecture uses the great example of classifying spam email. You could have a simple rule like "the email contains the word 'manly'", and another like "the email is very short". Neither is very accurate on its own, but by combining a large set of these weak indicators, you can build a highly effective classifier.
+Ensemble learning is a technique that works by combining multiple individual models - often simple "rules of thumb" - to produce a more accurate and robust prediction than any single model could. The lecture uses the great example of classifying spam email. You could have a simple rule like "the email contains the word 'manly'", and another like "the email is very short". Neither is very accurate on its own, but by combining a large set of these weak indicators, you can build a highly effective classifier.
 
-The power of this approach is that the final combined hypothesis can be much more complex and expressive than any of the individual weak learners. By taking a weighted combination of many simple models (like shallow decision trees), the ensemble can form a sophisticated, non-linear decision boundary that it couldn't have represented otherwise. It's a way of getting a complex result from simple parts.
+The power of this approach is that the final candidate concept $h_{final}$ can be much more complex and expressive than any of the individual weak learners in the hypothesis class $H$. By taking a weighted combination of many simple models (like shallow decision trees), the ensemble can form a sophisticated, non-linear decision boundary that it couldn't have represented otherwise. It's a way of getting a complex result from simple parts.
 
 The two primary families of ensemble methods, Bagging and Boosting, are different approaches to this same core idea.
 
@@ -303,7 +325,7 @@ The two primary families of ensemble methods, Bagging and Boosting, are differen
 
 * **Boosting**: This method takes a more strategic approach. Instead of training on random subsets, boosting builds models sequentially, where each new model is explicitly tasked with correcting the errors made by the previous ones. The algorithm maintains a distribution of "weights" over the training examples. In each round, it trains a **weak learner** - an algorithm that only needs to be slightly better than random chance - on the weighted data. After each round, it increases the weights of the examples that were misclassified, forcing the next weak learner to focus on the "hard" cases. The final model is a weighted combination of all the weak learners, where models that performed better on their respective rounds are given a greater say in the final prediction. Popular boosting algorithms include **AdaBoost** and **Gradient Boosting Machines (GBMs)**.
 
-Perhaps the most remarkable property of boosting is its surprising resistance to overfitting. With most algorithms, as we continue to train, the model gets better and better on the training data, but at some point, the performance on unseen test data starts to get worse - the classic sign of overfitting. Boosting often defies this. In practice, even as the training error goes to zero, the test error can continue to improve as more weak learners are added. While the full explanation is complex, the intuition is that even after the model correctly classifies all training points, adding more weak learners can increase the *margin* of the classification, making the decision boundary more robust and improving generalization.
+A notable property of boosting is its resistance to overfitting. With most algorithms, as we continue to train, the model gets better and better on the training data, but at some point, the performance on unseen test data starts to get worse - the classic sign of overfitting. Boosting often defies this. In practice, even as the training error goes to zero, the test error can continue to improve as more weak learners are added. While the full explanation is complex, the intuition is that even after the model correctly classifies all training points, adding more weak learners can increase the *margin* of the classification, making the decision boundary more robust and improving generalization.
 
 For more details, see the <a href="https://www.youtube.com/watch?v=sNRjufiUqzI&list=PLJ3qxo98eOh9cgbR0zIpx76qYS24CcqdA&index=6" target="_blank">Ensemble Learning lecture</a> which covers:
 - The formal definition of a "weak learner" as a classifier that can always perform slightly better than chance (error < 0.5) on any distribution of data.
@@ -316,7 +338,7 @@ Ensemble methods show how combining simple models can create sophisticated decis
 
 ### Kernel Methods & Support Vector Machines
 
-Support Vector Machines (SVMs) are a powerful and versatile class of supervised learning models. The lecture explains them beautifully, starting with a simple question: if you have two groups of points that can be separated by a straight line, what is the *best* line?
+Support Vector Machines (SVMs) are a powerful and versatile class of supervised learning models. The lecture explains them, starting with a simple question: if you have two groups of points that can be separated by a straight line, what is the *best* line?
 
 The answer isn't just any line that separates the data. The best line is the one that shows the "least commitment" to the training data, giving us the best chance to generalize to new data. This line is the one that creates the widest possible "demilitarized zone" or street between the two classes. This zone is called the **margin**, and the goal of an SVM is to find the separating hyperplane that maximizes this margin. The data points that lie on the very edge of this margin - the ones that "support" the hyperplane - are called the **support vectors**. If you move any other point, the line doesn't change. But if you move a support vector, the optimal line will move with it.
 
@@ -329,11 +351,25 @@ This visualization shows how SVMs balance between fitting the data and maximizin
     width={440}
   />
 
-This intuition can be formalized into an optimization problem. The goal is to maximize the margin, which turns out to be equivalent to minimizing the squared norm of the weight vector ($1/2 ||w||^2$), subject to the constraint that every data point is correctly classified and lies outside the margin. This constraint for each point $i$ is captured by the elegant expression: $y_i(w^T x_i + b) \ge 1$. This is a well-defined quadratic programming problem that can be solved efficiently.
+This intuition can be formalized into a constrained optimization problem. For a hard-margin SVM (where the data is perfectly linearly separable), the goal is to maximize the margin, which is equivalent to minimizing the squared norm of the weight vector, $\frac{1}{2} ||w||^2$, subject to the constraint that all data points are classified correctly: $y_i(w^T x_i + b) \ge 1$ for all points $i$.
 
-But what happens when the data isn't linearly separable? Imagine a cluster of positive points surrounded by a ring of negative points. No straight line can separate them. This is where one of the most powerful ideas in machine learning comes into play: the **kernel trick**.
+However, most real-world datasets are not perfectly separable. To handle this, we introduce **slack variables**, $\xi_i \ge 0$, for each data point. This gives rise to the more general **soft-margin classification**, which allows some points to be within the margin or even misclassified. The optimization problem (the primal formulation) then becomes:
 
-The idea is to project the data into a higher-dimensional space where it *becomes* linearly separable. For the ring example, we could map our 2D data into a 3D space, lifting the points in the center up higher than the points in the ring, allowing us to slice a plane between them. The magic of the kernel trick is that we can achieve this without ever actually paying the computational cost of creating these higher-dimensional representations.
+$$
+\min_{w, b, \xi} \frac{1}{2} ||w||^2 + C \sum_{i=1}^n \xi_i
+$$
+
+Subject to the constraints:
+
+$$
+y_i(w^T x_i + b) \ge 1 - \xi_i \quad \text{and} \quad \xi_i \ge 0 \quad \text{for all } i
+$$
+
+The parameter $C$ is a regularization parameter that controls the trade-off between maximizing the margin and minimizing the classification error. A small $C$ allows for a wider margin at the cost of more margin violations, while a large $C$ penalizes violations more heavily, leading to a narrower margin and a stricter fit to the training data. This is a well-defined quadratic programming problem that can be solved efficiently.
+
+But what happens when the data isn't linearly separable? Imagine a cluster of positive points surrounded by a ring of negative points. No straight line can separate them. This is where a powerful idea in machine learning comes into play: the **kernel trick**.
+
+The idea is to project the data from the input space $\mathcal{X}$ into a higher-dimensional feature space $\mathcal{F}$ where it *becomes* linearly separable. For the ring example, we could map our 2D data into a 3D space, lifting the points in the center up higher than the points in the ring, allowing us to slice a plane between them. The utility of the kernel trick is that we can achieve this without ever actually paying the computational cost of creating these higher-dimensional representations.
 
 This geometric transformation illustrates the elegance of the kernel approach:
 
@@ -389,7 +425,7 @@ The key resource in machine learning is **data**. CoLT helps us quantify how muc
 1.  **Approximately Correct**: We can't expect our learned model to be perfect. There will always be some error. The goal is to ensure the **true error** (the error on the underlying data distribution) is less than some small value, $\epsilon$ (pronounced "epsilon").
 2.  **Probably**: We can never be 100% certain. There's always a chance we got a misleading set of training examples. The goal is to be at least $1 - \delta$ (pronounced "delta") confident that our learned model has an error less than $\epsilon$.
 
-A key concept for understanding PAC learning is the **version space**. The version space is the set of all hypotheses in our hypothesis class that are consistent with the training data. The learning process is essentially a search for a good hypothesis within this space.
+A key concept for understanding PAC learning is the **version space**. The version space is the set of all hypotheses in our hypothesis class $H$ that are consistent with the training set $\mathcal{D}$. The learning process is essentially a search for a good hypothesis within this space.
 
 <Figure
   src={pac}
@@ -424,7 +460,7 @@ m &\ge \frac{1}{0.05} \left( \ln(10^{308}) + \ln(10) \right) \\
 \end{aligned}
 $$
 
-This calculation shows you need at least 14,214 training examples to be 90% confident your classifier will have at most 5% error on new emails.
+This calculation shows you need at least 14,214 training instances to be 90% confident your classifier will have at most 5% error on new emails.
 
 This is a powerful result. It tells us that the number of examples we need only grows linearly with $1/\epsilon$ and logarithmically with the size of our hypothesis space and $1/\delta$. However, it raises a critical question: what happens when our hypothesis space is infinite, as is the case for linear separators, neural networks, or decision trees with continuous features?
 
@@ -462,7 +498,7 @@ $$
 
 Interestingly, this requires far more data than our finite decision tree example! This illustrates an important principle: **higher VC dimension means greater model complexity, which requires more data to learn reliably**.
 
-This theorem is profound. It tells us that as long as a hypothesis class has a finite VC dimension, it is PAC-learnable, regardless of whether it contains an infinite number of hypotheses. The VC dimension captures the true complexity of the model, and a finite VC dimension prevents the model from being *too* powerful and overfitting the data. It's the key that connects the expressive power of a model to its ability to generalize from a finite sample of data.
+This theorem is profound. It tells us that as long as a hypothesis class has a finite VC dimension, it is PAC-learnable, regardless of whether it contains an infinite number of hypotheses. The VC dimension captures the true complexity of the model, and a finite VC dimension prevents the model from being *too* powerful and overfitting the data. It's the key that connects the expressive power of a model to its ability to generalize from a finite sample of data from the training set $\mathcal{D}$.
 
 For more details, see the <a href="https://www.youtube.com/watch?v=vD3-KFaixbE&list=PLJ3qxo98eOh9cgbR0zIpx76qYS24CcqdA&index=8" target="_blank">Computational Learning Theory</a> and <a href="https://www.youtube.com/watch?v=fNvc-xtSz2g&list=PLJ3qxo98eOh9cgbR0zIpx76qYS24CcqdA&index=9" target="_blank">VC Dimension</a> lectures, which cover:
 - Different models of learning based on how training examples are selected (learner queries vs. helpful teacher vs. nature).
@@ -620,7 +656,15 @@ The lecture emphasizes that clustering isn't one single, well-defined problem; i
 />
 
 * **Single-Linkage Clustering (SLC)**: This is a type of **hierarchical agglomerative clustering (HAC)**. It's a "bottom-up" approach that starts by treating each data point as its own cluster. Then, it iteratively merges the two closest clusters until a stopping condition is met. The "single-linkage" part defines the distance between two clusters as the distance between their *closest* two points. This can lead to long, "stringy" clusters, as the algorithm can create chains of points, which may not always match our intuitive sense of a compact cluster.
-* **k-Means Clustering**: This is one of the most popular and intuitive clustering algorithms. It aims to partition the data into 'k' clusters by iteratively assigning each data point to the cluster with the nearest mean (or **centroid**) and then recalculating the centroids based on the new assignments. This process is a form of optimization; it's a hill-climbing algorithm that is guaranteed to converge by minimizing the sum of squared distances from each point to its assigned centroid. However, it can get stuck in local optima, so the initial random placement of centroids matters.
+* **k-Means Clustering**: This is one of the most popular and intuitive clustering algorithms. It aims to partition $n$ data points into $k$ clusters, each represented by its mean or **centroid**. The algorithm is an iterative refinement procedure that minimizes an objective function, formally defined as the sum of the squared Euclidean distances between each data point $x_i$ and the centroid $\mu_j$ of its assigned cluster, and $S_j$ is the set of data points assigned to cluster $j$.
+
+$$
+J = \sum_{j=1}^{k} \sum_{i \in S_j} ||x_i - \mu_j||^2
+$$
+
+
+
+The process is a form of coordinate descent or a hill-climbing algorithm that is guaranteed to converge. It alternates between two steps: the **assignment step**, where each point is assigned to the cluster with the nearest centroid, and the **update step**, where each centroid is recalculated as the mean of all points assigned to it. While convergence is guaranteed, it may only reach a local minimum, so the initial random placement of centroids is crucial.
 * **Expectation-Maximization (EM)**: EM provides a more probabilistic approach to clustering, often used with Gaussian Mixture Models (GMMs). Instead of making a "hard" assignment of each point to a single cluster, EM performs **soft clustering**. It calculates the probability that each data point belongs to each cluster. It's a two-step process: the **E-step (Expectation)** calculates these probabilities, and the **M-step (Maximization)** updates the parameters of the clusters (like their means and variances) to maximize the likelihood of the data given these assignments. This allows for more flexible, elliptically-shaped clusters and provides a measure of uncertainty in the assignments, which is a key advantage over the hard assignments of k-Means.
 
 A fascinating result from the theory of clustering is **Kleinberg's Impossibility Theorem**. It proves that no clustering algorithm can simultaneously satisfy three very desirable properties: richness (can produce any possible clustering), scale-invariance (result doesn't change if you switch from miles to kilometers), and consistency (shrinking distances within clusters and expanding them between clusters doesn't change the result). This highlights that there is no single "best" clustering algorithm, and the choice always involves trade-offs.
@@ -759,7 +803,23 @@ The goal in an MDP is to find an **optimal policy** $\pi^*(s)$ that maximizes th
 The **Bellman Equation** is the cornerstone for solving MDPs. It defines the utility of a state recursively in terms of the utilities of its neighboring states:
 $U(s) = R(s) + \gamma \max_{a \in A} \sum_{s' \in S} T(s, a, s') U(s')$
 
-This equation tells us that the utility of a state is the immediate reward plus the discounted expected utility of the best action from that state. We can find the optimal utilities, and thus the optimal policy, using algorithms like **Value Iteration** or **Policy Iteration**.
+This equation tells us that the utility of a state is the immediate reward plus the discounted expected utility of the best action from that state. This recursive relationship is the foundation for algorithms that solve MDPs:
+
+* **Value Iteration**: This algorithm iteratively computes the utility of each state until the values converge. It starts with arbitrary utilities and repeatedly updates them using the Bellman equation as an update rule:
+
+  $
+  U_{i+1}(s) \leftarrow R(s) + \gamma \max_{a \in A} \sum_{s' \in S} T(s, a, s') U_i(s')
+  $
+
+* **Policy Iteration**: This algorithm alternates between two steps. It starts with a random policy, $\pi$.
+  1.  **Policy Evaluation**: Given the current policy $\pi_i$, calculate the utility of each state, $U_i$, if that policy were to be followed. This is often done by solving the system of linear equations defined by the Bellman equation for a fixed policy.
+  2.  **Policy Improvement**: Using the new utility function $U_i$, calculate a new policy, $\pi_{i+1}$, by choosing the best action in each state according to $U_i$: 
+
+      $
+      \pi_{i+1}(s) \leftarrow \arg\max_{a \in A} \sum_{s' \in S} T(s, a, s') U_i(s')
+      $
+
+  These steps are repeated until the policy no longer changes, at which point the optimal policy has been found.
 
 For more details, see the <a href="https://www.youtube.com/watch?v=4eqi8Ost5cQ&list=PLJ3qxo98eOh9cgbR0zIpx76qYS24CcqdA&index=17" target="_blank">Markov Decision Processes lecture</a> which covers:
 - The distinction between plans and policies in deterministic vs. stochastic environments.
