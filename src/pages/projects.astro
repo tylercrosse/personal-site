@@ -1,6 +1,8 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 
+const SHOW_PROJECTS_PAGE = false;
+
 interface ProjectLink {
   label: string;
   href: string;
@@ -163,49 +165,63 @@ const sections: Array<{
 ---
 
 <BaseLayout title="Projects">
-  <section class="header-block slide-in-block">
-    <h1>Projects & Research Artifacts</h1>
-    <p>
-      A curated view of the work that bridges my systems engineering background with
-      current interpretability and safety research. Each project highlights a concrete
-      artifact—code, experimental logs, or in-depth write-ups—that I use to iterate
-      toward reliable, interpretable ML systems.
-    </p>
-  </section>
+  {SHOW_PROJECTS_PAGE ? (
+    <>
+      <section class="header-block slide-in-block">
+        <h1>Projects & Research Artifacts</h1>
+        <p>
+          A curated view of the work that bridges my systems engineering background with
+          current interpretability and safety research. Each project highlights a concrete
+          artifact—code, experimental logs, or in-depth write-ups—that I use to iterate
+          toward reliable, interpretable ML systems.
+        </p>
+      </section>
 
-  {sections.map((section) => (
-    <section class="category slide-in-block">
-      <header class="category-header">
-        <h2>{section.title}</h2>
-        <p>{section.summary}</p>
-      </header>
-      <div class="card-grid">
-        {section.items.map((item) => (
-          <article class="card">
-            <div class="card-meta">
-              <span class:list={["status-pill", item.status.toLowerCase()]}>{item.status}</span>
-              <span class="timeframe">{item.timeframe}</span>
-            </div>
-            <h3>{item.title}</h3>
-            <p>{item.description}</p>
-            {item.links && item.links.length > 0 && (
-              <div class="card-links">
-                {item.links.map((link) => (
-                  <a
-                    href={link.href}
-                    target={link.external ? "_blank" : undefined}
-                    rel={link.external ? "noopener noreferrer" : undefined}
-                  >
-                    {link.label}
-                  </a>
-                ))}
-              </div>
-            )}
-          </article>
-        ))}
-      </div>
+      {sections.map((section) => (
+        <section class="category slide-in-block">
+          <header class="category-header">
+            <h2>{section.title}</h2>
+            <p>{section.summary}</p>
+          </header>
+          <div class="card-grid">
+            {section.items.map((item) => (
+              <article class="card">
+                <div class="card-meta">
+                  <span class:list={["status-pill", item.status.toLowerCase()]}>{item.status}</span>
+                  <span class="timeframe">{item.timeframe}</span>
+                </div>
+                <h3>{item.title}</h3>
+                <p>{item.description}</p>
+                {item.links && item.links.length > 0 && (
+                  <div class="card-links">
+                    {item.links.map((link) => (
+                      <a
+                        href={link.href}
+                        target={link.external ? "_blank" : undefined}
+                        rel={link.external ? "noopener noreferrer" : undefined}
+                      >
+                        {link.label}
+                      </a>
+                    ))}
+                  </div>
+                )}
+              </article>
+            ))}
+          </div>
+        </section>
+      ))}
+    </>
+  ) : (
+    <section class="placeholder slide-in-block">
+      <p class="eyebrow">Projects archive</p>
+      <h1>I'm revisiting how I present projects and research logs.</h1>
+      <p>
+        The full archive will return soon. In the meantime, the writing section has the latest
+        retrospectives, notes, and experiment logs.
+      </p>
+      <a class="placeholder-link" href="/ideas">Browse writing →</a>
     </section>
-  ))}
+  )}
 </BaseLayout>
 
 <style>
@@ -337,6 +353,49 @@ const sections: Array<{
     text-decoration: none;
     color: var(--accent);
     font-weight: 600;
+  }
+
+  .placeholder {
+    max-width: 720px;
+    margin: 4rem auto;
+    padding: 0 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    text-align: left;
+  }
+
+  .placeholder .eyebrow {
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.85rem;
+    color: var(--sol-6);
+  }
+
+  .placeholder h1 {
+    font-size: clamp(2rem, 4vw, 2.75rem);
+    line-height: 1.2;
+    margin: 0;
+  }
+
+  .placeholder-link {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid rgba(var(--black), 0.2);
+    border-radius: 999px;
+    padding: 0.5rem 1.1rem;
+    text-decoration: none;
+    color: var(--sol-8);
+    transition:
+      border-color 0.2s ease,
+      color 0.2s ease,
+      background-color 0.2s ease;
+  }
+
+  .placeholder-link:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background-color: rgba(var(--accent-rgb, 35, 131, 226), 0.08);
   }
 
   @media (max-width: 720px) {
