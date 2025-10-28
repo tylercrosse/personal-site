@@ -2,7 +2,7 @@
 title: 'BlueDot AI Safety Evals Paper Club Notes'
 description: 'My notes and takeaways from the BlueDot AI Safety Evals paper club, covering recent papers on AI alignment, security, and evaluations.'
 date: '2025-09-09'
-updated: '2025-10-21'
+updated: '2025-10-28'
 status: 'in-progress'
 type: 'note'
 tags: ['machine-learning', 'research', 'AI-alignment', 'mechanistic-interpretability']
@@ -32,6 +32,7 @@ First, here are some helpful links for the group:
 ### 2025-09-09 - Chain-of-Thought Reasoning In The Wild Is Not Always Faithful
 
 - [published 2025-03-11 by Iván Arcuschin, Jett Janiak, Robert Krzyzanowski, et al.](https://arxiv.org/abs/2503.08679 )
+- GitHub: [jettjaniak/chainscope](https://github.com/jettjaniak/chainscope)
 
 import argumentSwitching from "./2025-09-09-argument-switching.png";
 import unfaithful from "./2025-09-09-unfaithful-illogicial.png";
@@ -45,7 +46,7 @@ import unfaithful from "./2025-09-09-unfaithful-illogicial.png";
 ##### Method & Key Results
 
 - **Approach:**
-	*   **Implicit Post-Hoc Rationalization:** The authors generated pairs of logically opposite questions (e.g., "Is X bigger than Y?" and "Is Y bigger than X?"). They then analyzed the models' CoT responses to see if they would contradict themselves by answering "Yes" or "No" to both, and how they justified these answers.
+  *   **Implicit Post-Hoc Rationalization:** The authors generated pairs of logically opposite questions (e.g., "Is X bigger than Y?" and "Is Y bigger than X?"). They then analyzed the models' CoT responses to see if they would contradict themselves by answering "Yes" or "No" to both, and how they justified these answers.
 
 <Figure
   src={argumentSwitching}
@@ -63,26 +64,27 @@ import unfaithful from "./2025-09-09-unfaithful-illogicial.png";
 
 
 - **Evaluation:**
-	*   **Implicit Post-Hoc Rationalization:** They used a dataset of 4,834 pairs of comparative questions and tested 15 frontier models, including GPT-4o-mini, Haiku 3.5, Gemini 2.5 Flash, ChatGPT-4o, and Sonnet 3.7.
-	*   **Unfaithful Illogical Shortcuts:** They evaluated 6 models on a subset of the PutnamBench dataset, a collection of challenging math problems.
+  *   **Implicit Post-Hoc Rationalization:** They used a dataset of 4,834 pairs of comparative questions and tested 15 frontier models, including GPT-4o-mini, Haiku 3.5, Gemini 2.5 Flash, ChatGPT-4o, and Sonnet 3.7.
+  *   **Unfaithful Illogical Shortcuts:** They evaluated 6 models on a subset of the PutnamBench dataset, a collection of challenging math problems.
 
 - **Key Result:**
-	*   Several production models showed surprisingly high rates of post-hoc rationalization, with GPT-4o-mini at ~13% and Haiku 3.5 at ~7%. While more advanced "thinking" models were more faithful, none were perfect. For example, Gemini 2.5 Flash showed a 2.17% rate, while Sonnet 3.7 with thinking had a very low 0.04% rate. They also found that unfaithfulness decreases when going from non-thinking to thinking models in the context of illogical shortcuts.
+  *   Several production models showed surprisingly high rates of post-hoc rationalization, with GPT-4o-mini at ~13% and Haiku 3.5 at ~7%. While more advanced "thinking" models were more faithful, none were perfect. For example, Gemini 2.5 Flash showed a 2.17% rate, while Sonnet 3.7 with thinking had a very low 0.04% rate. They also found that unfaithfulness decreases when going from non-thinking to thinking models in the context of illogical shortcuts.
 
 ##### Takeaways & Critique
 
 - **Main Takeaway:** The single most important takeaway is that a model's Chain-of-Thought cannot be fully trusted as a transparent and complete account of its reasoning, even in everyday situations without adversarial prompts. Models can rationalize pre-existing biases and take unacknowledged shortcuts.
 - **Strengths / Weaknesses:**
-	*   **Strengths:** The paper provides a novel and systematic way to test for unfaithful reasoning in the wild. The authors open-source their code and data, which is a significant strength for reproducibility.
-	*   **Weaknesses:** The authors acknowledge that their analysis of post-hoc rationalization relies on factual questions, and it would be more challenging to detect unfaithfulness in subjective domains. They also state that they cannot definitively prove a mismatch between stated and internal reasoning, as the latter is unknown.
+  *   **Strengths:** The paper provides a novel and systematic way to test for unfaithful reasoning in the wild. The authors open-source their code and data, which is a significant strength for reproducibility.
+  *   **Weaknesses:** The authors acknowledge that their analysis of post-hoc rationalization relies on factual questions, and it would be more challenging to detect unfaithfulness in subjective domains. They also state that they cannot definitively prove a mismatch between stated and internal reasoning, as the latter is unknown.
 - **Connections / Questions:**
-	*   **Connections:** This work is highly relevant to AI safety and alignment, as it highlights the difficulty of truly understanding and controlling LLM behavior. It builds upon previous research on CoT faithfulness and has implications for process-based oversight of language models.
-	*   **Questions:** The paper sparks questions about the root causes of this unfaithfulness. Is it an inherent byproduct of current training methods? How can we develop training techniques that encourage more faithful reasoning? Can we develop better methods for detecting unfaithfulness in real-time applications?
+  *   **Connections:** This work is highly relevant to AI safety and alignment, as it highlights the difficulty of truly understanding and controlling LLM behavior. It builds upon previous research on CoT faithfulness and has implications for process-based oversight of language models.
+  *   **Questions:** The paper sparks questions about the root causes of this unfaithfulness. Is it an inherent byproduct of current training methods? How can we develop training techniques that encourage more faithful reasoning? Can we develop better methods for detecting unfaithfulness in real-time applications?
 
 ### 2025-09-16 - CoT May Be Highly Informative Despite “Unfaithfulness”
 
 
 - [published 2025-08-08 by Amy Deng, Sydney Von Arx, et al.](https://metr.org/blog/2025-08-08-cot-may-be-highly-informative-despite-unfaithfulness/)
+- GitHub: [METR/CoT-faithfulness-and-monitorability](https://github.com/METR/CoT-faithfulness-and-monitorability/)
 
 This article has some great visualizations on the website is worth a visit just to play with them.
 
@@ -106,12 +108,12 @@ import failDetect from "./2025-09-16-fail-detect.png";
 *   **Key Result:** When clues were complex enough to require CoT, the models were almost always faithful under the relaxed definition (in over 99.9% of 21,272 trajectories). Separately, the Clue-Usage Detector achieved a 99.3% True Positive Rate in identifying when a clue was used, even on simple clues where the CoT was often strictly unfaithful.
 
 <div style="display:flex; gap:1rem; align-items:flex-start; flex-wrap:wrap;">
-	<div style="flex:1 1 48%; min-width:220px;">
-		<Figure src={clueUsage} width={500} alt="" />
-	</div>
-	<div style="flex:1 1 48%; min-width:220px;">
-		<Figure src={failDetect} width={500} alt="" />
-	</div>
+  <div style="flex:1 1 48%; min-width:220px;">
+    <Figure src={clueUsage} width={500} alt="" />
+  </div>
+  <div style="flex:1 1 48%; min-width:220px;">
+    <Figure src={failDetect} width={500} alt="" />
+  </div>
 </div>
 
 
@@ -131,6 +133,7 @@ import failDetect from "./2025-09-16-fail-detect.png";
 import secretCollusion from "./2025-09-30-secret-collusion.png";
 
 - [published 2024-02-12 by Sumeet Ramesh Motwani et al.](https://arxiv.org/abs/2402.07510)
+- GitHub: _no public repo released yet (checked 2025-10-28)_
 
 ##### Core Idea
 
@@ -139,8 +142,8 @@ import secretCollusion from "./2025-09-30-secret-collusion.png";
 
 <Figure
   src={secretCollusion}
-	caption="Secret collusion between GPT-4 models and humans. Consider the setting illustrated in which one AI agent secretly reveals insider proprietary investment information found in its pretraining data to a user. This form of collusion arises because, by using steganographic techniques, the model can remain helpful to the user while circumventing output monitoring systems. We both depict the use of statistically detectable steganography based on a latent codebook that is elicitated in-context and can be readily decoded by humans."
-	alt="Secret collusion between GPT-4 models and humans. Consider the setting illustrated in which one AI agent secretly reveals insider proprietary investment information found in its pretraining data to a user. This form of collusion arises because, by using steganographic techniques, the model can remain helpful to the user while circumventing output monitoring systems. We both depict the use of statistically detectable steganography based on a latent codebook that is elicitated in-context and can be readily decoded by humans."
+  caption="Secret collusion between GPT-4 models and humans. Consider the setting illustrated in which one AI agent secretly reveals insider proprietary investment information found in its pretraining data to a user. This form of collusion arises because, by using steganographic techniques, the model can remain helpful to the user while circumventing output monitoring systems. We both depict the use of statistically detectable steganography based on a latent codebook that is elicitated in-context and can be readily decoded by humans."
+  alt="Secret collusion between GPT-4 models and humans. Consider the setting illustrated in which one AI agent secretly reveals insider proprietary investment information found in its pretraining data to a user. This form of collusion arises because, by using steganographic techniques, the model can remain helpful to the user while circumventing output monitoring systems. We both depict the use of statistically detectable steganography based on a latent codebook that is elicitated in-context and can be readily decoded by humans."
 />
 
 ##### Method & Key Results
@@ -166,6 +169,7 @@ import secretCollusion from "./2025-09-30-secret-collusion.png";
 import redTeam from "./2025-10-07-red-team.png";
 
 - [published 2025-07-28 by Andy Zou et al.](https://arxiv.org/abs/2507.20526)
+- GitHub: _no public repo released yet (checked 2025-10-28), although relates to [llm-attacks](https://github.com/llm-attacks/llm-attacks)_
 
 ##### Core Idea
 
@@ -179,25 +183,25 @@ import redTeam from "./2025-10-07-red-team.png";
 
 <Figure
   src={redTeam}
-	caption="An example red-teaming interaction demonstrating a successful multi-turn prompt injection attack on our interface. Here, the adversarial user induces the AI assistant to violate privacy policies by making an unauthorized tool call to access and disclose another patient’s medical records."
-	alt="An example red-teaming interaction demonstrating a successful multi-turn prompt injection attack on our interface. Here, the adversarial user induces the AI assistant to violate privacy policies by making an unauthorized tool call to access and disclose another patient’s medical records."
+  caption="An example red-teaming interaction demonstrating a successful multi-turn prompt injection attack on our interface. Here, the adversarial user induces the AI assistant to violate privacy policies by making an unauthorized tool call to access and disclose another patient’s medical records."
+  alt="An example red-teaming interaction demonstrating a successful multi-turn prompt injection attack on our interface. Here, the adversarial user induces the AI assistant to violate privacy policies by making an unauthorized tool call to access and disclose another patient’s medical records."
 />
 
 - **Evaluation:**
-	*   **Dataset/Environment:** The evaluation was conducted across 44 custom-built, realistic scenarios targeting 22 frontier LLMs from providers like OpenAI, Google, Anthropic, and Meta.
-	*   **Baselines:** The primary comparison was the relative robustness of the different models against each other.
-	*   **Metrics:** The key metric was the **Attack Success Rate (ASR)**, defined as the ratio of successful policy violations to the total number of sessions.
+  *   **Dataset/Environment:** The evaluation was conducted across 44 custom-built, realistic scenarios targeting 22 frontier LLMs from providers like OpenAI, Google, Anthropic, and Meta.
+  *   **Baselines:** The primary comparison was the relative robustness of the different models against each other.
+  *   **Metrics:** The key metric was the **Attack Success Rate (ASR)**, defined as the ratio of successful policy violations to the total number of sessions.
 - **Key Result:** The most important finding is that AI agents are highly susceptible to adversarial attacks. After just 10 queries, the attack success rate approaches nearly 100% for most models on the ART benchmark (Figure 4). The study also found that there is limited correlation between an agent's robustness and its general capabilities (like model size or performance on other benchmarks), suggesting that simply building more powerful models does not automatically make them safer (Figure 6, right).
 
 ##### Takeaways & Critique
 
 - **Main Takeaway:** The single most important takeaway is that the security of current AI agents is critically flawed. These systems can be easily and reliably manipulated to break their safety rules, and this is a fundamental weakness, not just an issue of rare edge cases. This poses an urgent and significant risk for their deployment in real-world applications.
 - **Strengths / Weaknesses:**
-	*   **Strengths:** The paper's primary strength is the unprecedented scale and realism of its evaluation, involving a massive number of human-generated attacks. The creation and release of the ART benchmark is a significant contribution that will help drive future security research. The analysis of attack transferability (Figure 5) provides valuable insight into shared vulnerabilities across model families.
-	*   **Weaknesses:** The evaluation relied on *simulated* tools and environments, which may not fully capture all the complexities of real-world deployments. Additionally, the paper acknowledges that the automated judging process sometimes resulted in "false positives," where participants gamed the specific success criteria without truly breaking the spirit of the rule.
+  *   **Strengths:** The paper's primary strength is the unprecedented scale and realism of its evaluation, involving a massive number of human-generated attacks. The creation and release of the ART benchmark is a significant contribution that will help drive future security research. The analysis of attack transferability (Figure 5) provides valuable insight into shared vulnerabilities across model families.
+  *   **Weaknesses:** The evaluation relied on *simulated* tools and environments, which may not fully capture all the complexities of real-world deployments. Additionally, the paper acknowledges that the automated judging process sometimes resulted in "false positives," where participants gamed the specific success criteria without truly breaking the spirit of the rule.
 - **Connections / Questions:**
-	*   **Connections:** This work is a direct extension of previous research on adversarial attacks and "jailbreaking" of LLMs. However, it moves beyond simple chatbot interactions to evaluate more complex, tool-using agents, which have a significantly larger attack surface.
-	*   **Questions:** This paper raises critical questions for the future of AI safety. If increasing model capability doesn't inherently increase security, what will? What new architectural designs or training paradigms are needed to build agents that are fundamentally more robust? How can we develop automated defenses that can keep pace with the creativity of human adversaries?
+  *   **Connections:** This work is a direct extension of previous research on adversarial attacks and "jailbreaking" of LLMs. However, it moves beyond simple chatbot interactions to evaluate more complex, tool-using agents, which have a significantly larger attack surface.
+  *   **Questions:** This paper raises critical questions for the future of AI safety. If increasing model capability doesn't inherently increase security, what will? What new architectural designs or training paradigms are needed to build agents that are fundamentally more robust? How can we develop automated defenses that can keep pace with the creativity of human adversaries?
 
 
 ### 2025-10-14 - Building and evaluating alignment auditing agents
@@ -206,14 +210,15 @@ import modelOrganism from "./2025-10-14-model-organism.png";
 import investigatorWins from "./2025-10-14-investigator-wins.png";
 
 - [published 2025-07-24 by Trenton Bricken, Rowan Wang, Sam Bowman, et al.](https://alignment.anthropic.com/2025/automated-auditing/)
+- GitHub: [anthropic-experimental/automated-auditing](https://github.com/anthropic-experimental/automated-auditing)
 - [GDoc used for the BlueDot presentation](https://docs.google.com/document/d/1E5XFddoL1h7o21BQOtUYNuczadOqrofvYlKy29TYbI4/edit?tab=t.0#heading=h.j0uijoqeqyfc)
 
 ##### Core Idea
 
 - **Problem**: Human-led alignment audits, which are crucial for finding hidden risks in frontier models (like sycophancy, faking, or hidden goals), face two major problems:
-	1. **Scalability**: They require immense time from specialized researchers, which cannot keep up with the rapid pace of AI development.
+  1. **Scalability**: They require immense time from specialized researchers, which cannot keep up with the rapid pace of AI development.
 
-	1. **Validation**: It's hard to know if an audit has found all the issues. The best-practice "auditing games" (where humans try to find a known, implanted flaw) are not reliable or replicable because humans are inconsistent and can't repeat a game once they know the answer.
+  1. **Validation**: It's hard to know if an audit has found all the issues. The best-practice "auditing games" (where humans try to find a known, implanted flaw) are not reliable or replicable because humans are inconsistent and can't repeat a game once they know the answer.
 
 - **Contribution**: The authors propose a solution: LLM-based auditing agents (AI systems that autonomously conduct alignment audits). Their main claim is that these agents can solve both problems: they scale auditing by allowing many agents to run in parallel, and they improve validation by serving as consistent, replicable proxies for human auditors. They introduce and test three such agents.
 
@@ -221,50 +226,51 @@ import investigatorWins from "./2025-10-14-investigator-wins.png";
 
 <Figure
   src={modelOrganism}
-	caption="The pipeline used to create the model organism with reward model sycophancy First, the model is pretrained on synthetic documents describing 52 fictional reward model biases. Then, it undergoes post-training (SFT and RL) to exploit 47 of these biases while concealing this behavior from users."
-	alt="The pipeline used to create the model organism with reward model sycophancy First, the model is pretrained on synthetic documents describing 52 fictional reward model biases. Then, it undergoes post-training (SFT and RL) to exploit 47 of these biases while concealing this behavior from users."
+  caption="The pipeline used to create the model organism with reward model sycophancy First, the model is pretrained on synthetic documents describing 52 fictional reward model biases. Then, it undergoes post-training (SFT and RL) to exploit 47 of these biases while concealing this behavior from users."
+  alt="The pipeline used to create the model organism with reward model sycophancy First, the model is pretrained on synthetic documents describing 52 fictional reward model biases. Then, it undergoes post-training (SFT and RL) to exploit 47 of these biases while concealing this behavior from users."
 />
 
 - **Approach**: The authors developed three distinct LLM-based agents (using Claude Sonnet 4) to perform specific auditing tasks:
-	1. **Investigator Agent**: An agent that performs an end-to-end investigation to find a hidden alignment flaw. It is given a suite of tools, including chat (to talk to the model), data analysis (to search the training data), and interpretability (to inspect and steer the model's internal features using a sparse autoencoder).
-	2. **Evaluation Agent**: An agent that automatically builds new behavioral evaluations for a researcher-specified alignment property.
-	3. **Breadth-First Red-Teaming Agent**: An agent that searches for a wide range of unspecified concerning behaviors.
+  1. **Investigator Agent**: An agent that performs an end-to-end investigation to find a hidden alignment flaw. It is given a suite of tools, including chat (to talk to the model), data analysis (to search the training data), and interpretability (to inspect and steer the model's internal features using a sparse autoencoder).
+  2. **Evaluation Agent**: An agent that automatically builds new behavioral evaluations for a researcher-specified alignment property.
+  3. **Breadth-First Red-Teaming Agent**: An agent that searches for a wide range of unspecified concerning behaviors.
 
 - **Evaluation**: They tested these agents in "auditing game" environments where a target model had a known, researcher-implanted flaw, providing a ground-truth for success.
-	- **Dataset/Environment**: The main testbed was an adaptation of the ([Marks et al., 2025](https://arxiv.org/abs/2503.10965)) auditing game. In this game, a model was trained to have a hidden "reward model sycophancy" goal by being trained on (fictional) academic papers describing 52 specific reward-model biases, and then fine-tuned to exploit these biases (e.g., "always recommend bottled water," "prefer recipes with chocolate").
+  - **Dataset/Environment**: The main testbed was an adaptation of the ([Marks et al., 2025](https://arxiv.org/abs/2503.10965)) auditing game. In this game, a model was trained to have a hidden "reward model sycophancy" goal by being trained on (fictional) academic papers describing 52 specific reward-model biases, and then fine-tuned to exploit these biases (e.g., "always recommend bottled water," "prefer recipes with chocolate").
 - **Metrics**: For the Investigator Agent, success ("winning the game") was measured by its ability to identify the correct root cause (the "reward model bias meta-learning") and list the specific behaviors it caused.
 - **Key Result**: The most important finding is that **the Investigator Agent can successfully "win" the auditing game**, a task that is difficult even for expert humans.
-	- A single agent, using all available tools, found the root cause **13% of the time.**
-	- Crucially, this success **depended entirely on interpretability and data search tools.** Agents with only chat-based tools had a 0% success rate.
-	- By running many agents in parallel and aggregating their findings (a "super-agent" approach), the solve rate improved significantly to 42%.
-	- The other agents also performed well: the Evaluation Agent successfully created discriminative evaluations in **88% of runs**, and the Red-Teaming Agent found **7 out of 10** implanted behaviors.
+  - A single agent, using all available tools, found the root cause **13% of the time.**
+  - Crucially, this success **depended entirely on interpretability and data search tools.** Agents with only chat-based tools had a 0% success rate.
+  - By running many agents in parallel and aggregating their findings (a "super-agent" approach), the solve rate improved significantly to 42%.
+  - The other agents also performed well: the Evaluation Agent successfully created discriminative evaluations in **88% of runs**, and the Red-Teaming Agent found **7 out of 10** implanted behaviors.
 
 <Figure
   src={investigatorWins}
-	caption="The fraction of runs where the investigator 'wins' the auditing game by discovering that the target model knows about RM biases.. The number of tools provided to the agent increases from left to right. Settings with no visible bar indicate a 0% success rate. Error bars are standard error of the mean. Some runs crashed due to infrastructural factors, so N is not equal for all experiment settings 9  (but always greater than 30). 10"
-	alt="The fraction of runs where the investigator 'wins' the auditing game by discovering that the target model knows about RM biases.. The number of tools provided to the agent increases from left to right. Settings with no visible bar indicate a 0% success rate. Error bars are standard error of the mean. Some runs crashed due to infrastructural factors, so N is not equal for all experiment settings 9  (but always greater than 30). 10"
+  caption="The fraction of runs where the investigator 'wins' the auditing game by discovering that the target model knows about RM biases.. The number of tools provided to the agent increases from left to right. Settings with no visible bar indicate a 0% success rate. Error bars are standard error of the mean. Some runs crashed due to infrastructural factors, so N is not equal for all experiment settings 9  (but always greater than 30). 10"
+  alt="The fraction of runs where the investigator 'wins' the auditing game by discovering that the target model knows about RM biases.. The number of tools provided to the agent increases from left to right. Settings with no visible bar indicate a 0% success rate. Error bars are standard error of the mean. Some runs crashed due to infrastructural factors, so N is not equal for all experiment settings 9  (but always greater than 30). 10"
 />
 
 ##### Takeaways & Critique
 
 - **Main Takeaway**: Automated, LLM-based agents are a viable and promising path for scaling AI alignment audits. They can successfully uncover complex, hidden alignment issues, but their success hinges on providing them with powerful tools beyond just chat, especially **interpretability and data-analysis tools.**
 - **Strengths / Weaknesses**:
-	- **Strengths**:
-		- **Scalable & Replicable**: This is the first demonstration of agents autonomously performing these complex audits, offering a clear path to scale auditing.
-		- **Effective**: The agents achieved high success rates on difficult, non-trivial tasks.
-		- **Tool Use**: The Investigator Agent demonstrated a sophisticated workflow, using interpretability tools to form a hypothesis and then chat and data-search tools to confirm it.
-		- **Real-World Application**: These agents were used to assist in the actual alignment audit of Anthropic's Claude 4.
-	- **Weaknesses** (Limitations stated by the authors):
-		- **Artificial Environment**: The agents were tested against implanted flaws, which may not be representative of "natural" alignment failures in the wild.
-		- **Dev/Test Contamination**: The primary auditing game environment was used for both developing and testing the agent, which might mean the results are overly optimistic and not generalizable.
-		- **Imperfect Proxy**: The agents have different failure modes than humans (e.g., they struggle with "fixating on early hypotheses" or maintaining state over a long investigation), limiting their validity as perfect stand-ins for human auditors.
+  - **Strengths**:
+    - **Scalable & Replicable**: This is the first demonstration of agents autonomously performing these complex audits, offering a clear path to scale auditing.
+    - **Effective**: The agents achieved high success rates on difficult, non-trivial tasks.
+    - **Tool Use**: The Investigator Agent demonstrated a sophisticated workflow, using interpretability tools to form a hypothesis and then chat and data-search tools to confirm it.
+    - **Real-World Application**: These agents were used to assist in the actual alignment audit of Anthropic's Claude 4.
+  - **Weaknesses** (Limitations stated by the authors):
+    - **Artificial Environment**: The agents were tested against implanted flaws, which may not be representative of "natural" alignment failures in the wild.
+    - **Dev/Test Contamination**: The primary auditing game environment was used for both developing and testing the agent, which might mean the results are overly optimistic and not generalizable.
+    - **Imperfect Proxy**: The agents have different failure modes than humans (e.g., they struggle with "fixating on early hypotheses" or maintaining state over a long investigation), limiting their validity as perfect stand-ins for human auditors.
 - **Connections / Questions**:
-	- **Connections**: This work is a direct follow-up to [Marks et al. (2025)](https://arxiv.org/abs/2503.10965), which introduced the human-based auditing game that this work automates. It heavily connects to mechanistic interpretability (by using sparse autoencoders as a tool) and the broader field of AI safety evaluations.
-	- **Questions (Future Work)**: The key next steps are to test these agents on new, unseen environments (to prove generalization) and to find ways to use them to discover unknown or natural alignment failures, not just pre-implanted ones. The authors are open-sourcing parts of their work to stimulate more research in this area.
+  - **Connections**: This work is a direct follow-up to [Marks et al. (2025)](https://arxiv.org/abs/2503.10965), which introduced the human-based auditing game that this work automates. It heavily connects to mechanistic interpretability (by using sparse autoencoders as a tool) and the broader field of AI safety evaluations.
+  - **Questions (Future Work)**: The key next steps are to test these agents on new, unseen environments (to prove generalization) and to find ways to use them to discover unknown or natural alignment failures, not just pre-implanted ones. The authors are open-sourcing parts of their work to stimulate more research in this area.
 
 ### 2025-10-21 Evidence for Limited Metacognition in LLMs
 
 - [published 2025-09-25 by Christopher Ackerman](https://arxiv.org/abs/2509.21545)
+- GitHub: _no public repo released yet (checked 2025-10-28)_
 
 import delegateGame from "./2025-10-21-is_pc_by_model_notrend.png";
 import nonIntrospective from "./2025-10-21-controls_correctness_correl_by_model_notrend.png"
@@ -287,14 +293,14 @@ import nonIntrospective from "./2025-10-21-controls_correctness_correl_by_model_
 
 <Figure
   src={delegateGame}
-	caption="Partial correlations between baseline correctness and Delegate Game answer decision. Positive coefficients represent an estimate of each model’s introspective ability - information extracted from internal signals about its own confidence, here proxied by baseline correctness, that it is able to use in decision-making - after removing variance that can be explained by surface difficulty cues. Models are ordered roughly in order of overall capabilities (aggregated across datasets)."
-	alt="Partial correlations between baseline correctness and Delegate Game answer decision."
+  caption="Partial correlations between baseline correctness and Delegate Game answer decision. Positive coefficients represent an estimate of each model’s introspective ability - information extracted from internal signals about its own confidence, here proxied by baseline correctness, that it is able to use in decision-making - after removing variance that can be explained by surface difficulty cues. Models are ordered roughly in order of overall capabilities (aggregated across datasets)."
+  alt="Partial correlations between baseline correctness and Delegate Game answer decision."
 />
 
 <Figure
   src={nonIntrospective}
-	caption="Impact of surface cues on model delegation, controlling for correctness. This figure shows the correlation between 'surface cues' (e.g., question length, topic) and a model's decision to delegate a question. This analysis controls for whether the model's answer was actually correct, isolating the influence of the cues themselves. A higher bar means the model's decision to 'give up' is more strongly predicted by these superficial cues. Notably, about 30% of the cues that led models to delegate were actually associated with correct answers, indicating their self-assessment can be unreliable."
-	alt="Use of Non-Introspective Information: Surface Cues of Difficulty."
+  caption="Impact of surface cues on model delegation, controlling for correctness. This figure shows the correlation between 'surface cues' (e.g., question length, topic) and a model's decision to delegate a question. This analysis controls for whether the model's answer was actually correct, isolating the influence of the cues themselves. A higher bar means the model's decision to 'give up' is more strongly predicted by these superficial cues. Notably, about 30% of the cues that led models to delegate were actually associated with correct answers, indicating their self-assessment can be unreliable."
+  alt="Use of Non-Introspective Information: Surface Cues of Difficulty."
 />
 
 - **Key Result:** The most significant finding was the consistently **weak correlation** between the LLMs' decisions (delegate/retry) and their actual accuracy, particularly on harder questions or those with manipulated difficulty cues. While models showed *some* ability to distinguish easier from harder questions (e.g., delegating more on GPQA than trivia), their performance often dropped near chance levels when difficulty cues were novel or misleading. This suggests their self-assessment relies heavily on familiar patterns or simple heuristics (like output token probabilities) rather than robust introspection. For example, results showed lower-than-expected metacognitive correlation (phi) across models in the Delegate Game, and performance degraded when surface cues conflicted with objective difficulty.
@@ -319,3 +325,63 @@ import nonIntrospective from "./2025-10-21-controls_correctness_correl_by_model_
         - Is robust metacognition an **emergent property** that might appear with scale, or does it require fundamentally different architectures or training objectives?
         - How much do factors like **Reinforcement Learning from Human Feedback (RLHF)** influence these apparent metacognitive heuristics?
         - Could alternative paradigms (beyond delegation/retry) reveal different aspects of LLM self-assessment?
+
+### 2025-10-28 TextQuests: How Good are LLMs at Text-Based Video Games?
+
+- [published 2025-07-31 by Long Phan, Mantas Mazeika, Andy Zou, & Dan Hendrycks](https://arxiv.org/abs/2402.07510)
+- GitHub: [centerforaisafety/textquests](https://github.com/centerforaisafety/textquests)
+-  [Website](https://www.textquests.ai/)
+
+
+import fullResults from "./2025-10-28-full-results.png"
+import gameExamples from "./2025-10-28-game-examples2.png"
+import progressVsTokens from "./2025-10-28-progress-vs-tokens.png"
+
+
+##### Core Idea
+
+* **Citation:**
+    * **Title:** TextQuests: How Good are LLMs at Text-Based Video Games?
+    * **Authors:** Long Phan, Mantas Mazeika, Andy Zou, Dan Hendrycks
+    * **Publication:** arXiv preprint (v3, submitted in 2025)
+* **Problem:** The paper addresses the lack of challenging benchmarks for evaluating the interactive reasoning, planning, and world-modeling capabilities of Large Language Models (LLMs). Existing benchmarks are often static (like Q&A) or too simple, whereas text-based games require dynamic, multi-step, common-sense reasoning to succeed.
+* **Contribution:** The authors introduce **TextQuests**, a new benchmark suite of 10 diverse and difficult text-based video games. Their main claim is that even state-of-the-art LLMs (like GPT-4.1 and Gemini 2.5) "struggle significantly" with these tasks, demonstrating a clear gap in their ability to plan, reason, and understand game mechanics.
+
+##### Method & Key Results
+
+* **Approach:** The core of the method is the benchmark itself: a suite of 10 modern interactive fiction games (e.g., *Anchorhead*, *Lost Pig*). They built a standardized LLM-based agent that operates in a "perceive-plan-act" loop. This agent takes the game's text observations, updates its internal memory or "world model," and then generates a text command to send back to the game.
+
+<Figure
+  src={gameExamples}
+  caption="Examples showing the diverse reasoning challenges in TextQuests. `~` denotes LLM thinking. `>` denotes the action."
+  alt="Examples showing the diverse reasoning challenges in TextQuests."
+/>
+
+* **Evaluation:**
+    * **Datasets:** The 10 games in the TextQuests suite, including *Zork* and *Wishbringer*.
+    * **Baselines:** A wide range of SOTA LLMs, including GPT-4.1, Gemini 2.5, Claude 3 Opus, and Llama 3-70B.
+    * **Metrics:** The primary metric was **game progress**, measured as a percentage of the maximum possible score or completion for each game. They also analyzed failure modes qualitatively.
+
+<Figure
+  src={progressVsTokens}
+  caption="A comparison of output and reasoning token efficiency across state-of-the-art LLMs on TEXTQUESTS. Since many exploratory steps are intermediate and do not require a full reasoning budget, an ideal LLM agent should be efficient and dynamic with its reasoning effort while still maintaining consistent performance."
+  alt="A comparison of output and reasoning token efficiency across state-of-the-art LLMs on TEXTQUESTS."
+/>
+
+<Figure
+  src={fullResults}
+  caption="LLMs performance on TEXTQUESTS. Reasoning models are evaluated with high reasoning setting."
+  alt="LLMs performance on TEXTQUESTS. Reasoning models are evaluated with high reasoning setting."
+/>
+
+* **Key Result:** The most significant finding was that **no LLM agent performed anywhere near human level**. Top models like GPT-4.1 and Gemini 2.5 only achieved an average progress score of 20-30% and failed to solve most games. Common failures included getting stuck in loops, hallucinating game mechanics, and failing at simple, common-sense puzzles.
+
+##### Takeaways & Critique
+
+* **Main Takeaway:** The single most important thing to remember is that current LLMs are poor at robust, interactive reasoning. Despite their impressive performance on static language tasks, they fail when required to build a consistent world model and execute long-term plans in a dynamic environment.
+* **Strengths / Weaknesses:**
+    * **Strengths:** The paper introduces a high-quality, challenging benchmark that tests a critical and underdeveloped area of LLM capabilities. The qualitative analysis of *why* models fail (e.g., poor memory, inability to follow instructions) is very insightful.
+    * **Weaknesses (Limitations):** The authors acknowledge that their specific agent architecture (the prompting and memory system) is just one possible design, and its limitations might be a factor separate from the LLMs' core abilities.
+* **Connections / Questions:**
+    * **How does this relate to other work?** This work is related to other interactive agent benchmarks like ALFWorld or WebArena, but it isolates the challenge to pure text, requiring more complex language understanding and long-term planning without cues from vision or simple UI elements.
+    * **What new ideas or questions does it spark?** The paper suggests that the TextQuests benchmark can be a valuable tool for driving future research into creating LLMs with better long-term memory, more robust planning skills, and more grounded common-sense reasoning.
