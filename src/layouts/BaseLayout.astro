@@ -20,23 +20,20 @@ const {
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang="en" class="scroll-smooth">
   <head>
     <title>{title} | {SITE_TITLE}</title>
     <BaseHead title={title} description={description} image={image} />
   </head>
-  <body>
+  <body
+    class="bg-brand-light text-slate-900 transition-colors duration-200 ease-linear dark:bg-brand-dark dark:text-slate-100"
+  >
     <Header />
-    <main>
+    <main class="mx-auto max-w-screen-2xl px-4 pb-16 pt-24 sm:px-6 lg:px-8">
       <slot />
     </main>
     <Footer />
-  </body><style>
-    main {
-      max-width: 1600px;
-      margin: 0 auto;
-    }
-  </style>
+  </body>
   <noscript>
     <style>
       .js-required {

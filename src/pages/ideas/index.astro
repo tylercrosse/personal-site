@@ -13,8 +13,6 @@ const capitalize = (s: string) => {
 
 const posts = (await getCollection("ideas"))
   .filter((post) => {
-    // In development, show all posts including drafts
-    // In production, only show published posts (not drafts)
     return import.meta.env.DEV || !post.data.draft;
   })
   .sort((a, b) => {
@@ -38,7 +36,7 @@ const allPostsData = posts.map((post) => {
   const stats = readingTime(post.body || "");
   return {
     id: post.id,
-    slug: slug,
+    slug,
     title: post.data.title,
     description: post.data.description,
     date: post.data.date,
@@ -53,7 +51,6 @@ const allPostsData = posts.map((post) => {
   };
 });
 
-// Group posts by parent relationship
 const childrenByParent = new Map<string, typeof allPostsData>();
 allPostsData.forEach((post) => {
   if (post.parent) {
@@ -64,12 +61,10 @@ allPostsData.forEach((post) => {
   }
 });
 
-// Create hierarchical structure: top-level posts with their children
 const hierarchicalPosts = allPostsData
-  .filter((post) => !post.parent) // Only top-level posts
+  .filter((post) => !post.parent)
   .map((post) => {
     const children = childrenByParent.get(post.slug) || [];
-    // Sort children chronologically (oldest to newest)
     children.sort((a, b) => {
       const aDate = a.date;
       const bDate = b.date;
@@ -82,483 +77,118 @@ const hierarchicalPosts = allPostsData
   });
 ---
 
-<BaseLayout title="Ideas">
-  <style>
-    .hero {
-      padding: 2rem 0;
-    }
-    .hero h1 {
-      font-size: 4rem;
-      margin-bottom: 1rem;
-    }
-    .select-filters {
-      display: flex;
-      margin-bottom: 1rem;
-    }
-
-    .select-filters select {
-      background: none;
-      border: none;
-      border-radius: 4px;
-      padding: 0.25rem 1.25rem;
-      cursor: pointer;
-      background: rgba(var(--gray-light), 0.8);
-    }
-    .tag-list {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.25rem;
-      list-style: none;
-      padding: 0;
-      margin: 0;
-      margin-bottom: 2rem;
-    }
-    .tag-list button {
-      background: none;
-      border: none;
-      border-radius: 4px;
-      padding: 0.25rem 0.75rem;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      text-transform: capitalize;
-      color: var(--sol-8);
-    }
-
-    .tag-list button:hover {
-      color: var(--sol-8);
-      background-color: var(--base4);
-    }
-
-    :global([data-effective-theme="dark"]) .tag-list button:hover {
-      color: var(--black);
-      background-color: var(--base01);
-    }
-
-    .tag-list button.active {
-      background-color: var(--accent);
-      color: var(--black);
-    }
-    .select-filters {
-      display: flex;
-      gap: 1rem;
-    }
-    .select-filters select {
-      text-transform: capitalize;
-      color: var(--black);
-    }
-    .post-grid {
-      display: flex;
-      gap: 2rem;
-      align-items: flex-start;
-      flex-direction: column;
-    }
-
-    @media (min-width: 768px) {
-      .post-grid {
-        flex-direction: row;
-      }
-    }
-
-    .masonry-column {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      gap: 2rem;
-      width: 100%;
-    }
-
-    @media (min-width: 768px) {
-      .masonry-column {
-        width: auto;
-      }
-    }
-
-    /* Without JS, only show first column (server-rendered) */
-    .masonry-column[data-column="1"],
-    .masonry-column[data-column="2"] {
-      display: none;
-    }
-
-    /* With JS, show columns based on screen size */
-    .js-enabled .masonry-column[data-column="1"] {
-      display: flex;
-    }
-
-    @media (min-width: 1200px) {
-      .js-enabled .masonry-column[data-column="2"] {
-        display: flex;
-      }
-    }
-
-    /* Hide columns on smaller screens even with JS */
-    @media (max-width: 767px) {
-      .js-enabled .masonry-column[data-column="1"],
-      .js-enabled .masonry-column[data-column="2"] {
-        display: none;
-      }
-    }
-
-    @media (min-width: 768px) and (max-width: 1199px) {
-      .js-enabled .masonry-column[data-column="2"] {
-        display: none;
-      }
-    }
-    .post-card {
-      border: 1px solid var(--main-border-color);
-      background-color: var(--base4);
-      border-radius: 8px;
-      overflow: hidden;
-      color: inherit;
-      display: flex;
-      flex-direction: column;
-      transition: all 0.2s ease-in-out;
-    }
-
-    .post-card:focus-within {
-      outline: 2px solid var(--blue);
-      outline-offset: 2px;
-    }
-
-    .post-card:has(.post-card-link:focus:not(:focus-visible)) {
-      outline: none;
-    }
-
-    .post-card-link {
-      text-decoration: none;
-      color: inherit;
-      display: flex;
-      flex-direction: column;
-      transition: all 0.2s ease-in-out;
-    }
-
-    .post-card-link:hover {
-      opacity: 0.8;
-    }
-
-    .post-card-link:focus {
-      outline: none;
-    }
-
-    :global([data-effective-theme="dark"]) .post-card {
-      border: 1px solid var(--base03);
-      background-color: var(--base02);
-    }
-
-    .post-card.hidden {
-      display: none;
-    }
-
-    .post-card img {
-      width: 100%;
-      height: 200px;
-      object-fit: cover;
-    }
-
-    /* Child posts container - inside parent card */
-    .child-posts {
-      display: flex;
-      flex-direction: column;
-      gap: 0;
-      border-top: 1px solid var(--main-border-color);
-    }
-
-    :global([data-effective-theme="dark"]) .child-posts {
-      border-top-color: var(--base03);
-    }
-
-    /* Individual child post items */
-    .child-post-item {
-      display: flex;
-      flex-direction: row;
-      text-decoration: none;
-      color: inherit;
-      font-size: 0.9rem;
-      border-bottom: 1px solid var(--main-border-color);
-      transition: all 0.2s ease-in-out;
-    }
-
-    .child-post-item:last-child {
-      border-bottom: none;
-    }
-
-    .child-post-item.hidden {
-      display: none;
-    }
-
-    .child-post-item:hover {
-      opacity: 0.8;
-    }
-
-    .child-post-item:focus {
-      outline: 2px solid var(--blue);
-      outline-offset: 2px;
-    }
-
-    .child-post-item:focus:not(:focus-visible) {
-      outline: none;
-    }
-
-    :global([data-effective-theme="dark"]) .child-post-item {
-      border-bottom-color: var(--base03);
-    }
-
-    .child-post-content {
-      padding: 0.75rem;
-      flex: 1;
-    }
-
-    .child-post-content h3 {
-      font-size: 1rem;
-      margin-bottom: 0.25rem;
-    }
-
-    .child-post-content p {
-      font-size: 0.85rem;
-      margin-bottom: 0.5rem;
-    }
-
-    .child-post-item img {
-      width: 120px;
-      height: 100%;
-      min-height: 100px;
-      max-height: 120px;
-      object-fit: cover;
-      flex-shrink: 0;
-    }
-    .post-card-content {
-      padding: 1rem;
-      display: flex;
-      flex-direction: column;
-      flex-grow: 1;
-    }
-    .post-card-content h3 {
-      margin: 0 0 0.5rem 0;
-      font-size: 1.25rem;
-    }
-    .post-card-content p {
-      margin: 0 0 1rem 0;
-      flex-grow: 1;
-      font-size: 1rem;
-    }
-
-    .post-card-content-header span {
-      padding-right: 1em;
-    }
-
-    .post-meta,
-    .post-card-content-header {
-      font-size: 0.75rem;
-      text-transform: capitalize;
-      color: var(--sol-7);
-      margin-bottom: 0.5rem;
-    }
-
-        /* Retro posts - larger, more prominent */
-    .post-card--retro {
-      /* border-width: 2px;
-      border-color: var(--accent); */
-    }
-
-    .post-card--retro .post-card-content {
-      /* padding: 1.5rem; */
-    }
-
-    .post-card--retro .post-card-content h3 {
-      font-size: 1.75rem;
-      font-weight: 700;
-      margin-bottom: 0.75rem;
-    }
-
-    .post-card--retro .post-card-content p {
-      font-size: 1.05rem;
-      line-height: 1.6;
-    }
-
-    .post-card--retro img {
-      height: 300px;
-    }
-
-    :global([data-effective-theme="dark"]) .post-card--retro {
-      /* border-color: var(--accent); */
-    }
-
-    /* Note posts - compact, minimal */
-    .post-card--note {
-      /* background-color: var(--base3);
-      border-style: dashed;
-      border-color: var(--sol-7); */
-    }
-
-    :global([data-effective-theme="dark"]) .post-card--note {
-      /* background-color: var(--base01);
-      border-color: var(--sol-7); */
-    }
-
-    .post-card--note .post-card-content {
-      padding: 0.75rem;
-    }
-
-    .post-card--note .post-card-content h3 {
-      font-size: 1rem;
-      font-weight: 500;
-    }
-
-    .post-card--note .post-card-content p {
-      font-size: 0.875rem;
-      margin-bottom: 0.5rem;
-    }
-
-    /* Hide images in note cards */
-    .post-card--note img {
-      display: none;
-    }
-
-    /* Project posts - standard with slight emphasis */
-    .post-card--project {
-      /* border-left-width: 3px;
-      border-left-color: var(--sol-blue); */
-    }
-
-    /* Article posts - standard style (default) */
-    .post-card--article {
-      /* Uses default post-card styles */
-    }
-
-    .draft-indicator {
-      background-color: var(--sol-yellow);
-      color: var(--green);
-      font-size: 0.6rem;
-      font-weight: bold;
-      padding: 2px 6px;
-      border-radius: 3px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .child-count {
-      background-color: var(--sol-blue);
-      color: var(--base3);
-      font-size: 0.6rem;
-      font-weight: bold;
-      padding: 2px 6px;
-      border-radius: 3px;
-      text-transform: none;
-      letter-spacing: 0.5px;
-    }
-
-    .post-meta {
-      display: flex;
-      justify-content: space-between;
-    }
-
-    .slide-in-block {
-      opacity: 0;
-      filter: blur(10px);
-      transform: scale(0.95);
-      will-change: transform, opacity, filter;
-      animation: slideInBlock 0.4s cubic-bezier(0.43, 0.195, 0.02, 1) forwards;
-    }
-
-    .slide-in-block:nth-child(1) {
-      /* animation-delay: 0.3s; */
-    }
-    .slide-in-block:nth-child(2) {
-      animation-delay: 0.2s;
-    }
-    @keyframes slideInBlock {
-      to {
-        opacity: 1;
-        filter: blur(0px);
-        transform: scale(1);
-      }
-    }
-  </style>
-
-  <header class="slide-in-block">
-    <div class="hero">
-      <h1>Digital Garden</h1>
-      <p>The notes, thoughts, and projects I've been working on.</p>
+<BaseLayout title="Ideas" description={`Notes, projects, and writing from ${SITE_TITLE}. ${SITE_DESCRIPTION}`}>
+  <header class="space-y-8 animate-fade-scale" style={{ animationDelay: "0.1s" }}>
+    <div class="space-y-4 text-center">
+      <h1 class="text-4xl font-serif font-bold text-slate-900 dark:text-white sm:text-5xl">Digital Garden</h1>
+      <p class="mx-auto max-w-2xl text-base text-slate-600 dark:text-slate-300">
+        The notes, thoughts, and projects I've been working on.
+      </p>
     </div>
-
-    <div class="js-required">
-      <div class="select-filters">
-        <select id="type-filter">
-          <option value="all">All types</option>
-          {allTypes.map((type) => <option value={type}>{capitalize(type || '')}</option>)}
-        </select>
-        <select id="status-filter">
-          <option value="all">All statuses</option>
-          {
-            allStatuses.map((status) => (
-              <option value={status}>{capitalize(status || '')}</option>
-            ))
-          }
-        </select>
+    <div class="js-required space-y-4" data-pagefind-ignore>
+      <div class="flex flex-col gap-3 text-sm text-slate-600 dark:text-slate-300 sm:flex-row sm:items-center">
+        <label class="flex items-center gap-2">
+          <span class="font-medium">Type:</span>
+          <select
+            id="type-filter"
+            class="rounded-lg border border-slate-200 bg-white/60 px-3 py-2 text-sm capitalize shadow-sm focus:border-accent focus:outline-none dark:border-slate-700 dark:bg-slate-900/60"
+          >
+            <option value="all">All types</option>
+            {allTypes.map((type) => <option value={type}>{capitalize(type || "")}</option>)}
+          </select>
+        </label>
+        <label class="flex items-center gap-2">
+          <span class="font-medium">Status:</span>
+          <select
+            id="status-filter"
+            class="rounded-lg border border-slate-200 bg-white/60 px-3 py-2 text-sm capitalize shadow-sm focus:border-accent focus:outline-none dark:border-slate-700 dark:bg-slate-900/60"
+          >
+            <option value="all">All statuses</option>
+            {allStatuses.map((status) => (
+              <option value={status}>{capitalize(status || "")}</option>
+            ))}
+          </select>
+        </label>
       </div>
-
-      <div class="filters" data-pagefind-ignore>
-        <ul class="tag-list">
-          <li><button class="active" id="all-tags">All Topics</button></li>
-          {
-            allTags.map((tag) => (
-              <li>
-                <button data-tag={tag}>{tag}</button>
-              </li>
-            ))
-          }
+      <div class="filters">
+        <ul class="tag-list flex flex-wrap gap-2 text-sm">
+          <li>
+            <button
+              class="active rounded-full bg-accent/20 px-3 py-1 font-semibold text-accent transition hover:bg-accent/30"
+              id="all-tags"
+            >
+              All Topics
+            </button>
+          </li>
+          {allTags.map((tag) => (
+            <li>
+              <button
+                data-tag={tag}
+                class="rounded-full bg-white/60 px-3 py-1 text-slate-600 transition hover:bg-accent/20 hover:text-accent dark:bg-slate-900/60 dark:text-slate-300"
+              >
+                {tag}
+              </button>
+            </li>
+          ))}
         </ul>
       </div>
     </div>
   </header>
 
-  <section class="post-grid slide-in-block" data-pagefind-ignore>
-    <!-- Server-rendered single column - works without JS -->
-    <div class="masonry-column" data-column="0">
-      {
-        hierarchicalPosts.map((post) => {
-        const typeClass = post.type ? `post-card--${post.type}` : '';
-        const isRetro = post.type === 'retro';
+  <section
+    class="post-grid mt-8 flex flex-col gap-6 animate-fade-scale lg:flex-row lg:items-start"
+    style={{ animationDelay: "0.2s" }}
+    data-pagefind-ignore
+  >
+    <div class="masonry-column flex w-full flex-col gap-6" data-column="0">
+      {hierarchicalPosts.map((post) => {
+        const typeClass = post.type ? `post-card--${post.type}` : "";
         const hasChildren = post.children && post.children.length > 0;
 
         return (
           <div
-            class={`post-card ${typeClass} ${hasChildren ? "post-card--with-children" : ""}`}
+            class={`post-card ${typeClass} rounded-2xl border border-slate-200 bg-white/70 shadow-sm transition hover:-translate-y-1 hover:shadow-lg dark:border-slate-700 dark:bg-slate-900/70`}
             data-parent-slug={post.slug}
             data-tags={post.tags?.join(" ")}
             data-type={post.type}
             data-status={post.status}
             data-has-parent="false"
           >
-            {/* Parent post link and content */}
             <a
               href={`/ideas/${post.slug}/`}
-              class="post-card-link"
+              class="post-card-link group flex h-full flex-col"
             >
-              {/* Show image at top for all posts */}
               {post.image?.path && (
                 <Image
                   src={post.image.path}
                   alt={post.image.alt || ""}
                   width={800}
-                  height={isRetro ? 300 : 200}
+                  height={post.type === "retro" ? 300 : 200}
+                  class="h-52 w-full object-cover"
                 />
               )}
 
-              <div class="post-card-content">
-                <div class="post-card-content-header">
-                  {post.draft && <span class="draft-indicator">DRAFT</span>}
+              <div class="post-card-content flex flex-1 flex-col gap-4 p-5">
+                <div class="post-card-content-header flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  {post.draft && (
+                    <span class="rounded-full bg-amber-100 px-2 py-1 text-[0.6rem] text-amber-700 dark:bg-amber-500/20 dark:text-amber-200">
+                      Draft
+                    </span>
+                  )}
                   {post.type && <span>{capitalize(post.type)}</span>}
                   {post.status && <span>{capitalize(post.status)}</span>}
-                  <span>{post.readingTimeText}</span>
+                  <span class="ml-auto text-[0.65rem] font-medium tracking-wide">{post.readingTimeText}</span>
                 </div>
-                <h3>{post.title}</h3>
-                <p>{post.description}</p>
-                <div class="post-meta">
+                <h3 class="text-2xl font-serif font-semibold text-slate-900 transition group-hover:text-accent dark:text-white">
+                  {post.title}
+                </h3>
+                <p class="text-sm text-slate-600 dark:text-slate-300">{post.description}</p>
+                <div class="post-meta flex flex-wrap items-center justify-between text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
                   <span>
                     <FormattedDate date={post.date || new Date()} />
                   </span>
                   {post.updated && (
-                    <span>
+                    <span class="text-[0.65rem]">
                       Updated: <FormattedDate date={post.updated} />
                     </span>
                   )}
@@ -566,42 +196,50 @@ const hierarchicalPosts = allPostsData
               </div>
             </a>
 
-            {/* Child posts - inside the same card */}
             {hasChildren && (
-              <div class="child-posts" data-parent={post.slug}>
+              <div
+                class="child-posts flex flex-col divide-y border-t border-slate-200 dark:divide-slate-700 dark:border-slate-700"
+                data-parent={post.slug}
+              >
                 {post.children.map((child) => {
-                  const childTypeClass = child.type ? `post-card--${child.type}` : '';
+                  const childTypeClass = child.type ? `post-card--${child.type}` : "";
 
                   return (
                     <a
                       href={`/ideas/${child.slug}/`}
-                      class={`child-post-item ${childTypeClass}`}
+                      class={`child-post-item ${childTypeClass} flex gap-3 bg-white/60 p-4 transition hover:bg-accent/10 dark:bg-slate-900/60 dark:hover:bg-accent/20`}
                       data-tags={child.tags?.join(" ")}
                       data-type={child.type}
                       data-status={child.status}
                       data-has-parent="true"
                       data-parent-post={post.slug}
                     >
-                      {/* Show image on left for child posts */}
                       {child.image?.path && (
                         <Image
                           src={child.image.path}
                           alt={child.image.alt || ""}
-                          width={400}
+                          width={240}
                           height={120}
+                          class="h-24 w-32 flex-shrink-0 rounded-lg object-cover"
                         />
                       )}
 
-                      <div class="child-post-content">
-                        <div class="post-card-content-header">
-                          {child.draft && <span class="draft-indicator">DRAFT</span>}
+                      <div class="child-post-content flex flex-1 flex-col gap-2">
+                        <div class="post-card-content-header flex flex-wrap items-center gap-2 text-[0.65rem] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                          {child.draft && (
+                            <span class="rounded-full bg-amber-100 px-2 py-1 text-[0.6rem] text-amber-700 dark:bg-amber-500/20 dark:text-amber-200">
+                              Draft
+                            </span>
+                          )}
                           {child.type && <span>{capitalize(child.type)}</span>}
                           {child.status && <span>{capitalize(child.status)}</span>}
-                          <span>{child.readingTimeText}</span>
+                          <span class="ml-auto">{child.readingTimeText}</span>
                         </div>
-                        <h3>{child.title}</h3>
-                        <p>{child.description}</p>
-                        <div class="post-meta">
+                        <h3 class="text-lg font-semibold text-slate-900 transition group-hover:text-accent dark:text-white">
+                          {child.title}
+                        </h3>
+                        <p class="text-sm text-slate-600 dark:text-slate-300">{child.description}</p>
+                        <div class="post-meta flex flex-wrap items-center justify-between text-[0.65rem] uppercase tracking-wide text-slate-500 dark:text-slate-400">
                           <span>
                             <FormattedDate date={child.date || new Date()} />
                           </span>
@@ -619,73 +257,64 @@ const hierarchicalPosts = allPostsData
             )}
           </div>
         );
-      })
-    }
+      })}
     </div>
-    <!-- Additional columns created by JS for masonry layout -->
-    <div class="masonry-column" data-column="1"></div>
-    <div class="masonry-column" data-column="2"></div>
+    <div class="masonry-column hidden w-full flex-col gap-6" data-column="1"></div>
+    <div class="masonry-column hidden w-full flex-col gap-6" data-column="2"></div>
   </section>
 
   <script>
     document.addEventListener("DOMContentLoaded", () => {
-      // Initialize masonry layout
       const postGrid = document.querySelector('.post-grid') as HTMLElement;
       const columns = Array.from(document.querySelectorAll('.masonry-column')) as HTMLElement[];
 
       if (!postGrid || columns.length === 0) return;
 
-      // Enable JS-enhanced layout
-      postGrid.classList.add('js-enabled');
+      const postItems = Array.from(columns[0].querySelectorAll('.post-card')) as HTMLElement[];
 
-      // Get all post items from the first column (server-rendered)
-      const firstColumn = columns[0];
-      const postItems = Array.from(firstColumn.querySelectorAll('.post-card')) as HTMLElement[];
-
-      // Function to get visible columns based on screen width
       function getVisibleColumns() {
         const width = window.innerWidth;
-        if (width < 768) return [columns[0]]; // Mobile: 1 column
-        if (width < 1200) return [columns[0], columns[1]]; // Tablet: 2 columns
-        return columns; // Desktop: 3 columns
+        if (width < 768) {
+          return [columns[0]];
+        }
+        if (width < 1200) {
+          return [columns[0], columns[1]];
+        }
+        return columns;
       }
 
-      // Distribute items into columns using "shortest column" algorithm
       function layoutMasonry() {
         const visibleColumns = getVisibleColumns();
 
-        // Clear all columns
-        columns.forEach(col => col.innerHTML = '');
+        columns.forEach((col) => {
+          col.innerHTML = '';
+          col.classList.add('hidden');
+        });
 
-        // Move existing DOM elements (preserves event listeners and state)
+        visibleColumns.forEach((col) => col.classList.remove('hidden'));
+
         postItems.forEach((item) => {
-          // Skip hidden items (filtered out) - don't count toward column height
           if (item.classList.contains('hidden')) {
-            // Still add to a column but keep hidden class
             visibleColumns[0].appendChild(item);
             return;
           }
 
-          // Find the shortest visible column by comparing current heights
           let shortestColumn = visibleColumns[0];
           let shortestHeight = visibleColumns[0].offsetHeight;
 
-          visibleColumns.forEach(col => {
+          visibleColumns.forEach((col) => {
             if (col.offsetHeight < shortestHeight) {
               shortestHeight = col.offsetHeight;
               shortestColumn = col;
             }
           });
 
-          // Add item to shortest column
           shortestColumn.appendChild(item);
         });
       }
 
-      // Initial layout
       layoutMasonry();
 
-      // Re-layout on window resize (debounced)
       let resizeTimeout: ReturnType<typeof setTimeout>;
       window.addEventListener('resize', () => {
         clearTimeout(resizeTimeout);
@@ -698,9 +327,7 @@ const hierarchicalPosts = allPostsData
       let activeHierarchy = "all";
 
       function filterPosts() {
-        // Use the server-rendered postItems array
         postItems.forEach((container) => {
-          // The container itself is now the post-card
           const parentTags = container.dataset.tags?.split(" ") || [];
           const parentType = container.dataset.type;
           const parentStatus = container.dataset.status;
@@ -709,7 +336,6 @@ const hierarchicalPosts = allPostsData
           const parentTypeMatch = activeType === "all" || parentType === activeType;
           const parentStatusMatch = activeStatus === "all" || parentStatus === activeStatus;
 
-          // Check if any children match (if they exist)
           const childContainer = container.querySelector('.child-posts') as HTMLElement;
           let anyChildMatches = false;
           if (childContainer) {
@@ -732,15 +358,12 @@ const hierarchicalPosts = allPostsData
             });
           }
 
-          // Show parent if it matches OR if we're showing all posts and any child matches
           const shouldShowParent = (parentTagMatch && parentTypeMatch && parentStatusMatch) ||
-                                   (activeHierarchy === "all" && anyChildMatches);
+            (activeHierarchy === "all" && anyChildMatches);
 
-          // For top-level filter, always evaluate parent normally
           if (activeHierarchy === "top-level") {
             if (parentTagMatch && parentTypeMatch && parentStatusMatch) {
               container.classList.remove("hidden");
-              // Hide children in top-level mode
               if (childContainer) {
                 childContainer.style.display = "none";
               }
@@ -748,7 +371,6 @@ const hierarchicalPosts = allPostsData
               container.classList.add("hidden");
             }
           } else {
-            // Normal filtering: show parent and children based on matches
             if (shouldShowParent) {
               container.classList.remove("hidden");
               if (childContainer) {
@@ -760,42 +382,42 @@ const hierarchicalPosts = allPostsData
           }
         });
 
-        // Re-layout masonry after filtering to fix column distribution
         requestAnimationFrame(() => {
           layoutMasonry();
         });
       }
 
-      // Tag filtering
-      const tagButtons = document.querySelectorAll(".tag-list button");
+      const tagButtons = document.querySelectorAll('.tag-list button');
       tagButtons.forEach((button) => {
-        button.addEventListener("click", () => {
-          tagButtons.forEach((btn) => btn.classList.remove("active"));
-          button.classList.add("active");
+        button.addEventListener('click', () => {
+          tagButtons.forEach((btn) => btn.classList.remove('active', 'bg-accent/20', 'text-accent'));
+          button.classList.add('active', 'bg-accent/20', 'text-accent');
           const b = button as HTMLElement;
-          activeTag = b.id === "all-tags" ? "all" : b.dataset.tag || "all";
+          activeTag = b.id === 'all-tags' ? 'all' : b.dataset.tag || 'all';
           filterPosts();
         });
       });
 
-      // Type filter
-      const typeFilter = document.getElementById(
-        "type-filter"
-      ) as HTMLSelectElement;
+      const typeFilter = document.getElementById('type-filter') as HTMLSelectElement;
       if (typeFilter) {
-        typeFilter.addEventListener("change", (e) => {
+        typeFilter.addEventListener('change', (e) => {
           activeType = (e.target as HTMLSelectElement).value;
           filterPosts();
         });
       }
 
-      // Status filter
-      const statusFilter = document.getElementById(
-        "status-filter"
-      ) as HTMLSelectElement;
+      const statusFilter = document.getElementById('status-filter') as HTMLSelectElement;
       if (statusFilter) {
-        statusFilter.addEventListener("change", (e) => {
+        statusFilter.addEventListener('change', (e) => {
           activeStatus = (e.target as HTMLSelectElement).value;
+          filterPosts();
+        });
+      }
+
+      const hierarchyFilter = document.getElementById('hierarchy-filter') as HTMLSelectElement;
+      if (hierarchyFilter) {
+        hierarchyFilter.addEventListener('change', (e) => {
+          activeHierarchy = (e.target as HTMLSelectElement).value;
           filterPosts();
         });
       }

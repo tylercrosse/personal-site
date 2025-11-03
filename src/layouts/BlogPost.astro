@@ -29,7 +29,6 @@ const {
   hideCaption,
 } = Astro.props;
 
-// Helper function to get image source and alt text from either format
 const getImageData = () => {
   if (heroImage) {
     return { src: heroImage, alt: "" };
@@ -42,7 +41,6 @@ const getImageData = () => {
 
 const imageData = getImageData();
 
-// For Open Graph, pass the processed ImageMetadata if available, otherwise the string path
 const ogImage = image?.path || heroImage;
 ---
 
@@ -51,216 +49,73 @@ const ogImage = image?.path || heroImage;
   description={description}
   image={ogImage}
 >
-  <style>
-    main {
-      width: calc(100% - 2em);
-      max-width: 100%;
-      margin: 0;
-    }
-
-    .title-meta {
-      display: flex;
-      gap: 1em;
-      font-size: 0.7em;
-      text-transform: capitalize;
-      margin-bottom: 1em;
-      color: var(--sol-7);
-    }
-
-    .draft-indicator {
-      background-color: var(--sol-yellow);
-      color: var(--green);
-      font-size: 1em;
-      font-weight: bold;
-      padding: 3px 8px;
-      border-radius: 4px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .title h1 {
-      margin-bottom: 0.5em;
-      max-width: 800px;
-      text-align: start;
-    }
-    .title-container {
-      display: flex;
-      flex-direction: column;
-      max-width: 800px;
-      margin: auto;
-    }
-    .meta {
-      display: flex;
-      justify-content: space-between;
-      max-width: 800px;
-      margin: auto;
-      font-size: 0.7em;
-      margin: 2em 0;
-    }
-    .dates {
-      color: var(--sol-7);
-      flex-shrink: 0;
-      text-align: right;
-    }
-    .last-updated-on {
-      padding-top: 0.5em;
-    }
-    .tags {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.5em;
-    }
-    .tag {
-      background: rgb(var(--accent));
-      color: var(--blue);
-      padding-right: 0.5em;
-      border-radius: 0.25em;
-      text-decoration: none;
-      transition: background-color 0.2s ease;
-      text-transform: capitalize;
-    }
-    .tag:hover {
-      background: rgb(var(--accent-dark));
-    }
-
-    .hero-image {
-      width: 100%;
-      margin: 0 auto;
-    }
-    .hero-image figure {
-      display: block;
-    }
-
-    .hero-image img {
-      display: block;
-      margin: 0 auto;
-    }
-
-    .caption {
-      margin-top: 0.75rem;
-      font-size: 0.9rem;
-      font-style: italic;
-      color: var(--sol-1);
-      line-height: 1.4;
-      max-width: min(90%, 800px);
-      margin-left: auto;
-      margin-right: auto;
-      text-align: center;
-    }
-
-    .prose {
-      margin: auto;
-      display: grid;
-      grid-template-columns: 1fr min(800px, 100%) 1fr;
-    }
-    .prose > :global(*) {
-      grid-column: 2;
-    }
-
-    .slide-in-block {
-      opacity: 0;
-      filter: blur(10px);
-      transform: scale(0.95);
-      will-change: transform, opacity, filter;
-      animation: slideInBlock 0.4s cubic-bezier(0.43, 0.195, 0.02, 1) forwards;
-    }
-
-    .slide-in-block:nth-child(2) {
-      animation-delay: 0.2s;
-    }
-
-    .slide-in-block:nth-child(3) {
-      animation-delay: 0.4s;
-    }
-
-    @keyframes slideInBlock {
-      to {
-        opacity: 1;
-        filter: blur(0px);
-        transform: scale(1);
-      }
-    }
-
-    .toc-container {
-      grid-column: 3 !important;
-      height: fit-content;
-      align-self: start;
-    }
-
-    :global(.csl-bib-body) {
-      font-size: 0.7em;
-    }
-
-    :global(.csl-entry) {
-      margin-bottom: 0.8em;
-      margin-left: 1.5em;
-      display: list-item;
-      list-style: decimal;
-      line-height: 1.6em;
-    }
-
-    /* Responsive adjustments for ToC */
-    @media (max-width: 1279px) {
-      .title {
-        grid-column: 1 !important;
-      }
-    }
-  </style>
-  <article>
-    <header class="title slide-in-block">
-      <div class="title-container">
-        <div class="title-meta">
-          {draft && <span class="draft-indicator">DRAFT</span>}
-          <span>{type}</span>
-          <span>{status}</span>
+  <article class="space-y-12">
+    <header class="space-y-6 animate-fade-scale">
+      <div class="space-y-4">
+        <div class="flex flex-wrap items-center gap-3 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">
+          {draft && (
+            <span class="inline-flex items-center rounded-full bg-amber-100 px-3 py-1 text-[0.7rem] font-bold text-amber-700 dark:bg-amber-500/20 dark:text-amber-200">
+              Draft
+            </span>
+          )}
+          {type && <span>{type}</span>}
+          {status && <span>{status}</span>}
           <span>{readingTimeText}</span>
         </div>
-        <h1>{title}</h1>
-        <div class="description">{description}</div>
-        <div class="meta">
-          {
-            tags && tags.length > 0 && (
-              <div class="tags">
-                {tags.map((tag) => (
-                  <span class="tag">{tag}</span>
-                ))}
-              </div>
-            )
-          }
-          <div class="dates">
-            <div class="published-on">
-              Published <FormattedDate date={pubDate || new Date()} />
-            </div>
-            {
-              updated && (
-                <div class="last-updated-on">
-                  Updated <FormattedDate date={updated} />
-                </div>
-              )
-            }
+        <h1 class="max-w-3xl text-4xl font-serif font-bold text-slate-900 dark:text-white sm:text-5xl">
+          {title}
+        </h1>
+        {description && (
+          <p class="max-w-2xl text-lg text-slate-600 dark:text-slate-300">
+            {description}
+          </p>
+        )}
+      </div>
+      <div class="flex flex-wrap items-start justify-between gap-6 text-sm text-slate-500 dark:text-slate-400">
+        {tags && tags.length > 0 && (
+          <div class="flex flex-wrap gap-2">
+            {tags.map((tag) => (
+              <span class="inline-flex items-center rounded-full bg-accent/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-accent dark:bg-accent/20 dark:text-accent-dark">
+                {tag}
+              </span>
+            ))}
           </div>
+        )}
+        <div class="space-y-1 text-right">
+          <div>
+            Published <FormattedDate date={pubDate || new Date()} />
+          </div>
+          {updated && (
+            <div class="text-xs uppercase tracking-wide text-slate-400 dark:text-slate-500">
+              Updated <FormattedDate date={updated} />
+            </div>
+          )}
         </div>
       </div>
-      {
-        imageData && (
-          <figure class="hero-image slide-in-block">
-            <Image
-              width={1200}
-              height={600}
-              src={imageData.src as string}
-              alt={imageData.alt}
-            />
-            {imageData.alt && !hideCaption && (
-              <figcaption class="caption">{imageData.alt}</figcaption>
-            )}
-          </figure>
-        )
-      }
+      {imageData && (
+        <figure class="space-y-3">
+          <Image
+            width={1200}
+            height={600}
+            src={imageData.src as string}
+            alt={imageData.alt}
+            class="w-full rounded-2xl shadow-lg"
+          />
+          {imageData.alt && !hideCaption && (
+            <figcaption class="text-sm italic text-slate-500 dark:text-slate-300">
+              {imageData.alt}
+            </figcaption>
+          )}
+        </figure>
+      )}
     </header>
-    <div class="prose">
-      <slot />
+
+    <div class="xl:grid xl:grid-cols-[minmax(0,1fr)_18rem] xl:items-start xl:gap-10">
+      <div class="prose prose-slate max-w-none space-y-10 leading-relaxed dark:prose-invert">
+        <slot />
+        <Comments />
+      </div>
       <TableOfContents headings={headings || []} />
-      <Comments />
     </div>
   </article>
 </BaseLayout>
