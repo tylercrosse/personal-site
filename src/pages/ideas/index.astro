@@ -5,10 +5,24 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 import { SITE_TITLE, SITE_DESCRIPTION } from "../../consts";
 import FormattedDate from "../../components/FormattedDate.astro";
 import readingTime from "reading-time";
+import { PenTool, RotateCcw, Code, Lightbulb, Notebook, Youtube } from "lucide-astro";
 
 const capitalize = (s: string) => {
   if (typeof s !== "string" || !s) return s;
   return s.charAt(0).toUpperCase() + s.slice(1);
+};
+
+// Map post types to their corresponding icons
+const getIconForType = (type: string) => {
+  const icons = {
+    'article': PenTool,
+    'retro': RotateCcw,
+    'project': Code,
+    'idea': Lightbulb,
+    'note': Notebook,
+    'talk': Youtube,
+  };
+  return icons[type as keyof typeof icons];
 };
 
 const posts = (await getCollection("ideas"))
@@ -351,6 +365,18 @@ const hierarchicalPosts = allPostsData
       text-transform: capitalize;
       color: var(--sol-7);
       margin-bottom: 0.5rem;
+      display: flex;
+    }
+
+    .type-with-icon {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+
+    .type-with-icon svg {
+      flex-shrink: 0;
+      vertical-align: middle;
     }
 
         /* Retro posts - larger, more prominent */
@@ -422,6 +448,13 @@ const hierarchicalPosts = allPostsData
     /* Article posts - standard style (default) */
     .post-card--article {
       /* Uses default post-card styles */
+    }
+
+    /* Talk posts - similar to article but with subtle distinction */
+    .post-card--talk {
+      /* Uses default post-card styles with subtle border accent */
+      /* border-left-width: 3px; */
+      /* border-left-color: var(--sol-magenta); */
     }
 
     .draft-indicator {
@@ -547,7 +580,15 @@ const hierarchicalPosts = allPostsData
               <div class="post-card-content">
                 <div class="post-card-content-header">
                   {post.draft && <span class="draft-indicator">DRAFT</span>}
-                  {post.type && <span>{capitalize(post.type)}</span>}
+                  {post.type && (
+                    <span class="type-with-icon">
+                      {(() => {
+                        const Icon = getIconForType(post.type);
+                        return Icon ? <Icon size={14} /> : null;
+                      })()}
+                      {capitalize(post.type)}
+                    </span>
+                  )}
                   {post.status && <span>{capitalize(post.status)}</span>}
                   <span>{post.readingTimeText}</span>
                 </div>
@@ -595,7 +636,15 @@ const hierarchicalPosts = allPostsData
                       <div class="child-post-content">
                         <div class="post-card-content-header">
                           {child.draft && <span class="draft-indicator">DRAFT</span>}
-                          {child.type && <span>{capitalize(child.type)}</span>}
+                          {child.type && (
+                            <span class="type-with-icon">
+                              {(() => {
+                                const Icon = getIconForType(child.type);
+                                return Icon ? <Icon size={14} /> : null;
+                              })()}
+                              {capitalize(child.type)}
+                            </span>
+                          )}
                           {child.status && <span>{capitalize(child.status)}</span>}
                           <span>{child.readingTimeText}</span>
                         </div>
