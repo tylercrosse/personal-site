@@ -39,6 +39,9 @@ importers:
       katex:
         specifier: ^0.16.22
         version: 0.16.22
+      lucide-astro:
+        specifier: ^0.552.0
+        version: 0.552.0(astro@5.14.6(@types/node@22.15.29)(rollup@4.41.1)(typescript@5.8.3))
       pagefind:
         specifier: ^1.3.0
         version: 1.3.0
@@ -2147,6 +2150,11 @@ packages:
 
   lru-cache@10.4.3:
     resolution: {integrity: sha512-JNAzZcXrCt42VGLuYz0zfAzDfAvJWW6AfYlDBQyDV5DClI2m5sAmK+OIO7s59XfsRsWHp02jAJrRadPRGTt6SQ==}
+
+  lucide-astro@0.552.0:
+    resolution: {integrity: sha512-Wpwn0TmFXcLkBjwyy4u/MrWC/4gB/HXjzDJEMj5kiIqlhGEqIR+rWmTaYL3WrguxdKIbG9jp3VSKkH4kH28xsg==}
+    peerDependencies:
+      astro: '>=2.7.1'
 
   magic-string@0.30.19:
     resolution: {integrity: sha512-2N21sPY9Ws53PZvsEpVtNuSW+ScYbQdp4b9qUaL+9QkHUrGFKo56Lg9Emg5s9V/qrtNBmiR01sYhUOwu3H+VOw==}
@@ -5614,6 +5622,10 @@ snapshots:
   longest-streak@3.1.0: {}
 
   lru-cache@10.4.3: {}
+
+  lucide-astro@0.552.0(astro@5.14.6(@types/node@22.15.29)(rollup@4.41.1)(typescript@5.8.3)):
+    dependencies:
+      astro: 5.14.6(@types/node@22.15.29)(rollup@4.41.1)(typescript@5.8.3)
 
   magic-string@0.30.19:
     dependencies:

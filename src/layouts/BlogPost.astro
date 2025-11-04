@@ -8,6 +8,7 @@ import FormattedDate from "../components/FormattedDate.astro";
 import TableOfContents from "../components/TableOfContents.astro";
 import Comments from "../components/Comments.astro";
 import BaseLayout from "./BaseLayout.astro";
+import { PenTool, RotateCcw, Code, Lightbulb, Notebook, Youtube } from "lucide-astro";
 
 type Props = CollectionEntry<"ideas">["data"] & {
   headings?: MarkdownHeading[];
@@ -52,6 +53,24 @@ const imageData = getImageData();
 
 // For Open Graph, pass the processed ImageMetadata if available, otherwise the string path
 const ogImage = image?.path || heroImage;
+
+// Map post types to their corresponding icons
+const getIconForType = (type: string) => {
+  const icons = {
+    'article': PenTool,
+    'retro': RotateCcw,
+    'project': Code,
+    'idea': Lightbulb,
+    'note': Notebook,
+    'talk': Youtube,
+  };
+  return icons[type as keyof typeof icons];
+};
+
+const capitalize = (s: string) => {
+  if (typeof s !== "string" || !s) return s;
+  return s.charAt(0).toUpperCase() + s.slice(1);
+};
 ---
 
 <BaseLayout
@@ -68,11 +87,23 @@ const ogImage = image?.path || heroImage;
 
     .title-meta {
       display: flex;
+      align-items: center;
       gap: 1em;
       font-size: 0.7em;
       text-transform: capitalize;
       margin-bottom: 1em;
       color: var(--sol-7);
+    }
+
+    .type-with-icon {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+
+    .type-with-icon svg {
+      flex-shrink: 0;
+      vertical-align: middle;
     }
 
     .draft-indicator {
@@ -221,8 +252,16 @@ const ogImage = image?.path || heroImage;
       <div class="title-container">
         <div class="title-meta">
           {draft && <span class="draft-indicator">DRAFT</span>}
-          <span>{type}</span>
-          <span>{status}</span>
+          {type && (
+            <span class="type-with-icon">
+              {(() => {
+                const Icon = getIconForType(type);
+                return Icon ? <Icon size={14} /> : null;
+              })()}
+              {capitalize(type)}
+            </span>
+          )}
+          {status && <span>{capitalize(status)}</span>}
           <span>{readingTimeText}</span>
         </div>
         <h1>{title}</h1>
