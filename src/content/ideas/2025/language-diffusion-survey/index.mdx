@@ -1,0 +1,71 @@
+---
+title: 'Language Diffusion Survey'
+description: 'A talk surveying diffusion models for language, from DDPM foundations to modern mask diffusion competing with auto-regressive models.'
+date: '2025-05-28'
+status: 'complete'
+type: 'talk'
+tags: ['NLP', 'machine-learning', 'deep-learning', 'generative-models', 'transformer', 'paper-club']
+draft: false
+media_subpath: "/ideas/language-diffusion-survey/"
+image:
+  path: "hero-diffusion.jpg"
+  alt: 'Diffusion - artist unknown'
+# hideCaption: true
+audience: 'All'
+---
+
+## Overview
+
+This presentation provides an overview of diffusion models and their evolution, especially in the context of language modeling. Delivered at the Latent Space Paper Club.
+
+<iframe
+  width="100%"
+  height="400"
+  src="https://www.youtube.com/embed/tRf0H-P2Jfk"
+  title="Language Diffusion Survey"
+  frameborder="0"
+  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+  allowfullscreen
+  style="border-radius: 8px; margin: 2rem 0;"
+></iframe>
+
+## Key Points
+
+### Generative Models Foundation
+
+Generative models are models that learn the underlying probability distribution of unknown data. They can be categorized into:
+- **Explicit density models**
+  - Tractable models (auto-regressive models, normalizing flows)
+  - Approximate density models (VAEs, diffusion models)
+- **Implicit density models** (GANs, energy-based models)
+
+### Historical Foundation
+
+The development of diffusion models can be traced back to:
+- Papers on denoising autoencoders
+- The idea of iteratively applying noise to data and then reconstructing it
+- The landmark **DDPM (Denoising Diffusion Probabilistic Models) paper from 2020**, which significantly improved image generation quality by predicting the noise added to the image
+
+### Language Diffusion Models
+
+The evolution into language modeling started with:
+- **Austin et al. 2021 paper**: Introduced structured corruption processes for text using masked tokens
+- Drew parallels between BERT (as a one-step diffusion model) and auto-regressive models (as discrete diffusion models)
+
+### Recent Advancements (2023-2024)
+
+Mask diffusion models are scaling up to achieve performance competitive with traditional auto-regressive language models like GPT-2 and Llama 2.
+
+### Key Advantages
+
+A major advantage of diffusion models for language is their ability to perform **bidirectional reasoning** due to the absence of a causal mask, allowing them to attend to the entire sequence at once.
+
+### Hybrid Approaches
+
+**Block Diffusion** combines auto-regressive generation of blocks with diffusion within those blocks to:
+- Improve sampling efficiency
+- Enable KV caching
+
+## Context
+
+Presented at the Latent Space Paper Club, an informal group exploring cutting-edge ML research.

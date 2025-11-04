@@ -1,0 +1,82 @@
+---
+title: 'Hierarchical Reasoning Models'
+description: 'A talk exploring novel neural architectures for complex reasoning tasks, featuring two-level recurrence and adaptive computation.'
+date: '2025-09-03'
+status: 'complete'
+type: 'talk'
+tags: ['machine-learning', 'deep-learning', 'reasoning', 'research', 'paper-club']
+draft: false
+audience: 'All'
+media_subpath: "/ideas/hierarchical-reasoning-models/"
+image:
+  path: "hero-hierarchy2.png"
+  alt: 'Diffusion - artist unknown'
+hideCaption: true
+---
+
+## Overview
+
+This presentation introduces the Hierarchical Reasoning Model (HRM), a novel architecture designed to perform well on tasks requiring complex reasoning, such as Sudoku and mazes, with a relatively small model (27 million parameters).
+
+<iframe
+  width="100%"
+  height="400"
+  src="https://www.youtube.com/embed/l8RTuO9zGy8"
+  title="Hierarchical Reasoning Models"
+  frameborder="0"
+  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+  allowfullscreen
+  style="border-radius: 8px; margin: 2rem 0;"
+></iframe>
+
+## Key Architecture Features
+
+### Two-Level Recurrence
+
+HRM features:
+- A **high-level module** for abstract reasoning
+- A **low-level module** for detailed computations
+
+This allows for a more adaptive use of computation compared to traditional chain-of-thought models.
+
+### Latent Reasoning
+
+Unlike autoregressive models that generate a new token for each step, HRM:
+- Keeps information in its hidden state
+- Passes it recurrently
+- Is more token-efficient for complex problems
+
+### Adaptive Computational Time (ACT)
+
+An external Q-learning objective determines whether the model should:
+- Halt computation for a given problem
+- Continue computations
+
+This allows for dynamic adjustment of compute time based on problem complexity.
+
+### Test-Time Augmentation
+
+A critical part of HRM's performance involves:
+- Generating and solving thousands of augmented variants of a problem
+- Inverting the solutions
+- Using a voting mechanism for the final answer
+
+This method is resource-intensive but significantly boosts performance.
+
+## Emergent Properties
+
+The model develops different representations in its high-level and low-level modules, with the high-level module learning more complex features.
+
+## ARC Analysis
+
+Analysis of HRM's performance on ARC (Abstract Reasoning Corpus) datasets highlights that:
+- The architecture itself contributes to performance
+- Inner/outer refinement loops play a significant role
+- Data augmentation is crucial
+- Puzzle embeddings are important
+
+While the architecture is valuable, these supporting techniques are essential for achieving strong results on complex reasoning tasks.
+
+## Context
+
+Presented at the Latent Space Paper Club, an informal group exploring cutting-edge ML research.
