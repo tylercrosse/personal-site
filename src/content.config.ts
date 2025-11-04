@@ -31,6 +31,7 @@ const ideas = defineCollection({
     image: z.object({
       path: image().optional(),
       alt: z.string(),
+      maxWidth: z.string().optional(),
     }).optional(),
     hideCaption: z.boolean().optional(),
     media_subpath: z.string().optional(),
