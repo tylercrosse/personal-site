@@ -690,6 +690,7 @@ const hierarchicalPosts = allPostsData
       // Get all post items from the first column (server-rendered)
       const firstColumn = columns[0];
       const postItems = Array.from(firstColumn.querySelectorAll('.post-card')) as HTMLElement[];
+      let lastLayoutWidth = window.innerWidth;
 
       // Function to get visible columns based on screen width
       function getVisibleColumns() {
@@ -700,8 +701,15 @@ const hierarchicalPosts = allPostsData
       }
 
       // Distribute items into columns using "shortest column" algorithm
-      function layoutMasonry() {
+      function layoutMasonry(force = false) {
+        const currentWidth = window.innerWidth;
+        // Ignore height-only resizes (e.g., mobile address bar hide/show) to avoid jumpy relayouts
+        if (!force && currentWidth === lastLayoutWidth) {
+          return;
+        }
+
         const visibleColumns = getVisibleColumns();
+        lastLayoutWidth = currentWidth;
 
         // Clear all columns
         columns.forEach(col => col.innerHTML = '');
@@ -732,7 +740,7 @@ const hierarchicalPosts = allPostsData
       }
 
       // Initial layout
-      layoutMasonry();
+      layoutMasonry(true);
 
       // Re-layout on window resize (debounced)
       let resizeTimeout: ReturnType<typeof setTimeout>;
@@ -811,7 +819,7 @@ const hierarchicalPosts = allPostsData
 
         // Re-layout masonry after filtering to fix column distribution
         requestAnimationFrame(() => {
-          layoutMasonry();
+          layoutMasonry(true);
         });
       }
 
