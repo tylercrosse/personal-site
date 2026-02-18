@@ -87,18 +87,23 @@ const allPostsData = posts.map((post) => {
     align-items: center;
     justify-content: center;
     height: 40vh;
-    min-height: 200px;
+    min-height: 300px;
     text-align: center;
   }
 
-  @media (max-width: 768px) {
-    .heading {
-      height: 70vh;
-    }
-  }
 
   .heading h1 {
     font-size: 5rem;
+  }
+
+  @media (max-width: 520px) {
+    .heading {
+      height: 70vh;
+    }
+
+    .heading h1 {
+      font-size: 2.8rem;
+    }
   }
 
   .animated-heading,
