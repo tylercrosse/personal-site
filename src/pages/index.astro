@@ -1,217 +1,632 @@
 ---
 import { getCollection } from "astro:content";
-
-import BaseLayout from "../layouts/BaseLayout.astro";
+import BaseHead from "../components/BaseHead.astro";
+import Header from "../components/Header.astro";
 import FormattedDate from "../components/FormattedDate.astro";
-import readingTime from "reading-time";
+import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
 
+// Fetch recent posts
 const posts = (await getCollection("ideas"))
   .filter((post) => {
-    // In development, show all posts including drafts
-    // In production, only show published posts (not drafts)
     return import.meta.env.DEV || !post.data.draft;
   })
   .sort((a, b) => {
     const aDate = a.data.pubDate || a.data.date;
     const bDate = b.data.pubDate || b.data.date;
     return new Date(bDate || 0).valueOf() - new Date(aDate || 0).valueOf();
-  });
-// .slice(0, 10); // 10 posts
+  })
+  .slice(0, 4);
 
-const allTags = [
-  ...new Set(posts.flatMap((post) => post.data.tags || [])),
-].sort((a, b) => a.localeCompare(b));
-const allTypes = [
-  ...new Set(posts.map((post) => post.data.type).filter(Boolean)),
-];
-const allStatuses = [
-  ...new Set(posts.map((post) => post.data.status).filter(Boolean)),
-];
-
-const allPostsData = posts.map((post) => {
-  const slug = post.id.replace(/(\/index)?\.(md|mdx)$/, "");
-  const stats = readingTime(post.body || "");
-  return {
-    id: post.id,
-    slug: slug,
-    title: post.data.title,
-    description: post.data.description,
-    date: post.data.date,
-    updated: post.data.updated,
-    type: post.data.type,
-    status: post.data.status,
-    tags: post.data.tags || [],
-    image: post.data.image,
-    draft: post.data.draft,
-    readingTimeText: stats.text,
-  };
-});
+// Map posts to art styles for the hover effect
+const artStyles = ["fauvism", "retro", "default", "charcoal"];
 ---
 
-<BaseLayout title="Home">
-  <section class="heading">
-    <h1 class="animated-heading">
-      <span class="word">Hi,</span>
-      <span class="word">I'm</span>
-      <span class="word">Tyler</span>
-    </h1>
-    <p class="animated-subtitle slide-in-block">
-      I'm a software engineer with a passion for building things.<br />
-      I'm currently studying machine learning and systems at Georgia Tech. My research interests include: Mechanistic Interpretability, AI Alignment, Deep Learning Theory
-    </p>
-  </section>
-  <section class="posts slide-in-block" data-pagefind-ignore>
-    <h2>Writing</h2>
-    <ul>
-      {
-        allPostsData.map((post) => (
-          <li>
-            <a href={`/ideas/${post.slug}/`}>
-              {post.date && <FormattedDate date={post.date} />} -
-              {post.draft && <span class="draft-indicator">DRAFT</span>}
-              <span class="title">{post.title}</span>
-              <span class="reading-time">{post.readingTimeText}</span>
-              <div class="description">{post.description}</div>
-            </a>
-          </li>
-        ))
+<!doctype html>
+<html lang="en">
+  <head>
+    <BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
+  </head>
+  <body class="landing-page">
+    <div class="noise-overlay"></div>
+
+    <div id="background-canvas">
+      <div class="art-layer active art-bokeh" data-art="default">
+        <div class="bokeh-orb orb-1"></div>
+        <div class="bokeh-orb orb-2"></div>
+      </div>
+      
+      <div class="art-layer art-fauvism" data-art="fauvism"></div>
+      
+      <div class="art-layer art-retro" data-art="retro"></div>
+      
+      <div class="art-layer art-charcoal" data-art="charcoal"></div>
+    </div>
+
+    <div class="content-wrapper">
+      <Header />
+
+      <header class="hero">
+        <div class="hero-text">
+          <h1>Tyler Crosse</h1>
+          <p class="subtitle">
+            &gt; Engineer, Student, Researcher
+          </p>
+        </div>
+        
+        <div class="glass-panel quote-box">
+          <p class="quote">
+            "Researching the ghosts in the machine."
+          </p>
+          <p class="quote-context">
+            Explore my notes on <span class="highlight">AI Alignment</span>, 
+            <span class="highlight">Systems Engineering</span>, and 
+            <span class="highlight">Deep Learning Theory</span>.
+            Blending rigorous empiricism with digital naturalism.
+          </p>
+        </div>
+      </header>
+
+      <section>
+        <div class="section-header">
+          <h2>Recent Writings</h2>
+          <div class="line"></div>
+        </div>
+
+        <div class="post-list" id="post-list">
+          {
+            posts.map((post, index) => (
+              <a href={`/ideas/${post.id.replace(/(\/index)?\.(md|mdx)$/, "")}/`} class="post-item" data-bg={artStyles[index % artStyles.length]}>
+                <div class="post-content">
+                  <div class="post-header">
+                    <h3>{post.data.title}</h3>
+                    <span class="post-meta">
+                      {post.data.date && <FormattedDate date={post.data.date} />} • {post.data.tags?.[0] || "General"}
+                    </span>
+                  </div>
+                  <p class="post-description">
+                    {post.data.description}
+                  </p>
+                </div>
+              </a>
+            ))
+          }
+        </div>
+      </section>
+
+      <section class="projects-section">
+        <div class="section-header">
+          <h2>Selected Projects</h2>
+          <div class="line"></div>
+        </div>
+
+        <div class="projects-grid">
+          <div class="project-card">
+            <div class="hover-bar"></div>
+            <div class="project-meta">[DIR] /projects/dfs</div>
+            <h3>Distributed File System</h3>
+            <p>
+              Exploration of remote communication, consistency, and synchronization in C++.
+            </p>
+          </div>
+
+          <div class="project-card">
+            <div class="hover-bar"></div>
+            <div class="project-meta">[PY] /projects/ml-survey</div>
+            <h3>Language Diffusion Survey</h3>
+            <p>
+              A talk surveying diffusion models for language, from DDPM to modern mask diffusion.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <footer>
+        <div class="social-links">
+          <a href="https://github.com/tylercrosse">GitHub</a>
+          <a href="https://twitter.com/tylercrosse">Twitter</a>
+          <a href="https://linkedin.com/in/tylercrosse">LinkedIn</a>
+        </div>
+        <p>© 2025 Tyler Crosse. <span class="desktop-only">Built with human intelligence.</span></p>
+      </footer>
+    </div>
+
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        const posts = document.querySelectorAll('.post-item');
+        const artLayers = document.querySelectorAll('.art-layer');
+        const listContainer = document.getElementById('post-list');
+        
+        let autoCycleInterval: ReturnType<typeof setInterval> | null = null;
+        let currentArtIndex = 0;
+        const artTypes = ['default', 'fauvism', 'retro', 'charcoal'];
+        
+        // Function to switch background
+        function setBackground(type: string) {
+          artLayers.forEach(layer => {
+            if ((layer as HTMLElement).dataset.art === type) {
+              layer.classList.add('active');
+            } else {
+              layer.classList.remove('active');
+            }
+          });
+        }
+
+        function startAutoCycle() {
+          // Clear any existing interval just in case
+          if (autoCycleInterval) clearInterval(autoCycleInterval);
+          
+          autoCycleInterval = setInterval(() => {
+            currentArtIndex = (currentArtIndex + 1) % artTypes.length;
+            setBackground(artTypes[currentArtIndex]);
+          }, 20000); // 20 seconds
+        }
+
+        function stopAutoCycle() {
+          if (autoCycleInterval) {
+            clearInterval(autoCycleInterval);
+            autoCycleInterval = null;
+          }
+        }
+
+        // Initial start
+        startAutoCycle();
+
+        // Hover Events
+        posts.forEach(post => {
+          post.addEventListener('mouseenter', () => {
+            stopAutoCycle();
+            const bgType = (post as HTMLElement).dataset.bg;
+            if (bgType) setBackground(bgType);
+          });
+        });
+
+        // Resume auto-cycle when leaving the list
+        if (listContainer) {
+          listContainer.addEventListener('mouseleave', () => {
+            // Optional: return to default or just resume cycling from current state
+            // setBackground('default'); 
+            startAutoCycle();
+          });
+        }
+      });
+    </script>
+
+    <style>
+      /* CSS Variables based on the design */
+      :root {
+        --color-paper: #f2f0e9;
+        --color-charcoal: #1a1a1a;
+        --color-terminal: #33ff00;
+        --color-terminal-dim: rgba(51, 255, 0, 0.1);
+        --color-bg: #0a0a0a;
+        --color-text: #e5e5e5;
+        --color-text-muted: #9ca3af;
+        
+        --font-serif: var(--font-heading);
+        --font-mono: var(--font-mono);
       }
-    </ul>
-  </section>
-</BaseLayout>
 
-<style>
-  .heading {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 40vh;
-    min-height: 300px;
-    text-align: center;
-  }
+      /* Reset & Base Styles */
+      body.landing-page {
+        background-color: var(--color-bg) !important;
+        background-image: none !important; /* Override global.css gradient */
+        /*color: var(--color-text);
+        /*font-family: var(--font-mono); /* Default to mono for UI elements */
+        margin: 0;
+        padding: 0;
+        overflow-x: hidden;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
 
+      /* Selection Color */
+      ::selection {
+        background: var(--color-terminal);
+        color: #000;
+      }
 
-  .heading h1 {
-    font-size: 5rem;
-  }
+      /* Noise Overlay */
+      .noise-overlay {
+        position: fixed;
+        top: 0; left: 0; width: 100%; height: 100%;
+        pointer-events: none;
+        z-index: 50;
+        opacity: 0.03;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+      }
 
-  @media (max-width: 520px) {
-    .heading {
-      height: 70vh;
-    }
+      /* Background Canvas */
+      #background-canvas {
+        position: fixed;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 0;
+        background-color: #0f0f12;
+      }
 
-    .heading h1 {
-      font-size: 2.8rem;
-    }
-  }
+      .art-layer {
+        position: absolute;
+        top: 0; left: 0; width: 100%; height: 100%;
+        opacity: 0;
+        transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1), transform 8s ease-out;
+        transform: scale(1.05);
+        z-index: 1;
+      }
 
-  .animated-heading,
-  .animated-subtitle {
-    overflow: hidden;
-  }
+      .art-layer.active {
+        opacity: 1;
+        transform: scale(1);
+      }
 
-  .animated-subtitle {
-    max-width: 600px;
-  }
+      /* Art Styles */
+      .art-fauvism {
+        background: 
+          radial-gradient(circle at 15% 50%, rgba(255, 0, 100, 0.4), transparent 50%),
+          radial-gradient(circle at 85% 30%, rgba(0, 200, 255, 0.4), transparent 50%),
+          radial-gradient(circle at 50% 80%, rgba(255, 200, 0, 0.3), transparent 50%);
+        filter: blur(60px) contrast(120%);
+      }
 
-  .word {
-    display: inline-block;
-    opacity: 0;
-    transform: translateY(100%) translateZ(0);
-    filter: blur(20px);
-    animation: wordSlideIn 0.4s cubic-bezier(0.43, 0.195, 0.02, 1) forwards;
-  }
+      .art-retro {
+        background-color: #051005;
+        background-image: 
+          linear-gradient(rgba(51, 255, 0, 0.1) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(51, 255, 0, 0.1) 1px, transparent 1px);
+        background-size: 40px 40px;
+      }
+      .art-retro::after {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background: radial-gradient(circle, transparent 60%, #000 150%);
+      }
 
-  .animated-heading .word {
-    animation-delay: calc(var(--word-index, 0) * 0.05s);
-  }
+      .art-charcoal {
+        background: #111;
+        background-image: repeating-linear-gradient(45deg, #222 0px, #111 2px, #222 4px);
+        filter: contrast(150%) brightness(0.8);
+      }
 
-  .animated-subtitle .word {
-    animation-delay: calc(0.15s + var(--word-index, 0) * 0.05s);
-  }
+      .art-bokeh {
+        background: #0f172a;
+      }
+      
+      .bokeh-orb {
+        position: absolute;
+        border-radius: 50%;
+        filter: blur(80px);
+        opacity: 0.6;
+        animation: breathe 10s infinite alternate;
+      }
+      
+      .orb-1 {
+        background-color: rgba(88, 28, 135, 0.4); /* purple-900/40 */
+        width: 24rem; height: 24rem;
+        top: 0; left: 0;
+      }
+      
+      .orb-2 {
+        background-color: rgba(30, 58, 138, 0.4); /* blue-900/40 */
+        width: 30rem; height: 30rem;
+        bottom: 0; right: 0;
+        animation-delay: 2s;
+      }
 
-  @keyframes wordSlideIn {
-    to {
-      opacity: 1;
-      transform: translateY(0) translateZ(0);
-      filter: blur(0px);
-    }
-  }
+      @keyframes breathe {
+        0% { transform: scale(1); opacity: 0.5; }
+        100% { transform: scale(1.2); opacity: 0.7; }
+      }
 
-  /* Set CSS custom properties for animation delays */
-  .animated-heading .word:nth-child(1) {
-    --word-index: 0;
-  }
-  .animated-heading .word:nth-child(2) {
-    --word-index: 1;
-  }
-  .animated-heading .word:nth-child(3) {
-    --word-index: 2;
-  }
+      /* Layout */
+      .content-wrapper {
+        position: relative;
+        z-index: 10;
+        width: 100%;
+        max-width: 48rem; /* max-w-3xl */
+        padding: 3rem 1.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: 5rem;
+      }
 
-  .posts {
-    max-width: 800px;
-    margin: 0 auto;
-  }
+      @media (min-width: 768px) {
+        .content-wrapper {
+          padding: 6rem 1.5rem;
+        }
+      }
 
-  .posts ul {
-    padding: 0;
-  }
+      /* Navigation */
+      /* .glass-nav styles removed as we are using the global Header component */
 
-  .posts li {
-    list-style: none;
-    font-size: 1rem;
-    padding: 0.5rem 0;
-  }
+      /* Header */
+      .hero {
+        display: flex;
+        flex-direction: column;
+        gap: 2rem;
+      }
 
-  .posts a {
-    text-decoration: none;
-    color: var(--sol-8);
-  }
+      .hero-text h1 {
+        font-family: var(--font-serif);
+        font-size: 3.75rem;
+        line-height: 0.9;
+        letter-spacing: -0.025em;
+        color: #fff;
+        margin: 0;
+      }
 
-  .posts a:hover {
-    color: var(--sol-9);
-    text-decoration: underline;
-  }
+      @media (min-width: 768px) {
+        .hero-text h1 {
+          font-size: 6rem;
+        }
+      }
 
-  .posts a .title {
-    font-weight: bold;
-    font-family: var(--font-heading);
-  }
+      .subtitle {
+        font-family: var(--font-mono);
+        color: var(--color-terminal);
+        font-size: 0.875rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        opacity: 0.8;
+        margin: 0.5rem 0 0 0;
+      }
 
-  .draft-indicator {
-    background-color: var(--sol-yellow);
-    color: var(--green);
-    font-size: 0.7rem;
-    font-weight: bold;
-    padding: 2px 6px;
-    border-radius: 3px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
+      @media (min-width: 768px) {
+        .subtitle {
+          font-size: 1rem;
+        }
+      }
 
-  .slide-in-block {
-    opacity: 0;
-    filter: blur(10px);
-    transform: scale(0.95);
-    will-change: transform, opacity, filter;
-    animation: slideInBlock 0.4s cubic-bezier(0.43, 0.195, 0.02, 1) forwards;
-  }
+      .glass-panel {
+        background: rgba(20, 20, 20, 0.4);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
 
-  .animated-subtitle.slide-in-block {
-    animation-delay: 0.4s;
-  }
+      .quote-box {
+        padding: 1.5rem;
+        border-left: 2px solid rgba(51, 255, 0, 0.5);
+        max-width: 36rem;
+        border-radius: 0.125rem;
+      }
 
-  .posts.slide-in-block {
-    animation-delay: 0.6s;
-  }
+      @media (min-width: 768px) {
+        .quote-box {
+          padding: 2rem;
+        }
+      }
 
-  @keyframes slideInBlock {
-    to {
-      opacity: 1;
-      filter: blur(0px);
-      transform: scale(1);
-    }
-  }
-</style>
+      .quote {
+        font-family: var(--font-serif);
+        font-size: 1.5rem;
+        color: #e5e7eb; /* gray-200 */
+        line-height: 1.375;
+        font-style: italic;
+        margin: 0;
+      }
+
+      .quote-context {
+        font-family: var(--font-mono);
+        color: #9ca3af; /* gray-400 */
+        font-size: 0.75rem;
+        margin-top: 1rem;
+        line-height: 1.625;
+      }
+
+      .highlight {
+        color: #fff;
+        border-bottom: 1px solid #4b5563; /* gray-600 */
+      }
+
+      /* Sections */
+      .section-header {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 2rem;
+      }
+
+      .section-header h2 {
+        font-family: var(--font-mono);
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: #6b7280; /* gray-500 */
+        margin: 0;
+      }
+
+      .section-header .line {
+        flex: 1;
+        height: 1px;
+        background-color: #1f2937; /* gray-800 */
+      }
+
+      /* Post List */
+      .post-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+
+      .post-item {
+        display: block;
+        padding: 1.5rem 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        text-decoration: none;
+        position: relative;
+        group: true; /* for reference */
+      }
+
+      .post-content {
+        position: relative;
+        z-index: 10;
+      }
+
+      .post-header {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+
+      @media (min-width: 768px) {
+        .post-header {
+          flex-direction: row;
+          align-items: baseline;
+          justify-content: space-between;
+        }
+      }
+
+      .post-item h3 {
+        font-family: var(--font-serif);
+        font-size: 1.875rem;
+        color: #d1d5db; /* gray-300 */
+        margin: 0;
+        transition: all 0.3s ease;
+      }
+
+      @media (min-width: 768px) {
+        .post-item h3 {
+          font-size: 2.25rem;
+        }
+      }
+
+      .post-meta {
+        font-family: var(--font-mono);
+        font-size: 0.75rem;
+        color: #6b7280; /* gray-500 */
+        transition: all 0.3s ease;
+      }
+
+      .post-description {
+        font-family: var(--font-mono);
+        font-size: 0.75rem;
+        color: #6b7280; /* gray-500 */
+        margin-top: 0.5rem;
+        opacity: 0;
+        max-height: 0;
+        overflow: hidden;
+        transition: all 0.5s ease;
+      }
+
+      /* Hover Effects */
+      .post-item:hover h3 {
+        color: #fff;
+        transform: translateX(10px);
+      }
+
+      .post-item:hover .post-meta {
+        color: var(--color-terminal);
+      }
+
+      .post-item:hover .post-description {
+        opacity: 1;
+        max-height: 2.5rem;
+      }
+
+      /* Projects Grid */
+      .projects-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 1rem;
+      }
+
+      @media (min-width: 768px) {
+        .projects-grid {
+          grid-template-columns: 1fr 1fr;
+        }
+      }
+
+      .project-card {
+        border: 1px solid #1f2937; /* gray-800 */
+        padding: 1.5rem;
+        background-color: rgba(0, 0, 0, 0.4);
+        backdrop-filter: blur(4px);
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+        transition: border-color 0.2s;
+      }
+
+      .project-card:hover {
+        border-color: var(--color-terminal);
+      }
+
+      .hover-bar {
+        position: absolute;
+        top: 0; left: 0;
+        width: 100%;
+        height: 4px;
+        background-color: var(--color-terminal);
+        transform: scaleX(0);
+        transform-origin: left;
+        transition: transform 0.3s ease;
+      }
+
+      .project-card:hover .hover-bar {
+        transform: scaleX(1);
+      }
+
+      .project-meta {
+        font-family: var(--font-mono);
+        color: var(--color-terminal);
+        font-size: 0.75rem;
+        margin-bottom: 0.5rem;
+      }
+
+      .project-card h3 {
+        font-family: var(--font-serif);
+        font-size: 1.25rem;
+        color: #fff;
+        margin: 0 0 0.5rem 0;
+      }
+
+      .project-card p {
+        font-family: var(--font-mono);
+        font-size: 0.75rem;
+        color: #6b7280; /* gray-500 */
+        line-height: 1.625;
+        margin: 0;
+      }
+
+      /* Footer */
+      footer {
+        padding-top: 5rem;
+        padding-bottom: 3rem;
+        text-align: center;
+        font-family: var(--font-mono);
+        font-size: 0.75rem;
+        color: #4b5563; /* gray-600 */
+      }
+
+      .social-links {
+        display: flex;
+        justify-content: center;
+        gap: 2rem;
+        margin-bottom: 2rem;
+      }
+
+      .social-links a {
+        color: inherit;
+        text-decoration: none;
+        transition: color 0.2s;
+      }
+
+      .social-links a:hover {
+        color: #fff;
+      }
+
+      .desktop-only {
+        display: none;
+      }
+
+      @media (min-width: 768px) {
+        .desktop-only {
+          display: inline;
+        }
+      }
+    </style>
+  </body>
+</html>
