@@ -1,10 +1,15 @@
 export const TOKENS = {
-  surface: "color-mix(in srgb, rgb(var(--gray-light)) 38%, transparent)",
-  surfaceSoft: "color-mix(in srgb, rgb(var(--gray-light)) 24%, transparent)",
-  surfaceStrong: "color-mix(in srgb, rgb(var(--gray-light)) 56%, transparent)",
-  panelBg: "color-mix(in srgb, rgb(var(--gray-light)) 46%, transparent)",
-  border: "color-mix(in srgb, rgb(var(--gray)) 26%, transparent)",
-  borderStrong: "color-mix(in srgb, rgb(var(--gray)) 42%, transparent)",
+  panelBg: "rgb(var(--gray-light))",
+  surfaceSoft:
+    "color-mix(in srgb, rgb(var(--gray-light)) 96%, rgb(var(--gray-dark)))",
+  surface:
+    "color-mix(in srgb, rgb(var(--gray-light)) 92%, rgb(var(--gray-dark)))",
+  surfaceStrong:
+    "color-mix(in srgb, rgb(var(--gray-light)) 86%, rgb(var(--gray-dark)))",
+  border:
+    "color-mix(in srgb, rgb(var(--gray-dark)) 24%, rgb(var(--gray-light)))",
+  borderStrong:
+    "color-mix(in srgb, rgb(var(--gray-dark)) 36%, rgb(var(--gray-light)))",
   text: "var(--sol-9)",
   textMuted: "var(--sol-8)",
   textDim: "var(--sol-7)",
@@ -26,7 +31,7 @@ export const SIZES = {
   radiusLg: 12,
   buttonHeight: 34,
   panelPadding: 20,
-  maxWidth: 1080,
+  maxWidth: 1600,
 };
 
 export function buttonStyles({ active = false, tone = "neutral", color } = {}) {

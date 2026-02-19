@@ -2260,7 +2260,7 @@ function GridDAG({ graph }) {
             y={padY - 10}
             textAnchor="middle"
             fill={C.textMuted}
-            fontSize="10"
+            fontSize="12"
             fontFamily={TYPO.mono}
             fontWeight="600"
           >
@@ -2275,7 +2275,7 @@ function GridDAG({ graph }) {
             y={padY - 10}
             textAnchor="middle"
             fill={C.textMuted}
-            fontSize="8"
+            fontSize="10"
             fontFamily={TYPO.mono}
           >
             {l}
@@ -2289,7 +2289,7 @@ function GridDAG({ graph }) {
             y={pos(i, 0).y + 4}
             textAnchor="middle"
             fill={C.textMuted}
-            fontSize="10"
+            fontSize="12"
             fontFamily={TYPO.mono}
             fontWeight="600"
           >
@@ -2304,7 +2304,7 @@ function GridDAG({ graph }) {
             y={pos(i, 0).y + 4}
             textAnchor="end"
             fill={C.textMuted}
-            fontSize="7"
+            fontSize="10"
             fontFamily={TYPO.mono}
           >
             {l}
@@ -2431,7 +2431,7 @@ function TreeDAG({ graph }) {
               y={p.y - 4}
               textAnchor="middle"
               fill={nd.onPath ? C.text : C.textMuted}
-              fontSize="11"
+              fontSize="12"
               fontFamily={TYPO.mono}
               fontWeight="600"
             >
@@ -2442,7 +2442,7 @@ function TreeDAG({ graph }) {
               y={p.y + 8}
               textAnchor="middle"
               fill={C.textDim}
-              fontSize="8"
+              fontSize="10"
               fontFamily={TYPO.mono}
             >
               {nd.sublabel}
@@ -2453,7 +2453,7 @@ function TreeDAG({ graph }) {
                 y={p.y + 38}
                 textAnchor="middle"
                 fill={C.textDim}
-                fontSize="8"
+                fontSize="10"
                 fontFamily={TYPO.mono}
               >
                 {nd.label2}

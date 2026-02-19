@@ -163,8 +163,12 @@ Every DP solution in this course requires four components:
 <style>
   {`
     .viz-shell {
+      grid-column: 1 / 4 !important;
+      position: relative;
+      z-index: 1;
+      isolation: isolate;
       width: 100%;
-      max-width: 1080px;
+      max-width: 1600px;
       margin: 1rem auto 2rem;
       overflow-x: auto;
     }
@@ -596,4 +600,3 @@ T(S) = min{ T(S\S') + cost(S') : S' ⊆ S, S' ≠ ∅ }
 - **(2) Fill time:** `O(3ⁿ)`
 - **(3) Return:** `T({1..n})`
 - **(4) Return time:** `O(1)`
-

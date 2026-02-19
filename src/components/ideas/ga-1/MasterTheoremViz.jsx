@@ -170,7 +170,7 @@ function TreeVisualization({ a, b, d, maxDepth }) {
       <div
         style={{
           position: "absolute",
-          right: -8,
+          right: -108,
           top: 0,
           bottom: 0,
           width: 100,
@@ -379,7 +379,7 @@ export default function MasterTheoremViz() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+            gridTemplateColumns: "300px 1fr",
             gap: 32,
             alignItems: "start",
           }}
