@@ -1,0 +1,29 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>DP DAGs Visualization</title>
+    <script
+      src="https://unpkg.com/react@18/umd/react.development.js"
+      crossorigin
+    ></script>
+    <script
+      src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"
+      crossorigin
+    ></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        background: #0a0e17;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <!-- type="text/babel" triggers Babel compilation in browser -->
+    <!-- data-type="module" allows using import/export statements -->
+    <script type="text/babel" data-type="module" src="./dp-dags.jsx"></script>
+  </body>
+</html>

@@ -1,0 +1,51 @@
+---
+title: 'Divide & Conquer + Dynamic Programming'
+description: 'Exam 1'
+date: '2026-02-19'
+# updated: '2026-10-20'
+status: 'in-progress'
+type: 'retro'
+tags: ['algorithms', 'computer-science', 'MSCS']
+# category: ['projects']
+draft: true
+audience: 'All'
+media_subpath: "/ideas/ga-1/"
+# parent: '2025/dl-retro'
+image:
+  # path: "hero-clipart-blume-vintage-kunst-1631264278ngu.png"
+  # path: "hero-backprop.png"
+  path: "hero2.jpg"
+  alt: 'Green ripples abstract art'
+  # maxWidth: "800px"
+hideCaption: true
+---
+
+import MasterTheoremViz from "../../../../components/ideas/ga-1/MasterTheoremViz.jsx";
+import DPDagVisualizer from "../../../../components/ideas/ga-1/DPDagVisualizer.jsx";
+
+This post captures my Exam 1 study notes for OMSCS Graduate Algorithms with two interactive tools I used to build intuition under time pressure.
+
+## Divide & Conquer Visualization
+Use this to map a recurrence to Master Theorem behavior and see which level dominates work as parameters change.
+
+<div class="viz-shell">
+  <MasterTheoremViz client:visible />
+</div>
+
+## Dynamic Programming Visualization
+Use this to inspect how different DP families map to DAG shapes, transitions, and extraction paths.
+
+<div class="viz-shell">
+  <DPDagVisualizer client:visible />
+</div>
+
+<style>
+  {`
+    .viz-shell {
+      width: 100%;
+      max-width: 1080px;
+      margin: 1rem auto 2rem;
+      overflow-x: auto;
+    }
+  `}
+</style>
