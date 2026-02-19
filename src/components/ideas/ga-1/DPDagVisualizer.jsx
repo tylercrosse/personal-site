@@ -2581,9 +2581,12 @@ function MaskDAG({ graph }) {
   );
 }
 
-export default function DPDagVisualizer() {
-  const [selPat, setSelPat] = useState("D");
-  const [selProb, setSelProb] = useState("mcm");
+export default function DPDagVisualizer({ pattern }) {
+  const defaultPat = pattern || "D";
+  const [selPat, setSelPat] = useState(defaultPat);
+  const [selProb, setSelProb] = useState(
+    pattern ? PATTERN_META[pattern].problems[0] : "mcm",
+  );
 
   const prob = PROBLEMS[selProb];
   // Fallback if problem key doesn't match available pattern (e.g. if switching back and forth)
@@ -2615,24 +2618,30 @@ export default function DPDagVisualizer() {
       </div> */}
 
       {/* Pattern Tabs */}
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-        {Object.entries(PATTERN_META).map(([k, meta]) => {
-          const isActive = k === selPat;
-          return (
-            <button
-              key={k}
-              onClick={() => {
-                setSelPat(k);
-                setSelProb(meta.problems[0]);
-              }}
-              aria-pressed={isActive}
-              style={buttonStyles({ active: isActive, tone: "semantic", color: meta.color })}
-            >
-              {meta.label}
-            </button>
-          );
-        })}
-      </div>
+      {!pattern && (
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          {Object.entries(PATTERN_META).map(([k, meta]) => {
+            const isActive = k === selPat;
+            return (
+              <button
+                key={k}
+                onClick={() => {
+                  setSelPat(k);
+                  setSelProb(meta.problems[0]);
+                }}
+                aria-pressed={isActive}
+                style={buttonStyles({
+                  active: isActive,
+                  tone: "semantic",
+                  color: meta.color,
+                })}
+              >
+                {meta.label}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* Problem Tabs */}
       <div
@@ -2653,7 +2662,11 @@ export default function DPDagVisualizer() {
               key={pk}
               onClick={() => setSelProb(pk)}
               aria-pressed={isActive}
-              style={buttonStyles({ active: isActive, tone: "semantic", color: Pat.color })}
+              style={buttonStyles({
+                active: isActive,
+                tone: "semantic",
+                color: Pat.color,
+              })}
             >
               {PROBLEMS[pk].title}
             </button>

@@ -169,11 +169,7 @@ _Key rules: No recursion/memoization. Inputs indexed from 1. Inputs are immutabl
 
 **6. Provide bounds for all variables.** Every variable in the recurrence must have explicit bounds (e.g., "for 1 ≤ i ≤ n").
 
-### Dynamic Programming Visualization
 
-<div class="viz-shell">
-  <DPDagVisualizer client:visible />
-</div>
 
 <style>
   {`
@@ -200,6 +196,10 @@ _Key rules: No recursion/memoization. Inputs indexed from 1. Inputs are immutabl
 </style>
 
 ### Pattern A: Linear (1D Chain)
+
+<div class="viz-shell">
+  <DPDagVisualizer client:visible pattern="A" />
+</div>
 
 The topology is a 1D array. The flavor depends on how far back you look and what you accumulate.
 
@@ -313,6 +313,10 @@ $$
 ---
 
 ### Pattern B: Grid (2D / Strings)
+
+<div class="viz-shell">
+  <DPDagVisualizer client:visible pattern="B" />
+</div>
 
 The topology is the (i-1, j), (i, j-1), (i-1, j-1) neighborhood. The flavor depends on whether you match elements or accumulate path costs.
 
@@ -429,6 +433,10 @@ $$
 ---
 
 ### Pattern C: Knapsack
+
+<div class="viz-shell">
+  <DPDagVisualizer client:visible pattern="C" />
+</div>
 
 The topology involves jumping leftwards across a capacity dimension. The flavor changes based on whether items are unique, reusable, or you are counting combinations.
 
@@ -551,6 +559,10 @@ $$
 
 ### Pattern D: Interval (Pyramid)
 
+<div class="viz-shell">
+  <DPDagVisualizer client:visible pattern="D" />
+</div>
+
 The topology always merges sub-intervals. The flavor depends on whether you split at an arbitrary k, shrink from edges, or pivot on the last action.
 
 #### Flavor 1: "The K-Split" (Matrix Chain Multiplication / Optimal BST)
@@ -663,6 +675,10 @@ $$
 
 ### Pattern E: Tree DP
 
+<div class="viz-shell">
+  <DPDagVisualizer client:visible pattern="E" />
+</div>
+
 Tree DP requires defining multiple states per node to handle inclusion/exclusion constraints. Fill order is post-order (leaves first, root last).
 
 #### Flavor 1: "Independent Set" (Max Weight Independent Set / House Robber III)
@@ -759,6 +775,10 @@ $$
 ---
 
 ### Pattern F: Bitmask (Subset DP)
+
+<div class="viz-shell">
+  <DPDagVisualizer client:visible pattern="F" />
+</div>
 
 Bitmasks track which elements have been visited/used. Subsets are encoded as integers where bit i indicates element i is in the set. The flavor changes based on whether you care about the ending node or just the groups formed.
 
