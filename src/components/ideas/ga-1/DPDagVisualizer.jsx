@@ -1,15 +1,16 @@
 import { useState } from "react";
+import { TOKENS, TYPO, SIZES, buttonStyles } from "./vizTheme";
 
 const C = {
-  bg: "#0a0e17",
-  surface: "#111827",
-  surfaceHover: "#1a2332",
-  border: "#1e2d3d",
-  borderActive: "#2dd4bf",
-  text: "#e2e8f0",
-  textMuted: "#64748b",
-  textDim: "#475569",
-  accent: "#2dd4bf",
+  bg: TOKENS.panelBg,
+  surface: TOKENS.surface,
+  surfaceHover: TOKENS.surfaceStrong,
+  border: TOKENS.border,
+  borderActive: TOKENS.borderStrong,
+  text: TOKENS.text,
+  textMuted: TOKENS.textMuted,
+  textDim: TOKENS.textDim,
+  accent: TOKENS.accent,
   accentDim: "rgba(45,212,191,0.15)",
   orange: "#f59e0b",
   orangeDim: "rgba(245,158,11,0.15)",
@@ -19,9 +20,11 @@ const C = {
   blue: "#60a5fa",
   emerald: "#34d399",
   edgeDim: "rgba(100,116,139,0.25)",
-  edgeActive: "#2dd4bf",
-  nodeDefault: "#1e293b",
+  edgeActive: TOKENS.accent,
+  nodeDefault: TOKENS.surfaceStrong,
   nodeOnPath: "rgba(45,212,191,0.2)",
+  codeBg: TOKENS.panelBg,
+  cardShadow: TOKENS.shadow,
 };
 
 // ═══════════════════════════════════════
@@ -2156,7 +2159,7 @@ function LinearDAG({ graph }) {
               textAnchor="middle"
               fill={nd.onPath ? C.accent : C.text}
               fontSize="10"
-              fontFamily="'JetBrains Mono',monospace"
+              fontFamily={TYPO.mono}
               fontWeight="600"
             >
               {nd.dpValue}
@@ -2167,7 +2170,7 @@ function LinearDAG({ graph }) {
               textAnchor="middle"
               fill={C.textDim}
               fontSize="7"
-              fontFamily="'JetBrains Mono',monospace"
+              fontFamily={TYPO.mono}
             >
               {nd.sublabel}
             </text>
@@ -2177,7 +2180,7 @@ function LinearDAG({ graph }) {
               textAnchor="middle"
               fill={C.textMuted}
               fontSize="9"
-              fontFamily="'JetBrains Mono',monospace"
+              fontFamily={TYPO.mono}
             >
               T({i})
             </text>
@@ -2258,7 +2261,7 @@ function GridDAG({ graph }) {
             textAnchor="middle"
             fill={C.textMuted}
             fontSize="10"
-            fontFamily="'JetBrains Mono',monospace"
+            fontFamily={TYPO.mono}
             fontWeight="600"
           >
             {ch}
@@ -2273,7 +2276,7 @@ function GridDAG({ graph }) {
             textAnchor="middle"
             fill={C.textMuted}
             fontSize="8"
-            fontFamily="'JetBrains Mono',monospace"
+            fontFamily={TYPO.mono}
           >
             {l}
           </text>
@@ -2287,7 +2290,7 @@ function GridDAG({ graph }) {
             textAnchor="middle"
             fill={C.textMuted}
             fontSize="10"
-            fontFamily="'JetBrains Mono',monospace"
+            fontFamily={TYPO.mono}
             fontWeight="600"
           >
             {ch}
@@ -2302,7 +2305,7 @@ function GridDAG({ graph }) {
             textAnchor="end"
             fill={C.textMuted}
             fontSize="7"
-            fontFamily="'JetBrains Mono',monospace"
+            fontFamily={TYPO.mono}
           >
             {l}
           </text>
@@ -2355,7 +2358,7 @@ function GridDAG({ graph }) {
               textAnchor="middle"
               fill={nd.onPath ? C.accent : C.textDim}
               fontSize="9"
-              fontFamily="'JetBrains Mono',monospace"
+              fontFamily={TYPO.mono}
               fontWeight={nd.onPath ? "600" : "400"}
             >
               {nd.sublabel}
@@ -2429,7 +2432,7 @@ function TreeDAG({ graph }) {
               textAnchor="middle"
               fill={nd.onPath ? C.text : C.textMuted}
               fontSize="11"
-              fontFamily="'JetBrains Mono',monospace"
+              fontFamily={TYPO.mono}
               fontWeight="600"
             >
               {nd.dpValue}
@@ -2440,7 +2443,7 @@ function TreeDAG({ graph }) {
               textAnchor="middle"
               fill={C.textDim}
               fontSize="8"
-              fontFamily="'JetBrains Mono',monospace"
+              fontFamily={TYPO.mono}
             >
               {nd.sublabel}
             </text>
@@ -2451,7 +2454,7 @@ function TreeDAG({ graph }) {
                 textAnchor="middle"
                 fill={C.textDim}
                 fontSize="8"
-                fontFamily="'JetBrains Mono',monospace"
+                fontFamily={TYPO.mono}
               >
                 {nd.label2}
               </text>
@@ -2504,7 +2507,7 @@ function MaskDAG({ graph }) {
           textAnchor="end"
           fill={C.textDim}
           fontSize="9"
-          fontFamily="'JetBrains Mono',monospace"
+          fontFamily={TYPO.mono}
         >
           {label}
         </text>
@@ -2519,7 +2522,7 @@ function MaskDAG({ graph }) {
             textAnchor="middle"
             fill={C.textDim}
             fontSize="9"
-            fontFamily="'JetBrains Mono',monospace"
+            fontFamily={TYPO.mono}
           >
             city {c}
           </text>
@@ -2566,7 +2569,7 @@ function MaskDAG({ graph }) {
               textAnchor="middle"
               fill={nd.onPath ? C.text : C.textMuted}
               fontSize="10"
-              fontFamily="'JetBrains Mono',monospace"
+              fontFamily={TYPO.mono}
               fontWeight={nd.onPath ? "600" : "400"}
             >
               {nd.sublabel}
@@ -2592,24 +2595,24 @@ export default function DPDagVisualizer() {
       style={{
         padding: 24,
         paddingBottom: 60,
-        fontFamily: "Inter, sans-serif",
+        fontFamily: TYPO.body,
         color: C.text,
         display: "flex",
         flexDirection: "column",
         gap: 24,
-        maxWidth: 1000,
+        maxWidth: SIZES.maxWidth,
         margin: "0 auto",
       }}
     >
       {/* Header */}
-      <div style={{ borderBottom: `1px solid ${C.border}`, paddingBottom: 16 }}>
-        <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700, color: C.text }}>
+      {/* <div style={{ borderBottom: `1px solid ${C.border}`, paddingBottom: 16 }}>
+        <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: C.text }}>
           DP Pattern Visualizer
         </h1>
         <p style={{ margin: "4px 0 0 0", color: C.textMuted, fontSize: 14 }}>
           Interactive Directed Acyclic Graphs for common DP patterns
         </p>
-      </div>
+      </div> */}
 
       {/* Pattern Tabs */}
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -2622,17 +2625,8 @@ export default function DPDagVisualizer() {
                 setSelPat(k);
                 setSelProb(meta.problems[0]);
               }}
-              style={{
-                background: isActive ? meta.color : "transparent",
-                color: isActive ? "#000" : meta.color,
-                border: `1px solid ${meta.color}`,
-                padding: "8px 16px",
-                borderRadius: 6,
-                cursor: "pointer",
-                fontSize: 14,
-                fontWeight: 600,
-                transition: "all 0.2s",
-              }}
+              aria-pressed={isActive}
+              style={buttonStyles({ active: isActive, tone: "semantic", color: meta.color })}
             >
               {meta.label}
             </button>
@@ -2658,16 +2652,8 @@ export default function DPDagVisualizer() {
             <button
               key={pk}
               onClick={() => setSelProb(pk)}
-              style={{
-                background: isActive ? C.surfaceHover : "transparent",
-                color: isActive ? Pat.color : C.textMuted,
-                border: "none",
-                padding: "6px 12px",
-                borderRadius: 4,
-                cursor: "pointer",
-                fontSize: 13,
-                fontWeight: 500,
-              }}
+              aria-pressed={isActive}
+              style={buttonStyles({ active: isActive, tone: "semantic", color: Pat.color })}
             >
               {PROBLEMS[pk].title}
             </button>
@@ -2682,7 +2668,7 @@ export default function DPDagVisualizer() {
           border: `1px solid ${C.border}`,
           borderRadius: 12,
           overflow: "hidden",
-          boxShadow: "0 10px 30px rgba(0,0,0,0.3)",
+          // boxShadow: C.cardShadow,
         }}
       >
         <div
@@ -2697,7 +2683,7 @@ export default function DPDagVisualizer() {
         >
           <div style={{ fontWeight: 600, color: C.text }}>{prob.title}</div>
           <div
-            style={{ fontSize: 12, color: C.textDim, fontFamily: "monospace" }}
+            style={{ fontSize: 12, color: C.textDim, fontFamily: TYPO.mono }}
           >
             Runtime: {prob.runtime}
           </div>
@@ -2744,10 +2730,10 @@ export default function DPDagVisualizer() {
           </div>
           <div
             style={{
-              fontFamily: "'JetBrains Mono', monospace",
+              fontFamily: TYPO.mono,
               fontSize: 13,
               color: C.text,
-              background: "rgba(0,0,0,0.3)",
+              background: C.codeBg,
               padding: "10px 12px",
               borderRadius: 6,
               whiteSpace: "pre-wrap",
@@ -2764,7 +2750,7 @@ export default function DPDagVisualizer() {
             padding: "16px 20px",
             borderTop: `1px solid ${C.border}`,
             display: "grid",
-            gridTemplateColumns: "1fr 1fr",
+            gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
             gap: 20,
           }}
         >
@@ -2783,10 +2769,10 @@ export default function DPDagVisualizer() {
             </div>
             <div
               style={{
-                fontFamily: "'JetBrains Mono', monospace",
+                fontFamily: TYPO.mono,
                 fontSize: 12,
                 color: C.text,
-                background: "rgba(0,0,0,0.3)",
+                background: C.codeBg,
                 padding: "10px 12px",
                 borderRadius: 6,
                 whiteSpace: "pre-wrap",
@@ -2811,10 +2797,10 @@ export default function DPDagVisualizer() {
             </div>
             <div
               style={{
-                fontFamily: "'JetBrains Mono', monospace",
+                fontFamily: TYPO.mono,
                 fontSize: 12,
                 color: C.textMuted,
-                background: "rgba(0,0,0,0.2)",
+                background: C.codeBg,
                 padding: "10px 12px",
                 borderRadius: 6,
                 whiteSpace: "pre-wrap",
@@ -2848,7 +2834,7 @@ export default function DPDagVisualizer() {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "1fr 1fr",
+              gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
               gap: "8px 20px",
             }}
           >
@@ -2857,7 +2843,7 @@ export default function DPDagVisualizer() {
                 display: "flex",
                 justifyContent: "space-between",
                 padding: "6px 10px",
-                background: "rgba(0,0,0,0.2)",
+                background: C.codeBg,
                 borderRadius: 4,
               }}
             >
@@ -2868,7 +2854,7 @@ export default function DPDagVisualizer() {
                 style={{
                   fontSize: 12,
                   color: C.text,
-                  fontFamily: "'JetBrains Mono', monospace",
+                  fontFamily: TYPO.mono,
                 }}
               >
                 {prob.numSubproblems}
@@ -2879,7 +2865,7 @@ export default function DPDagVisualizer() {
                 display: "flex",
                 justifyContent: "space-between",
                 padding: "6px 10px",
-                background: "rgba(0,0,0,0.2)",
+                background: C.codeBg,
                 borderRadius: 4,
               }}
             >
@@ -2890,7 +2876,7 @@ export default function DPDagVisualizer() {
                 style={{
                   fontSize: 12,
                   color: C.text,
-                  fontFamily: "'JetBrains Mono', monospace",
+                  fontFamily: TYPO.mono,
                 }}
               >
                 {prob.runtime}
@@ -2901,7 +2887,7 @@ export default function DPDagVisualizer() {
                 display: "flex",
                 justifyContent: "space-between",
                 padding: "6px 10px",
-                background: "rgba(0,0,0,0.2)",
+                background: C.codeBg,
                 borderRadius: 4,
               }}
             >
@@ -2912,7 +2898,7 @@ export default function DPDagVisualizer() {
                 style={{
                   fontSize: 12,
                   color: C.text,
-                  fontFamily: "'JetBrains Mono', monospace",
+                  fontFamily: TYPO.mono,
                 }}
               >
                 {prob.answer}
@@ -2923,7 +2909,7 @@ export default function DPDagVisualizer() {
                 display: "flex",
                 justifyContent: "space-between",
                 padding: "6px 10px",
-                background: "rgba(0,0,0,0.2)",
+                background: C.codeBg,
                 borderRadius: 4,
               }}
             >
@@ -2934,7 +2920,7 @@ export default function DPDagVisualizer() {
                 style={{
                   fontSize: 12,
                   color: C.text,
-                  fontFamily: "'JetBrains Mono', monospace",
+                  fontFamily: TYPO.mono,
                 }}
               >
                 {prob.extractionRuntime}
@@ -2949,7 +2935,7 @@ export default function DPDagVisualizer() {
             padding: "16px 20px",
             borderTop: `1px solid ${C.border}`,
             display: "grid",
-            gridTemplateColumns: "1fr 1fr",
+            gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
             gap: 20,
           }}
         >

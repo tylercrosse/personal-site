@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { TOKENS, TYPO, SIZES, buttonStyles } from "./vizTheme";
 
 const CASES = {
   1: {
@@ -96,7 +97,7 @@ function TreeVisualization({ a, b, d, maxDepth }) {
           r={radius}
           fill={caseColor}
           opacity={opacity}
-          stroke="rgba(255,255,255,0.15)"
+          stroke={TOKENS.borderStrong}
           strokeWidth={0.5}
         />,
       );
@@ -110,9 +111,9 @@ function TreeVisualization({ a, b, d, maxDepth }) {
           x={x}
           y={y + 4}
           textAnchor="middle"
-          fill="rgba(255,255,255,0.5)"
+          fill={TOKENS.textMuted}
           fontSize="12"
-          fontFamily="'JetBrains Mono', monospace"
+          fontFamily={TYPO.mono}
         >
           ⋯ ({levelData.numNodes} nodes)
         </text>,
@@ -142,7 +143,7 @@ function TreeVisualization({ a, b, d, maxDepth }) {
                 y1={y + radius}
                 x2={cx}
                 y2={nextY - radius}
-                stroke="rgba(255,255,255,0.07)"
+                stroke={TOKENS.border}
                 strokeWidth={0.8}
               />,
             );
@@ -200,8 +201,8 @@ function TreeVisualization({ a, b, d, maxDepth }) {
               <span
                 style={{
                   fontSize: 9,
-                  color: "rgba(255,255,255,0.4)",
-                  fontFamily: "'JetBrains Mono', monospace",
+                  color: TOKENS.textDim,
+                  fontFamily: TYPO.mono,
                 }}
               >
                 {level.numNodes > 1 ? `${level.numNodes}×` : "1×"}
@@ -227,9 +228,9 @@ function Slider({ label, value, min, max, step, onChange, note }) {
       >
         <label
           style={{
-            fontFamily: "'JetBrains Mono', monospace",
+            fontFamily: TYPO.mono,
             fontSize: 13,
-            color: "rgba(255,255,255,0.7)",
+            color: TOKENS.text,
             letterSpacing: 1,
           }}
         >
@@ -237,10 +238,10 @@ function Slider({ label, value, min, max, step, onChange, note }) {
         </label>
         <span
           style={{
-            fontFamily: "'JetBrains Mono', monospace",
+            fontFamily: TYPO.mono,
             fontSize: 22,
             fontWeight: 700,
-            color: "#fff",
+            color: TOKENS.text,
           }}
         >
           {value}
@@ -253,15 +254,15 @@ function Slider({ label, value, min, max, step, onChange, note }) {
         step={step}
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
-        style={{ width: "100%", accentColor: "#ff6b4a", cursor: "pointer" }}
+        style={{ width: "100%", accentColor: TOKENS.accent, cursor: "pointer" }}
       />
       {note && (
         <div
           style={{
             fontSize: 10,
-            color: "rgba(255,255,255,0.35)",
+            color: TOKENS.textFaint,
             marginTop: 3,
-            fontFamily: "'JetBrains Mono', monospace",
+            fontFamily: TYPO.mono,
           }}
         >
           {note}
@@ -293,28 +294,21 @@ export default function MasterTheoremViz() {
   return (
     <div
       style={{
-        minHeight: "100vh",
-        background: "#0a0b0f",
-        color: "#fff",
-        fontFamily: "'IBM Plex Sans', -apple-system, sans-serif",
-        padding: "32px 24px",
+        color: TOKENS.text,
+        fontFamily: TYPO.body,
+        padding: "24px 16px",
       }}
     >
-      <link
-        href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap"
-        rel="stylesheet"
-      />
-
-      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+      <div style={{ maxWidth: SIZES.maxWidth, margin: "0 auto" }}>
         {/* Header */}
-        <div style={{ marginBottom: 36 }}>
+        {/* <div style={{ marginBottom: 36 }}>
           <div
             style={{
               fontSize: 11,
               letterSpacing: 4,
-              color: "rgba(255,255,255,0.3)",
+              color: TOKENS.textDim,
               textTransform: "uppercase",
-              fontFamily: "'JetBrains Mono', monospace",
+              fontFamily: TYPO.mono,
               marginBottom: 8,
             }}
           >
@@ -322,7 +316,7 @@ export default function MasterTheoremViz() {
           </div>
           <h1
             style={{
-              fontSize: 36,
+              fontSize: 30,
               fontWeight: 700,
               margin: 0,
               letterSpacing: -1,
@@ -334,7 +328,7 @@ export default function MasterTheoremViz() {
           <p
             style={{
               fontSize: 14,
-              color: "rgba(255,255,255,0.45)",
+              color: TOKENS.textMuted,
               marginTop: 8,
               maxWidth: 600,
               lineHeight: 1.6,
@@ -343,8 +337,8 @@ export default function MasterTheoremViz() {
             For recurrences of the form{" "}
             <span
               style={{
-                fontFamily: "'JetBrains Mono', monospace",
-                color: "rgba(255,255,255,0.7)",
+                fontFamily: TYPO.mono,
+                color: TOKENS.text,
               }}
             >
               T(n) = a·T(n/b) + O(n^d)
@@ -352,7 +346,7 @@ export default function MasterTheoremViz() {
             , the runtime depends on how work distributes across the recursion
             tree.
           </p>
-        </div>
+        </div> */}
 
         {/* Presets */}
         <div
@@ -373,21 +367,8 @@ export default function MasterTheoremViz() {
                   setB(p.b);
                   setD(p.d);
                 }}
-                style={{
-                  padding: "6px 14px",
-                  borderRadius: 6,
-                  border: active
-                    ? "1px solid rgba(255,255,255,0.3)"
-                    : "1px solid rgba(255,255,255,0.08)",
-                  background: active
-                    ? "rgba(255,255,255,0.08)"
-                    : "rgba(255,255,255,0.02)",
-                  color: active ? "#fff" : "rgba(255,255,255,0.5)",
-                  fontSize: 12,
-                  fontFamily: "'JetBrains Mono', monospace",
-                  cursor: "pointer",
-                  transition: "all 0.2s",
-                }}
+                aria-pressed={active}
+                style={buttonStyles({ active })}
               >
                 {p.name}
               </button>
@@ -398,7 +379,7 @@ export default function MasterTheoremViz() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "280px 1fr",
+            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
             gap: 32,
             alignItems: "start",
           }}
@@ -406,8 +387,8 @@ export default function MasterTheoremViz() {
           {/* Controls */}
           <div
             style={{
-              background: "rgba(255,255,255,0.02)",
-              border: "1px solid rgba(255,255,255,0.06)",
+              background: TOKENS.surfaceSoft,
+              border: `1px solid ${TOKENS.border}`,
               borderRadius: 12,
               padding: 24,
             }}
@@ -445,16 +426,16 @@ export default function MasterTheoremViz() {
               style={{
                 marginTop: 20,
                 padding: 16,
-                background: "rgba(255,255,255,0.03)",
+                background: TOKENS.surface,
                 borderRadius: 8,
-                border: "1px solid rgba(255,255,255,0.05)",
+                border: `1px solid ${TOKENS.border}`,
               }}
             >
               <div
                 style={{
-                  fontFamily: "'JetBrains Mono', monospace",
+                  fontFamily: TYPO.mono,
                   fontSize: 12,
-                  color: "rgba(255,255,255,0.5)",
+                  color: TOKENS.textMuted,
                   marginBottom: 10,
                 }}
               >
@@ -472,7 +453,7 @@ export default function MasterTheoremViz() {
                   <div
                     style={{
                       fontSize: 10,
-                      color: "rgba(255,255,255,0.4)",
+                      color: TOKENS.textDim,
                       marginBottom: 2,
                     }}
                   >
@@ -480,7 +461,7 @@ export default function MasterTheoremViz() {
                   </div>
                   <div
                     style={{
-                      fontFamily: "'JetBrains Mono', monospace",
+                      fontFamily: TYPO.mono,
                       fontSize: 22,
                       fontWeight: 700,
                       color: caseInfo.color,
@@ -489,14 +470,14 @@ export default function MasterTheoremViz() {
                     {logba.toFixed(2)}
                   </div>
                 </div>
-                <div style={{ fontSize: 20, color: "rgba(255,255,255,0.3)" }}>
+                <div style={{ fontSize: 20, color: TOKENS.textDim }}>
                   {caseNum === 1 ? ">" : caseNum === 2 ? "=" : "<"}
                 </div>
                 <div style={{ textAlign: "center" }}>
                   <div
                     style={{
                       fontSize: 10,
-                      color: "rgba(255,255,255,0.4)",
+                      color: TOKENS.textDim,
                       marginBottom: 2,
                     }}
                   >
@@ -504,7 +485,7 @@ export default function MasterTheoremViz() {
                   </div>
                   <div
                     style={{
-                      fontFamily: "'JetBrains Mono', monospace",
+                      fontFamily: TYPO.mono,
                       fontSize: 22,
                       fontWeight: 700,
                       color: caseInfo.color,
@@ -542,7 +523,7 @@ export default function MasterTheoremViz() {
                     letterSpacing: 3,
                     textTransform: "uppercase",
                     color: caseInfo.color,
-                    fontFamily: "'JetBrains Mono', monospace",
+                    fontFamily: TYPO.mono,
                     marginBottom: 4,
                     fontWeight: 600,
                   }}
@@ -552,7 +533,7 @@ export default function MasterTheoremViz() {
                 <div
                   style={{
                     fontSize: 13,
-                    color: "rgba(255,255,255,0.55)",
+                    color: TOKENS.textMuted,
                     lineHeight: 1.5,
                   }}
                 >
@@ -561,10 +542,10 @@ export default function MasterTheoremViz() {
               </div>
               <div
                 style={{
-                  fontFamily: "'JetBrains Mono', monospace",
+                  fontFamily: TYPO.mono,
                   fontSize: 26,
                   fontWeight: 700,
-                  color: "#fff",
+                  color: TOKENS.text,
                   letterSpacing: -0.5,
                 }}
               >
@@ -575,8 +556,8 @@ export default function MasterTheoremViz() {
             {/* Tree */}
             <div
               style={{
-                background: "rgba(255,255,255,0.02)",
-                border: "1px solid rgba(255,255,255,0.06)",
+                background: TOKENS.surfaceSoft,
+                border: `1px solid ${TOKENS.border}`,
                 borderRadius: 12,
                 padding: "20px 24px 20px 24px",
                 position: "relative",
@@ -595,8 +576,8 @@ export default function MasterTheoremViz() {
                     fontSize: 11,
                     letterSpacing: 3,
                     textTransform: "uppercase",
-                    color: "rgba(255,255,255,0.3)",
-                    fontFamily: "'JetBrains Mono', monospace",
+                    color: TOKENS.textDim,
+                    fontFamily: TYPO.mono,
                   }}
                 >
                   Recursion tree
@@ -604,8 +585,8 @@ export default function MasterTheoremViz() {
                 <div
                   style={{
                     fontSize: 10,
-                    color: "rgba(255,255,255,0.25)",
-                    fontFamily: "'JetBrains Mono', monospace",
+                    color: TOKENS.textFaint,
+                    fontFamily: TYPO.mono,
                   }}
                 >
                   depth ≈ log_{b}(n) = log_{b === 2 ? "₂" : b}(n) → {maxDepth}{" "}
@@ -621,8 +602,8 @@ export default function MasterTheoremViz() {
                   right: 24,
                   top: 20,
                   fontSize: 9,
-                  color: "rgba(255,255,255,0.25)",
-                  fontFamily: "'JetBrains Mono', monospace",
+                  color: TOKENS.textFaint,
+                  fontFamily: TYPO.mono,
                 }}
               >
                 work/level →
@@ -633,8 +614,8 @@ export default function MasterTheoremViz() {
             <div
               style={{
                 marginTop: 20,
-                background: "rgba(255,255,255,0.02)",
-                border: "1px solid rgba(255,255,255,0.06)",
+                background: TOKENS.surfaceSoft,
+                border: `1px solid ${TOKENS.border}`,
                 borderRadius: 12,
                 padding: "16px 20px",
                 overflowX: "auto",
@@ -645,8 +626,8 @@ export default function MasterTheoremViz() {
                   fontSize: 11,
                   letterSpacing: 3,
                   textTransform: "uppercase",
-                  color: "rgba(255,255,255,0.3)",
-                  fontFamily: "'JetBrains Mono', monospace",
+                  color: TOKENS.textDim,
+                  fontFamily: TYPO.mono,
                   marginBottom: 12,
                 }}
               >
@@ -656,18 +637,18 @@ export default function MasterTheoremViz() {
                 style={{
                   width: "100%",
                   borderCollapse: "collapse",
-                  fontFamily: "'JetBrains Mono', monospace",
+                  fontFamily: TYPO.mono,
                   fontSize: 12,
                 }}
               >
                 <thead>
-                  <tr style={{ color: "rgba(255,255,255,0.4)" }}>
+                  <tr style={{ color: TOKENS.textDim }}>
                     <th
                       style={{
                         textAlign: "left",
                         padding: "4px 12px 8px 0",
                         fontWeight: 500,
-                        borderBottom: "1px solid rgba(255,255,255,0.06)",
+                        borderBottom: `1px solid ${TOKENS.border}`,
                       }}
                     >
                       Level
@@ -677,7 +658,7 @@ export default function MasterTheoremViz() {
                         textAlign: "right",
                         padding: "4px 12px 8px",
                         fontWeight: 500,
-                        borderBottom: "1px solid rgba(255,255,255,0.06)",
+                        borderBottom: `1px solid ${TOKENS.border}`,
                       }}
                     >
                       # Nodes
@@ -687,7 +668,7 @@ export default function MasterTheoremViz() {
                         textAlign: "right",
                         padding: "4px 12px 8px",
                         fontWeight: 500,
-                        borderBottom: "1px solid rgba(255,255,255,0.06)",
+                        borderBottom: `1px solid ${TOKENS.border}`,
                       }}
                     >
                       Subproblem size
@@ -697,7 +678,7 @@ export default function MasterTheoremViz() {
                         textAlign: "right",
                         padding: "4px 12px 8px",
                         fontWeight: 500,
-                        borderBottom: "1px solid rgba(255,255,255,0.06)",
+                        borderBottom: `1px solid ${TOKENS.border}`,
                       }}
                     >
                       Work/node
@@ -707,7 +688,7 @@ export default function MasterTheoremViz() {
                         textAlign: "right",
                         padding: "4px 0 8px 12px",
                         fontWeight: 500,
-                        borderBottom: "1px solid rgba(255,255,255,0.06)",
+                        borderBottom: `1px solid ${TOKENS.border}`,
                       }}
                     >
                       Total work
@@ -730,7 +711,7 @@ export default function MasterTheoremViz() {
                       maxRatio > 0 ? (totalRatio / maxRatio) * 100 : 0;
 
                     return (
-                      <tr key={i} style={{ color: "rgba(255,255,255,0.65)" }}>
+                      <tr key={i} style={{ color: TOKENS.textMuted }}>
                         <td style={{ padding: "6px 12px 6px 0" }}>{i}</td>
                         <td style={{ textAlign: "right", padding: "6px 12px" }}>
                           {nodes > 1000 ? nodes.toExponential(0) : nodes}
@@ -739,7 +720,7 @@ export default function MasterTheoremViz() {
                           style={{
                             textAlign: "right",
                             padding: "6px 12px",
-                            color: "rgba(255,255,255,0.4)",
+                            color: TOKENS.textDim,
                           }}
                         >
                           {i === 0 ? "n" : size}
@@ -748,7 +729,7 @@ export default function MasterTheoremViz() {
                           style={{
                             textAlign: "right",
                             padding: "6px 12px",
-                            color: "rgba(255,255,255,0.4)",
+                            color: TOKENS.textDim,
                           }}
                         >
                           {i === 0 ? `n^${d}` : workNode}
@@ -770,7 +751,7 @@ export default function MasterTheoremViz() {
                             <span
                               style={{
                                 fontSize: 11,
-                                color: "rgba(255,255,255,0.4)",
+                                color: TOKENS.textDim,
                               }}
                             >
                               {totalRatio === 1
@@ -805,7 +786,7 @@ export default function MasterTheoremViz() {
                 border: `1px solid ${caseInfo.color}15`,
                 borderRadius: 10,
                 fontSize: 13,
-                color: "rgba(255,255,255,0.6)",
+                color: TOKENS.textMuted,
                 lineHeight: 1.7,
                 transition: "all 0.4s ease",
               }}
