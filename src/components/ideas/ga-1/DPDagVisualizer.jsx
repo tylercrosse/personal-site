@@ -79,6 +79,79 @@ function buildLIS() {
   return { nodes, edges, topoNote: "Left → right: i = 0, 1, ... n−1" };
 }
 
+function buildHouseRobber1D() {
+  const seq = [2, 7, 9, 3, 1],
+    n = seq.length;
+  const dp = Array(n).fill(0);
+  dp[0] = seq[0];
+  dp[1] = Math.max(seq[0], seq[1]);
+
+  for (let i = 2; i < n; i++) {
+    dp[i] = Math.max(dp[i - 1], dp[i - 2] + seq[i]);
+  }
+
+  const nodes = seq.map((v, i) => ({
+    id: i,
+    sublabel: `v=${v}`,
+    dpValue: dp[i],
+  }));
+  const edges = [];
+
+  for (let i = 1; i < n; i++) {
+    edges.push({ from: i - 1, to: i, active: false, type: "skip" });
+    if (i >= 2) {
+      edges.push({ from: i - 2, to: i, active: false, type: "take" });
+    }
+  }
+
+  const onP = new Set([n - 1]);
+  let cur = n - 1;
+  while (cur > 0) {
+    if (cur === 1) {
+      if (dp[1] === seq[1]) {
+        // took 1, skip 0
+        edges.forEach((e) => {
+          if (e.from === 0 && e.to === 1 && e.type === "skip") e.active = true;
+        });
+        break;
+      } else {
+        // took 0, skipped 1
+        onP.add(0);
+        edges.forEach((e) => {
+          if (e.from === 0 && e.to === 1 && e.type === "skip") e.active = true;
+        });
+        cur = 0;
+      }
+    } else {
+      if (dp[cur] === dp[cur - 1]) {
+        onP.add(cur - 1);
+        edges.forEach((e) => {
+          if (e.from === cur - 1 && e.to === cur && e.type === "skip")
+            e.active = true;
+        });
+        cur = cur - 1;
+      } else {
+        onP.add(cur - 2);
+        edges.forEach((e) => {
+          if (e.from === cur - 2 && e.to === cur && e.type === "take")
+            e.active = true;
+        });
+        cur = cur - 2;
+      }
+    }
+  }
+
+  nodes.forEach((nd, i) => {
+    nd.onPath = onP.has(i);
+  });
+
+  return {
+    nodes,
+    edges,
+    topoNote: "Left → right: decide to skip (from i-1) or take (from i-2).",
+  };
+}
+
 function buildMaxSubarray() {
   const seq = [2, -3, 5, -1, 4, -2, 1],
     n = seq.length;
@@ -238,6 +311,90 @@ function buildLOS() {
 }
 
 // PATTERN B BUILDERS
+function buildMinPathSum() {
+  const grid = [
+    [1, 3, 1],
+    [1, 5, 1],
+    [4, 2, 1],
+  ];
+  const m = grid.length,
+    n = grid[0].length;
+
+  const g = buildGrid(
+    Array(m).fill("0"), // dummy to force size
+    Array(n).fill("0"),
+    (dp, i, j, X, Y) => {
+      if (i === 1 && j === 1) dp[i][j] = grid[0][0];
+      else if (i === 1) dp[i][j] = dp[i][j - 1] + grid[i - 1][j - 1];
+      else if (j === 1) dp[i][j] = dp[i - 1][j] + grid[i - 1][j - 1];
+      else dp[i][j] = grid[i - 1][j - 1] + Math.min(dp[i - 1][j], dp[i][j - 1]);
+    },
+    null,
+    (dp, M, N, X, Y, id, edges, onP) => {
+      let ci = m,
+        cj = n;
+      onP.add(id(ci, cj));
+      while (ci > 1 || cj > 1) {
+        if (ci === 1) {
+          edges.forEach((e) => {
+            if (e.from === id(ci, cj - 1) && e.to === id(ci, cj))
+              e.active = true;
+          });
+          cj--;
+        } else if (cj === 1) {
+          edges.forEach((e) => {
+            if (e.from === id(ci - 1, cj) && e.to === id(ci, cj))
+              e.active = true;
+          });
+          ci--;
+        } else if (dp[ci - 1][cj] < dp[ci][cj - 1]) {
+          edges.forEach((e) => {
+            if (e.from === id(ci - 1, cj) && e.to === id(ci, cj))
+              e.active = true;
+          });
+          ci--;
+        } else {
+          edges.forEach((e) => {
+            if (e.from === id(ci, cj - 1) && e.to === id(ci, cj))
+              e.active = true;
+          });
+          cj--;
+        }
+        onP.add(id(ci, cj));
+      }
+    },
+  );
+
+  // Clean up the generic grid to fit the 0-indexed conceptual model of the path sum problem
+  // We only care about nodes i >= 1, j >= 1 since they map to the actual grid cells.
+  const validNodes = g.nodes.filter((nd) => nd.gridRow >= 1 && nd.gridCol >= 1);
+  const validIds = new Set(validNodes.map((nd) => nd.id));
+  const validEdges = g.edges.filter(
+    (e) => validIds.has(e.from) && validIds.has(e.to) && e.type !== "diagonal",
+  );
+
+  // Re-map nodes to top-left aligned coordinates (row-1, col-1)
+  validNodes.forEach((nd) => {
+    nd.gridRow -= 1;
+    nd.gridCol -= 1;
+    nd.sublabel = `c=${grid[nd.gridRow][nd.gridCol]}`;
+  });
+
+  return {
+    ...g,
+    nodes: validNodes,
+    edges: validEdges,
+    rows: m,
+    cols: n,
+    X: null,
+    Y: null,
+    rowLabels: ["r0", "r1", "r2"],
+    colLabels: ["c0", "c1", "c2"],
+    topoNote:
+      "Top-left to bottom-right. Accumulate cost from min of top or left neighbor.",
+  };
+}
+
 function buildGrid(X, Y, dpFn, baseFn, traceFn) {
   const m = X.length,
     n = Y.length;
@@ -684,19 +841,19 @@ function buildKnapsack() {
   };
 }
 
-function buildSubsetSum() {
-  const nums = [3, 7, 1, 8, 4],
-    K = 11,
-    n = nums.length;
-  const dp = Array.from({ length: n + 1 }, () => Array(K + 1).fill(false));
-  dp[0][0] = true;
+function buildCoinChange2() {
+  const coins = [1, 2, 5],
+    K = 5,
+    n = coins.length;
+  const dp = Array.from({ length: n + 1 }, () => Array(K + 1).fill(0));
+  dp[0][0] = 1;
   const nodes = [],
     edges = [],
     id = (i, s) => i * (K + 1) + s;
   for (let i = 1; i <= n; i++)
     for (let s = 0; s <= K; s++) {
       dp[i][s] = dp[i - 1][s];
-      if (nums[i - 1] <= s) dp[i][s] = dp[i][s] || dp[i - 1][s - nums[i - 1]];
+      if (coins[i - 1] <= s) dp[i][s] = dp[i][s] + dp[i][s - coins[i - 1]];
     }
   for (let i = 0; i <= n; i++)
     for (let s = 0; s <= K; s++) {
@@ -704,7 +861,7 @@ function buildSubsetSum() {
         id: id(i, s),
         gridRow: i,
         gridCol: s,
-        sublabel: dp[i][s] ? "T" : "F",
+        sublabel: `#${dp[i][s]}`,
         dpValue: dp[i][s],
         onPath: false,
       });
@@ -715,24 +872,25 @@ function buildSubsetSum() {
           active: false,
           type: "skip",
         });
-        if (nums[i - 1] <= s)
+        if (coins[i - 1] <= s)
           edges.push({
-            from: id(i - 1, s - nums[i - 1]),
+            from: id(i, s - coins[i - 1]),
             to: id(i, s),
             active: false,
             type: "take",
           });
       }
     }
-  if (dp[n][K]) {
+  if (dp[n][K] > 0) {
+    // Basic backtrace just finding ONE path for visualizer
     let ci = n,
       cs = K;
     const onP = new Set([id(ci, cs)]);
     while (ci > 0) {
-      if (nums[ci - 1] <= cs && dp[ci - 1][cs - nums[ci - 1]]) {
-        const ps = cs - nums[ci - 1];
+      if (coins[ci - 1] <= cs && dp[ci][cs - coins[ci - 1]] > 0) {
+        const ps = cs - coins[ci - 1];
         edges.forEach((e) => {
-          if (e.from === id(ci - 1, ps) && e.to === id(ci, cs)) e.active = true;
+          if (e.from === id(ci, ps) && e.to === id(ci, cs)) e.active = true;
         });
         cs = ps;
       } else {
@@ -744,8 +902,8 @@ function buildSubsetSum() {
           )
             e.active = true;
         });
+        ci--;
       }
-      ci--;
       onP.add(id(ci, cs));
     }
     nodes.forEach((nd) => {
@@ -758,10 +916,10 @@ function buildSubsetSum() {
     grid: true,
     rows: n + 1,
     cols: K + 1,
-    rowLabels: ["ε", ...nums.map((v) => `num=${v}`)],
+    rowLabels: ["ε", ...coins.map((v) => `coin=${v}`)],
     colLabels: Array.from({ length: K + 1 }, (_, i) => `s=${i}`),
     topoNote:
-      "Boolean knapsack: T/F via OR instead of max. Same DAG shape as 0/1 knapsack.",
+      "Coin Change 2: Combinations = (+). Stay in row i when taking to allow infinite coin reuse.",
   };
 }
 
@@ -968,6 +1126,115 @@ function buildMatrixChain() {
     colLabels: ["j=0", "j=1", "j=2"],
     topoNote:
       "Diagonal (len=1) → outward to Top-Right (len=n). Pyramidal build-up.",
+  };
+}
+
+function buildBurstBalloons() {
+  const nums = [3, 1, 5, 8];
+  // Pad with 1s at ends
+  const A = [1, ...nums, 1];
+  const n = A.length; // 6
+
+  const dp = Array.from({ length: n }, () => Array(n).fill(0));
+  const splits = Array.from({ length: n }, () => Array(n).fill(-1));
+
+  // len is the length of the open interval
+  for (let len = 2; len < n; len++) {
+    for (let i = 0; i < n - len; i++) {
+      const j = i + len;
+      let maxCoins = 0;
+      for (let k = i + 1; k < j; k++) {
+        const coins = dp[i][k] + dp[k][j] + A[i] * A[k] * A[j];
+        if (coins > maxCoins) {
+          maxCoins = coins;
+          splits[i][j] = k;
+        }
+      }
+      dp[i][j] = maxCoins;
+    }
+  }
+
+  const nodes = [],
+    edges = [];
+  const id = (i, j) => i * n + j;
+
+  // We only visualize the (i, j) states where j >= i + 2
+  for (let i = 0; i < n; i++) {
+    for (let j = i + 2; j < n; j++) {
+      nodes.push({
+        id: id(i, j),
+        gridRow: i,
+        gridCol: j,
+        sublabel: `${dp[i][j]}`,
+        dpValue: dp[i][j],
+        onPath: false,
+      });
+
+      const k = splits[i][j];
+      if (k !== -1) {
+        if (k > i + 1) {
+          // Left subproblem is not empty
+          edges.push({
+            from: id(i, k),
+            to: id(i, j),
+            active: false,
+            type: "left",
+          });
+        }
+        if (j > k + 1) {
+          // Right subproblem is not empty
+          edges.push({
+            from: id(k, j),
+            to: id(i, j),
+            active: false,
+            type: "right",
+          });
+        }
+      }
+    }
+  }
+
+  const onP = new Set();
+  const recursePath = (i, j) => {
+    onP.add(id(i, j));
+    if (j <= i + 1) return;
+
+    const k = splits[i][j];
+    if (k === -1) return;
+
+    if (k > i + 1) {
+      edges.forEach((e) => {
+        if (e.to === id(i, j) && e.from === id(i, k)) e.active = true;
+      });
+      recursePath(i, k);
+    }
+    if (j > k + 1) {
+      edges.forEach((e) => {
+        if (e.to === id(i, j) && e.from === id(k, j)) e.active = true;
+      });
+      recursePath(k, j);
+    }
+  };
+
+  recursePath(0, n - 1);
+
+  // Re-shift grid rows and cols so they fit better in the visualizer triangle
+  nodes.forEach((nd) => {
+    nd.onPath = onP.has(nd.id);
+    nd.gridRow -= 0;
+    nd.gridCol -= 2;
+  });
+
+  return {
+    nodes,
+    edges,
+    grid: true,
+    rows: n - 2,
+    cols: n - 2,
+    rowLabels: ["i=0", "i=1", "i=2", "i=3"],
+    colLabels: ["j=2", "j=3", "j=4", "j=5"],
+    topoNote:
+      "Intervals on (i,j). Left boundary i, right boundary j. Choice k specifies the LAST balloon to burst.",
   };
 }
 
@@ -1496,6 +1763,145 @@ function buildTSP() {
   };
 }
 
+function buildSubsetPartitioning() {
+  // Try to partition [1, 5, 11, 5] into two subsets with equal sum (each sum = 11)
+  const nums = [1, 5, 11, 5];
+  const n = nums.length;
+  const target = 11;
+  const full = (1 << n) - 1;
+
+  // Find which subsets sum exactly to eleven
+  const subsetSumsToTarget = Array(1 << n).fill(false);
+  for (let mask = 1; mask <= full; mask++) {
+    let sum = 0;
+    for (let i = 0; i < n; i++) {
+      if (mask & (1 << i)) {
+        sum += nums[i];
+      }
+    }
+    if (sum === target) {
+      subsetSumsToTarget[mask] = true;
+    }
+  }
+
+  // dp[mask] = min subsets needed to partition the items in mask so each subset sums to target
+  // (Standard Min Cost to Partition Groupings algorithm outline)
+  const INF = 99;
+  const dp = Array(1 << n).fill(INF);
+  dp[0] = 0;
+
+  for (let mask = 1; mask <= full; mask++) {
+    // Iterate over submasks
+    for (let sub = mask; sub > 0; sub = (sub - 1) & mask) {
+      if (subsetSumsToTarget[sub] && dp[mask ^ sub] !== INF) {
+        dp[mask] = Math.min(dp[mask], dp[mask ^ sub] + 1);
+      }
+    }
+  }
+
+  const nodes = [],
+    edges = [];
+  const popcount = (m) => {
+    let c = 0;
+    for (let i = 0; i < n; i++) if (m & (1 << i)) c++;
+    return c;
+  };
+  const maskStr = (m) => m.toString(2).padStart(n, "0");
+
+  // To avoid crowding the graph, we only include nodes that are reachable states
+  const allMasks = [];
+  for (let m = 0; m <= full; m++) {
+    allMasks.push(m);
+  }
+  allMasks.sort((a, b) => popcount(a) - popcount(b) || a - b);
+
+  const maskRow = {};
+  let rowIdx = 0;
+  for (const m of allMasks) {
+    maskRow[m] = rowIdx++;
+  }
+
+  // We highlight the optimal path backward from full to 0
+  const onP = new Set();
+  let currMask = full;
+  while (currMask > 0 && dp[currMask] !== INF) {
+    onP.add(currMask);
+    // find a submask that validates the optimal step
+    for (let sub = currMask; sub > 0; sub = (sub - 1) & currMask) {
+      if (
+        subsetSumsToTarget[sub] &&
+        dp[currMask ^ sub] !== INF &&
+        dp[currMask] === dp[currMask ^ sub] + 1
+      ) {
+        // highlight edge between currMask ^ sub and currMask
+        edges.push({
+          from: currMask ^ sub,
+          to: currMask,
+          active: true,
+        });
+        currMask = currMask ^ sub;
+        break;
+      }
+    }
+  }
+  onP.add(0); // empty mask
+
+  // Output ALL valid subset partition transitions as background edges
+  for (let mask = 1; mask <= full; mask++) {
+    if (dp[mask] === INF && !onP.has(mask)) continue; // Keep graph clean
+
+    // add node
+    nodes.push({
+      id: mask,
+      maskRow: maskRow[mask],
+      maskCol: 0,
+      mask: mask,
+      sublabel: dp[mask] === INF ? "∞" : `#=${dp[mask]}`,
+      dpValue: dp[mask] === INF ? -1 : dp[mask],
+      onPath: onP.has(mask),
+      maskLabel: maskStr(mask),
+    });
+
+    for (let sub = mask; sub > 0; sub = (sub - 1) & mask) {
+      if (subsetSumsToTarget[sub] && dp[mask ^ sub] !== INF) {
+        // Only add if not already active
+        const existingActive = edges.find(
+          (e) => e.from === (mask ^ sub) && e.to === mask && e.active,
+        );
+        if (!existingActive) {
+          edges.push({
+            from: mask ^ sub,
+            to: mask,
+            active: false,
+          });
+        }
+      }
+    }
+  }
+
+  // ensure empty mask is plotted
+  nodes.push({
+    id: 0,
+    maskRow: maskRow[0],
+    maskCol: 0,
+    mask: 0,
+    sublabel: "start",
+    dpValue: 0,
+    onPath: true,
+    maskLabel: maskStr(0),
+  });
+
+  return {
+    nodes,
+    edges,
+    mask: true,
+    numCities: 1, // Single column layout flag
+    singleCol: true,
+    topoNote:
+      "Iterating over SUB-MASKS. Edges exist if the difference sub-mask is a valid group (sum=11).",
+  };
+}
+
 function buildCanIWin() {
   // Numbers 1–4, target = 6
   const maxN = 4,
@@ -1718,6 +2124,22 @@ const PROBLEMS = {
       "Simplest linear DAG: each node depends ONLY on the previous node. Decide: extend the subarray or restart here.",
     dagShape: "1D chain, each node → next node only",
   },
+  robber1d: {
+    pattern: "A",
+    title: "House Robber (1D)",
+    subproblem: "T(i) = max value from A[1…i], adjacent skips required",
+    input: "A = [2, 7, 9, 3, 1]",
+    baseCases: "T(0) = 0, T(1) = A[1]",
+    recurrence: "T(i) = max(T(i−1), T(i−2) + A[i]),  2 ≤ i ≤ n",
+    answer: "return T(n)",
+    numSubproblems: "O(n)",
+    runtime: "O(n)",
+    extractionRuntime: "O(1)",
+    build: buildHouseRobber1D,
+    insight:
+      "Look-back-two: jump past the immediate neighbor to add the current value, or just inherit the immediate neighbor's max.",
+    dagShape: "1D chain, links from -1 and -2",
+  },
   coins: {
     pattern: "A",
     title: "Coin Change (Min Coins)",
@@ -1768,6 +2190,23 @@ const PROBLEMS = {
     insight:
       "3-neighbor grid. Diagonal edges appear ONLY on character matches. Answer is always at the bottom-right corner.",
     dagShape: "2D grid, ≤3 edges into each cell",
+  },
+  minpathsum: {
+    pattern: "B",
+    title: "Minimum Path Sum",
+    subproblem: "T(i,j) = minimum path sum to reach cell (i,j) from (1,1)",
+    input: "3x3 cost grid",
+    baseCases: "T(1,1) = C[1][1]",
+    recurrence:
+      "T(i,j) = C[i][j] + min(T(i−1,j), T(i,j-1)),\n       1 ≤ i ≤ m, 1 ≤ j ≤ n",
+    answer: "return T(m, n)",
+    numSubproblems: "O(mn)",
+    runtime: "O(mn)",
+    extractionRuntime: "O(1)",
+    build: buildMinPathSum,
+    insight:
+      "Grid accumulation. No diagonals (no matching). Costs exist at every cell.",
+    dagShape: "2D grid, 2 edges into each cell",
   },
   edit: {
     pattern: "B",
@@ -1839,20 +2278,20 @@ const PROBLEMS = {
   },
   subset: {
     pattern: "C",
-    title: "Subset Sum",
-    subproblem: "T(i,s) = TRUE iff a subset of nums[1…i] sums to s",
-    input: "nums = [3,7,1,8,4], K = 11",
-    baseCases: "T(0,0) = TRUE\nT(0,s) = FALSE, 1 ≤ s ≤ K",
+    title: "Coin Change 2 (Combinations)",
+    subproblem: "T(i,s) = number of combinations summing to s using coins[1…i]",
+    input: "coins = [1,2,5], K = 5",
+    baseCases: "T(0,0) = 1\nT(0,s) = 0, 1 ≤ s ≤ K",
     recurrence:
-      "T(i,s) = T(i−1,s) OR T(i−1, s−nums[i]),  if nums[i] ≤ s\n       = T(i−1,s),                           otherwise\n       1 ≤ i ≤ n, 0 ≤ s ≤ K",
+      "T(i,s) = T(i−1,s) + T(i, s−coins[i]),  if coins[i] ≤ s\n       = T(i−1,s),                           otherwise\n       1 ≤ i ≤ n, 0 ≤ s ≤ K",
     answer: "return T(n, K)",
     numSubproblems: "O(nK)",
     runtime: "O(nK)",
     extractionRuntime: "O(1)",
-    build: buildSubsetSum,
+    build: buildCoinChange2,
     insight:
-      "Boolean knapsack: OR instead of MAX. Same DAG shape — the edge semantics change but the graph is identical.",
-    dagShape: "Same as 0/1 Knapsack, boolean values",
+      "Combinatorial Knapsack: Addition (+) instead of MAX/OR. To allow infinite coin reuse, the 'take' jump lands in the SAME row (i), not the previous row (i-1).",
+    dagShape: "Grid, take arcs stay in the same row.",
   },
   unbounded: {
     pattern: "C",
@@ -1938,6 +2377,24 @@ const PROBLEMS = {
     build: buildOBST,
     insight:
       "Classic Interval DP. We try every root 'r' and combine optimal left and right subtrees. Similar structure to MCM.",
+    dagShape: "Pyramid / Upper Triangular Grid",
+  },
+  burstballoons: {
+    pattern: "D",
+    title: "Burst Balloons",
+    subproblem:
+      "T(i,j) = max coins from bursting balloons in open interval (i,j)",
+    input: "A = [3,1,5,8] -> [1,3,1,5,8,1]",
+    baseCases: "T(i, j) = 0 if j = i + 1",
+    recurrence:
+      "T(i,j) = max{T(i,k) + T(k,j) + A[i]·A[k]·A[j]},\n       i < k < j,  for len = j−i from 2 to n+1",
+    answer: "return T(0, n+1)",
+    numSubproblems: "O(n²)",
+    runtime: "O(n³)",
+    extractionRuntime: "O(1)",
+    build: buildBurstBalloons,
+    insight:
+      "Interval DP with a twist: 'k' represents the LAST action taken in the interval, preventing the left and right subproblems from interfering with each other.",
     dagShape: "Pyramid / Upper Triangular Grid",
   },
   // Pattern E: Tree DP
@@ -2028,6 +2485,23 @@ const PROBLEMS = {
       "Game theory bitmask: boolean DP with NOT. A state is winning if ANY child state is losing for the opponent.",
     dagShape: "Single-column mask states, sorted by popcount",
   },
+  subsetpartition: {
+    pattern: "F",
+    title: "Subset Partitioning",
+    subproblem:
+      "T(mask) = min groups needed to partition the items in mask such that each group is valid",
+    input: "nums = [1,5,11,5], target group sum = 11",
+    baseCases: "T(∅) = 0",
+    recurrence: "T(mask) = 1 + min{T(mask \\ sub)} for all valid sub ⊆ mask",
+    answer: "return T(full mask)",
+    numSubproblems: "O(2ⁿ)",
+    runtime: "O(3ⁿ)",
+    extractionRuntime: "O(1)",
+    build: buildSubsetPartitioning,
+    insight:
+      "Instead of transitioning by adding ONE element (TSP), we transition by adding an ENTIRE VALID SUB-MASK. The sub-mask loop runs in O(3^n) total time instead of O(2^n).",
+    dagShape: "Single-column mask states. Edges jump multiple popcounts.",
+  },
   beautiful: {
     pattern: "F",
     title: "Beautiful Arrangement",
@@ -2052,12 +2526,12 @@ const PATTERN_META = {
   A: {
     label: "Pattern A: Linear (1D Chain)",
     color: C.accent,
-    problems: ["lis", "maxsub", "coins", "oscillating"],
+    problems: ["lis", "maxsub", "robber1d", "coins", "oscillating"],
   },
   B: {
-    label: "Pattern B: Grid / Dual-Sequence (2D Mesh)",
+    label: "Pattern B: Grid (2D Mesh)",
     color: C.violet,
-    problems: ["lcs", "edit", "maxsquare", "palindrome"],
+    problems: ["lcs", "edit", "minpathsum", "maxsquare", "palindrome"],
   },
   C: {
     label: "Pattern C: Pseudo-Polynomial (Knapsack)",
@@ -2067,7 +2541,7 @@ const PATTERN_META = {
   D: {
     label: "Pattern D: Interval Pyramid (Range DP)",
     color: C.rose,
-    problems: ["mcm", "lps_interval", "obst"],
+    problems: ["mcm", "lps_interval", "obst", "burstballoons"],
   },
   E: {
     label: "Pattern E: Tree DP (Root Flow)",
@@ -2075,9 +2549,9 @@ const PATTERN_META = {
     problems: ["houserobber3", "diameter", "maxpathsum"],
   },
   F: {
-    label: "Pattern F: Bitmask (Hypercube)",
+    label: "Pattern F: Bitmask (Subset DP)",
     color: C.emerald,
-    problems: ["tsp", "caniwin", "beautiful"],
+    problems: ["tsp", "caniwin", "subsetpartition", "beautiful"],
   },
 };
 
@@ -2330,9 +2804,9 @@ function GridDAG({ graph }) {
             x2={t.x}
             y2={t.y}
             stroke={s}
-            strokeWidth={e.active ? 2 : 0.7}
+            strokeWidth={e.active ? 2 : 1}
             markerEnd={mk}
-            opacity={e.active ? 1 : 0.3}
+            // opacity={e.active ? 1 : 0.3}
             filter={e.active ? "url(#gg)" : undefined}
           />
         );
@@ -2605,6 +3079,7 @@ export default function DPDagVisualizer({ pattern }) {
         gap: 24,
         maxWidth: SIZES.maxWidth,
         margin: "0 auto",
+        background: "var(--bg-0)",
       }}
     >
       {/* Header */}
@@ -2688,7 +3163,7 @@ export default function DPDagVisualizer({ pattern }) {
           style={{
             padding: "16px 20px",
             borderBottom: `1px solid ${C.border}`,
-            background: C.surfaceHover,
+            background: C.surface,
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
@@ -2696,7 +3171,7 @@ export default function DPDagVisualizer({ pattern }) {
         >
           <div style={{ fontWeight: 600, color: C.text }}>{prob.title}</div>
           <div
-            style={{ fontSize: 12, color: C.textDim, fontFamily: TYPO.mono }}
+            style={{ fontSize: 14, color: C.textDim, fontFamily: TYPO.mono }}
           >
             Runtime: {prob.runtime}
           </div>
@@ -2860,12 +3335,12 @@ export default function DPDagVisualizer({ pattern }) {
                 borderRadius: 4,
               }}
             >
-              <span style={{ fontSize: 11, color: C.textDim, fontWeight: 600 }}>
+              <span style={{ fontSize: 14, color: C.textDim, fontWeight: 600 }}>
                 (1) Subproblems
               </span>
               <span
                 style={{
-                  fontSize: 12,
+                  fontSize: 14,
                   color: C.text,
                   fontFamily: TYPO.mono,
                 }}
@@ -2882,12 +3357,12 @@ export default function DPDagVisualizer({ pattern }) {
                 borderRadius: 4,
               }}
             >
-              <span style={{ fontSize: 11, color: C.textDim, fontWeight: 600 }}>
+              <span style={{ fontSize: 14, color: C.textDim, fontWeight: 600 }}>
                 (2) Table Fill
               </span>
               <span
                 style={{
-                  fontSize: 12,
+                  fontSize: 14,
                   color: C.text,
                   fontFamily: TYPO.mono,
                 }}
@@ -2904,12 +3379,12 @@ export default function DPDagVisualizer({ pattern }) {
                 borderRadius: 4,
               }}
             >
-              <span style={{ fontSize: 11, color: C.textDim, fontWeight: 600 }}>
+              <span style={{ fontSize: 14, color: C.textDim, fontWeight: 600 }}>
                 (3) Answer
               </span>
               <span
                 style={{
-                  fontSize: 12,
+                  fontSize: 14,
                   color: C.text,
                   fontFamily: TYPO.mono,
                 }}
@@ -2926,12 +3401,12 @@ export default function DPDagVisualizer({ pattern }) {
                 borderRadius: 4,
               }}
             >
-              <span style={{ fontSize: 11, color: C.textDim, fontWeight: 600 }}>
+              <span style={{ fontSize: 14, color: C.textDim, fontWeight: 600 }}>
                 (4) Extraction
               </span>
               <span
                 style={{
-                  fontSize: 12,
+                  fontSize: 14,
                   color: C.text,
                   fontFamily: TYPO.mono,
                 }}
@@ -2955,7 +3430,7 @@ export default function DPDagVisualizer({ pattern }) {
           <div>
             <div
               style={{
-                fontSize: 11,
+                fontSize: 14,
                 fontWeight: 700,
                 color: C.textDim,
                 marginBottom: 6,
@@ -2964,14 +3439,14 @@ export default function DPDagVisualizer({ pattern }) {
             >
               Key Insight
             </div>
-            <div style={{ fontSize: 13, color: C.textMuted, lineHeight: 1.5 }}>
+            <div style={{ fontSize: 14, color: C.textMuted, lineHeight: 1.5 }}>
               {prob.insight}
             </div>
           </div>
           <div>
             <div
               style={{
-                fontSize: 11,
+                fontSize: 14,
                 fontWeight: 700,
                 color: C.textDim,
                 marginBottom: 6,
@@ -2980,7 +3455,7 @@ export default function DPDagVisualizer({ pattern }) {
             >
               DAG Shape
             </div>
-            <div style={{ fontSize: 13, color: C.textMuted, lineHeight: 1.5 }}>
+            <div style={{ fontSize: 14, color: C.textMuted, lineHeight: 1.5 }}>
               {prob.dagShape}
             </div>
           </div>
@@ -2988,9 +3463,9 @@ export default function DPDagVisualizer({ pattern }) {
         <div
           style={{
             padding: "12px 20px",
-            background: C.surfaceHover,
+            background: C.surface,
             borderTop: `1px solid ${C.border}`,
-            fontSize: 12,
+            fontSize: 14,
             color: C.textDim,
             fontStyle: "italic",
           }}

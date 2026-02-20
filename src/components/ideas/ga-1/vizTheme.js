@@ -1,19 +1,23 @@
 export const TOKENS = {
-  panelBg: "rgb(var(--gray-light))",
-  surfaceSoft:
-    "color-mix(in srgb, rgb(var(--gray-light)) 96%, rgb(var(--gray-dark)))",
-  surface:
-    "color-mix(in srgb, rgb(var(--gray-light)) 92%, rgb(var(--gray-dark)))",
+  panelBg: "var(--bg-1)",
+  surfaceSoft: "var(--bg-1)",
+  // surfaceSoft:
+  //   "color-mix(in srgb, rgb(var(--gray-light)) 93%, rgb(var(--gray-dark)))",
+  surface: "var(--bg-2)",
+  // surface:
+  //   "color-mix(in srgb, rgb(var(--gray-light)) 87%, rgb(var(--gray-dark)))",
   surfaceStrong:
-    "color-mix(in srgb, rgb(var(--gray-light)) 86%, rgb(var(--gray-dark)))",
+    "color-mix(in srgb, rgb(var(--gray-light)) 79%, rgb(var(--gray-dark)))",
   border:
     "color-mix(in srgb, rgb(var(--gray-dark)) 24%, rgb(var(--gray-light)))",
   borderStrong:
     "color-mix(in srgb, rgb(var(--gray-dark)) 36%, rgb(var(--gray-light)))",
-  text: "var(--sol-9)",
+  // text: "var(--sol-9)",
+  text: "var(--gray-dark)",
   textMuted: "var(--sol-8)",
-  textDim: "var(--sol-7)",
-  textFaint: "color-mix(in srgb, var(--sol-7) 88%, transparent)",
+  textDim: "var(--sol-7)", // More visible on darks
+  textFaint: "color-mix(in srgb, var(--sol-7) 80%, transparent)", // Brighter faint
+  // accent: "var(--accent)",
   accent: "var(--accent)",
   focus: "0 0 0 2px color-mix(in srgb, var(--accent) 38%, transparent)",
   shadow: "0 10px 24px rgba(var(--black), 0.12)",
@@ -45,7 +49,7 @@ export function buttonStyles({ active = false, tone = "neutral", color } = {}) {
     minHeight: SIZES.buttonHeight,
     padding: "6px 14px",
     borderRadius: SIZES.radiusSm,
-    border: `1px solid ${active ? (isSemantic ? tint : TOKENS.borderStrong) : (isSemantic ? `color-mix(in srgb, ${tint} 60%, ${TOKENS.border})` : TOKENS.border)}`,
+    border: `1px solid ${active ? (isSemantic ? tint : TOKENS.borderStrong) : isSemantic ? `color-mix(in srgb, ${tint} 60%, ${TOKENS.border})` : TOKENS.border}`,
     background: active
       ? isSemantic
         ? `color-mix(in srgb, ${tint} 18%, ${TOKENS.surfaceStrong})`

@@ -68,8 +68,8 @@ function TreeVisualization({ a, b, d, maxDepth }) {
   }, [a, b, d, maxDepth]);
 
   const svgWidth = 700;
-  const svgHeight = 360;
-  const levelHeight = svgHeight / (treeData.length + 0.5);
+  const svgHeight = 400; // Increased height minimally
+  const levelHeight = svgHeight / (treeData.length + 0.2); // Spread tree more evenly
   const cappedA = Math.min(a, 6);
 
   const maxTotalWork = Math.max(...treeData.map((l) => l.totalWork));
@@ -96,7 +96,6 @@ function TreeVisualization({ a, b, d, maxDepth }) {
           cy={y}
           r={radius}
           fill={caseColor}
-          opacity={opacity}
           stroke={TOKENS.borderStrong}
           strokeWidth={0.5}
         />,
@@ -109,13 +108,18 @@ function TreeVisualization({ a, b, d, maxDepth }) {
         <text
           key={`ellipsis-${index}`}
           x={x}
-          y={y + 4}
+          y={y + radius + 14}
           textAnchor="middle"
           fill={TOKENS.textMuted}
-          fontSize="12"
+          fontSize="11"
           fontFamily={TYPO.mono}
+          letterSpacing={1}
         >
-          ⋯ ({levelData.numNodes} nodes)
+          ⋯ (
+          {levelData.numNodes > 1000
+            ? levelData.numNodes.toExponential(0)
+            : levelData.numNodes}{" "}
+          nodes)
         </text>,
       );
     }
@@ -140,21 +144,21 @@ function TreeVisualization({ a, b, d, maxDepth }) {
               <line
                 key={`edge-${index}-${i}-${c}`}
                 x1={px}
-                y1={y + radius}
+                y1={y}
                 x2={cx}
-                y2={nextY - radius}
+                y2={nextY}
                 stroke={TOKENS.border}
-                strokeWidth={0.8}
+                strokeWidth={0.6}
               />,
             );
             edgeCount++;
           }
         }
       }
-      return [...edges, ...nodes];
+      return { edges, nodes };
     }
 
-    return nodes;
+    return { edges: [], nodes };
   }
 
   return (
@@ -164,7 +168,12 @@ function TreeVisualization({ a, b, d, maxDepth }) {
         viewBox={`0 0 ${svgWidth} ${svgHeight}`}
         style={{ overflow: "visible" }}
       >
-        {treeData.map((level, i) => renderLevel(level, i))}
+        <g id="edges">
+          {treeData.map((level, i) => renderLevel(level, i).edges)}
+        </g>
+        <g id="nodes">
+          {treeData.map((level, i) => renderLevel(level, i).nodes)}
+        </g>
       </svg>
       {/* Work per level bar overlay */}
       <div
@@ -176,17 +185,28 @@ function TreeVisualization({ a, b, d, maxDepth }) {
           width: 100,
           display: "flex",
           flexDirection: "column",
-          justifyContent: "space-around",
-          padding: "8px 0",
+          flexDirection: "column",
+          justifyContent: "flex-start",
+          padding: 0,
         }}
       >
         {treeData.map((level, i) => {
           const workRatio =
             maxTotalWork > 0 ? level.totalWork / maxTotalWork : 0;
+          const yPos = levelHeight * (i + 0.5); // Exact center of tree row
+
           return (
             <div
               key={i}
-              style={{ display: "flex", alignItems: "center", gap: 6 }}
+              style={{
+                position: "absolute",
+                top: `${(yPos / svgHeight) * 100}%`,
+                transform: "translateY(-50%)",
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                width: "100%",
+              }}
             >
               <div
                 style={{
@@ -194,18 +214,22 @@ function TreeVisualization({ a, b, d, maxDepth }) {
                   height: 8,
                   background: caseColor,
                   borderRadius: 4,
-                  opacity: 0.25 + workRatio * 0.75,
+                  // opacity: 0.25 + workRatio * 0.75,
                   transition: "all 0.4s ease",
                 }}
               />
               <span
                 style={{
-                  fontSize: 9,
+                  fontSize: 14,
                   color: TOKENS.textDim,
                   fontFamily: TYPO.mono,
                 }}
               >
-                {level.numNodes > 1 ? `${level.numNodes}×` : "1×"}
+                {level.numNodes > 100
+                  ? level.numNodes.toExponential(0) + "×"
+                  : level.numNodes > 1
+                    ? `${level.numNodes}×`
+                    : "1×"}
               </span>
             </div>
           );
@@ -259,9 +283,9 @@ function Slider({ label, value, min, max, step, onChange, note }) {
       {note && (
         <div
           style={{
-            fontSize: 10,
+            fontSize: 12,
             color: TOKENS.textFaint,
-            marginTop: 3,
+            marginTop: 6,
             fontFamily: TYPO.mono,
           }}
         >
@@ -297,6 +321,7 @@ export default function MasterTheoremViz() {
         color: TOKENS.text,
         fontFamily: TYPO.body,
         padding: "24px 16px",
+        background: "var(--bg-0)",
       }}
     >
       <div style={{ maxWidth: SIZES.maxWidth, margin: "0 auto" }}>
@@ -434,9 +459,9 @@ export default function MasterTheoremViz() {
               <div
                 style={{
                   fontFamily: TYPO.mono,
-                  fontSize: 12,
+                  fontSize: 13,
                   color: TOKENS.textMuted,
-                  marginBottom: 10,
+                  marginBottom: 12,
                 }}
               >
                 Key comparison
@@ -452,9 +477,9 @@ export default function MasterTheoremViz() {
                 <div style={{ textAlign: "center" }}>
                   <div
                     style={{
-                      fontSize: 10,
+                      fontSize: 12,
                       color: TOKENS.textDim,
-                      marginBottom: 2,
+                      marginBottom: 4,
                     }}
                   >
                     log_b(a)
@@ -476,9 +501,9 @@ export default function MasterTheoremViz() {
                 <div style={{ textAlign: "center" }}>
                   <div
                     style={{
-                      fontSize: 10,
+                      fontSize: 12,
                       color: TOKENS.textDim,
-                      marginBottom: 2,
+                      marginBottom: 4,
                     }}
                   >
                     d
@@ -503,7 +528,7 @@ export default function MasterTheoremViz() {
             {/* Case result banner */}
             <div
               style={{
-                background: `linear-gradient(135deg, ${caseInfo.color}12, ${caseInfo.color}06)`,
+                background: `linear-gradient(135deg, ${caseInfo.color}32, ${caseInfo.color}24)`,
                 border: `1px solid ${caseInfo.color}30`,
                 borderRadius: 12,
                 padding: "20px 24px",
@@ -559,7 +584,7 @@ export default function MasterTheoremViz() {
                 background: TOKENS.surfaceSoft,
                 border: `1px solid ${TOKENS.border}`,
                 borderRadius: 12,
-                padding: "20px 24px 20px 24px",
+                padding: "16px 20px",
                 position: "relative",
               }}
             >
@@ -573,8 +598,8 @@ export default function MasterTheoremViz() {
               >
                 <div
                   style={{
-                    fontSize: 11,
-                    letterSpacing: 3,
+                    fontSize: 12,
+                    letterSpacing: 2,
                     textTransform: "uppercase",
                     color: TOKENS.textDim,
                     fontFamily: TYPO.mono,
@@ -584,7 +609,7 @@ export default function MasterTheoremViz() {
                 </div>
                 <div
                   style={{
-                    fontSize: 10,
+                    fontSize: 14,
                     color: TOKENS.textFaint,
                     fontFamily: TYPO.mono,
                   }}
@@ -600,13 +625,13 @@ export default function MasterTheoremViz() {
                 style={{
                   position: "absolute",
                   right: 24,
-                  top: 20,
-                  fontSize: 9,
+                  top: 48,
+                  fontSize: 14,
                   color: TOKENS.textFaint,
                   fontFamily: TYPO.mono,
                 }}
               >
-                work/level →
+                work/level ↓
               </div>
             </div>
 
@@ -638,7 +663,7 @@ export default function MasterTheoremViz() {
                   width: "100%",
                   borderCollapse: "collapse",
                   fontFamily: TYPO.mono,
-                  fontSize: 12,
+                  fontSize: 13,
                 }}
               >
                 <thead>
@@ -646,7 +671,7 @@ export default function MasterTheoremViz() {
                     <th
                       style={{
                         textAlign: "left",
-                        padding: "4px 12px 8px 0",
+                        padding: "8px 12px 12px 0",
                         fontWeight: 500,
                         borderBottom: `1px solid ${TOKENS.border}`,
                       }}
@@ -656,7 +681,7 @@ export default function MasterTheoremViz() {
                     <th
                       style={{
                         textAlign: "right",
-                        padding: "4px 12px 8px",
+                        padding: "8px 12px 12px",
                         fontWeight: 500,
                         borderBottom: `1px solid ${TOKENS.border}`,
                       }}
@@ -666,7 +691,7 @@ export default function MasterTheoremViz() {
                     <th
                       style={{
                         textAlign: "right",
-                        padding: "4px 12px 8px",
+                        padding: "8px 12px 12px",
                         fontWeight: 500,
                         borderBottom: `1px solid ${TOKENS.border}`,
                       }}
@@ -676,7 +701,7 @@ export default function MasterTheoremViz() {
                     <th
                       style={{
                         textAlign: "right",
-                        padding: "4px 12px 8px",
+                        padding: "8px 12px 12px",
                         fontWeight: 500,
                         borderBottom: `1px solid ${TOKENS.border}`,
                       }}
@@ -686,7 +711,7 @@ export default function MasterTheoremViz() {
                     <th
                       style={{
                         textAlign: "right",
-                        padding: "4px 0 8px 12px",
+                        padding: "8px 0 12px 12px",
                         fontWeight: 500,
                         borderBottom: `1px solid ${TOKENS.border}`,
                       }}
@@ -712,15 +737,15 @@ export default function MasterTheoremViz() {
 
                     return (
                       <tr key={i} style={{ color: TOKENS.textMuted }}>
-                        <td style={{ padding: "6px 12px 6px 0" }}>{i}</td>
-                        <td style={{ textAlign: "right", padding: "6px 12px" }}>
+                        <td style={{ padding: "8px 12px 8px 0" }}>{i}</td>
+                        <td style={{ textAlign: "right", padding: "8px 12px" }}>
                           {nodes > 1000 ? nodes.toExponential(0) : nodes}
                         </td>
                         <td
                           style={{
                             textAlign: "right",
-                            padding: "6px 12px",
-                            color: TOKENS.textDim,
+                            padding: "8px 12px",
+                            // color: TOKENS.textDim,
                           }}
                         >
                           {i === 0 ? "n" : size}
@@ -728,8 +753,8 @@ export default function MasterTheoremViz() {
                         <td
                           style={{
                             textAlign: "right",
-                            padding: "6px 12px",
-                            color: TOKENS.textDim,
+                            padding: "8px 12px",
+                            // color: TOKENS.textDim,
                           }}
                         >
                           {i === 0 ? `n^${d}` : workNode}
@@ -737,7 +762,7 @@ export default function MasterTheoremViz() {
                         <td
                           style={{
                             textAlign: "right",
-                            padding: "6px 0 6px 12px",
+                            padding: "8px 0 8px 12px",
                           }}
                         >
                           <div
@@ -750,8 +775,8 @@ export default function MasterTheoremViz() {
                           >
                             <span
                               style={{
-                                fontSize: 11,
-                                color: TOKENS.textDim,
+                                fontSize: 14,
+                                // color: TOKENS.textDim,
                               }}
                             >
                               {totalRatio === 1
@@ -764,7 +789,7 @@ export default function MasterTheoremViz() {
                                 height: 6,
                                 background: caseInfo.color,
                                 borderRadius: 3,
-                                opacity: 0.6,
+                                // opacity: 0.6,
                                 transition: "all 0.3s ease",
                               }}
                             />
@@ -782,10 +807,10 @@ export default function MasterTheoremViz() {
               style={{
                 marginTop: 20,
                 padding: "16px 20px",
-                background: `${caseInfo.color}08`,
-                border: `1px solid ${caseInfo.color}15`,
+                background: `${caseInfo.color}24`,
+                border: `1px solid ${caseInfo.color}32`,
                 borderRadius: 10,
-                fontSize: 13,
+                fontSize: 16,
                 color: TOKENS.textMuted,
                 lineHeight: 1.7,
                 transition: "all 0.4s ease",

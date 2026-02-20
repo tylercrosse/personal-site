@@ -1,6 +1,6 @@
 ---
 title: "Divide & Conquer + Dynamic Programming"
-description: "Exam 1"
+description: "A survey of concepts and interactive visualizations from Part 1 of my Graduate Algorithms course"
 date: "2026-02-19"
 # updated: '2026-10-20'
 status: "in-progress"
@@ -20,10 +20,23 @@ image:
 hideCaption: true
 ---
 
+import BookCard from "../../../../components/BookCard.astro";
 import MasterTheoremViz from "../../../../components/ideas/ga-1/MasterTheoremViz.jsx";
 import DPDagVisualizer from "../../../../components/ideas/ga-1/DPDagVisualizer.jsx";
+import algsDpvImg from "../../../books/algs-dpv.jpg";
 
-This post captures my Exam 1 study notes for OMSCS Graduate Algorithms with two interactive tools I used to build intuition under time pressure.
+## Introduction
+
+This piece serves as both a personal study guide and a technical reference. I am currently taking Georgia Tech's [CS 6515: Intro to Graduate Algorithms](https://omscs.gatech.edu/cs-6515-intro-graduate-algorithms) in the Spring 2026 semester. I'm organizing these notes to consolidate my learning for Exam 1—following the Feynman technique of teaching to understand, while also sharing insights for those interested in the course or my background. My audience includes prospective OMSCS students, potential employers, and colleagues seeking to understand the course content and my current knowledge (along with what I still need to learn).
+
+Writing this kind of reflection involves balancing honesty about my learning journey and the extent of my understanding with the recognition that I'm still developing expertise. This course is notoriously demanding, and this write-up represents my attempt to process the material and build intuition under time pressure. The bulk of this article captures my study notes, alongside two interactive tools I built to visualize the core concepts.
+
+### TL;DR
+
+- **Audience**: Prospective OMSCS students, colleagues, and hiring managers.
+- **Scope**: Study notes covering Divide & Conquer (Master Theorem) and Dynamic Programming (DAG patterns).
+- **Takeaways**: Understand recursive algorithmic patterns, formulate DP recurrences, and map abstract concepts to visual representations.
+- **Extras**: Interactive Master Theorem visualizer and DP DAG visualizer.
 
 ## Divide & Conquer
 
@@ -41,7 +54,7 @@ The course encourages structuring problem-solving into distinct sections rather 
   - Write a narrative, informal justification (no formal mathematical or inductive proofs are required).
   - If you modified a known algorithm, you must explain why your specific tweaks are correct and successfully solve the problem.
 - **(c) Runtime Analysis:** Analyze your algorithm using worst-case **Big-O notation**.
-  - You can skip analyzing O(1) operations.
+  - You can skip analyzing $O(1)$ operations.
   - You may assert the standard runtime of unmodified "black-box" algorithms without extra proof.
   - If you modify a black box, you must justify how those changes impact the runtime—even if the overall Big-O doesn't change.
   - Always conclude with a single, fully simplified final runtime in Big-O notation.
@@ -65,6 +78,31 @@ Follow this workflow to brainstorm and write your solution:
    - _Why are the base cases logically sound?_
    - _What is the logic behind branching left or right on each recursive call?_
 5. **Calculate the Runtime:** Step through your algorithm to build your final worst-case Big-O analysis.
+
+### Example Walkthrough: Majority Element
+
+Let's walk through a concrete example.
+
+**Problem Statement:** An array `A[1…n]` has a majority element if more than half its entries are the same. Given an array, design an $O(n \log n)$ algorithm to determine if it has a majority element, and if so, find it. The elements are not sortable (e.g., GIF files), so you can only test for equality `A[i] == A[j]` in $O(1)$ time.
+
+**Algorithm:**
+1. Recursively divide the input array into two equal-sized subarrays, $A_1$ and $A_2$.
+2. **Base case:** If the subarray has size 1, report its single element as the majority element.
+3. At each level of recursion, check the majority element returned by the left and right subarrays.
+4. For each potential majority element, scan the combined array to count its occurrences.
+5. If one element occurs strictly more than $n/2$ times in the combined array, return it as the majority element.
+6. Otherwise, return `NO_MAJORITY`.
+
+**Justification of Correctness:**
+If a majority element exists in the combined array, it *must* also be the majority element in at least one of its two halves. By recursively dividing the input space, we ensure that if a true majority element exists, it will emerge as a candidate from the base cases up through the recursion. Counting occurrences at each level guarantees we only promote elements that are genuine majorities for the specific subarray being considered.
+
+**Runtime Analysis:**
+- We split the problem into 2 subproblems: $a = 2$.
+- Each subproblem is exactly half the size: $b = 2$.
+- The work to combine results (scanning the array to count occurrences) takes linear time: $O(n^1)$, so $d = 1$.
+- We have the recurrence $T(n) = 2T(n/2) + O(n)$.
+- Since $\log_b(a) = \log_2(2) = 1$, and $d = 1$, we are in **Case 2 (Balanced)**.
+- The overall runtime is $O(n^1 \log n) \implies O(n \log n)$.
 
 ### Master Theorem
 
@@ -132,28 +170,41 @@ $$
 
 So, comparing $\log_b​(a)$ to $d$ is mathematically identical to comparing the branching factor $a$ to the work-shrinkage factor $b^d$.
 
+### What to remember
+
+- **Problem Structure**: Always define the algorithm steps, provide an informal justification of correctness based on why the problem space shrinks and the base cases hold, and finish with a single Big-O limit.
+- **Master Theorem Formula**: $T(n) = aT(n/b) + O(n^d)$
+- **Master Theorem Cases**:
+  - $d > \log_b(a)$: Root-heavy $\to O(n^d)$ (combine step dominates).
+  - $d = \log_b(a)$: Balanced $\to O(n^d \log n)$ (work is spread evenly).
+  - $d < \log_b(a)$: Leaf-heavy $\to O(n^{\log_b a})$ (recursive calls dominate).
+
 ## Dynamic Programming
 
 Use this to inspect how different DP families map to DAG shapes, transitions, and extraction paths.
 
-### Solution Format
+### Explaining Your Approach
 
-Every DP solution in this course requires four components:
+I've learned that a rigorous Dynamic Programming solution is best communicated through four key components. Skipping straight to code often masks underlying logical flaws; writing these out forces you to fully understand the state space.
 
-**(a) Subproblem Definition.** Define T(i) or T(i,j) in words, built on a subset of the input (e.g., A[1..i]). May or may not require inclusion of the last element.
+**(a) Subproblem Definition.** Define the state, like $T(i)$ or $T(i,j)$, purely in words. State clearly what subset of the input it operates on and whether it mandates including a specific element (e.g., "ending at index $i$"). 
 
-**(b) Recurrence.** Mathematical notation only — no code, no prose. A single definition covering all entries, with base cases and variable bounds.
+**(b) Recurrence.** Write the transition purely in mathematical notation. A complete recurrence must cover:
+- All recursive step cases.
+- All necessary base cases.
+- Explicit bounds for all variables.
 
-**(c) Implementation Analysis:**
+**(c) Implementation Analysis.** To prove the algorithm is efficient and complete, outline:
+1. **State Space:** The total number of subproblems in Big-O.
+2. **Transition Time:** The runtime to calculate one subproblem, which dictates the total time to fill the table.
+3. **Extraction:** Where and how to extract the final answer from the table.
+4. **Extraction Time:** The runtime of the extraction step.
 
-1. Number of subproblems in Big-O.
-2. Runtime to fill table.
-3. Where/how to extract the final answer.
-4. Runtime of extraction.
+> [!note]
+> **On Extraction:** Just finding the optimal numeric value is often not enough. If a problem asks for the optimal sequence or path, you must trace back through the table/DAG to reconstruct your choices. This typically takes $O(n)$ or time proportional to the path length.
 
-_(Note on Extraction: Just finding the optimal numeric value is often not enough. If a problem asks for the optimal sequence or path, you must trace back through the table/DAG to reconstruct it. This typically takes $O(n)$ or time proportional to the path length.)_
-
-_Key rules: No recursion/memoization. Inputs indexed from 1. Inputs are immutable. Tables store primitives only. Tables may start from index 0 or -1 for base cases._
+> [!tip]
+> **Implementation Rules of Thumb:** Try to formulate DP as iterative, bottom-up table fills rather than top-down recursion with memoization. Think of the inputs as immutable, and map your base cases starting from index $0$ or $-1$ if necessary to avoid out-of-bounds edge cases.
 
 ### Problem-Solving Heuristics
 
@@ -849,3 +900,27 @@ $$
 - **(2) Fill time:** `O(3ⁿ)`
 - **(3) Return:** `T({1..n})`
 - **(4) Return time:** `O(1)`
+
+### What to remember
+
+- **Topologies**: 1D chain, 2D Grid, Knapsack, Interval (Pyramid), Tree, and Bitmask (Subsets).
+- **Subproblem Definition is Key**: T(i) / T(i, j) must be written in English mapping exactly to the components of the desired end state.
+- **Four required components**: (a) Subproblem, (b) Recurrence (with base cases & bounds), (c) Time/Space complexity analysis, (d) Return statement.
+- **No Recursion Allowed**: Formulate iterative topological sorts, utilizing 1-based indexing, table storage, without modifying immutable input sets.
+
+## Resources
+
+### Books
+
+This is the primary textbook for the course.
+
+<BookCard
+  title="Algorithms"
+  author="Sanjoy Dasgupta, Christos Papadimitriou, and Umesh Vazirani"
+  img={algsDpvImg}
+  url="https://highered.mheducation.com/sites/0073523402/"
+>
+  <p>
+    The accompanying text for the course. It provides clear, concise, and elegant explanations of Divide & Conquer and Dynamic Programming concepts.
+  </p>
+</BookCard>
