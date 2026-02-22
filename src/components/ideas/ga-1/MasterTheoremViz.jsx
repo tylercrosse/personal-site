@@ -185,7 +185,6 @@ function TreeVisualization({ a, b, d, maxDepth }) {
           width: 100,
           display: "flex",
           flexDirection: "column",
-          flexDirection: "column",
           justifyContent: "flex-start",
           padding: 0,
         }}

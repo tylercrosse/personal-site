@@ -6,7 +6,8 @@ date: "2026-02-19"
 status: "in-progress"
 type: "retro"
 tags: ["algorithms", "computer-science", "MSCS"]
-# category: ['projects']
+category: ['mscs']
+parent: '2026/ga-retro'
 draft: true
 audience: "All"
 media_subpath: "/ideas/ga-1/"
@@ -14,7 +15,7 @@ media_subpath: "/ideas/ga-1/"
 image:
   # path: "hero-clipart-blume-vintage-kunst-1631264278ngu.png"
   # path: "hero-backprop.png"
-  path: "hero2.jpg"
+  path: "TVM_Vaulted-Willow_Exploded.jpg"
   alt: "Green ripples abstract art"
   # maxWidth: "800px"
 hideCaption: true
@@ -24,8 +25,13 @@ import BookCard from "../../../../components/BookCard.astro";
 import MasterTheoremViz from "../../../../components/ideas/ga-1/MasterTheoremViz.jsx";
 import DPDagVisualizer from "../../../../components/ideas/ga-1/DPDagVisualizer.jsx";
 import algsDpvImg from "../../../books/algs-dpv.jpg";
+import algsEricksonImg from "../../../books/algs-erickson.png";
+import algsCLRSImg from "../../../books/algs-clrs.jpg";
 
 ## Introduction
+
+> [!note]
+> This article is part of a broader series on my experience with CS 6515. You can find the high-level course overview and links to other parts in my main [Graduate Algorithms Retro](/ideas/2026/ga-retro/).
 
 This piece serves as both a personal study guide and a technical reference. I am currently taking Georgia Tech's [CS 6515: Intro to Graduate Algorithms](https://omscs.gatech.edu/cs-6515-intro-graduate-algorithms) in the Spring 2026 semester. I'm organizing these notes to consolidate my learning for Exam 1—following the Feynman technique of teaching to understand, while also sharing insights for those interested in the course or my background. My audience includes prospective OMSCS students, potential employers, and colleagues seeking to understand the course content and my current knowledge (along with what I still need to learn).
 
@@ -42,18 +48,19 @@ Writing this kind of reflection involves balancing honesty about my learning jou
 
 Use this to map a recurrence to Master Theorem behavior and see which level dominates work as parameters change.
 
-### Solution Format
+### The 4-Step Solution Format
 
-The course encourages structuring problem-solving into distinct sections rather than diving straight into code. This approach builds a habit of thinking algorithmically and mathematically. _Note: Correctness is never assumed from the algorithm steps; it must be explicitly argued._
+The course encourages structuring problem-solving into distinct sections rather than diving straight into code. This approach builds a habit of thinking algorithmically and mathematically. By combining the course requirements with Jeff Erickson's "What, How, Why, How fast" framework, we get a robust template for explaining algorithms. _Note: Correctness is never assumed from the algorithm steps; it must be explicitly argued._
 
-- **(a) Algorithm Description:** Explain _how_ your algorithm solves the problem using a plain-English narrative. You can use paragraphs or high-level bullet points, but **pseudocode is strictly forbidden**.
-  - Avoid writing code disguised as words (e.g., translating a script line-by-line). Deeply nested bullet points are usually a red flag that you are doing this.
+- **1. What: Problem Specification:** Explicitly define the problem the algorithm solves. Include the type and meaning of inputs, exactly what the output should be, and state any hidden assumptions.
+- **2. How: Algorithm Description:** Explain _how_ your algorithm solves the problem using a plain-English narrative. You can use paragraphs or high-level bullet points, but **pseudocode is strictly forbidden**.
+  - Avoid writing code disguised as words (e.g., translating a script line-by-line). Deeply nested bullet points are usually a red flag.
   - Walk through every major step, ending with the final return statement.
   - If you are adapting a known algorithm, explicitly highlight the modifications you made.
-- **(b) Justification of Correctness:** Explain _why_ your algorithm works.
+- **3. Why: Justification of Correctness:** Explain _why_ your algorithm works.
   - Write a narrative, informal justification (no formal mathematical or inductive proofs are required).
   - If you modified a known algorithm, you must explain why your specific tweaks are correct and successfully solve the problem.
-- **(c) Runtime Analysis:** Analyze your algorithm using worst-case **Big-O notation**.
+- **4. How Fast: Runtime Analysis:** Analyze your algorithm using worst-case **Big-O notation**.
   - You can skip analyzing $O(1)$ operations.
   - You may assert the standard runtime of unmodified "black-box" algorithms without extra proof.
   - If you modify a black box, you must justify how those changes impact the runtime—even if the overall Big-O doesn't change.
@@ -81,11 +88,12 @@ Follow this workflow to brainstorm and write your solution:
 
 ### Example Walkthrough: Majority Element
 
-Let's walk through a concrete example.
+Let's walk through a concrete example using the 4-step format.
 
-**Problem Statement:** An array `A[1…n]` has a majority element if more than half its entries are the same. Given an array, design an $O(n \log n)$ algorithm to determine if it has a majority element, and if so, find it. The elements are not sortable (e.g., GIF files), so you can only test for equality `A[i] == A[j]` in $O(1)$ time.
+**1. What: Problem Specification**
+An array `A[1…n]` has a majority element if more than half its entries are the same. Given an array, design an $O(n \log n)$ algorithm to determine if it has a majority element, and if so, find it. The elements are not sortable (e.g., GIF files), so you can only test for equality `A[i] == A[j]` in $O(1)$ time. Expected output is the majority element or `NO_MAJORITY` if none exists.
 
-**Algorithm:**
+**2. How: Algorithm Description**
 1. Recursively divide the input array into two equal-sized subarrays, $A_1$ and $A_2$.
 2. **Base case:** If the subarray has size 1, report its single element as the majority element.
 3. At each level of recursion, check the majority element returned by the left and right subarrays.
@@ -93,10 +101,10 @@ Let's walk through a concrete example.
 5. If one element occurs strictly more than $n/2$ times in the combined array, return it as the majority element.
 6. Otherwise, return `NO_MAJORITY`.
 
-**Justification of Correctness:**
+**3. Why: Justification of Correctness**
 If a majority element exists in the combined array, it *must* also be the majority element in at least one of its two halves. By recursively dividing the input space, we ensure that if a true majority element exists, it will emerge as a candidate from the base cases up through the recursion. Counting occurrences at each level guarantees we only promote elements that are genuine majorities for the specific subarray being considered.
 
-**Runtime Analysis:**
+**4. How Fast: Runtime Analysis**
 - We split the problem into 2 subproblems: $a = 2$.
 - Each subproblem is exactly half the size: $b = 2$.
 - The work to combine results (scanning the array to count occurrences) takes linear time: $O(n^1)$, so $d = 1$.
@@ -125,10 +133,10 @@ T(n) =
 \end{cases}
 $$
 
-- **Case 1 (Leaf-Heavy):** $n^{\log_b​(a)} > n^d$. The recursive branching explodes, meaning the vast majority of the work happens at the bottom of the tree. The leaves win, so the bound is strictly the number of leaves: $\Theta(n^{\log_b​(a)})$.
+- **Case 1 (Leaf-Heavy):** $n^{\log_b(a)} > n^d$. The recursive branching explodes, meaning the vast majority of the work happens at the bottom of the tree. The leaves win, so the bound is strictly the number of leaves: $\Theta(n^{\log_b(a)})$.
 
-- **Case 2 (Perfectly Balanced):** $n^{\log_b​(a)} = n^d$. It is a tie. The local work at the root matches the work at the leaves, and the work across every internal level of the tree is identical. Because the work per level is constant, you just multiply the root work by the number of levels ($\log n$). The bound is: $\Theta(n^d\log n)$. _(Note: The "extended" Case 2 handles $f(n) = \Theta(n^{\log_b a} \log^k n)$, resulting in $\Theta(n^{\log_b a} \log^{k+1} n)$)._
-- **Case 3 (Root-Heavy):** $n^{\log_b​(a)} < n^d$. The local work dwarfs the branching. The work shrinks geometrically as you go down the tree, meaning the total time is dominated by the massive chunk of work done at the very beginning. The root wins, so the bound is strictly the root work: $\Theta(n^d)$.
+- **Case 2 (Perfectly Balanced):** $n^{\log_b(a)} = n^d$. It is a tie. The local work at the root matches the work at the leaves, and the work across every internal level of the tree is identical. Because the work per level is constant, you just multiply the root work by the number of levels ($\log n$). The bound is: $\Theta(n^d\log n)$. _(Note: The "extended" Case 2 handles $f(n) = \Theta(n^{\log_b a} \log^k n)$, resulting in $\Theta(n^{\log_b a} \log^{k+1} n)$)._
+- **Case 3 (Root-Heavy):** $n^{\log_b(a)} < n^d$. The local work dwarfs the branching. The work shrinks geometrically as you go down the tree, meaning the total time is dominated by the massive chunk of work done at the very beginning. The root wins, so the bound is strictly the root work: $\Theta(n^d)$.
 
 ### Divide & Conquer Visualization
 
@@ -142,12 +150,12 @@ Drag the $a, b,$ and $d$ sliders below to see how the recursion tree shifts betw
 
 1. **Number of nodes:** At level $k$, the tree has branched $k$ times, so there are $a^k$ nodes.
 2. **Size of each subproblem:** The problem size $n$ has been divided by $b$ exactly $k$ times, making the input size for each node $n/b^k$.
-3. **Work per node:** Since the local work is bounded by $O(\text{size}^d)$, the work at a single node on level $k$ is $(\frac{n}{b^k}​)^d$, which simplifies to $\frac{n^d}{b^{kd}}​$.
+3. **Work per node:** Since the local work is bounded by $O(\text{size}^d)$, the work at a single node on level $k$ is $(\frac{n}{b^k})^d$, which simplifies to $\frac{n^d}{b^{kd}}$.
 
 If you multiply the **number of nodes** by the **work per node**, you get the total work for the entire $k$-th level:
 
 $$
-a^k \times \frac{n^d​}{b^{kd}}
+a^k \times \frac{n^d}{b^{kd}}
 $$
 
 Pull out the $n^d$ (which is the work at the root), and group the $k$ exponents together, and you get the formula for the total work done at the $k$-th level of the tree:
@@ -156,19 +164,19 @@ $$
 O(n^d) \times \left(\frac{a}{b^d}\right)^k
 $$
 
-The Master Theorem uses $\log_b​(a)$ instead of just comparing $a$ to $b^d$. It is just a logarithmic algebraic rewrite of the exact same inequality!
+The Master Theorem uses $\log_b(a)$ instead of just comparing $a$ to $b^d$. It is just a logarithmic algebraic rewrite of the exact same inequality!
 
-If you take $a=b^d$ and take the $\log_b$​ of both sides, you get:
-
-$$
-\log_b​(a)=\log_b​(b^d)
-$$
+If you take $a=b^d$ and take the $\log_b$ of both sides, you get:
 
 $$
-\log_b​(a)=d
+\log_b(a)=\log_b(b^d)
 $$
 
-So, comparing $\log_b​(a)$ to $d$ is mathematically identical to comparing the branching factor $a$ to the work-shrinkage factor $b^d$.
+$$
+\log_b(a)=d
+$$
+
+So, comparing $\log_b(a)$ to $d$ is mathematically identical to comparing the branching factor $a$ to the work-shrinkage factor $b^d$.
 
 ### What to remember
 
@@ -185,16 +193,20 @@ Use this to inspect how different DP families map to DAG shapes, transitions, an
 
 ### Explaining Your Approach
 
-I've learned that a rigorous Dynamic Programming solution is best communicated through four key components. Skipping straight to code often masks underlying logical flaws; writing these out forces you to fully understand the state space.
+I've learned that a rigorous Dynamic Programming solution is best communicated through four key components. Skipping straight to code often masks underlying logical flaws; writing these out forces you to fully understand the state space. By integrating Jeff Erickson's "What, How, Why, How fast" framework, we get a complete picture.
 
-**(a) Subproblem Definition.** Define the state, like $T(i)$ or $T(i,j)$, purely in words. State clearly what subset of the input it operates on and whether it mandates including a specific element (e.g., "ending at index $i$"). 
+**1. What: Problem Specification.** Define the problem, translating the colloquial problem statement into sets, sequences, or mathematical terms. State clearly what subset of the input it operates on and any constraints.
 
-**(b) Recurrence.** Write the transition purely in mathematical notation. A complete recurrence must cover:
-- All recursive step cases.
-- All necessary base cases.
-- Explicit bounds for all variables.
+**2. How: Algorithm Description.**
+- **(a) Subproblem Definition.** Define the state, like $T(i)$ or $T(i,j)$, purely in words. State clearly what subset of the input it operates on and whether it mandates including a specific element (e.g., "ending at index $i$").
+- **(b) Recurrence.** Write the transition purely in mathematical notation. A complete recurrence must cover:
+  - All recursive step cases.
+  - All necessary base cases.
+  - Explicit bounds for all variables.
 
-**(c) Implementation Analysis.** To prove the algorithm is efficient and complete, outline:
+**3. Why: Justification of Correctness.** Explain the logical basis for the recurrence transitions. This acts as an informal inductive proof that your subproblem choices and state transitions correctly build the optimal solution.
+
+**4. How Fast: Implementation Analysis.** To prove the algorithm is efficient and complete, outline:
 1. **State Space:** The total number of subproblems in Big-O.
 2. **Transition Time:** The runtime to calculate one subproblem, which dictates the total time to fill the table.
 3. **Extraction:** Where and how to extract the final answer from the table.
@@ -256,6 +268,10 @@ The topology is a 1D array. The flavor depends on how far back you look and what
 
 #### Flavor 1: "Look-Back-One" (Contiguous / Kadane's Style)
 
+**1. What: Problem Specification**
+Given an array `A[1..n]`, find the maximum sum of any contiguous subarray.
+
+**2. How: Algorithm Description**
 **Concept:** _You must extend the immediately preceding subproblem, or start completely over. The current element must be included._
 
 **(a) Subproblem:** T(i) = maximum sum of a contiguous subarray of A[1..i] which includes A[i].
@@ -280,8 +296,10 @@ $$
 > [!note]
 > _Interpretation: either start a new subarray at A[i], or extend the best subarray ending at A[i-1]._
 
-**(c) Analysis:**
+**3. Why: Justification of Correctness**
+You must extend the immediately preceding subproblem, or start completely over. By checking both starting a new subarray at A[i] or extending the best subarray ending at A[i-1], we guarantee that the maximum contiguous subarray ending at any index is found. The current element must be included in T(i).
 
+**4. How Fast: Runtime Analysis**
 - **(1) Subproblems:** `O(n)`
 - **(2) Fill time:** `O(n)`
 - **(3) Return:** `max{ T(i) : 1 ≤ i ≤ n }`
@@ -291,6 +309,10 @@ $$
 
 #### Flavor 2: "Look-Back-Two" (Skip / House Robber Style)
 
+**1. What: Problem Specification**
+Given an array of values `A[1..n]`, find the maximum sum obtainable such that no two adjacent elements are selected.
+
+**2. How: Algorithm Description**
 **Concept:** _Adjacent elements cannot both be selected. Decide whether to take the current element (skip previous) or leave it (keep previous optimal). The current element need not be included._
 
 **(a) Subproblem:** T(i) = maximum sum obtainable from A[1..i] (A[i] may or may not be selected).
@@ -318,8 +340,10 @@ $$
 > [!note]
 > _T(i-1) = skip A[i]; T(i-2) + A[i] = take A[i] and skip A[i-1]._
 
-**(c) Analysis:**
+**3. Why: Justification of Correctness**
+Adjacent elements cannot both be selected. For each step $i$, we decide whether to take the current element (which forces us to skip the previous, taking $T(i-2) + A[i]$) or leave it (keeping the previous optimal $T(i-1)$). The current element need not be included. This exhaustive check ensures we build the optimal non-adjacent sum.
 
+**4. How Fast: Runtime Analysis**
 - **(1) Subproblems:** `O(n)`
 - **(2) Fill time:** `O(n)`
 - **(3) Return:** `T(n)`
@@ -329,6 +353,10 @@ $$
 
 #### Flavor 3: "Look-Back-All" (Subsequence / LIS Style)
 
+**1. What: Problem Specification**
+Given an array `A[1..n]`, find the length of the longest increasing subsequence. The sequence need not be contiguous.
+
+**2. How: Algorithm Description**
 **Concept:** _The sequence need not be contiguous. Scan all previous valid subproblems to find the best predecessor. The current element must be included._
 
 **(a) Subproblem:** T(i) = length of the longest increasing subsequence of A[1..i] which includes A[i].
@@ -354,8 +382,10 @@ $$
 > [!note]
 > _If no j satisfies A[j] < A[i], the max is taken over {0} (set containing zero), so T(i) = 1._
 
-**(c) Analysis:**
+**3. Why: Justification of Correctness**
+To find the longest increasing subsequence ending at $i$, we can scan all previous valid subproblems $j$ where $A[j] < A[i]$ to find the best predecessor. If no $j$ satisfies this condition, the max is taken over $\{0\}$, effectively starting a new subsequence of length 1. The sequence need not be contiguous, and the current element must be included to allow extending the sequence.
 
+**4. How Fast: Runtime Analysis**
 - **(1) Subproblems:** `O(n)`
 - **(2) Fill time:** `O(n²)`
 - **(3) Return:** `max{ T(i) : 1 ≤ i ≤ n }`
@@ -373,6 +403,10 @@ The topology is the (i-1, j), (i, j-1), (i-1, j-1) neighborhood. The flavor depe
 
 #### Flavor 1: "Match or Drop" (Longest Common Subsequence)
 
+**1. What: Problem Specification**
+Given two strings `A[1..n]` and `B[1..m]`, find the length of their longest common subsequence.
+
+**2. How: Algorithm Description**
 **Concept:** _If elements match, gain 1 and consume both. If not, drop one element from either sequence and take the best._
 
 **(a) Subproblem:** T(i,j) = length of the LCS of A[1..i] and B[1..j].
@@ -401,8 +435,10 @@ T(i-1,j-1) + 1 & \text{if } A[i] = B[j] \\
 \end{aligned}
 $$
 
-**(c) Analysis:**
+**3. Why: Justification of Correctness**
+If the current elements match ($A[i] = B[j]$), they can extend the optimal common subsequence, so we gain 1 and consume both. If they do not match, we must drop one element from either sequence and take the best of the two options. This evaluates all possible alignments for a common subsequence.
 
+**4. How Fast: Runtime Analysis**
 - **(1) Subproblems:** `O(n·m)`
 - **(2) Fill time:** `O(n·m)`
 - **(3) Return:** `T(n,m)`
@@ -412,6 +448,10 @@ $$
 
 #### Flavor 2: "Penalty Cost" (Edit Distance)
 
+**1. What: Problem Specification**
+Given two strings `A[1..n]` and `B[1..m]`, find the minimum number of edits (insertions, deletions, substitutions) required to transform A into B.
+
+**2. How: Algorithm Description**
 **Concept:** _Transform A into B. Every mismatch incurs a cost; take the minimum of substitution, deletion, or insertion._
 
 **(a) Subproblem:** T(i,j) = minimum edit distance to transform A[1..i] into B[1..j].
@@ -438,8 +478,10 @@ T(i-1,j-1) & \text{if } A[i] = B[j] \\
 \end{cases}
 $$
 
-**(c) Analysis:**
+**3. Why: Justification of Correctness**
+To transform A into B, we process from the ends. If the current characters match, no cost is incurred, and we reduce both strings. If they mismatch, we must pay a penalty of 1 and choose the cheapest operation: substitution ($i-1, j-1$), deletion ($i-1, j$), or insertion ($i, j-1$). This systematically minimizes total edits over all alignments.
 
+**4. How Fast: Runtime Analysis**
 - **(1) Subproblems:** `O(n·m)`
 - **(2) Fill time:** `O(n·m)`
 - **(3) Return:** `T(n,m)`
@@ -449,6 +491,10 @@ $$
 
 #### Flavor 3: "Path Accumulation" (Min Path Sum)
 
+**1. What: Problem Specification**
+Given a grid of costs `C[1..n][1..m]`, you can only move right or down. Find the minimum cost to travel from the top-left cell to the bottom-right cell.
+
+**2. How: Algorithm Description**
 **Concept:** _Move through a physical grid accumulating weights. No matching — just movement constraints (right or down)._
 
 **(a) Subproblem:** T(i,j) = minimum cost to reach cell (i,j) from cell (1,1).
@@ -474,8 +520,10 @@ T(i,j) &= C[i][j] + \min( T(i-1,j), T(i,j-1) ) \\
 \end{aligned}
 $$
 
-**(c) Analysis:**
+**3. Why: Justification of Correctness**
+Because movement is restricted to right and down, any path reaching cell $(i, j)$ must come from either $(i-1, j)$ or $(i, j-1)$. By iteratively adding the current cell's cost $C[i][j]$ to the cheaper of these two immediate predecessors, we correctly accumulate the minimum path sum to everywhere in the grid.
 
+**4. How Fast: Runtime Analysis**
 - **(1) Subproblems:** `O(n·m)`
 - **(2) Fill time:** `O(n·m)`
 - **(3) Return:** `T(n,m)`
@@ -493,6 +541,10 @@ The topology involves jumping leftwards across a capacity dimension. The flavor 
 
 #### Flavor 1: "Take It or Leave It" (0/1 Knapsack)
 
+**1. What: Problem Specification**
+Given `n` items with weights $w_i$ and values $v_i$, and a total weight capacity $W$, find the maximum value of a subset of items that fits in the capacity. Each item can be used at most once.
+
+**2. How: Algorithm Description**
 **Concept:** _Each item can only be used once. You transition from the previous row (i-1)._
 
 **(a) Subproblem:** T(i,w) = maximum value achievable using items from {1..i} with capacity w.
@@ -520,8 +572,10 @@ $$
 > [!note]
 > _wᵢ and vᵢ are the weight and value of item i._
 
-**(c) Analysis:**
+**3. Why: Justification of Correctness**
+Each item forces a binary choice: either include it or exclude it. If the item's weight exceeds the available capacity $w$, it must be excluded. If it fits, we take the maximum between excluding it ($T(i-1, w)$) or including it ($T(i-1, w-w_i) + v_i$). Both choices transition from the previous row ($i-1$), ensuring each item is used at most once.
 
+**4. How Fast: Runtime Analysis**
 - **(1) Subproblems:** `O(n·W)`
 - **(2) Fill time:** `O(n·W)`
 - **(3) Return:** `T(n,W)`
@@ -531,6 +585,10 @@ $$
 
 #### Flavor 2: "Infinite Reuse" (Unbounded Knapsack / Min Coin Change)
 
+**1. What: Problem Specification**
+Given a target amount $W$ and $n$ coin denominations, find the minimum number of coins needed to make change. Each denomination can be used infinitely many times.
+
+**2. How: Algorithm Description**
 **Concept:** _If you take an item, you can take it again. You transition from the current row (i), not (i-1). Shown here as Minimum Coin Change._
 
 **(a) Subproblem:** T(j) = minimum number of coins needed to make change for amount j, using coins from the given denominations.
@@ -558,8 +616,10 @@ $$
 > [!note]
 > _Can also be written as 2D: T(i,w) = min( T(i-1,w), T(i, w-cᵢ) + 1 ), where row i means "using coins 1..i" and staying in row i allows reuse._
 
-**(c) Analysis:**
+**3. Why: Justification of Correctness**
+Since coins can be reused infinitely, any valid change configuration for amount $j$ ends with *some* coin $c_i$. To minimize coins used, we take 1 plus the minimum cost of the leftover amount ($j - c_i$). By checking every valid coin $c_i \le j$, we are guaranteed to find the minimum. This can also be written in 2D where staying in row $i$ achieves infinite reuse.
 
+**4. How Fast: Runtime Analysis**
 - **(1) Subproblems:** `O(W)`
 - **(2) Fill time:** `O(n·W)`
 - **(3) Return:** `T(W)`
@@ -569,6 +629,10 @@ $$
 
 #### Flavor 3: "Counting Combinations" (Subset Sum / Coin Change 2)
 
+**1. What: Problem Specification**
+Given a target amount $W$ and $n$ coin denominations, find the total number of ways to make change.
+
+**2. How: Algorithm Description**
 **Concept:** _You are not maximizing value — you are summing all possible ways to reach a state. Replace max with +._
 
 **(a) Subproblem:** T(i,w) = number of ways to form amount w using coins from {1..i}.
@@ -599,8 +663,10 @@ $$
 > [!note]
 > _Staying in row i (for the cᵢ ≤ w case) allows reuse of coin i. Moving to row i-1 only would give 0/1 counting._
 
-**(c) Analysis:**
+**3. Why: Justification of Correctness**
+Since we are counting combinations rather than maximizing value, we replace `max` with `+`. The total number of ways to form amount $w$ using coins $1..i$ is exactly the sum of the ways to form $w$ without using coin $c_i$ (moving to $i-1$) plus the ways to form $w - c_i$ using coins $1..i$ (staying in row $i$ to allow reuse).
 
+**4. How Fast: Runtime Analysis**
 - **(1) Subproblems:** `O(n·W)`
 - **(2) Fill time:** `O(n·W)`
 - **(3) Return:** `T(n,W)`
@@ -618,9 +684,13 @@ The topology always merges sub-intervals. The flavor depends on whether you spli
 
 #### Flavor 1: "The K-Split" (Matrix Chain Multiplication / Optimal BST)
 
+**1. What: Problem Specification**
+Given a sequence of $n$ matrices, find the most efficient way (minimum scalar multiplications) to multiply these matrices together. Matrix $A_i$ has dimensions $p[i-1] \times p[i]$.
+
+**2. How: Algorithm Description**
 **Concept:** _The cost of interval (i,j) depends on splitting it into (i,k) and (k+1,j) plus the cost to merge._
 
-**(a) Subproblem:** T(i,j) = minimum cost to multiply matrices Aᵢ through Aⱼ. (Matrix Aᵢ has dimensions p[i-1] × p[i].)
+**(a) Subproblem:** T(i,j) = minimum cost to multiply matrices Aᵢ through Aⱼ.
 
 **(b) Recurrence:**
 
@@ -642,10 +712,12 @@ $$
 > [!note]
 > _Fill order: by increasing interval length ℓ = j - i, from ℓ=1 up to ℓ=n-1._
 
-**(c) Analysis:**
+**3. Why: Justification of Correctness**
+Any parenthesization of the product $A_i \dots A_j$ must split the product at some matrix $A_k$. The minimum cost is the cost to compute the left half ($T(i,k)$), plus the right half ($T(k+1,j)$), plus the cost to multiply those two resulting matrices ($p[i-1]p[k]p[j]$). By iterating over all possible split points $k$, we find the optimal cost for the interval.
 
+**4. How Fast: Runtime Analysis**
 - **(1) Subproblems:** `O(n²)`
-- **(2) Fill time:** `O(n³)`
+- **(2) Fill time:** `O(n³)` (due to testing $O(n)$ splits $k$ per subproblem)
 - **(3) Return:** `T(1,n)`
 - **(4) Return time:** `O(1)`
 
@@ -653,6 +725,10 @@ $$
 
 #### Flavor 2: "Shrink from Edges" (Longest Palindromic Subsequence)
 
+**1. What: Problem Specification**
+Given a string $A[1..n]$, find the length of its longest palindromic subsequence.
+
+**2. How: Algorithm Description**
 **Concept:** _No k-loop needed. Compare the two outermost elements. If they match, the interval shrinks by 2. If not, shrink by 1 from either side._
 
 **(a) Subproblem:** T(i,j) = length of the longest palindromic subsequence of A[i..j].
@@ -680,8 +756,10 @@ $$
 > [!note]
 > _Base case T(i,i+1): if A[i]=A[i+1] then 2, else 1. This is handled by the recurrence if you define T(i,i-1)=0 for empty intervals._
 
-**(c) Analysis:**
+**3. Why: Justification of Correctness**
+We don't need to try every arbitrary split point $k$. Instead, we compare the outermost elements. If they match, they can act as the matching ends of a palindrome, contributing $2$ to the length and leaving the inner interval $T(i+1, j-1)$. If they do not match, we shrink the interval from either the left or the right and take the maximum of those two options.
 
+**4. How Fast: Runtime Analysis**
 - **(1) Subproblems:** `O(n²)`
 - **(2) Fill time:** `O(n²)`
 - **(3) Return:** `T(1,n)`
@@ -691,6 +769,10 @@ $$
 
 #### Flavor 3: "The Last Action" (Burst Balloons)
 
+**1. What: Problem Specification**
+Given $n$ balloons with values $A[1..n]$, popping balloon $k$ yields $A[k-1] \cdot A[k] \cdot A[k+1]$ coins. Find the maximum coins obtained by bursting all balloons. Balloons $0$ and $n+1$ are virtual with value $1$.
+
+**2. How: Algorithm Description**
 **Concept:** _Instead of the first split, think about k as the last balloon popped in interval (i,j). This makes left and right subproblems independent._
 
 **(a) Subproblem:** T(i,j) = maximum coins from bursting all balloons in the open interval (i,j), where i and j are unpopped boundary balloons.
@@ -715,8 +797,10 @@ $$
 > [!note]
 > _Boundaries A[0] and A[n+1] are sentinel values = 1. The key insight: choosing k last means the left/right subproblems don't interfere._
 
-**(c) Analysis:**
+**3. Why: Justification of Correctness**
+Working backwards, instead of picking the *first* balloon to pop, we pick the *last* balloon $k$ to pop in the interval. By making $k$ the last to pop, the left interval $(i,k)$ and right interval $(k,j)$ become completely independent, as $k$ remains as an unpopped boundary for both. We maximize over all possible choices of the last popped balloon $k$.
 
+**4. How Fast: Runtime Analysis**
 - **(1) Subproblems:** `O(n²)`
 - **(2) Fill time:** `O(n³)`
 - **(3) Return:** `T(0, n+1)`
@@ -734,6 +818,10 @@ Tree DP requires defining multiple states per node to handle inclusion/exclusion
 
 #### Flavor 1: "Independent Set" (Max Weight Independent Set / House Robber III)
 
+**1. What: Problem Specification**
+Given a tree where each node $u$ has a weight $w(u)$, find the maximum weight of an independent set (a set of nodes where no two nodes are connected by an edge).
+
+**2. How: Algorithm Description**
 **Concept:** _You cannot select a node and its direct children. Two states per node: exclude or include._
 
 **(a) Subproblem:** T(u,0) = max weight of an independent set in the subtree rooted at u, excluding u. T(u,1) = same, including u.
@@ -764,8 +852,10 @@ $$
 > [!note]
 > _When u is excluded, each child is free to be included or not. When u is included, all children must be excluded._
 
-**(c) Analysis:**
+**3. Why: Justification of Correctness**
+In an independent set, if a node is included, its direct children must be excluded. If a node is excluded, its children can be either included or excluded. By maintaining two states for each node $u$, we correctly evaluate both local constraints and propagate the maximum possible weight from the leaves up to the root.
 
+**4. How Fast: Runtime Analysis**
 - **(1) Subproblems:** `O(n)  (2 states per node)`
 - **(2) Fill time:** `O(n)`
 - **(3) Return:** `max( T(root,0), T(root,1) )`
@@ -775,6 +865,10 @@ $$
 
 #### Flavor 2: "Path Tracking" (Diameter of a Tree)
 
+**1. What: Problem Specification**
+Given a tree, find the diameter: the length of the longest path between any two nodes.
+
+**2. How: Algorithm Description**
 **Concept:** _The longest path may arch over a node. T(u) tracks the longest straight path down from u; a secondary equation tracks the arch._
 
 **(a) Subproblem:** T(u) = length of the longest path starting at u and going downward into the subtree of u.
@@ -816,8 +910,10 @@ $$
 > [!note]
 > _If u has ≤1 child, diameter through u is just T(u). Track the global max during the fill pass._
 
-**(c) Analysis:**
+**3. Why: Justification of Correctness**
+The longest path (diameter) of a tree either passes through the root of a subtree or does not. By calculating the longest downward path $T(u)$ for every node, we can form an arch through any node $u$ by summing its top two children's downward paths (plus 1). Tracking the maximum arch across all nodes guarantees finding the global diameter. If a node has $\le 1$ child, its diameter through $u$ is just $T(u)$.
 
+**4. How Fast: Runtime Analysis**
 - **(1) Subproblems:** `O(n)`
 - **(2) Fill time:** `O(n)`
 - **(3) Return:** `max over all u of (top two T(child) values summed)`
@@ -835,6 +931,10 @@ Bitmasks track which elements have been visited/used. Subsets are encoded as int
 
 #### Flavor 1: "Path Building" (Traveling Salesperson Problem)
 
+**1. What: Problem Specification**
+Given $n$ cities and the distances between each pair, find the minimum distance to visit every city exactly once and end at a specific city $i$.
+
+**2. How: Algorithm Description**
 **Concept:** _You need to know which cities S you have visited AND which city i you are currently at, so you can extend to the next city j._
 
 **(a) Subproblem:** T(S,i) = minimum cost to visit exactly the cities in set S, starting from city 1 and ending at city i, where i ∈ S.
@@ -859,8 +959,10 @@ $$
 > [!note]
 > _S\{i} means the set S with city i removed. Fill order: by increasing |S|. d(j,i) = distance from j to i._
 
-**(c) Analysis:**
+**3. Why: Justification of Correctness**
+To find the optimal path covering a subset of cities $S$ ending at $i$, we must have come from some other city $j \in S$. The optimal cost is the minimum over all valid prior cities $j$ of the cost to visit $S \setminus \{i\}$ ending at $j$, plus the distance from $j$ to $i$. This bitmask state tracks exactly which cities are visited to ensure no city is visited twice. Fill order is by increasing $|S|$.
 
+**4. How Fast: Runtime Analysis**
 - **(1) Subproblems:** `O(2ⁿ · n)`
 - **(2) Fill time:** `O(2ⁿ · n²)`
 - **(3) Return:** `min{ T({1..n}, i) + d(i,1) : 2 ≤ i ≤ n }`
@@ -870,6 +972,10 @@ $$
 
 #### Flavor 2: "Subset Partitioning" (Minimum Cost to Partition into Groups)
 
+**1. What: Problem Specification**
+Given a set of $n$ elements and a cost function for forming a group out of any subset, find the optimal partitioning of all elements into groups to minimize the total cost.
+
+**2. How: Algorithm Description**
 **Concept:** _You don't care about order or endpoints — just split the universe into optimal subsets. Iterate over all submasks S' of S._
 
 **(a) Subproblem:** T(S) = minimum cost to optimally partition the elements in set S into groups.
@@ -894,10 +1000,12 @@ $$
 > [!note]
 > _The 3ⁿ runtime comes from iterating over all submasks of all masks. Each element is in S', in S\S', or not in S — three choices per element._
 
-**(c) Analysis:**
+**3. Why: Justification of Correctness**
+Any partition of set $S$ must contain some group $S'$. The optimal cost to partition $S$ is therefore the minimum over all possible non-empty groups $S' \subseteq S$ of the cost of $S'$ plus the optimal partitioning cost of the remaining elements $S \setminus S'$. Iterating over all submasks systematically evaluates every valid partitioning scheme.
 
+**4. How Fast: Runtime Analysis**
 - **(1) Subproblems:** `O(2ⁿ)`
-- **(2) Fill time:** `O(3ⁿ)`
+- **(2) Fill time:** `O(3ⁿ)` (due to iterating over all submasks of all masks)
 - **(3) Return:** `T({1..n})`
 - **(4) Return time:** `O(1)`
 
@@ -912,7 +1020,7 @@ $$
 
 ### Books
 
-This is the primary textbook for the course.
+These are the books that have helped with the course.
 
 <BookCard
   title="Algorithms"
@@ -922,5 +1030,27 @@ This is the primary textbook for the course.
 >
   <p>
     The accompanying text for the course. It provides clear, concise, and elegant explanations of Divide & Conquer and Dynamic Programming concepts.
+  </p>
+</BookCard>
+
+<BookCard
+  title="Algorithms"
+  author="Jeff Erickson"
+  img={algsEricksonImg}
+  url="https://jeffe.cs.illinois.edu/teaching/algorithms/"
+>
+  <p>
+    This is a great book for learning algorithms. It is well-written and easy to understand. It also has a lot of examples and exercises and is great supplemental reading for the course.
+  </p>
+</BookCard>
+
+<BookCard
+  title="Introduction to Algorithms"
+  author="Thomas H. Cormen, Charles E. Leiserson, Ronald L. Rivest, Clifford Stein"
+  img={algsCLRSImg}
+  url="https://mitpress.mit.edu/9780262046305/introduction-to-algorithms/"
+>
+  <p>
+    This is a classic algorithms textbook. It is very comprehensive and covers a wide range of topics. It is a great reference book for algorithms.
   </p>
 </BookCard>

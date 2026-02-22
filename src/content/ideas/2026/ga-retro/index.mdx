@@ -1,0 +1,94 @@
+---
+title: 'Graduate Algorithms'
+description: 'A survey of concepts covered in my graduate Algorithms course'
+date: '2026-02-22'
+status: 'in-progress'
+type: 'retro'
+tags: ['algorithms', 'computer-science', 'MSCS', 'learning-in-public']
+category: ['mscs']
+draft: true
+audience: 'All'
+media_subpath: "/ideas/ga-retro/"
+image:
+  path: "TVM_Vaulted-Willow_Elevation_Front.jpg"
+  alt: 'Graduate Algorithms'
+# hideCaption: true
+---
+
+import BookCard from "../../../../components/BookCard.astro";
+import algsDpvImg from "../../../books/algs-dpv.jpg";
+import algsEricksonImg from "../../../books/algs-erickson.png";
+import algsCLRSImg from "../../../books/algs-clrs.jpg";
+
+This piece serves as both a personal retrospective and a high-level overview of the course. I am currently taking Georgia Tech's [CS 6515: Intro to Graduate Algorithms](https://omscs.gatech.edu/cs-6515-intro-graduate-algorithms) in the Spring 2026 semester. I'm documenting my experience following the Feynman technique—teaching to understand—while sharing insights for anyone interested in the course or my academic journey. My audience includes prospective OMSCS students, potential employers, and colleagues curious about the course content and my current knowledge. The detailed study notes live in the per-part articles linked below; this page focuses on the course structure and approach.
+
+### TL;DR
+
+- **Audience**: Prospective OMSCS students, colleagues, and hiring managers.
+- **Scope**: High-level overview of CS 6515, split into three parts.
+- **Status**: Part 1 (D&C + DP) is documented. Parts 2 and 3 are in progress.
+
+## Course Overview
+
+CS 6515 is the foundational theory course of the OMSCS program and covers the core techniques of algorithm design and analysis. The course grows progressively more abstract across its three parts:
+
+1. **Part 1 — Divide & Conquer + Dynamic Programming**: Concrete problem-solving through recursive decomposition and optimal substructure. The focus is on formulating recurrences, proving correctness informally, and analyzing runtime via the Master Theorem.
+
+2. **Part 2 — Graphs + RSA / Cryptography**: Graph algorithms (BFS, DFS, shortest paths, MSTs, max-flow) and an introduction to number-theoretic cryptography. The problems become less mechanical and require more creative reductions.
+
+3. **Part 3 — NP-Completeness + Integer Programming**: The course becomes almost entirely proof-based. You learn to classify problems by computational hardness and reduce known NP-complete problems to new ones.
+
+## How to Approach Algorithms
+
+One of the most useful frames I picked up early on—from both the course and Jeff Erickson's textbook—is that a complete algorithm write-up has four distinct components:
+
+- **What**: A precise specification of the problem. Restate the informal problem in terms of abstract mathematical objects (arrays, graphs, integers) and surface any hidden assumptions. This step is often skipped, but it is the foundation everything else builds on.
+
+- **How**: A description of the algorithm itself, written in structured English. The course explicitly forbids pseudocode; instead, you narrate each major step at a level of abstraction that a competent programmer could implement without needing to know *why* it works.
+
+- **Why**: An informal proof of correctness. For D&C, this means arguing why the problem space provably shrinks and why base cases are sound. For DP, it means justifying the subproblem definition and the recurrence. You are not writing a formal inductive proof—you are convincing a skeptic.
+
+- **How fast**: A worst-case runtime analysis, always concluding with a single simplified Big-O expression. Standard black-box algorithms can be cited without re-derivation; any modifications you make must be justified.
+
+The course bundles these into three graded sections—(a) Algorithm, (b) Correctness, (c) Runtime—but the underlying logic is the same. Erickson puts it well: *your primary job as an algorithm designer is teaching other people how and why your algorithms work.* A correct but unexplained answer is worth very little.
+
+## Course Notes
+
+- **[Part 1: Divide & Conquer + Dynamic Programming](/ideas/2026/ga-1/)** — Study notes covering the Master Theorem, D&C problem-solving workflow, and all six DP topologies (Linear, Grid, Knapsack, Interval, Tree, Bitmask). Includes interactive visualizations.
+- **Part 2: Graphs + RSA** — Coming soon.
+- **Part 3: NP-Completeness** — Coming soon.
+
+## Resources
+
+<BookCard
+  title="Algorithms"
+  author="Sanjoy Dasgupta, Christos Papadimitriou, and Umesh Vazirani"
+  img={algsDpvImg}
+  url="https://highered.mheducation.com/sites/0073523402/"
+>
+  <p>
+    The primary course textbook. Concise, elegant, and closely aligned with the lecture material and homework style.
+  </p>
+</BookCard>
+
+<BookCard
+  title="Algorithms"
+  author="Jeff Erickson"
+  img={algsEricksonImg}
+  url="https://jeffe.cs.illinois.edu/teaching/algorithms/"
+>
+  <p>
+    A freely available textbook that provides deeper intuition and excellent supplemental problems. Particularly strong on recursion trees, DP, and graph algorithms.
+  </p>
+</BookCard>
+
+<BookCard
+  title="Introduction to Algorithms"
+  author="Thomas H. Cormen, Charles E. Leiserson, Ronald L. Rivest, Clifford Stein"
+  img={algsCLRSImg}
+  url="https://mitpress.mit.edu/9780262046305/introduction-to-algorithms/"
+>
+  <p>
+    This is a classic algorithms textbook. It is very comprehensive and covers a wide range of topics. It is a great reference book for algorithms.
+  </p>
+</BookCard>
