@@ -237,6 +237,8 @@ The PyTorch version above (Task 3 in the project) is useful for understanding th
 
 Tile size ($B_r$ × $B_c$) is a critical tuning parameter. Larger tiles mean more reuse per global memory load, but require more shared memory. The maximum head dimension is 128, which constrains how large the tiles can be before you exceed the SM's shared memory budget.
 
+On newer GPUs, this translation is also a data-movement problem: stage global-memory tiles into shared memory efficiently, then keep the math fed with minimal synchronization overhead. Techniques like asynchronous copy (`cp.async`) and carefully placed barriers exist to overlap tile movement and compute, but they raise register pressure and shared-memory footprint. That tension is exactly why tile size and block shape tuning remain empirical in practice.
+
 ### Speedup Results
 
 The performance story is compelling. Against `torch.nn.MultiheadAttention` (PyTorch's built-in):
@@ -259,6 +261,12 @@ Running a language model in production has two very different computational phas
 **Prefill**: Process the entire input prompt at once to produce the first output token. The full N-token sequence runs through all layers. This is a GEMM-heavy operation — all of FlashAttention applies here.
 
 **Decode**: Generate subsequent tokens one at a time. Each new token attends to all previous tokens, but *it's just one query* attending to N keys and values. The attention score computation degenerates from a matrix-matrix multiply to a **matrix-vector multiply** (GEMV). The character of the computation changes completely.
+
+### Precision, Bandwidth, and Arithmetic Intensity
+
+Modern inference stacks run with mixed precision because the limiting resource is often bytes moved, not peak FLOPs. FP16/BF16 halves activation and weight footprint versus FP32, which doubles effective memory bandwidth for the same traffic pattern and usually improves arithmetic intensity. Many deployments push further (FP8/INT8) for weights and activations, but keep numerically sensitive reductions (softmax max/sum, accumulation terms) in higher precision to avoid instability.
+
+That tradeoff shows up directly in FlashAttention. The tile math can run at reduced precision, but the running max and running sum for online softmax should stay in FP32. In other words: lower precision for throughput where error is tolerable, higher precision for normalization paths where small numeric drift compounds across long sequences.
 
 ### The KV Cache
 

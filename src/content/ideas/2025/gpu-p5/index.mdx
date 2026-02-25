@@ -158,6 +158,8 @@ The CFG is the data structure that makes global analysis possible. Local analysi
 
 ## Dataflow Analysis for Divergence Detection
 
+At a high level, this part of the pipeline follows the Module 11 sequence: normalize control flow into basic blocks/CFG, reason about value versions (SSA intuition), run reaching-definitions style propagation to build def-use links, then propagate thread-ID taint to identify divergent branches. The project implementation operates on SASS and reused register names, but the analysis shape is the same classical compiler pipeline.
+
 ### The Core Idea
 
 Branch divergence in GPU code has a precise characterization: **a branch is divergent if its condition depends, directly or transitively, on a thread ID**.
@@ -257,6 +259,8 @@ NVIDIA's PTX compiler and LLVM's NVPTX backend both perform divergence analysis 
 - **Developer feedback**: Modern profilers can report detected divergent branches; the detection logic is dataflow analysis
 
 The deeper lesson: the same classical compiler techniques that were developed for vectorizing sequential loops in the 1980s — reaching definitions, def-use chains, iterative fixed-point analysis — are directly applicable to GPU branch divergence detection. The hardware model changed dramatically; the analysis framework did not.
+
+This is also where the compiler-hardware handshake is most visible. The compiler can annotate likely divergence structure (for example, branch and reconvergence metadata based on post-dominators) and decide when small branches should be predicated instead of branched. The hardware then executes that guidance through active masks, reconvergence machinery, and issue-time dependency checks.
 
 ## Conclusion
 

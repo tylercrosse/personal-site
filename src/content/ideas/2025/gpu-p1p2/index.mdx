@@ -46,6 +46,8 @@ Together they teach the mental model that underlies almost all high-performance 
 
 Before diving into the projects, a quick grounding in the abstractions that make GPU programming possible.
 
+One useful way to place CUDA is through the Module 2 parallel-programming lens. The workload here is mostly **data decomposition** (split a large array or matrix into independent chunks), but the synchronization story looks like a shared-memory model within a block (`__syncthreads`) and an explicit-communication model across blocks (global-memory round trips between kernel launches). In that sense, CUDA sits between the OpenMP and MPI mental models from the notes: cheap collaboration within a local team, explicit coordination at larger scope.
+
 ### Thread Hierarchy
 
 CUDA gives you three nested levels of parallelism. A **kernel** is a function that runs on the GPU. When you launch it, you specify a **grid** of **thread blocks**, and each block contains a number of **threads**. On the hardware side, threads are grouped into **warps** of 32—that's the granularity at which the GPU schedules and executes instructions.
@@ -230,6 +232,8 @@ The grading target for this project was **900+ million elements per second** on 
 ### Optimization Concepts
 
 The course points toward a two-phase design as the path to high performance. The intuition:
+
+A practical optimization loop that matched the course notes was: (1) form a bottleneck hypothesis, (2) validate it in Nsight Compute, (3) pick a kernel/data-layout change that targets that bottleneck, and (4) re-measure. The metric categories that mattered most were memory throughput, achieved occupancy, and stall reasons (memory dependency, long scoreboard, and barrier-related stalls). Treating these as a closed loop was more reliable than trying to "reason out" the best kernel shape in one shot.
 
 **Phase 1 — Shared memory phase**: For any sub-stage where the stride between compared elements is small enough that the relevant data fits in a block's shared memory, do all those sub-stages inside a single kernel launch using shared memory. This collapses many kernel launches into one and keeps data on-chip between sub-stages.
 

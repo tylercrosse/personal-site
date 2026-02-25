@@ -54,11 +54,13 @@ Simulators are slower than real hardware — often by orders of magnitude — bu
 
 ### Trace-Driven vs. Execution-Driven
 
-There are two broad approaches to GPU simulation.
+There are three broad approaches to GPU simulation.
 
 **Execution-driven simulation** re-executes the actual program inside the simulator. It's accurate but slow because every instruction has to go through the simulated pipeline.
 
 **Trace-driven simulation** pre-records a trace of all instructions that a program executes on real hardware, then *replays* that trace through the simulator. The trace capture happens once (Macsim uses [NVBit](https://research.nvidia.com/publication/2019-10_nvbit-dynamic-binary-instrumentation-framework-nvidia-gpus) for this), and then simulation is fast because the simulator just reads the trace rather than re-evaluating the program logic.
+
+**Sampling / interval simulation** models only selected windows of execution (or aggregates behavior over intervals) rather than replaying every instruction. It's dramatically faster for design-space exploration, but less precise for fine-grained microarchitectural effects.
 
 <Figure
   src={gpuSimImg}
@@ -67,7 +69,7 @@ There are two broad approaches to GPU simulation.
   width={640}
 />
 
-The tradeoff: trace-driven simulation can't model data-dependent control flow changes that would arise from different hardware behavior. But for studying things like cache behavior and scheduling policies (where the instruction stream itself doesn't change), it's a practical and widely-used methodology.
+The tradeoff: trace-driven simulation can't model data-dependent control flow changes that would arise from different hardware behavior. But for studying things like cache behavior and scheduling policies (where the instruction stream itself doesn't change), it's a practical and widely-used methodology. That's why this project used a trace-driven, cycle-level setup: enough fidelity to reason about scheduler/cache effects, without execution-driven runtimes.
 
 ### The Macsim Architecture
 
