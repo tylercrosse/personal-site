@@ -1,0 +1,19 @@
+graph TD
+    classDef mystery fill:#C67B6F,stroke:#a25d52,stroke-width:2px,color:#fff;
+    classDef test fill:#9E6374,stroke:#7d4d5b,stroke-width:2px,color:#fff;
+    classDef breakthrough fill:#675478,stroke:#4e3f5e,stroke-width:2px,color:#fff;
+
+    %% Hypothesis Testing
+    Mystery[Part 2: The Mystery] --> AP[Part 3: Activation Patching]
+    Mystery[Part 2: The Mystery] --> Attn[Part 3: Attention Analysis]
+    Mystery[Part 2: The Mystery] --> Probes[Part 3: Linear Probes]
+
+    class AP,Attn,Probes test;
+    class Mystery mystery;
+
+    %% Null Results -> New Hypothesis
+    AP -- "0 Behavioral Flips:<br>Single components don't control behavior" --> Interact[Part 4: Component Interactions]
+    Attn -- "99.99% Identical:<br>They select the same info" --> Interact
+    Probes -- "Identical Probes:<br>They represent concepts the same way" --> Interact
+
+    class Interact breakthrough;

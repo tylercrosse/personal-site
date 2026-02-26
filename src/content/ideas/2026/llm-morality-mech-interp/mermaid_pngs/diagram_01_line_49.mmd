@@ -1,0 +1,21 @@
+graph TD
+    classDef setup fill:#EFBC82,stroke:#c99a5b,stroke-width:2px,color:#000;
+    classDef investigate fill:#DE9B71,stroke:#b87a54,stroke-width:2px,color:#000;
+    classDef mystery fill:#C67B6F,stroke:#a25d52,stroke-width:2px,color:#fff;
+    classDef test fill:#9E6374,stroke:#7d4d5b,stroke-width:2px,color:#fff;
+    classDef breakthrough fill:#675478,stroke:#4e3f5e,stroke-width:2px,color:#fff;
+    classDef causal fill:#41476B,stroke:#2e3150,stroke-width:2px,color:#fff;
+
+    %% High-level narrative arc
+    FT[Part 1: Fine-tuning & Evaluation] --> Investigate[Part 2: Logit Lens & Attribution]
+    Investigate --> Mystery{{Part 2: The Mystery of Shallow Alignment:<br>Different Behaviors,<br>Nearly Identical Components}}
+    Mystery --> Tests[Part 3: Ruling out Localized Circuits:<br>Attention & Probes]
+    Tests --> Breakthrough[Part 4: The Breakthrough:<br>Component Interactions]
+    Breakthrough --> Mech[Part 5: Causal Tests:<br>Network Rewiring & Deep Routing]
+
+    class FT setup;
+    class Investigate investigate;
+    class Mystery mystery;
+    class Tests test;
+    class Breakthrough breakthrough;
+    class Mech causal;

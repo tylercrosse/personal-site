@@ -1,0 +1,45 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    html, body {
+      margin: 0;
+      background: #ffffff;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: "Helvetica Neue", Arial, sans-serif;
+    }
+    #wrap {
+      padding: 24px;
+      box-sizing: border-box;
+      width: 100%;
+      height: 100%;
+    }
+    #diagram {
+      width: 100%;
+      height: 100%;
+    }
+  </style>
+</head>
+<body>
+  <div id="wrap">
+    <div id="diagram" class="mermaid"></div>
+  </div>
+  <script src="file:///Users/tylercrosse/.vscode/extensions/shd101wyy.markdown-preview-enhanced-0.8.20/crossnote/dependencies/mermaid/mermaid.min.js"></script>
+  <script>
+    const source = "graph TD\n    classDef setup fill:#EFBC82,stroke:#c99a5b,stroke-width:2px,color:#000;\n    classDef investigate fill:#DE9B71,stroke:#b87a54,stroke-width:2px,color:#000;\n    classDef mystery fill:#C67B6F,stroke:#a25d52,stroke-width:2px,color:#fff;\n    classDef test fill:#9E6374,stroke:#7d4d5b,stroke-width:2px,color:#fff;\n    classDef breakthrough fill:#675478,stroke:#4e3f5e,stroke-width:2px,color:#fff;\n    classDef causal fill:#41476B,stroke:#2e3150,stroke-width:2px,color:#fff;\n    classDef conclusion fill:#2B2D42,stroke:#1a1b2e,stroke-width:2px,color:#fff;\n    classDef validation fill:#e9e9e9,stroke:#6d6875,stroke-width:1px,stroke-dasharray: 5 5,color:#333;\n\n    %% Base Setup\n    FT[Part 1: RL Fine-tuning Reproductions] --> Eval[Part 1: Evaluation Scenarios]\n    Eval --> LL[Part 2: Logit Lens]\n    Eval --> DLA[Part 2: Direct Logit Attribution]\n\n    class FT,Eval setup;\n    class LL,DLA investigate;\n\n    %% The Mystery\n    LL -- Shows when decisions stabilize --> Mystery{{Part 2: The Mystery of Shallow Alignment:<br>Models behave differently,<br>but components & layer<br>trajectories seem identical}}\n    DLA -- Shows dominant components,<br>but no suppression --> Mystery\n\n    class Mystery mystery;\n\n    %% Hypothesis Testing\n    Mystery --> AP[Part 3: Activation Patching]\n    Mystery --> Attn[Part 3: Attention Analysis]\n    Mystery --> Probes[Part 3: Linear Probes]\n\n    class AP,Attn,Probes test;\n\n    %% Null Results -> New Hypothesis\n    AP -- \"0 Behavioral Flips:<br>Single components don't control behavior\" --> Interact[Part 4: Component Interactions]\n    Attn -- \"99.99% Identical:<br>They select the same info\" --> Interact\n    Probes -- \"Identical Probes:<br>They represent concepts the same way\" --> Interact\n\n    class Interact breakthrough;\n\n    %% The Breakthrough\n    Interact -- \"Discovers Network Rewiring:<br>Different correlation patterns\" --> Causal{{Part 5: Causal Experiments}}\n\n    class Causal causal;\n\n    %% Testing the Mechanism\n    Causal --> Exp1[\"Part 5, Exp 1: Steering Sweep<br>(Shifting Activations)\"]\n    Causal --> Exp2[\"Part 5, Exp 2: Path Patching<br>(Replacing Pathways)\"]\n\n    class Exp1,Exp2 causal;\n\n    %% Final Conclusions\n    Exp1 -- Finds deep routing<br>hubs at L16/L17<br>(Washout Effect) --> Conclusion([Conclusion:<br>Deep Attention-Mediated Routing])\n    Exp2 -- Provides pathway-level<br>causal evidence & attention dominance --> Conclusion\n\n    %% Validation\n    Val[Part 5: Validation Check] -. Confirms sequence metrics<br>match actual behavior .-> Conclusion\n\n    class Conclusion conclusion;\n    class Val validation;\n";
+    const el = document.getElementById("diagram");
+    el.textContent = source;
+    mermaid.initialize({
+      startOnLoad: false,
+      securityLevel: "loose",
+      theme: "default"
+    });
+    mermaid.run({ nodes: [el] }).catch((err) => {
+      document.body.innerHTML = "<pre>" + String(err) + "</pre>";
+    });
+  </script>
+</body>
+</html>

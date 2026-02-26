@@ -1,0 +1,45 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    html, body {
+      margin: 0;
+      background: #ffffff;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: "Helvetica Neue", Arial, sans-serif;
+    }
+    #wrap {
+      padding: 24px;
+      box-sizing: border-box;
+      width: 100%;
+      height: 100%;
+    }
+    #diagram {
+      width: 100%;
+      height: 100%;
+    }
+  </style>
+</head>
+<body>
+  <div id="wrap">
+    <div id="diagram" class="mermaid"></div>
+  </div>
+  <script src="file:///Users/tylercrosse/.vscode/extensions/shd101wyy.markdown-preview-enhanced-0.8.20/crossnote/dependencies/mermaid/mermaid.min.js"></script>
+  <script>
+    const source = "graph TD\n    classDef setup fill:#EFBC82,stroke:#c99a5b,stroke-width:2px,color:#000;\n    classDef investigate fill:#DE9B71,stroke:#b87a54,stroke-width:2px,color:#000;\n    classDef mystery fill:#C67B6F,stroke:#a25d52,stroke-width:2px,color:#fff;\n\n    %% Base Setup\n    FT[Part 1: RL Fine-tuning Reproductions] --> Eval[Part 1: Evaluation Scenarios]\n    Eval --> LL[Part 2: Logit Lens]\n    Eval --> DLA[Part 2: Direct Logit Attribution]\n\n    class FT,Eval setup;\n    class LL,DLA investigate;\n\n    %% The Mystery\n    LL -- Shows when decisions stabilize --> Mystery{{Part 2: The Mystery of Shallow Alignment:<br>Models behave differently,<br>but components & layer<br>trajectories seem identical}}\n    DLA -- Shows dominant components,<br>but no suppression --> Mystery\n\n    class Mystery mystery;\n";
+    const el = document.getElementById("diagram");
+    el.textContent = source;
+    mermaid.initialize({
+      startOnLoad: false,
+      securityLevel: "loose",
+      theme: "default"
+    });
+    mermaid.run({ nodes: [el] }).catch((err) => {
+      document.body.innerHTML = "<pre>" + String(err) + "</pre>";
+    });
+  </script>
+</body>
+</html>
