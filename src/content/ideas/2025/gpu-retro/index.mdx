@@ -5,19 +5,22 @@ date: '2026-02-25'
 updated: '2026-02-25'
 status: 'complete'
 type: 'retro'
-tags: ['GPU', 'CUDA', 'computer-architecture', 'parallel-computing', 'warp-scheduling', 'compilers', 'machine-learning', 'FlashAttention', 'simulation', 'computer-science', 'learning-in-public', 'MSCS']
+tags: ['GPU', 'CUDA', 'computer-architecture', 'distributed-systems', 'parallel-algorithms', 'compilers', 'machine-learning', 'simulation', 'computer-science', 'learning-in-public', 'MSCS']
 category: ['mscs']
 draft: false
 audience: 'All'
 media_subpath: "/ideas/gpu-retro/"
 image:
-  path: "hero-seedream-4-5.jpg"
+  path: "hero-v3.png"
   alt: 'Green ripples abstract art'
 hideCaption: true
 ---
 
 import BookCard from "../../../../components/BookCard.astro";
 import Figure from "../../../../components/Figure.astro";
+import pmppImg from "../../../books/pmpp.jpg";
+import compArchQuantImg from "../../../books/comp-arch-quant.jpg";
+import cudaByExampleImg from "../../../books/cuda-by-example.jpg";
 
 import gpuArchImg from "./m1l4_gpuarch.png";
 import cpuGpuImg from "./m1l2_cpu_gpu.png";
@@ -155,7 +158,7 @@ Understanding memory is the key to writing fast GPU code. GPUs have a rich memor
 - **Global memory** (DRAM): The main GPU memory, large (tens of GB on modern cards) but high latency. All threads can access it, but you want to minimize how often you do.
 - **Constant and texture memory**: Read-only memory spaces optimized for specific access patterns (broadcast and spatial locality respectively).
 
-A recurring pattern in high-performance CUDA kernels is: load from global into shared, compute, then write back to global. The tiled matrix multiplication in Project 1 is the canonical example.
+A recurring pattern in high-performance CUDA kernels is: load from global into shared, compute, then write back to global. The tiled matrix multiplication in [Project 1](/ideas/2025/gpu-p1p2/) is the canonical example.
 
 Related CUDA Programming Guide sections (1-3) also cover:
 - The full thread hierarchy (threads, blocks, grids) and how it maps to hardware.
@@ -285,7 +288,7 @@ With dozens of warps competing for issue slots each cycle, the warp scheduler's 
   width={640}
 />
 
-The CCWS insight is that latency hiding (which benefits from more concurrent warps) and cache locality (which benefits from fewer) are in fundamental tension. The right balance is workload-dependent. Project 3 involved implementing all three of these policies in a cycle-level GPU simulator.
+The CCWS insight is that latency hiding (which benefits from more concurrent warps) and cache locality (which benefits from fewer) are in fundamental tension. The right balance is workload-dependent. [Project 3](/ideas/2025/gpu-p3p4/) involved implementing all three of these policies in a cycle-level GPU simulator.
 
 ## GPU Simulation
 
@@ -293,7 +296,7 @@ The CCWS insight is that latency hiding (which benefits from more concurrent war
 
 Real GPU hardware gives you performance counters and profilers, but they only tell you what happened, not why, and not what would have happened with a different microarchitectural decision. GPU simulators let you ask counterfactual questions: what if the cache were twice as large? What if the warp scheduler used a different policy? What if tensor cores had half the latency?
 
-This kind of analysis is how GPU architects design and validate new hardware before it's built. Academic researchers use simulators to prototype and evaluate new architectural ideas. Projects 3 and 4 used **Macsim**, a trace-driven cycle-level simulator developed at Georgia Tech's HPArch lab.
+This kind of analysis is how GPU architects design and validate new hardware before it's built. Academic researchers use simulators to prototype and evaluate new architectural ideas. [Projects 3 and 4](/ideas/2025/gpu-p3p4/) used **Macsim**, a trace-driven cycle-level simulator developed at Georgia Tech's HPArch lab.
 
 A useful way to categorize simulator choices:
 
@@ -326,7 +329,7 @@ Before diving into simulation, it's worth having a mental model for where a GPU 
   width={640}
 />
 
-Tiled matrix multiplication (Project 1) is a classic example of using shared memory to increase arithmetic intensity and push a workload from memory-bound to compute-bound. The FlashAttention algorithm (Extra Project) uses the same principle at much larger scale.
+Tiled matrix multiplication ([Project 1](/ideas/2025/gpu-p1p2/)) is a classic example of using shared memory to increase arithmetic intensity and push a workload from memory-bound to compute-bound. The FlashAttention algorithm ([Extra Project](/ideas/2025/gpu-p6/)) uses the same principle at much larger scale.
 
 Module 8 of the course also covered:
 - Cycle-level simulation methodology: how to model pipeline stages, caches, and memory controllers.
@@ -456,15 +459,15 @@ Here's the grading breakdown from when I took the course in Spring 2024:
 
 | Component | Weight | Description |
 |-----------|--------|-------------|
-| Project 1 | 12% | Tiled Matrix Multiplication |
-| Project 2 | 12% | Bitonic Sort |
-| Project 3 | 12% | Warp Scheduling Simulator |
-| Project 4 | 12% | Compute & Tensor Core Simulation |
+| Project 1 | 5% | Tiled Matrix Multiplication |
+| Project 2 | 20% | Bitonic Sort |
+| Project 3 | 15% | Warp Scheduling Simulator |
+| Project 4 | 15% | Compute & Tensor Core Simulation |
 | Project 5 | 12% | Branch Divergence Detection |
-| Extra Project | 10% | FlashAttention & LLM Inference |
-| Midterm Exam | 15% | Modules 1–7 |
-| Final Exam | 15% | Modules 8–12 |
-| Participation | 4% | Discussion forum |
+| Extra Project | 0% | FlashAttention & LLM Inference |
+| Homework | 15% | Multiple-Choice Quizzes |
+| Final Exam | 10% | Covers all course topics |
+| Participation | 3% | Discussion forum |
 
 The projects were weighted heavily, about 70% of the grade combined. The exams covered the lecture material and required understanding the concepts at a level deeper than just memorizing definitions.
 
@@ -475,6 +478,7 @@ The required textbook for the course is *Programming Massively Parallel Processo
 <BookCard
   title="Programming Massively Parallel Processors: A Hands-on Approach"
   author="David B. Kirk and Wen-mei W. Hwu"
+  img={pmppImg}
   url="https://www.amazon.com/Programming-Massively-Parallel-Processors-Hands/dp/0323912311"
 >
   <p>
@@ -485,6 +489,7 @@ The required textbook for the course is *Programming Massively Parallel Processo
 <BookCard
   title="Computer Architecture: A Quantitative Approach"
   author="John L. Hennessy and David A. Patterson"
+  img={compArchQuantImg}
   url="https://www.elsevier.com/books/computer-architecture/hennessy/978-0-12-811905-1"
 >
   <p>
@@ -495,6 +500,7 @@ The required textbook for the course is *Programming Massively Parallel Processo
 <BookCard
   title="CUDA by Example: An Introduction to General-Purpose GPU Programming"
   author="Jason Sanders and Edward Kandrot"
+  img={cudaByExampleImg}
   url="https://developer.nvidia.com/cuda-example"
 >
   <p>
@@ -512,7 +518,7 @@ The required textbook for the course is *Programming Massively Parallel Processo
 
 ## My Experience
 
-This was one of the most technically demanding courses I've taken in the OMSCS program, but also one of the most rewarding. It changed how I think about performance at the hardware level, not just "is this fast?" but "why is this fast, and what's the limiting factor?"
+I loved the broad set of topics this course covered and how it united the systems foundations of courses like HPCA, HPC, GIOS, with ML courses like DL. It changed how I think about performance at the hardware level, not just "is this fast?" but "why is this fast, and what's the limiting factor?"
 
 The course has a clear arc: start with programming (what can GPUs do?), move to architecture (how do they do it?), then simulation (how do we model and study them?), then compilers (how do we analyze code for GPUs?), and finally ML acceleration (what are they doing in production?). Each section builds on the last. By the time you hit the Extra Project and are writing FlashAttention kernels, you understand not just *what* FlashAttention does but *why* the specific tiling and online-softmax choices map well onto GPU memory hierarchy.
 

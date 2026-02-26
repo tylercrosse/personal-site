@@ -5,20 +5,21 @@ date: '2026-02-25'
 updated: '2026-02-25'
 status: 'complete'
 type: 'project'
-tags: ['GPU', 'simulation', 'warp-scheduling', 'tensor-cores', 'computer-architecture', 'Macsim', 'GTO', 'CCWS', 'scoreboarding', 'MSCS']
+tags: ['GPU', 'simulation', 'computer-architecture', 'learning-in-public', 'MSCS']
 category: ['projects']
 draft: false
 audience: 'Technical'
 media_subpath: "/ideas/gpu-p3p4/"
 parent: '2025/gpu-retro'
 image:
-  path: "./hero-seedream-4-5.jpg"
+  path: "./hero-seedream-4-5-v2.jpg"
   alt: 'GPU Simulation: Warp Scheduling & Compute/Tensor Cores'
 hideCaption: true
 ---
 
 import BookCard from "../../../../components/BookCard.astro";
 import Figure from "../../../../components/Figure.astro";
+import pmppImg from "../../../books/pmpp.jpg";
 
 import gpuSimImg from "./m8l2_gpu_sim.png";
 import rrGtoImg from "./m7l3_rr_gto.png";
@@ -316,6 +317,7 @@ What stuck with me most is this: **hardware constraints are design decisions**. 
 <BookCard
   title="Programming Massively Parallel Processors: A Hands-on Approach"
   author="David B. Kirk and Wen-mei W. Hwu"
+  img={pmppImg}
   url="https://www.amazon.com/Programming-Massively-Parallel-Processors-Hands/dp/0323912311"
 >
   <p>

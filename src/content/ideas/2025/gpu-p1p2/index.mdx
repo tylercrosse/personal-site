@@ -5,20 +5,22 @@ date: '2026-02-25'
 updated: '2026-02-25'
 status: 'complete'
 type: 'project'
-tags: ['GPU', 'CUDA', 'shared-memory', 'tiling', 'matrix-multiplication', 'bitonic-sort', 'parallel-algorithms', 'NSight', 'MSCS']
+tags: ['GPU', 'CUDA', 'c++', 'computer-architecture', 'algorithms', 'parallel-algorithms', 'MSCS']
 category: ['projects']
 draft: false
 audience: 'Technical'
 media_subpath: "/ideas/gpu-p1p2/"
 parent: '2025/gpu-retro'
 image:
-  path: "./hero-seedream-4-5.jpg"
+  path: "./hero-seedream-4-5-v2.jpg"
   alt: 'CUDA Fundamentals: Tiled Matrix Multiply & Bitonic Sort'
 hideCaption: true
 ---
 
 import BookCard from "../../../../components/BookCard.astro";
 import Figure from "../../../../components/Figure.astro";
+import pmppImg from "../../../books/pmpp.jpg";
+import cudaByExampleImg from "../../../books/cuda-by-example.jpg";
 
 import threadIdxImg from "./m3l1_threadidx.png";
 import dataIndexImg from "./m3l1_data_index.png";
@@ -307,6 +309,7 @@ Both projects teach the same underlying skill: start from the hardware's perspec
 <BookCard
   title="Programming Massively Parallel Processors: A Hands-on Approach"
   author="David B. Kirk and Wen-mei W. Hwu"
+  img={pmppImg}
   url="https://www.amazon.com/Programming-Massively-Parallel-Processors-Hands/dp/0323912311"
 >
   <p>
@@ -317,6 +320,7 @@ Both projects teach the same underlying skill: start from the hardware's perspec
 <BookCard
   title="CUDA by Example: An Introduction to General-Purpose GPU Programming"
   author="Jason Sanders and Edward Kandrot"
+  img={cudaByExampleImg}
   url="https://developer.nvidia.com/cuda-example"
 >
   <p>

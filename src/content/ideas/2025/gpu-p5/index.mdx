@@ -5,20 +5,21 @@ date: '2026-02-25'
 updated: '2026-02-25'
 status: 'complete'
 type: 'project'
-tags: ['GPU', 'branch-divergence', 'static-analysis', 'dataflow-analysis', 'SASS', 'compilers', 'control-flow-graph', 'MSCS']
+tags: ['GPU', 'computer-architecture', 'compilers', 'MSCS']
 category: ['projects']
 draft: false
 audience: 'Technical'
 media_subpath: "/ideas/gpu-p5/"
 parent: '2025/gpu-retro'
 image:
-  path: "./hero-seedream-4-5.jpg"
+  path: "./hero-seedream-4-5-v2.jpg"
   alt: 'Static Analysis: Detecting Branch Divergence in GPU Code'
 hideCaption: true
 ---
 
 import BookCard from "../../../../components/BookCard.astro";
 import Figure from "../../../../components/Figure.astro";
+import dragonBookImg from "../../../books/compilers-dragon-book.jpg";
 
 import gpuFlow1Img from "./m6l1_gpuflow1.png";
 import gpuFlow5Img from "./m6l1_gpuflow5.png";
@@ -281,6 +282,7 @@ The iterative fixed-point algorithm is one of those ideas that keeps appearing i
 <BookCard
   title="Compilers: Principles, Techniques, and Tools"
   author="Alfred V. Aho, Monica S. Lam, Ravi Sethi, Jeffrey D. Ullman"
+  img={dragonBookImg}
   url="https://www.amazon.com/Compilers-Principles-Techniques-Tools-2nd/dp/0321486811"
 >
   <p>

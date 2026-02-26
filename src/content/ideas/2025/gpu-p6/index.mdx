@@ -5,20 +5,21 @@ date: '2026-02-25'
 updated: '2026-02-25'
 status: 'complete'
 type: 'project'
-tags: ['GPU', 'FlashAttention', 'LLM', 'CUDA', 'transformers', 'attention', 'GPT-2', 'tensor-cores', 'KV-cache', 'inference', 'MSCS']
+tags: ['GPU', 'CUDA', 'c++', 'python', 'computer-architecture', 'machine-learning', 'deep-learning', 'large-language-models', 'transformer', 'inference', 'MSCS']
 category: ['projects']
 draft: false
 audience: 'Technical'
 media_subpath: "/ideas/gpu-pextra/"
 parent: '2025/gpu-retro'
 image:
-  path: "./hero-seedream-4-5.jpg"
+  path: "./hero-seedream-4-5-v2.jpg"
   alt: 'FlashAttention & LLM Inference on GPUs'
 hideCaption: true
 ---
 
 import BookCard from "../../../../components/BookCard.astro";
 import Figure from "../../../../components/Figure.astro";
+import pmppImg from "../../../books/pmpp.jpg";
 
 import gemmImg from "./m12l1_gemm.png";
 import tensorImg from "./m12l1_tensor.png";
@@ -48,7 +49,9 @@ It ties together everything from the course: CUDA kernel writing and profiling (
 
 The core attention operation takes three matrices, **Query (Q)**, **Key (K)**, and **Value (V)**, and produces an output:
 
-$$\text{Attention}(Q, K, V) = \text{softmax}\left(\frac{QK^T}{\sqrt{d}}\right)V$$
+$$
+\text{Attention}(Q, K, V) = \text{softmax}\left(\frac{QK^T}{\sqrt{d}}\right)V
+$$
 
 Conceptually: each query "attends to" all keys by computing dot products, which are then softmax-normalized into attention weights, which are used to compute a weighted sum of the values.
 
@@ -109,13 +112,17 @@ Before implementing FlashAttention, you need two lower-level building blocks: a 
 
 The naive softmax formula is:
 
-$$\text{softmax}(x_i) = \frac{e^{x_i}}{\sum_j e^{x_j}}$$
+$$
+\text{softmax}(x_i) = \frac{e^{x_i}}{\sum_j e^{x_j}}
+$$
 
 The problem: for large input values, $e^{x_i}$ overflows float32 (max representable ~3.4×10³⁸). Attention scores can easily reach 100+ for long sequences with large embeddings. A score of 90 gives $e^{90} \approx 10^{39}$, which overflows.
 
 The standard fix is to subtract the row maximum before exponentiating:
 
-$$\text{softmax}(x_i) = \frac{e^{x_i - x_{\max}}}{\sum_j e^{x_j - x_{\max}}}$$
+$$
+\text{softmax}(x_i) = \frac{e^{x_i - x_{\max}}}{\sum_j e^{x_j - x_{\max}}}
+$$
 
 This is mathematically identical (the $e^{-x_{\max}}$ terms cancel) but numerically stable, because the largest exponentiated value is $e^0 = 1$.
 
@@ -348,29 +355,20 @@ The 7.7× speedup at seq=4096 isn't free. It's the payoff for reducing expensive
 
 ## Additional Resources
 
-<BookCard
-  title="FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness"
-  author="Tri Dao, Daniel Y. Fu, Stefano Ermon, Atri Rudra, Christopher Ré"
-  url="https://arxiv.org/abs/2205.14135"
->
-  <p>
-    The original FlashAttention paper (NeurIPS 2022). Section 3 derives the online softmax algorithm and the tiling scheme from first principles. Reading this before implementing is essential, because it explains *why* the algorithm works, not just the mechanics.
-  </p>
-</BookCard>
+**[FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness](https://arxiv.org/abs/2205.14135)**
+Tri Dao, Daniel Y. Fu, Stefano Ermon, Atri Rudra, Christopher Ré — NeurIPS 2022
 
-<BookCard
-  title="FlashAttention-2: Faster Attention with Better Parallelism and Work Partitioning"
-  author="Tri Dao"
-  url="https://arxiv.org/abs/2307.08691"
->
-  <p>
-    Algorithm 1 is the one you implement in the project. The improvements over FA1 are mainly about better parallelism across GPU SM warps and reduced non-GEMM FLOPs. Note the known typo in Algorithm 1 (see the GitHub issue in the README).
-  </p>
-</BookCard>
+The original paper. Section 3 derives the online softmax algorithm and the tiling scheme from first principles. Reading this before implementing is essential, because it explains *why* the algorithm works, not just the mechanics.
+
+**[FlashAttention-2: Faster Attention with Better Parallelism and Work Partitioning](https://arxiv.org/abs/2307.08691)**
+Tri Dao — ICLR 2024
+
+Algorithm 1 is the one you implement in the project. The improvements over FA1 are mainly about better parallelism across GPU SM warps and reduced non-GEMM FLOPs. Note the known typo in Algorithm 1 (see the GitHub issue in the README).
 
 <BookCard
   title="Programming Massively Parallel Processors: A Hands-on Approach"
   author="David B. Kirk and Wen-mei W. Hwu"
+  img={pmppImg}
   url="https://www.amazon.com/Programming-Massively-Parallel-Processors-Hands/dp/0323912311"
 >
   <p>
