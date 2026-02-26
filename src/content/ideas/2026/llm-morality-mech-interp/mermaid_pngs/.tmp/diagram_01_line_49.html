@@ -1,0 +1,45 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    html, body {
+      margin: 0;
+      background: #ffffff;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: "Helvetica Neue", Arial, sans-serif;
+    }
+    #wrap {
+      padding: 24px;
+      box-sizing: border-box;
+      width: 100%;
+      height: 100%;
+    }
+    #diagram {
+      width: 100%;
+      height: 100%;
+    }
+  </style>
+</head>
+<body>
+  <div id="wrap">
+    <div id="diagram" class="mermaid"></div>
+  </div>
+  <script src="file:///Users/tylercrosse/.vscode/extensions/shd101wyy.markdown-preview-enhanced-0.8.20/crossnote/dependencies/mermaid/mermaid.min.js"></script>
+  <script>
+    const source = "graph TD\n    classDef setup fill:#EFBC82,stroke:#c99a5b,stroke-width:2px,color:#000;\n    classDef investigate fill:#DE9B71,stroke:#b87a54,stroke-width:2px,color:#000;\n    classDef mystery fill:#C67B6F,stroke:#a25d52,stroke-width:2px,color:#fff;\n    classDef test fill:#9E6374,stroke:#7d4d5b,stroke-width:2px,color:#fff;\n    classDef breakthrough fill:#675478,stroke:#4e3f5e,stroke-width:2px,color:#fff;\n    classDef causal fill:#41476B,stroke:#2e3150,stroke-width:2px,color:#fff;\n\n    %% High-level narrative arc\n    FT[Part 1: Fine-tuning & Evaluation] --> Investigate[Part 2: Logit Lens & Attribution]\n    Investigate --> Mystery{{Part 2: The Mystery of Shallow Alignment:<br>Different Behaviors,<br>Nearly Identical Components}}\n    Mystery --> Tests[Part 3: Ruling out Localized Circuits:<br>Attention & Probes]\n    Tests --> Breakthrough[Part 4: The Breakthrough:<br>Component Interactions]\n    Breakthrough --> Mech[Part 5: Causal Tests:<br>Network Rewiring & Deep Routing]\n\n    class FT setup;\n    class Investigate investigate;\n    class Mystery mystery;\n    class Tests test;\n    class Breakthrough breakthrough;\n    class Mech causal;\n";
+    const el = document.getElementById("diagram");
+    el.textContent = source;
+    mermaid.initialize({
+      startOnLoad: false,
+      securityLevel: "loose",
+      theme: "default"
+    });
+    mermaid.run({ nodes: [el] }).catch((err) => {
+      document.body.innerHTML = "<pre>" + String(err) + "</pre>";
+    });
+  </script>
+</body>
+</html>

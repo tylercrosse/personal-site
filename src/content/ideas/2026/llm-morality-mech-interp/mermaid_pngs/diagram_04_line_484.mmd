@@ -1,0 +1,40 @@
+graph TD
+    classDef setup fill:#EFBC82,stroke:#c99a5b,stroke-width:2px,color:#000;
+    classDef investigate fill:#DE9B71,stroke:#b87a54,stroke-width:2px,color:#000;
+    classDef mystery fill:#C67B6F,stroke:#a25d52,stroke-width:2px,color:#fff;
+    classDef test fill:#9E6374,stroke:#7d4d5b,stroke-width:2px,color:#fff;
+    classDef breakthrough fill:#675478,stroke:#4e3f5e,stroke-width:2px,color:#fff;
+    classDef causal fill:#41476B,stroke:#2e3150,stroke-width:2px,color:#fff;
+
+    %% Base Setup
+    FT[Part 1: RL Fine-tuning Reproductions] --> Eval[Part 1: Evaluation Scenarios]
+    Eval --> LL[Part 2: Logit Lens]
+    Eval --> DLA[Part 2: Direct Logit Attribution]
+
+    class FT,Eval setup;
+    class LL,DLA investigate;
+
+    %% The Mystery
+    LL -- Shows when decisions stabilize --> Mystery{{Part 2: The Mystery of Shallow Alignment:<br>Models behave differently,<br>but components & layer<br>trajectories seem identical}}
+    DLA -- Shows dominant components,<br>but no suppression --> Mystery
+
+    class Mystery mystery;
+
+    %% Hypothesis Testing
+    Mystery --> AP[Part 3: Activation Patching]
+    Mystery --> Attn[Part 3: Attention Analysis]
+    Mystery --> Probes[Part 3: Linear Probes]
+
+    class AP,Attn,Probes test;
+
+    %% Null Results -> New Hypothesis
+    AP -- "0 Behavioral Flips:<br>Single components don't control behavior" --> Interact[Part 4: Component Interactions]
+    Attn -- "99.99% Identical:<br>They select the same info" --> Interact
+    Probes -- "Identical Probes:<br>They represent concepts the same way" --> Interact
+
+    class Interact breakthrough;
+
+    %% The Breakthrough
+    Interact -- "Discovers Network Rewiring:<br>Different correlation patterns" --> Causal{{Part 5: Causal Experiments}}
+
+    class Causal causal;
