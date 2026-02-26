@@ -1,6 +1,6 @@
 ---
 title: 'CUDA Fundamentals: Tiled Matrix Multiply & Bitonic Sort'
-description: 'Writing real GPU kernels — exploring shared memory tiling, parallel sorting algorithms, and performance optimization on an NVIDIA H100.'
+description: 'Writing real GPU kernels, exploring shared memory tiling, parallel sorting algorithms, and performance optimization on an NVIDIA H100.'
 date: '2026-02-25'
 updated: '2026-02-25'
 status: 'complete'
@@ -12,7 +12,7 @@ audience: 'Technical'
 media_subpath: "/ideas/gpu-p1p2/"
 parent: '2025/gpu-retro'
 image:
-  path: "./hero-collage-2.png"
+  path: "./hero-seedream-4-5.jpg"
   alt: 'CUDA Fundamentals: Tiled Matrix Multiply & Bitonic Sort'
 hideCaption: true
 ---
@@ -33,14 +33,14 @@ import bitonicSortImg from "./wiki_bitonic_sort.png";
 
 ## Introduction: Running Code on Thousands of Threads
 
-The first time you write a CUDA kernel that actually works—where the GPU computes the right answer across thousands of simultaneous threads—is a genuinely satisfying moment. The second feeling, right after, is usually: *why is it not as fast as I expected?*
+The first time you write a CUDA kernel that actually works, where the GPU computes the right answer across thousands of simultaneous threads, is a genuinely satisfying moment. The second feeling, right after, is usually: *why is it not as fast as I expected?*
 
-Projects 1 and 2 of Georgia Tech's [CS 8803: GPU Hardware and Software](https://omscs.gatech.edu/cs-8803-o11-gpu-hardware-and-software) cover this arc. Project 1 is tiled matrix multiplication: a problem every GPU programmer learns as the canonical application of shared memory. Project 2 is bitonic sort: a parallel sorting algorithm that tests your ability to think about memory hierarchy, occupancy, and data transfer—and then optimize all three simultaneously under profiler scrutiny on an NVIDIA H100.
+Projects 1 and 2 of Georgia Tech's [CS 8803: GPU Hardware and Software](https://omscs.gatech.edu/cs-8803-o11-gpu-hardware-and-software) cover this arc. Project 1 is tiled matrix multiplication: a problem every GPU programmer learns as the canonical application of shared memory. Project 2 is bitonic sort: a parallel sorting algorithm that tests your ability to think about memory hierarchy, occupancy, and data transfer, and then optimize all three simultaneously under profiler scrutiny on an NVIDIA H100.
 
-Together they teach the mental model that underlies almost all high-performance GPU code: understand where your bottleneck is (compute, global memory, or transfer), and choose the data layout and memory tier accordingly.
+Together they teach the mental model that shows up across most high-performance GPU patterns covered in this course: understand where your bottleneck is (compute, global memory, or transfer), and choose the data layout and memory tier accordingly.
 
 > [!note]
-> This post focuses on the concepts and design challenges behind these two projects. For a broader overview of all the course material, see the companion post: [GPU Hardware and Software: A Retrospective](/ideas/2026/gpu-retro/).
+> I keep this write-up centered on the concepts and design tradeoffs behind Projects 1 and 2. For the full course arc, see the companion post: [GPU Hardware and Software: A Retrospective](/ideas/2025/gpu-retro/).
 
 ## The CUDA Programming Model
 
@@ -50,7 +50,7 @@ One useful way to place CUDA is through the Module 2 parallel-programming lens. 
 
 ### Thread Hierarchy
 
-CUDA gives you three nested levels of parallelism. A **kernel** is a function that runs on the GPU. When you launch it, you specify a **grid** of **thread blocks**, and each block contains a number of **threads**. On the hardware side, threads are grouped into **warps** of 32—that's the granularity at which the GPU schedules and executes instructions.
+CUDA gives you three nested levels of parallelism. A **kernel** is a function that runs on the GPU. When you launch it, you specify a **grid** of **thread blocks**, and each block contains a number of **threads**. On the hardware side, threads are grouped into **warps** of 32, that's the granularity at which the GPU schedules and executes instructions.
 
 <Figure
   src={threadIdxImg}
@@ -70,7 +70,7 @@ __global__ void kernel(float* data, int N) {
 }
 ```
 
-The `if (i < N)` guard is there because the grid dimensions are rounded up to multiples of the block size—some threads in the last block may not correspond to valid array elements.
+The `if (i < N)` guard is there because the grid dimensions are rounded up to multiples of the block size, some threads in the last block may not correspond to valid array elements.
 
 <Figure
   src={dataIndexImg}
@@ -86,16 +86,18 @@ GPU performance almost always comes down to memory. CUDA exposes several distinc
 <Figure
   src={memorySpaceImg}
   alt="CUDA memory hierarchy"
-  caption="The CUDA memory hierarchy. Registers and shared memory live on-chip and are fast. Global memory (DRAM) is large but high-latency. The key pattern: load data from global into shared, compute in shared, write results back to global."
+  caption="The CUDA memory hierarchy. Registers and shared memory live on-chip and are fast. Global memory (DRAM) is large but high-latency. A common pattern is: load data from global into shared, compute in shared, then write results back to global."
   width={640}
 />
 
 - **Registers**: Fastest, private to each thread. Spilling to local memory (when you run out) is expensive.
-- **Shared memory** (`__shared__`): Fast on-chip scratchpad, scoped to a thread block. The primary tool for data reuse. Roughly 100× faster than global memory for concurrent accesses when bank conflicts are avoided.
-- **Global memory**: Large (tens of GBs) but high latency (~400–800 cycles). Every thread in the grid can access it. This is the dominant cost to manage.
-- **Constant and texture memory**: Read-only spaces with specialized caches—constant for broadcast patterns, texture for spatial locality.
+- **Shared memory** (`__shared__`): Fast on-chip scratchpad, scoped to a thread block. The primary tool for data reuse. It usually has much lower latency and higher bandwidth than global memory, but the exact gain depends on architecture and access pattern.
+- **Global memory**: Large (tens of GBs) but high latency (often hundreds of cycles when a load goes to DRAM on a miss). Every thread in the grid can access it. This is the dominant cost to manage.
+- **Constant and texture memory**: Read-only spaces with specialized caches, constant for broadcast patterns, texture for spatial locality.
 
-The compute kernel pattern that almost all high-performance code follows:
+These are order-of-magnitude heuristics, not fixed constants. In practice, [Nsight Compute](https://docs.nvidia.com/nsight-compute/) and the [CUDA C Best Practices Guide](https://docs.nvidia.com/cuda/cuda-c-best-practices-guide/) are the ground truth for your specific kernel and GPU generation.
+
+The compute kernel pattern that many high-performance kernels follow:
 
 ```cpp
 __global__ void Kernel() {
@@ -107,11 +109,11 @@ __global__ void Kernel() {
 }
 ```
 
-The `__syncthreads()` calls are critical. Without them, some threads might start computing before others have finished loading their portion of the shared data—a race condition that produces wrong results.
+The `__syncthreads()` calls are critical. Without them, some threads might start computing before others have finished loading their portion of the shared data, a race condition that produces wrong results.
 
 <details>
   <summary>On occupancy: how many warps keep an SM busy</summary>
-  **Occupancy** is the ratio of active warps on an SM to the maximum number of warps the SM can support. Higher occupancy generally means better latency hiding—when one warp stalls on a memory access, the scheduler has more warps available to switch to. But occupancy isn't everything. A kernel with 50% occupancy but perfect memory coalescing can easily outperform one with 100% occupancy and scattered memory accesses. The real goal is keeping the execution units busy, which requires both enough warps to hide latency and good enough memory access patterns to keep throughput high.
+  **Occupancy** is the ratio of active warps on an SM to the maximum number of warps the SM can support. Higher occupancy generally means better latency hiding, when one warp stalls on a memory access, the scheduler has more warps available to switch to. But occupancy isn't everything. A kernel with 50% occupancy but perfect memory coalescing can easily outperform one with 100% occupancy and scattered memory accesses. The real goal is keeping the execution units busy, which requires both enough warps to hide latency and good enough memory access patterns to keep throughput high.
 </details>
 
 ## Project 1: Tiled Matrix Multiplication
@@ -120,9 +122,9 @@ The `__syncthreads()` calls are critical. Without them, some threads might start
 
 Matrix multiplication is deceptively simple: for C = A × B, each element C[i][j] is the dot product of row i of A and column j of B. A straightforward parallel implementation assigns one thread to each output element.
 
-The problem: each output element requires reading an entire row of A and an entire column of B from global memory. For an N×N matrix, that's 2N global memory reads per output element, and O(N²) output elements—so O(N³) total global memory reads. For N=1024, that's over a billion memory accesses, each potentially incurring the full ~500-cycle global memory latency.
+The problem: each output element requires reading an entire row of A and an entire column of B from global memory. For an N×N matrix, that's 2N global memory reads per output element, and O(N²) output elements, so O(N³) total global memory reads. For N=1024, that's over a billion memory accesses, each potentially incurring the full ~500-cycle global memory latency.
 
-This is the memory-bound case on the Roofline model. The arithmetic intensity (FLOPs per byte loaded) of naive matrix multiply is around 0.25 FLOP/byte for typical data types—well below the ridge point of a modern GPU. The hardware arithmetic units are sitting idle waiting for data.
+This is the memory-bound case on the Roofline model. The arithmetic intensity (FLOPs per byte loaded) of naive matrix multiply is around 0.25 FLOP/byte for typical data types, well below the ridge point of a modern GPU. The hardware arithmetic units are sitting idle waiting for data.
 
 <Figure
   src={managingGlobalMemImg}
@@ -138,16 +140,16 @@ The insight behind tiled matrix multiplication: if the threads in a block all ne
 The algorithm divides the matrices into square tiles of size TILE_WIDTH × TILE_WIDTH. For each output tile:
 
 1. Each thread cooperatively loads one element of the A-tile and one element of the B-tile into shared memory.
-2. `__syncthreads()` — wait for the entire tile to be loaded.
+2. `__syncthreads()`: wait for the entire tile to be loaded.
 3. All threads compute their partial dot products using the shared-memory tiles.
-4. `__syncthreads()` — wait before the next iteration overwrites the tiles.
+4. `__syncthreads()`: wait before the next iteration overwrites the tiles.
 5. Repeat for the next pair of input tiles. Accumulate results.
 6. Write the final accumulated value to global memory.
 
-With tiling, each element loaded from global memory into shared is reused TILE_WIDTH times. A tile width of 16 means 16× reuse—16× fewer global memory accesses, 16× higher arithmetic intensity. This pushes the workload from memory-bound toward compute-bound, which is where you want to be.
+With tiling, each element loaded from global memory into shared is reused TILE_WIDTH times. A tile width of 16 means 16× reuse, 16× fewer global memory accesses, 16× higher arithmetic intensity. This pushes the workload from memory-bound toward compute-bound, which is where you want to be.
 
 ```cpp
-// Conceptual tiled matrix multiply — illustrates the pattern,
+// Conceptual tiled matrix multiply, illustrates the pattern,
 // not the project-specific implementation.
 __global__ void tiledMatMul(float* A, float* B, float* C, int N) {
     __shared__ float As[TILE_WIDTH][TILE_WIDTH];
@@ -180,30 +182,30 @@ This is the textbook version from Chapter 5 of *Programming Massively Parallel P
 
 Working through this project, the questions that kept coming up were architectural rather than algorithmic:
 
-- **What's the right tile size?** Larger tiles mean more reuse per global memory load, but also more shared memory per block—which reduces occupancy. There's a sweet spot depending on the GPU's shared memory capacity per SM and the register pressure of the kernel.
-- **How do you handle matrices whose dimensions aren't multiples of TILE_WIDTH?** The naive tile loop breaks at the boundary. This requires either padding the matrices or adding guard conditions in the tile load—each with different performance implications.
-- **How much faster is the tiled version?** The right framing is arithmetic intensity: from ~0.25 FLOP/byte to ~TILE_WIDTH/4 FLOP/byte. At TILE_WIDTH=16, that's roughly 4 FLOP/byte—a 16× improvement in data efficiency.
+- **What's the right tile size?** Larger tiles mean more reuse per global memory load, but also more shared memory per block, which reduces occupancy. There's a sweet spot depending on the GPU's shared memory capacity per SM and the register pressure of the kernel.
+- **How do you handle matrices whose dimensions aren't multiples of TILE_WIDTH?** The naive tile loop breaks at the boundary. This requires either padding the matrices or adding guard conditions in the tile load, each with different performance implications.
+- **How much faster is the tiled version?** The right framing is arithmetic intensity: from ~0.25 FLOP/byte to ~TILE_WIDTH/4 FLOP/byte. At TILE_WIDTH=16, that's roughly 4 FLOP/byte, a 16× improvement in data efficiency.
 
 ## Project 2: Bitonic Sort
 
 ### Why Sorting on a GPU Is a Different Problem
 
-Sorting a billion integers in parallel is not the same problem as sorting a billion integers sequentially. Comparison-based sequential algorithms (quicksort, mergesort) rely on data-dependent branches and pointer chasing—exactly the patterns GPUs handle badly. What GPUs need is a sorting algorithm built out of **sorting networks**: fixed, data-independent sequences of compare-and-swap operations where every comparison is predetermined regardless of input.
+Sorting a billion integers in parallel is not the same problem as sorting a billion integers sequentially. Comparison-based sequential algorithms (quicksort, mergesort) rely on data-dependent branches and pointer chasing, exactly the patterns GPUs handle badly. What GPUs need is a sorting algorithm built out of **sorting networks**: fixed, data-independent sequences of compare-and-swap operations where every comparison is predetermined regardless of input.
 
 **Bitonic sort** is the classic example.
 
 ### The Bitonic Sort Algorithm
 
-A **bitonic sequence** is one that first strictly increases and then strictly decreases (or vice versa). The key property: a bitonic sequence can be sorted by repeatedly splitting it into two smaller bitonic sequences—a "bitonic split"—until you're left with sorted pairs, then merging up.
+A **bitonic sequence** is one that monotonically increases and then monotonically decreases (allowing equal values), or a circular shift of such a sequence. A useful property is that you can sort it by repeatedly splitting it into smaller bitonic sequences, a "bitonic split", until you're left with sorted pairs, then merging up.
 
 <Figure
   src={bitonicSortImg}
   alt="Bitonic sort comparator network"
-  caption="The bitonic sort network for 16 elements. Each horizontal line is a comparator: the two endpoints are compared and swapped if out of order. The direction of the arrow indicates which end takes the smaller value. Every comparator at a given stage can fire in parallel—this is what makes it GPU-friendly."
+  caption="The bitonic sort network for 16 elements. Each horizontal line is a comparator: the two endpoints are compared and swapped if out of order. The direction of the arrow indicates which end takes the smaller value. Every comparator at a given stage can fire in parallel, this is what makes it GPU-friendly."
   width={720}
 />
 
-The algorithm has O(log² n) stages, and within each stage, all comparisons are independent of each other—they can all execute simultaneously. That's the GPU-friendly property. In pseudocode:
+The algorithm has O(log² n) stages, and within each stage, all comparisons are independent of each other, they can all execute simultaneously. That's the GPU-friendly property. In pseudocode:
 
 ```
 for i = 1 to log(n):           // stage: builds sorted sequences of length 2^i
@@ -215,13 +217,13 @@ for i = 1 to log(n):           // stage: builds sorted sequences of length 2^i
         else:              Compare_Exchange_descending(arr[k], arr[partner])
 ```
 
-The XOR operation to find the partner index is the key. It computes the index of the element that each position should compare-swap with at each sub-stage. Because these indices are entirely determined by the loop variables—not by the data—the comparator network is fixed. No branch divergence from data-dependent decisions.
+The XOR operation that finds the partner index is what makes the structure work. It computes the index that each position should compare-swap with at each sub-stage. Because those indices are determined by loop variables, not by data values, the comparator network stays fixed and avoids data-dependent branch divergence.
 
 ### The Performance Challenge
 
 The naive CUDA implementation is conceptually direct: map the innermost loop (all the compare-swaps for one sub-stage) to a kernel launch, with one thread per element. This works and produces correct results.
 
-The profiler tells a harsh story. Launching a separate kernel for each of the O(log² n) sub-stages on a 100M element array means thousands of kernel launches. Each launch has overhead. Between launches, data sits in global memory. Each thread loads two elements, does one comparison and conditional swap, and writes two elements back—an arithmetic intensity so low that the memory subsystem is the bottleneck by a wide margin.
+The profiler tells a harsh story. Launching a separate kernel for each of the O(log² n) sub-stages on a 100M element array means thousands of kernel launches. Each launch has overhead. Between launches, data sits in global memory. Each thread loads two elements, does one comparison and conditional swap, and writes two elements back, an arithmetic intensity so low that the memory subsystem is the bottleneck by a wide margin.
 
 NSight Compute will tell you, plainly:
 
@@ -235,9 +237,9 @@ The course points toward a two-phase design as the path to high performance. The
 
 A practical optimization loop that matched the course notes was: (1) form a bottleneck hypothesis, (2) validate it in Nsight Compute, (3) pick a kernel/data-layout change that targets that bottleneck, and (4) re-measure. The metric categories that mattered most were memory throughput, achieved occupancy, and stall reasons (memory dependency, long scoreboard, and barrier-related stalls). Treating these as a closed loop was more reliable than trying to "reason out" the best kernel shape in one shot.
 
-**Phase 1 — Shared memory phase**: For any sub-stage where the stride between compared elements is small enough that the relevant data fits in a block's shared memory, do all those sub-stages inside a single kernel launch using shared memory. This collapses many kernel launches into one and keeps data on-chip between sub-stages.
+**Phase 1: Shared memory phase**. For any sub-stage where the stride between compared elements is small enough that the relevant data fits in a block's shared memory, do all those sub-stages inside a single kernel launch using shared memory. This collapses many kernel launches into one and keeps data on-chip between sub-stages.
 
-**Phase 2 — Global memory phase**: For the larger strides (when the compared elements are farther apart than fits in shared memory), revert to global memory accesses. But even here, there are optimizations: loading multiple elements per thread (coarsening) reduces the number of threads needed, which can improve occupancy and reduce scheduling overhead. The larger strides also allow for a shared-memory fast path within the global-memory kernel when the stride fits.
+**Phase 2: Global memory phase**. For the larger strides (when the compared elements are farther apart than fits in shared memory), revert to global memory accesses. But even here, there are optimizations: loading multiple elements per thread (coarsening) reduces the number of threads needed, which can improve occupancy and reduce scheduling overhead. The larger strides also allow for a shared-memory fast path within the global-memory kernel when the stride fits.
 
 <Figure
   src={dataOpt2Img}
@@ -255,7 +257,7 @@ A practical optimization loop that matched the course notes was: (1) form a bott
 
 Several other techniques are relevant:
 
-- **Pinned (page-locked) memory** (`cudaMallocHost` or `cudaHostRegister`): Allocating host memory as pinned removes the intermediate copy that the DMA engine needs to perform when transferring from pageable host memory. Transfers from pinned memory are typically 2× faster.
+- **Pinned (page-locked) memory** (`cudaMallocHost` or `cudaHostRegister`): Allocating host memory as pinned removes the intermediate copy that the DMA engine needs to perform when transferring from pageable host memory. Throughput is often higher, but the gain varies with transfer size, interconnect, and system configuration.
 - **Async memory copies** (`cudaMemcpyAsync`): Lets the CPU continue executing while the DMA engine handles the transfer. Combined with CUDA streams, this enables overlapping transfer and computation.
 - **CUDA streams**: Multiple streams run concurrently on the GPU. If you can divide the work into chunks, you can overlap the transfer of chunk N+1 with the computation on chunk N.
 - **Items-per-thread coarsening**: Instead of one thread per element, assign 2 or 4 elements per thread. This reduces the total number of threads launched (potentially improving occupancy on large arrays), increases the arithmetic-to-indexing ratio, and can improve register usage.
@@ -264,21 +266,21 @@ Several other techniques are relevant:
 
 The interesting engineering questions in this project were about policy rather than correctness:
 
-- **Where is the shared-memory/global-memory crossover point?** This depends on the GPU's shared memory capacity, the block size, the data type size, and the number of elements. Finding the right crossover point requires measuring—not just reasoning.
+- **Where is the shared-memory/global-memory crossover point?** This depends on the GPU's shared memory capacity, the block size, the data type size, and the number of elements. Finding the right crossover point requires measuring, not just reasoning.
 - **How do you handle non-power-of-2 array sizes?** Bitonic sort requires power-of-2 lengths. Padding with sentinel values (INT_MAX for ascending sort) is the standard approach, but the padding adds memory traffic for large inputs.
 - **How many items per thread?** The sweet spot depends on the hardware. Too few: too many threads, scheduling overhead dominates. Too many: registers spill, occupancy drops.
-- **When is pinned memory actually faster?** For small transfers the overhead of pinning outweighs the benefit. For large transfers (hundreds of MB and up) it's almost always a win.
+- **When is pinned memory actually faster?** For small transfers the overhead of pinning can outweigh the benefit. For larger transfers and overlap-heavy pipelines, pinned memory is often a win, but you still need to measure on your target platform.
 
-The NSight Compute feedback loop was central to this project. The pattern: run, profile, identify the dominant bottleneck (was it achieved occupancy, memory throughput, or divergent branches?), address it, and repeat. Each iteration taught something about what the hardware actually cares about.
+The NSight Compute feedback loop was central to this project: run, profile, isolate the dominant bottleneck (achieved occupancy, memory throughput, or divergent branches), make one targeted change, and re-measure. Iterating that loop was far more reliable than one-shot "theoretical" tuning.
 
 <Figure
   src={bankConflictImg}
   alt="Shared memory bank conflicts"
-  caption="Bank conflicts occur when multiple threads in a warp access different addresses in the same shared memory bank—those accesses serialize instead of happening in parallel. For bitonic sort, the access stride pattern must be designed carefully to avoid conflicts during the shared-memory phase."
+  caption="Bank conflicts occur when multiple threads in a warp access different addresses in the same shared memory bank, those accesses serialize instead of happening in parallel. For bitonic sort, the access stride pattern must be designed carefully to avoid conflicts during the shared-memory phase."
   width={640}
 />
 
-## Conclusion: The Key Lessons
+## What These Projects Teach
 
 These two projects establish the mental model that the rest of the course builds on.
 
@@ -290,17 +292,17 @@ These two projects establish the mental model that the rest of the course builds
 **From bitonic sort:**
 - The profiler is not optional. You cannot reason your way to 900 million elements per second on an H100. You profile, identify the bottleneck, fix it, and repeat.
 - Kernel launch overhead is real. When the algorithm has O(log² n) stages and n is 100M, you feel every unnecessary kernel launch.
-- The two-phase pattern—shared memory for small strides, global memory for large strides—is a general strategy for parallel sorting algorithms on GPUs, not just bitonic sort.
-- Data transfer is part of the performance budget. Pinned memory and async transfers are not micro-optimizations; for 100M elements they are often the difference between meeting the target and missing it.
+- The two-phase pattern, shared memory for small strides, global memory for large strides, is a general strategy for parallel sorting algorithms on GPUs, not just bitonic sort.
+- Data transfer is part of the performance budget. Pinned memory and async transfers are not micro-optimizations. For 100M elements, they are often the difference between meeting the target and missing it.
 
 **The broader pattern:**
 Both projects teach the same underlying skill: start from the hardware's perspective. What is the memory access pattern? Is it coalesced? How much data reuse is there? What does occupancy look like? The answers to those questions determine your optimization strategy.
 
 ## Additional Resources
 
-- [CUDA C Best Practices Guide](https://docs.nvidia.com/cuda/cuda-c-best-practices-guide/) — the authoritative reference for optimization, especially the chapters on memory and execution configuration
-- [NSight Compute documentation](https://docs.nvidia.com/nsight-compute/) — essential for understanding what the profiler metrics mean
-- [Improved GPU Sorting (Harris, Sengupta, Owens)](https://developer.nvidia.com/gpugems/gpugems2/part-vi-simulation-and-numerical-algorithms/chapter-46-improved-gpu-sorting) — the GPU Gems 2 chapter on sorting is still one of the best resources on the topic
+- [CUDA C Best Practices Guide](https://docs.nvidia.com/cuda/cuda-c-best-practices-guide/) - the authoritative reference for optimization, especially the chapters on memory and execution configuration
+- [NSight Compute documentation](https://docs.nvidia.com/nsight-compute/) - essential for understanding what the profiler metrics mean
+- [Improved GPU Sorting (Harris, Sengupta, Owens)](https://developer.nvidia.com/gpugems/gpugems2/part-vi-simulation-and-numerical-algorithms/chapter-46-improved-gpu-sorting) - the GPU Gems 2 chapter on sorting is still one of the best resources on the topic
 
 <BookCard
   title="Programming Massively Parallel Processors: A Hands-on Approach"
@@ -308,7 +310,7 @@ Both projects teach the same underlying skill: start from the hardware's perspec
   url="https://www.amazon.com/Programming-Massively-Parallel-Processors-Hands/dp/0323912311"
 >
   <p>
-    Chapter 5 covers tiled matrix multiplication in depth—the definitive treatment of the pattern. Chapter 7 covers parallel patterns including sorting. The 4th edition adds material on tensor cores and modern optimization techniques.
+    Chapter 5 covers tiled matrix multiplication in depth, the definitive treatment of the pattern. Chapter 7 covers parallel patterns including sorting. The 4th edition adds material on tensor cores and modern optimization techniques.
   </p>
 </BookCard>
 

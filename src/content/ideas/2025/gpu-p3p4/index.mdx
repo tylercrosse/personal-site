@@ -1,6 +1,6 @@
 ---
 title: 'GPU Simulation: Warp Scheduling & Compute/Tensor Cores'
-description: 'Building a cycle-level GPU simulator from the inside — implementing GTO and CCWS warp schedulers, modeling compute instruction latencies, and extending to tensor core simulation.'
+description: 'Building a cycle-level GPU simulator from the inside, implementing GTO and CCWS warp schedulers, modeling compute instruction latencies, and extending to tensor core simulation.'
 date: '2026-02-25'
 updated: '2026-02-25'
 status: 'complete'
@@ -12,7 +12,7 @@ audience: 'Technical'
 media_subpath: "/ideas/gpu-p3p4/"
 parent: '2025/gpu-retro'
 image:
-  path: "./hero-collage-2.png"
+  path: "./hero-seedream-4-5.jpg"
   alt: 'GPU Simulation: Warp Scheduling & Compute/Tensor Cores'
 hideCaption: true
 ---
@@ -35,12 +35,12 @@ import gemmImg from "./m12l1_gemm.png";
 
 Profiling tools like NSight Compute give you numbers: throughput, latency, stall reasons. But they don't let you *reach inside* the scheduler and change how it works. For that, you need a simulator.
 
-Projects 3 and 4 of Georgia Tech's [CS 8803: GPU Hardware and Software](https://omscs.gatech.edu/cs-8803-o11-gpu-hardware-and-software) put you inside a stripped-down GPU simulator called Macsim. You're not running CUDA kernels — you're implementing the hardware mechanisms that make CUDA kernels run. That shift in perspective is, in my view, the most intellectually interesting part of the course.
+Projects 3 and 4 of Georgia Tech's [CS 8803: GPU Hardware and Software](https://omscs.gatech.edu/cs-8803-o11-gpu-hardware-and-software) put you inside a stripped-down GPU simulator called Macsim. You're not running CUDA kernels. You're implementing the hardware mechanisms that make CUDA kernels run. That shift in perspective is, in my view, the most intellectually interesting part of the course.
 
-Project 3 asks: how should a GPU decide which warp to run each cycle? Project 4 asks: once you include the latency of compute instructions (not just memory), how does the picture change — and how do tensor cores fit in?
+Project 3 asks: how should a GPU decide which warp to run each cycle? Project 4 asks: once you include the latency of compute instructions (not just memory), how does the picture change, and how do tensor cores fit in?
 
 > [!note]
-> This post focuses on the concepts and implementation challenges behind these two projects. For a broader course overview, see: [GPU Hardware and Software: A Retrospective](/ideas/2026/gpu-retro/).
+> I keep this write-up focused on the mechanisms and implementation tradeoffs behind Projects 3 and 4. For the broader course overview, see: [GPU Hardware and Software: A Retrospective](/ideas/2025/gpu-retro/).
 
 ## Trace-Driven GPU Simulation
 
@@ -50,7 +50,7 @@ Before getting into warp scheduling specifics, it's worth understanding what kin
 
 When you profile a real GPU program, you get aggregate statistics: average stall cycles, cache miss rate, achieved occupancy. You can't easily answer questions like "what if the warp scheduler used a different policy?" or "what if the L1 cache were twice as large?" Answering those questions requires either expensive hardware modifications or a simulator.
 
-Simulators are slower than real hardware — often by orders of magnitude — but they give you complete observability and controllability. You can read any internal state at any cycle, inject faults, or swap out entire subsystems. Architects use them constantly when designing new hardware.
+Simulators are slower than real hardware, often by orders of magnitude, but they give you complete observability and controllability. You can read any internal state at any cycle, inject faults, or swap out entire subsystems. Architects use them constantly when designing new hardware.
 
 ### Trace-Driven vs. Execution-Driven
 
@@ -100,8 +100,8 @@ A GPU core has many warp contexts loaded simultaneously. The point of this desig
 
 But latency hiding and cache performance are in tension. Here's the conflict:
 
-- **Maximum latency hiding** wants as many warps in flight as possible — so when any one warp stalls, others are always ready. This argues for Round Robin scheduling: cycle through every warp evenly.
-- **Cache efficiency** wants data to stay warm in the cache. If you interleave too many warps, the cache gets thrashed — each warp brings in its working set, evicts the previous warp's data, and then when the previous warp resumes it gets cache misses all over again.
+- **Maximum latency hiding** wants as many warps in flight as possible, so when any one warp stalls, others are always ready. This argues for Round Robin scheduling: cycle through every warp evenly.
+- **Cache efficiency** wants data to stay warm in the cache. If you interleave too many warps, the cache gets thrashed: each warp brings in its working set, evicts the previous warp's data, and then when the previous warp resumes it gets cache misses all over again.
 
 The right scheduling policy depends on the workload. Cache-intensive applications need to trade some latency hiding for better locality. This is the core tension Project 3 explores.
 
@@ -127,7 +127,7 @@ The outer level manages which warps are *eligible* to be scheduled (the dispatch
 
 ### Round Robin: The Baseline
 
-Round Robin (RR) is the simplest possible policy: each cycle, pick the next warp in a circular queue. It's fair — every active warp gets equal time — and it maximizes latency hiding because you always switch to a different warp after each instruction.
+Round Robin (RR) is the simplest possible policy: each cycle, pick the next warp in a circular queue. It's fair, every active warp gets equal time, and it maximizes latency hiding because you always switch to a different warp after each instruction.
 
 The cost shows up in the cache. RR cycles through all warps rapidly, which means each warp's working set is competing with every other warp's working set. On a workload with temporal locality within each warp (the same address accessed multiple instructions apart within the same warp), RR destroys that locality.
 
@@ -151,20 +151,20 @@ else:
   width={640}
 />
 
-GTO reduces stall cycles because it extracts more work from each warp before switching. If warp A's instructions have no memory stalls, GTO will run A through its entire ready sequence before touching warp B — which is more efficient than interleaving them. And when A *does* stall, switching to the oldest waiting warp means you're picking the warp that's been waiting longest, which in practice tends to be the one whose memory response has (or soon will have) arrived.
+GTO reduces stall cycles because it extracts more work from each warp before switching. If warp A's instructions have no memory stalls, GTO will run A through its entire ready sequence before touching warp B, which is more efficient than interleaving them. And when A *does* stall, switching to the oldest waiting warp means you're picking the warp that's been waiting longest, which in practice tends to be the one whose memory response has (or soon will have) arrived.
 
-The grading metric for Task 1 was `NUM_STALL_CYCLES`. GTO reduces stalls compared to RR in most workloads, which is why it's the default scheduler in many real GPUs.
+The grading metric for Task 1 was `NUM_STALL_CYCLES`. GTO reduces stalls compared to RR in many workloads, which is why it remains a common research baseline and often performs strongly in simulator studies.
 
 ### Simplified Cache-Conscious Wavefront Scheduling (CCWS)
 
 GTO improves stall cycles but doesn't directly address cache thrashing. CCWS takes a different angle: *dynamically limit* how many warps are allowed to compete for the cache.
 
-The insight from the CCWS paper (Rogers, O'Connor, Aamodt, MICRO 2012): if a warp's data gets evicted from cache by other warps before that warp gets a chance to reuse it, those evictions are wasted bandwidth. A "victim tag array" (VTA) per warp can detect this: it stores the tags of lines evicted from L1. When a warp later misses in L1 and *hits in its own VTA*, that's evidence of lost locality — the eviction was premature, and the warp would have reused that data if it had been given more cache.
+The insight from the CCWS paper (Rogers, O'Connor, Aamodt, MICRO 2012): if a warp's data gets evicted from cache by other warps before that warp gets a chance to reuse it, those evictions are wasted bandwidth. A "victim tag array" (VTA) per warp can detect this: it stores the tags of lines evicted from L1. When a warp later misses in L1 and *hits in its own VTA*, that's evidence of lost locality, meaning the eviction was premature and the warp would have reused that data if it had been given more cache.
 
 <Figure
   src={cacheConsciousImg}
   alt="Cache-Conscious Wavefront Scheduling"
-  caption="CCWS assigns each warp a Lost Locality Score (LLS) based on VTA hits — evidence that other warps are evicting data this warp would have reused. Warps are ranked by LLS; only the top-ranked warps (those suffering the most lost locality) are allowed to be scheduled, throttling the active warp count until cache pressure is relieved."
+  caption="CCWS assigns each warp a Lost Locality Score (LLS) based on VTA hits, evidence that other warps are evicting data this warp would have reused. Warps are ranked by LLS, and only the top-ranked warps (those suffering the most lost locality) are allowed to be scheduled, throttling the active warp count until cache pressure is relieved."
   width={640}
 />
 
@@ -176,7 +176,9 @@ LLS = (VTA_Hits_Total × K_Throttle × Cum_LLS_Cutoff) / Num_Instr
 
 where `Cum_LLS_Cutoff = Num_Active_Warps × Base_Locality_Score`.
 
-Each cycle, warp LLS scores decay by 1 (down to a minimum floor), so the throttling is transient — if the locality situation improves, more warps are re-admitted. Warps are sorted by LLS in descending order, and the top warps whose cumulative scores fall within the cutoff form the *schedulable set*. Round Robin then applies within that set.
+In this project context, this exact score/cutoff form comes from the course's simplified CCWS model and grading harness rather than a claim about production GPU firmware policy.
+
+Each cycle, warp LLS scores decay by 1 (down to a minimum floor), so the throttling is transient. If the locality situation improves, more warps are re-admitted. Warps are sorted by LLS in descending order, and the top warps whose cumulative scores fall within the cutoff form the *schedulable set*. Round Robin then applies within that set.
 
 The grading metric for Task 2 was `MISSES_PER_1000_INSTR`. CCWS improves cache miss rate by throttling the warp count just enough to let each warp's working set fit comfortably in the cache.
 
@@ -184,21 +186,21 @@ The grading metric for Task 2 was `MISSES_PER_1000_INSTR`. CCWS improves cache m
 
 Working through the CCWS implementation, several architectural questions stayed open:
 
-- **How do you tune K_Throttle?** A higher value means more aggressive throttling — fewer warps allowed. Too aggressive and you sacrifice latency hiding unnecessarily. Too conservative and you don't help the cache. The right value is workload-dependent, which raises the question of whether a self-tuning version could be built.
+- **How do you tune K_Throttle?** A higher value means more aggressive throttling, with fewer warps allowed. Too aggressive and you sacrifice latency hiding unnecessarily. Too conservative and you don't help the cache. The right value is workload-dependent, which raises the question of whether a self-tuning version could be built.
 - **What happens at the boundary?** When the LLS scores change enough that a warp is admitted or expelled from the schedulable set, there can be abrupt shifts in behavior. How do real implementations smooth this transition?
 - **CCWS only helps if there's actual intra-warp temporal locality.** For a workload with purely streaming access patterns (no data reuse), reducing the warp count hurts latency hiding with no cache benefit. How should the scheduler detect this?
 
 ## Compute and Tensor Core Modeling (P4)
 
-Project 3's Macsim only simulates load/store instructions — compute instructions (adds, multiplies, FMAs) are ignored. This is a simplification that makes sense when you're studying cache behavior, but it misses a large part of what happens on a real GPU.
+Project 3's Macsim only simulates load/store instructions, while compute instructions (adds, multiplies, FMAs) are ignored. This is a simplification that makes sense when you're studying cache behavior, but it misses a large part of what happens on a real GPU.
 
-Project 4 extends the simulator to model compute instruction latency. The punchline: once compute latency matters, everything about scheduling changes.
+Project 4 extends the simulator to model compute instruction latency. Once compute latency matters, scheduling behavior changes significantly.
 
 ### The Execution Buffer
 
-In a real GPU pipeline, an instruction doesn't complete instantaneously. A floating-point multiply has some number of pipeline stages. While that instruction is in flight, the registers it will write are not yet valid — a subsequent instruction that reads those registers must wait.
+In a real GPU pipeline, an instruction doesn't complete instantaneously. A floating-point multiply has some number of pipeline stages. While that instruction is in flight, the registers it will write are not yet valid, so a subsequent instruction that reads those registers must wait.
 
-The key addition in Project 4 is an **execution buffer**: a per-core data structure that tracks in-flight compute instructions. Each entry stores:
+A central addition in Project 4 is an **execution buffer**: a per-core data structure that tracks in-flight compute instructions. Each entry stores:
 
 - The instruction being executed
 - The cycle at which it will **complete** (i.e., when its output register becomes valid)
@@ -206,12 +208,12 @@ The key addition in Project 4 is an **execution buffer**: a per-core data struct
 Each cycle, the simulator:
 1. Checks the buffer for entries whose completion timestamp has passed, and removes them (the register is now valid)
 2. When scheduling a new compute instruction, adds it to the buffer with `completion_cycle = current_cycle + latency`
-3. If the buffer is full, **stalls the warp** — it can't issue another compute instruction until a slot opens up
+3. If the buffer is full, **stalls the warp**, because it can't issue another compute instruction until a slot opens up
 
 This is the mechanism that makes compute throughput finite. Without the buffer, every instruction would complete in one cycle, regardless of latency.
 
 ```
-// Conceptual execution buffer management — not project-specific code
+// Conceptual execution buffer management, not project-specific code
 struct ExecEntry {
     Instruction* instr;
     uint64_t     completion_cycle;
@@ -236,7 +238,7 @@ if (exec_buffer.size() < EXEC_WIDTH) {
 }
 ```
 
-The grading metric for Task 1 was `NUM_CYCLES` — the total cycle count to complete the `gemm_float` trace. Getting this right means correctly modeling when warps stall due to a full execution buffer.
+The grading metric for Task 1 was `NUM_CYCLES`, the total cycle count to complete the `gemm_float` trace. Getting this right means correctly modeling when warps stall due to a full execution buffer.
 
 ### Scoreboarding and Register Dependencies
 
@@ -267,7 +269,7 @@ Task 2 of Project 4 extends the compute core model to simulate tensor core behav
 <Figure
   src={tensorImg}
   alt="Tensor core operation"
-  caption="A tensor core operates on entire matrix tiles in a single operation. Rather than computing one element at a time (like a CUDA core doing FFMA), a tensor core computes a 4×4 or larger matrix multiply-accumulate (MMA) in one hardware operation, with a fixed tile width and longer latency."
+  caption="A tensor core operates on matrix-tile MMA instructions. Rather than computing one element at a time (like a CUDA core doing FFMA), tensor cores execute tile operations (e.g., 16×16×16 at the WMMA API level), implemented internally via smaller hardware micro-operations, with a fixed tile width and longer latency."
   width={640}
 />
 
@@ -278,38 +280,38 @@ Task 2 of Project 4 extends the compute core model to simulate tensor core behav
   width={640}
 />
 
-The key differences from regular CUDA cores:
+Two differences from regular CUDA cores matter most:
 
-**Execution width**: A tensor core processes multiple operations *simultaneously per cycle* — the execution width is greater than 1. In the project, the configured width is 8: up to 8 tensor instructions can be in the execution buffer at once, compared to 1 for a regular compute instruction. This reflects how tensor cores are physically wider — they contain more multiplier arrays.
+**Execution width**: A tensor core processes multiple operations *simultaneously per cycle*, so execution width is greater than 1. In the project, the configured width is 8: up to 8 tensor instructions can be in the execution buffer at once, compared to 1 for a regular compute instruction. This reflects how tensor cores are physically wider, with more multiplier arrays.
 
-**Latency**: Tensor instructions (HMMA — half-precision matrix multiply-accumulate) have much higher latency than regular FP32 instructions. The configured latency is 64 cycles, vs. a default of 1 cycle for other compute instructions. This reflects the deep pipeline in a real tensor core.
+**Latency**: Tensor instructions (HMMA, half-precision matrix multiply-accumulate) have much higher latency than regular FP32 instructions. The configured latency is 64 cycles, vs. a default of 1 cycle for other compute instructions. This reflects the deep pipeline in a real tensor core.
 
-**Instruction count**: Because each tensor instruction computes more work per instruction (a whole tile MMA), the total instruction count for a GEMM done with tensor cores (`gemm_half`) is much lower than the same GEMM done with scalar FFMA instructions (`gemm_float`). The total work is the same; the instruction-level "packaging" is different.
+**Instruction count**: Because each tensor instruction computes more work per instruction (a whole tile MMA), the total instruction count for a GEMM done with tensor cores (`gemm_half`) is much lower than the same GEMM done with scalar FFMA instructions (`gemm_float`). The total work is the same, but the instruction-level "packaging" is different.
 
 In code, detecting a tensor instruction amounts to checking whether the opcode starts with `H*` (HMMA opcodes). If yes: use width=8 and latency=64. If no: regular compute core behavior.
 
 ### Sensitivity Analysis
 
-The report for Project 4 required plotting how `NUM_STALL_CYCLES` and `NUM_CYCLES` varied as you swept tensor latency (32–128) and execution width (2–16). This sensitivity analysis reveals a key tension:
+The report for Project 4 required plotting how `NUM_STALL_CYCLES` and `NUM_CYCLES` varied as you swept tensor latency (32–128) and execution width (2–16). In these sweeps, the trace/workload was held fixed while only those two model parameters changed. This sensitivity analysis reveals a key tension:
 
 - **Increasing width** lets more tensor instructions be in flight simultaneously, improving throughput when the pipeline is deep. But once the width exceeds what the workload naturally has in flight (determined by warp count and ILP), it stops helping.
-- **Increasing latency** is always worse for stall cycles — longer instructions mean warps wait longer for results. But real tensor cores have high latency because the deeper pipeline enables higher throughput on the operations they *do* complete. The question is whether the throughput gain outweighs the stall cost.
+- **Increasing latency** is always worse for stall cycles, because longer instructions make warps wait longer for results. But real tensor cores have high latency because the deeper pipeline enables higher throughput on the operations they *do* complete. The question is whether the throughput gain outweighs the stall cost.
 
-The question that the project poses but doesn't answer: *what warp scheduling strategy is best for tensor-heavy workloads?* RR cycles through warps and is good at hiding latency (including the 64-cycle tensor instruction latency). GTO stays on one warp — which works well when that warp has independent instructions ready, but a 64-cycle tensor instruction is a very long window for the warp to have nothing else to do. What would CCWS do with tensor latency? These are open questions in GPU microarchitecture research.
+The question that the project poses but doesn't answer: *what warp scheduling strategy is best for tensor-heavy workloads?* RR cycles through warps and is good at hiding latency (including the 64-cycle tensor instruction latency). GTO stays on one warp, which works well when that warp has independent instructions ready, but a 64-cycle tensor instruction is a very long window for the warp to have nothing else to do. What would CCWS do with tensor latency? These are open questions in GPU microarchitecture research.
 
 ## Conclusion
 
-After Projects 3 and 4, you stop seeing the GPU as a black box and start seeing the mechanisms underneath. Warp scheduling isn't just "the GPU runs threads" — it's a carefully balanced policy between latency hiding and cache efficiency, and different policies dominate in different workloads. Compute latency isn't just a number in a spec sheet — it's a constraint that propagates through register dependencies and execution buffers and ultimately determines how much of the hardware's arithmetic capacity your program can use.
+After Projects 3 and 4, you stop seeing the GPU as a black box and start seeing mechanisms. Warp scheduling is a policy tradeoff between latency hiding and cache efficiency, and compute latency propagates through register dependencies and execution buffers to shape usable throughput.
 
-The simulator perspective also changes how you read profiling output. When NSight Compute reports a high stall rate due to "long scoreboard" stalls, you now know exactly what that means mechanically: some warp keeps trying to issue an instruction whose source register is still being written by a prior instruction in the execution buffer. You can trace that back to the scheduling policy, the warp count, the instruction mix.
+The simulator view also makes profiling output easier to interpret. A high "long scoreboard" stall rate in NSight Compute maps directly to source registers waiting on prior in-flight instructions, which you can trace back to scheduling policy, warp count, and instruction mix.
 
-The most lasting insight: **hardware constraints are design decisions**. The tensor core's 64-cycle latency and width-8 execution buffer are tradeoffs chosen by architects, not laws of physics. Understanding why those choices were made — and what they imply for the software stack above — is what the simulator teaches.
+What stuck with me most is this: **hardware constraints are design decisions**. In this project, the 64-cycle tensor latency and width-8 execution buffer are simulator parameters chosen for the course model, not measured constants from a specific NVIDIA architecture. Thinking through why those knobs help or hurt still teaches the same lesson: hardware-software tradeoffs are deliberate, and they shape what software can extract from the machine.
 
 ## Additional Resources
 
-- [CCWS Paper: "Cache-Conscious Wavefront Scheduling" (Rogers et al., MICRO 2012)](https://ieeexplore.ieee.org/document/6493631) — the primary reference for the CCWS algorithm implemented in Project 3
-- [Macsim Simulator (HpArch Lab, Georgia Tech)](https://sites.gatech.edu/hparch/software/#macsim) — the full research-grade simulator that the course version is derived from
-- [NVBit: Dynamic Binary Instrumentation for NVIDIA GPUs](https://research.nvidia.com/publication/2019-10_nvbit-dynamic-binary-instrumentation-framework-nvidia-gpus) — how the traces are captured
+- [CCWS Paper: "Cache-Conscious Wavefront Scheduling" (Rogers et al., MICRO 2012)](https://ieeexplore.ieee.org/document/6493631) - the primary reference for the CCWS algorithm implemented in Project 3
+- [Macsim Simulator (HpArch Lab, Georgia Tech)](https://sites.gatech.edu/hparch/software/#macsim) - the full research-grade simulator that the course version is derived from
+- [NVBit: Dynamic Binary Instrumentation for NVIDIA GPUs](https://research.nvidia.com/publication/2019-10_nvbit-dynamic-binary-instrumentation-framework-nvidia-gpus) - how the traces are captured
 
 <BookCard
   title="Programming Massively Parallel Processors: A Hands-on Approach"
@@ -317,7 +319,7 @@ The most lasting insight: **hardware constraints are design decisions**. The ten
   url="https://www.amazon.com/Programming-Massively-Parallel-Processors-Hands/dp/0323912311"
 >
   <p>
-    Chapters 4 and 5 cover the GPU pipeline, warp scheduling, and the hardware mechanisms for latency hiding — the conceptual foundation for everything in Projects 3 and 4. Chapter 17 covers tensor core operations and matrix multiply patterns.
+    Chapters 4 and 5 cover the GPU pipeline, warp scheduling, and the hardware mechanisms for latency hiding, the conceptual foundation for everything in Projects 3 and 4. Chapter 17 covers tensor core operations and matrix multiply patterns.
   </p>
 </BookCard>
 
