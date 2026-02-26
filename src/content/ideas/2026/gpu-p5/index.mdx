@@ -2,7 +2,6 @@
 title: 'Static Analysis: Detecting Branch Divergence in GPU Code'
 description: 'A simple if statement can halve GPU throughput, exploring how static dataflow analysis detects branch divergence by building a def-use chain over a SASS control flow graph.'
 date: '2026-02-25'
-updated: '2026-02-25'
 status: 'complete'
 type: 'project'
 tags: ['GPU', 'computer-architecture', 'compilers', 'MSCS']
@@ -46,7 +45,7 @@ Project 5 of Georgia Tech's [CS 8803: GPU Hardware and Software](https://omscs.g
 The answer is a classic piece of compiler theory applied to GPU assembly code: build a control flow graph over the program's basic blocks, run a def-use dataflow analysis to track which values derive from thread IDs, and flag any branch whose condition is thread-ID-dependent.
 
 > [!note]
-> I keep this post focused on the core ideas behind Project 5. For the broader course overview, see: [GPU Hardware and Software: A Retrospective](/ideas/2025/gpu-retro/).
+> I keep this post focused on the core ideas behind Project 5. For the broader course overview, see: [GPU Hardware and Software: A Retrospective](/ideas/2026/gpu-retro/).
 
 ## Branch Divergence Explained
 

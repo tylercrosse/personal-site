@@ -2,7 +2,6 @@
 title: 'FlashAttention & LLM Inference on GPUs'
 description: 'Writing a FlashAttention CUDA kernel from scratch, tiling the attention matrix to avoid materializing N×N memory, building a KV cache for token generation, and running GPT-2 with custom kernels end-to-end.'
 date: '2026-02-25'
-updated: '2026-02-25'
 status: 'complete'
 type: 'project'
 tags: ['GPU', 'CUDA', 'c++', 'python', 'computer-architecture', 'machine-learning', 'deep-learning', 'large-language-models', 'transformer', 'inference', 'MSCS']
@@ -41,7 +40,7 @@ The capstone project of Georgia Tech's [CS 8803: GPU Hardware and Software](http
 It ties together everything from the course: CUDA kernel writing and profiling (Projects 1–2), understanding of latency and throughput tradeoffs (Projects 3–4), and the GPU's relationship to the ML software stack (Module 12). It's the most ambitious project in the course.
 
 > [!note]
-> I keep this write-up focused on the implementation ideas behind the capstone project. For the broader course overview, see: [GPU Hardware and Software: A Retrospective](/ideas/2025/gpu-retro/).
+> I keep this write-up focused on the implementation ideas behind the capstone project. For the broader course overview, see: [GPU Hardware and Software: A Retrospective](/ideas/2026/gpu-retro/).
 
 ## Self-Attention from Scratch
 
@@ -151,7 +150,7 @@ The attention computation requires two GEMM operations: $S = QK^T$ (scores) and 
 - $QK^T$: multiply Q (normal row-major) by $K^T$ (transposed), so the **GEMM_NT** kernel
 - $SV$: multiply S (normal) by V (normal), so the **GEMM_NN** kernel
 
-Both use the tiled GEMM pattern from Project 1 (see [The Tiling Solution](/ideas/2025/gpu-p1p2/#the-tiling-solution)). The attention-specific twist is handling both GEMM_NN and GEMM_NT layouts while keeping shared-memory accesses efficient.
+Both use the tiled GEMM pattern from Project 1 (see [The Tiling Solution](/ideas/2026/gpu-p1p2/#the-tiling-solution)). The attention-specific twist is handling both GEMM_NN and GEMM_NT layouts while keeping shared-memory accesses efficient.
 
 <Figure
   src={managingGlobalMemImg}
