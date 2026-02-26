@@ -172,13 +172,16 @@ const hierarchicalPosts = allPostsData
       background-color: var(--accent);
       color: var(--black);
     }
-    .tag-group {
+    .tag-group-outer {
       width: 100%;
+      list-style: none;
+      position: relative;
+    }
+    .tag-group {
       display: flex;
       flex-wrap: wrap;
       align-items: center;
       gap: 0.25rem;
-      list-style: none;
     }
     @media (max-width: 767px) {
       .tag-group {
@@ -188,6 +191,38 @@ const hierarchicalPosts = allPostsData
       }
       .tag-group::-webkit-scrollbar {
         display: none;
+      }
+      .tag-group.has-overflow-right {
+        -webkit-mask-image: linear-gradient(to right, black calc(100% - 3rem), transparent 100%);
+        mask-image: linear-gradient(to right, black calc(100% - 3rem), transparent 100%);
+      }
+      .tag-group.has-overflow-left {
+        -webkit-mask-image: linear-gradient(to right, transparent 0%, black 3rem);
+        mask-image: linear-gradient(to right, transparent 0%, black 3rem);
+      }
+      .tag-group.has-overflow-left.has-overflow-right {
+        -webkit-mask-image: linear-gradient(to right, transparent 0%, black 3rem, black calc(100% - 3rem), transparent 100%);
+        mask-image: linear-gradient(to right, transparent 0%, black 3rem, black calc(100% - 3rem), transparent 100%);
+      }
+      .tag-group-outer.has-overflow-right::after,
+      .tag-group-outer.has-overflow-left::before {
+        position: absolute;
+        top: -4px;
+        bottom: 0;
+        display: flex;
+        align-items: center;
+        font-size: 1.5rem;
+        color: var(--sol-8);
+        opacity: 0.6;
+        pointer-events: none;
+      }
+      .tag-group-outer.has-overflow-right::after {
+        content: '›';
+        right: 0.3rem;
+      }
+      .tag-group-outer.has-overflow-left::before {
+        content: '‹';
+        left: 0.3rem;
       }
     }
     .tag-group-label {
@@ -599,11 +634,13 @@ const hierarchicalPosts = allPostsData
         <ul class="tag-list">
           {
             groupedTags.map(({ group, tags }) => (
-              <li class="tag-group">
-                <span class="tag-group-label" aria-hidden="true">{group}</span>
-                {tags.map((tag) => (
-                  <button data-tag={tag}>{tag}</button>
-                ))}
+              <li class="tag-group-outer">
+                <div class="tag-group">
+                  <span class="tag-group-label" aria-hidden="true">{group}</span>
+                  {tags.map((tag) => (
+                    <button data-tag={tag}>{tag}</button>
+                  ))}
+                </div>
               </li>
             ))
           }
@@ -957,6 +994,20 @@ const hierarchicalPosts = allPostsData
           filterPosts();
         }
       }
+      // Scroll-edge fades + chevrons for mobile tag groups (progressive enhancement)
+      function updateScrollFades(el: HTMLElement) {
+        const hasLeft = el.scrollLeft > 0;
+        const hasRight = el.scrollLeft + el.clientWidth < el.scrollWidth - 1;
+        el.classList.toggle("has-overflow-left", hasLeft);
+        el.classList.toggle("has-overflow-right", hasRight);
+        el.parentElement?.classList.toggle("has-overflow-left", hasLeft);
+        el.parentElement?.classList.toggle("has-overflow-right", hasRight);
+      }
+
+      document.querySelectorAll<HTMLElement>(".tag-group").forEach((group) => {
+        updateScrollFades(group);
+        group.addEventListener("scroll", () => updateScrollFades(group), { passive: true });
+      });
     });
   </script>
 </BaseLayout>
