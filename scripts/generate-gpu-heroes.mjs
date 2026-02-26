@@ -6,27 +6,27 @@ import { fileURLToPath } from "node:url";
 
 const MODEL_DEFAULT = "bytedance-seed/seedream-4.5";
 const BASE_URL_DEFAULT = "https://openrouter.ai/api/v1";
-const OUTPUT_BASENAME_DEFAULT = "hero-seedream-4-5";
+const OUTPUT_BASENAME_DEFAULT = "hero-seedream-4-5-v2";
 
 const PROMPTS = {
   p1p2:
-    "A cohesive editorial hero image in a retro-compute glitch-collage style: vertical sliced panels, pixel-block artifacts, subtle CRT scanlines, painterly texture, cool green/blue palette with restrained accent tones, soft atmospheric lighting, cinematic wide composition, no text, no letters, no logos, no watermark, abstract GPU memory hierarchy as layered geometric fields, shared-memory tiles glowing on-chip, bitonic comparator pathways woven through a grid, clean technical structure embedded into a landscape-like gradient horizon",
+    "A cohesive editorial hero image in a retro-compute glitch-collage style: vertical sliced panels, pixel-block artifacts, subtle CRT scanlines, painterly texture, cool green/blue palette with restrained accent tones, brighter high-key lighting, lifted midtones, luminous highlights, hopeful optimistic atmosphere, cinematic wide composition, no text, no letters, no logos, no watermark, abstract GPU memory hierarchy as layered geometric fields, shared-memory tiles glowing on-chip, bitonic comparator pathways woven through a grid, clean technical structure embedded into a landscape-like gradient horizon",
   p3p4:
-    "A cohesive editorial hero image in a retro-compute glitch-collage style: vertical sliced panels, pixel-block artifacts, subtle CRT scanlines, painterly texture, cool green/blue palette with restrained accent tones, soft atmospheric lighting, cinematic wide composition, no text, no letters, no logos, no watermark, warp schedulers as branching traffic lanes, wavefronts moving through blocky city-like compute cells, tensor-core tile bursts as rhythmic pixel clusters, simulation overlays blended into the collage bands",
+    "A cohesive editorial hero image in a retro-compute glitch-collage style: vertical sliced panels, pixel-block artifacts, subtle CRT scanlines, painterly texture, cool green/blue palette with restrained accent tones, brighter high-key lighting, lifted midtones, luminous highlights, hopeful optimistic atmosphere, cinematic wide composition, no text, no letters, no logos, no watermark, warp schedulers as branching traffic lanes, wavefronts moving through blocky city-like compute cells, tensor-core tile bursts as rhythmic pixel clusters, simulation overlays blended into the collage bands",
   p5:
-    "A cohesive editorial hero image in a retro-compute glitch-collage style: vertical sliced panels, pixel-block artifacts, subtle CRT scanlines, painterly texture, cool green/blue palette with restrained accent tones, soft atmospheric lighting, cinematic wide composition, no text, no letters, no logos, no watermark, control-flow graph branches and reconvergence paths as ink-like lines over pixel mosaics, divergence zones highlighted by slight color shift, compiler/dataflow feeling with calm negative space",
+    "A cohesive editorial hero image in a retro-compute glitch-collage style: vertical sliced panels, pixel-block artifacts, subtle CRT scanlines, painterly texture, cool green/blue palette with restrained accent tones, brighter high-key lighting, lifted midtones, luminous highlights, hopeful optimistic atmosphere, cinematic wide composition, no text, no letters, no logos, no watermark, control-flow graph branches and reconvergence paths as ink-like lines over pixel mosaics, divergence zones highlighted by slight color shift, compiler/dataflow feeling with calm negative space",
   p6:
-    "A cohesive editorial hero image in a retro-compute glitch-collage style: vertical sliced panels, pixel-block artifacts, subtle CRT scanlines, painterly texture, cool green/blue palette with restrained accent tones, soft atmospheric lighting, cinematic wide composition, no text, no letters, no logos, no watermark, attention flow as layered streams between tiled blocks, online-softmax accumulation represented by smooth contour ripples through glitch panels, KV-cache growth as stacked memory bands receding in depth",
+    "A cohesive editorial hero image in a retro-compute glitch-collage style: vertical sliced panels, pixel-block artifacts, subtle CRT scanlines, painterly texture, cool green/blue palette with restrained accent tones, brighter high-key lighting, lifted midtones, luminous highlights, hopeful optimistic atmosphere, cinematic wide composition, no text, no letters, no logos, no watermark, attention flow as layered streams between tiled blocks, online-softmax accumulation represented by smooth contour ripples through glitch panels, KV-cache growth as stacked memory bands receding in depth",
   retro:
-    "A cohesive editorial hero image in a retro-compute glitch-collage style: vertical sliced panels, pixel-block artifacts, subtle CRT scanlines, painterly texture, cool green/blue palette with restrained accent tones, soft atmospheric lighting, cinematic wide composition, no text, no letters, no logos, no watermark, a synthesis composition combining architecture blocks, memory waterfalls, scheduler paths, and attention motifs into one coherent mosaic, reflective systems journey tone",
+    "A cohesive editorial hero image in a retro-compute glitch-collage style: vertical sliced panels, pixel-block artifacts, subtle CRT scanlines, painterly texture, cool green/blue palette with restrained accent tones, brighter high-key lighting, lifted midtones, luminous highlights, hopeful optimistic atmosphere, cinematic wide composition, no text, no letters, no logos, no watermark, a synthesis composition combining architecture blocks, memory waterfalls, scheduler paths, and attention motifs into one coherent mosaic, reflective systems journey tone",
 };
 
 const JOBS = [
-  { key: "p1p2", label: "P1P2", articleDir: "src/content/ideas/2025/gpu-p1p2" },
-  { key: "p3p4", label: "P3P4", articleDir: "src/content/ideas/2025/gpu-p3p4" },
-  { key: "p5", label: "P5", articleDir: "src/content/ideas/2025/gpu-p5" },
-  { key: "p6", label: "P6", articleDir: "src/content/ideas/2025/gpu-p6" },
-  { key: "retro", label: "Retro", articleDir: "src/content/ideas/2025/gpu-retro" },
+  { key: "p1p2", label: "P1P2", articleDir: "src/content/ideas/2026/gpu-p1p2" },
+  { key: "p3p4", label: "P3P4", articleDir: "src/content/ideas/2026/gpu-p3p4" },
+  { key: "p5", label: "P5", articleDir: "src/content/ideas/2026/gpu-p5" },
+  { key: "p6", label: "P6", articleDir: "src/content/ideas/2026/gpu-p6" },
+  { key: "retro", label: "Retro", articleDir: "src/content/ideas/2026/gpu-retro" },
 ];
 
 function parseArgs(argv) {
