@@ -953,7 +953,7 @@ const hierarchicalPosts = allPostsData
             allTagsButton?.classList.remove("active");
             button.classList.add("active");
             activeTag = b.dataset.tag || "all";
-            history.replaceState(null, "", `?tag=${activeTag}`);
+            history.replaceState(null, "", `?tag=${encodeURIComponent(activeTag)}`);
             filterPosts();
           }
         });

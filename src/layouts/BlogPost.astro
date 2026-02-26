@@ -271,7 +271,7 @@ const capitalize = (s: string) => {
             tags && tags.length > 0 && (
               <div class="tags">
                 {tags.map((tag) => (
-                  <a class="tag" href={`/ideas?tag=${tag}`}>{tag}</a>
+                  <a class="tag" href={`/ideas?tag=${encodeURIComponent(tag)}`}>{tag}</a>
                 ))}
               </div>
             )
