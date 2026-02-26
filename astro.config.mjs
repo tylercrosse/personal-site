@@ -2,6 +2,7 @@
 import { defineConfig } from "astro/config";
 import mdx from "@astrojs/mdx";
 import sitemap from "@astrojs/sitemap";
+import react from "@astrojs/react";
 import pagefind from "astro-pagefind";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
@@ -47,6 +48,7 @@ export default defineConfig({
       ],
     }),
     sitemap(),
+    react(),
     pagefind(),
   ],
   markdown: {
