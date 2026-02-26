@@ -204,9 +204,25 @@ const hierarchicalPosts = allPostsData
     .select-filters {
       display: flex;
       gap: 1rem;
+      align-items: center;
     }
     .select-filters select {
       text-transform: capitalize;
+      color: var(--black);
+    }
+    #all-tags {
+      background: rgba(var(--gray-light), 0.8);
+      border: none;
+      border-radius: 4px;
+      padding: 0.25rem 1.25rem;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+      text-transform: capitalize;
+      color: var(--black);
+      white-space: nowrap;
+    }
+    #all-tags.active {
+      background-color: var(--accent);
       color: var(--black);
     }
     .post-grid {
@@ -564,6 +580,7 @@ const hierarchicalPosts = allPostsData
 
     <div class="js-required">
       <div class="select-filters">
+        <button class="active" id="all-tags">All Topics</button>
         <select id="type-filter">
           <option value="all">All types</option>
           {allTypes.map((type) => <option value={type}>{capitalize(type || '')}</option>)}
@@ -580,7 +597,6 @@ const hierarchicalPosts = allPostsData
 
       <div class="filters" data-pagefind-ignore>
         <ul class="tag-list">
-          <li><button class="active" id="all-tags">All Topics</button></li>
           {
             groupedTags.map(({ group, tags }) => (
               <li class="tag-group">
@@ -878,24 +894,31 @@ const hierarchicalPosts = allPostsData
       // Tag filtering
       const tagButtons = document.querySelectorAll(".tag-list button");
       const allTagsButton = document.getElementById("all-tags");
+
+      function resetToAllTopics() {
+        tagButtons.forEach((btn) => btn.classList.remove("active"));
+        allTagsButton?.classList.add("active");
+        activeTag = "all";
+        history.replaceState(null, "", window.location.pathname);
+        filterPosts();
+      }
+
+      allTagsButton?.addEventListener("click", resetToAllTopics);
+
       tagButtons.forEach((button) => {
         button.addEventListener("click", () => {
           const b = button as HTMLElement;
-          const isAlreadyActive = button.classList.contains("active");
-          const isAllTags = b.id === "all-tags";
-
           // Clicking an already-selected tag deselects it (revert to All Topics)
-          if (isAlreadyActive && !isAllTags) {
-            tagButtons.forEach((btn) => btn.classList.remove("active"));
-            allTagsButton?.classList.add("active");
-            activeTag = "all";
+          if (button.classList.contains("active")) {
+            resetToAllTopics();
           } else {
             tagButtons.forEach((btn) => btn.classList.remove("active"));
+            allTagsButton?.classList.remove("active");
             button.classList.add("active");
-            activeTag = isAllTags ? "all" : b.dataset.tag || "all";
+            activeTag = b.dataset.tag || "all";
+            history.replaceState(null, "", `?tag=${activeTag}`);
+            filterPosts();
           }
-
-          filterPosts();
         });
       });
 
@@ -919,6 +942,20 @@ const hierarchicalPosts = allPostsData
           activeStatus = (e.target as HTMLSelectElement).value;
           filterPosts();
         });
+      }
+
+      // Activate filter from URL query param (e.g. linked from a post page tag)
+      const urlTag = new URLSearchParams(window.location.search).get("tag");
+      if (urlTag) {
+        const matchingButton = document.querySelector<HTMLElement>(
+          `.tag-list button[data-tag="${urlTag}"]`
+        );
+        if (matchingButton) {
+          tagButtons.forEach((btn) => btn.classList.remove("active"));
+          matchingButton.classList.add("active");
+          activeTag = urlTag;
+          filterPosts();
+        }
       }
     });
   </script>
