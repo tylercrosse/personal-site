@@ -131,15 +131,26 @@ const capitalize = (s: string) => {
     .meta {
       display: flex;
       justify-content: space-between;
+      align-items: flex-start;
       max-width: 800px;
-      margin: auto;
-      font-size: 0.7em;
       margin: 2em 0;
+      font-size: 0.7em;
+    }
+    @media (max-width: 600px) {
+      .meta {
+        flex-direction: column;
+        gap: 0.75em;
+      }
     }
     .dates {
       color: var(--sol-7);
       flex-shrink: 0;
       text-align: right;
+    }
+    @media (max-width: 600px) {
+      .dates {
+        text-align: left;
+      }
     }
     .last-updated-on {
       padding-top: 0.5em;
@@ -196,6 +207,18 @@ const capitalize = (s: string) => {
     }
     .prose > :global(*) {
       grid-column: 2;
+    }
+
+    /* Center Mermaid diagrams in post content */
+    .prose :global(.mermaid) {
+      display: flex;
+      justify-content: center;
+    }
+
+    .prose :global(svg[id^="mermaid-"]) {
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
     }
 
     .slide-in-block {

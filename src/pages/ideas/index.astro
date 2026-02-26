@@ -989,6 +989,7 @@ const hierarchicalPosts = allPostsData
         );
         if (matchingButton) {
           tagButtons.forEach((btn) => btn.classList.remove("active"));
+          allTagsButton?.classList.remove("active");
           matchingButton.classList.add("active");
           activeTag = urlTag;
           filterPosts();
