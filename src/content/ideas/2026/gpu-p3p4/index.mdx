@@ -9,7 +9,7 @@ category: ['projects']
 draft: false
 audience: 'Technical'
 media_subpath: "/ideas/gpu-p3p4/"
-parent: '2025/gpu-retro'
+parent: '2026/gpu-retro'
 image:
   path: "./hero-seedream-4-5-v2.jpg"
   alt: 'GPU Simulation: Warp Scheduling & Compute/Tensor Cores'
@@ -212,7 +212,7 @@ Each cycle, the simulator:
 
 This is the mechanism that makes compute throughput finite. Without the buffer, every instruction would complete in one cycle, regardless of latency.
 
-```
+```c++
 // Conceptual execution buffer management, not project-specific code
 struct ExecEntry {
     Instruction* instr;
