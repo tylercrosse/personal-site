@@ -213,6 +213,7 @@ const capitalize = (s: string) => {
     .prose :global(.mermaid) {
       display: flex;
       justify-content: center;
+      overflow-x: auto;
     }
 
     .prose :global(svg[id^="mermaid-"]) {
@@ -338,4 +339,68 @@ const capitalize = (s: string) => {
       <Comments />
     </div>
   </article>
+
+  <script type="module" is:inline>
+    const MERMAID_BLOCK_SELECTOR =
+      ".prose pre > code.language-mermaid, .prose pre > code.lang-mermaid";
+    let mermaidPromise;
+
+    async function getMermaid() {
+      if (!mermaidPromise) {
+        mermaidPromise = import(
+          "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs"
+        ).then((mod) => mod.default);
+      }
+      return mermaidPromise;
+    }
+
+    async function renderMermaidBlocks() {
+      const codeBlocks = Array.from(
+        document.querySelectorAll(MERMAID_BLOCK_SELECTOR)
+      ).filter((el) => !el.dataset.mermaidProcessed);
+
+      if (!codeBlocks.length) return;
+
+      const mermaid = await getMermaid();
+      mermaid.initialize({
+        startOnLoad: false,
+        securityLevel: "loose",
+        theme: "neutral",
+      });
+
+      for (const [index, codeBlock] of codeBlocks.entries()) {
+        codeBlock.dataset.mermaidProcessed = "true";
+
+        const pre = codeBlock.closest("pre");
+        const definition = codeBlock.textContent?.trim();
+        if (!pre || !definition) continue;
+
+        try {
+          const id = `mermaid-${Date.now()}-${index}`;
+          const { svg, bindFunctions } = await mermaid.render(id, definition);
+          const container = document.createElement("div");
+          container.className = "mermaid mermaid-diagram";
+          container.innerHTML = svg;
+          pre.replaceWith(container);
+          if (typeof bindFunctions === "function") bindFunctions(container);
+        } catch (error) {
+          console.error("Failed to render Mermaid diagram:", error);
+        }
+      }
+    }
+
+    function bootMermaidRendering() {
+      void renderMermaidBlocks();
+    }
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", bootMermaidRendering, {
+        once: true,
+      });
+    } else {
+      bootMermaidRendering();
+    }
+
+    document.addEventListener("astro:page-load", bootMermaidRendering);
+  </script>
 </BaseLayout>

@@ -7,7 +7,6 @@ import pagefind from "astro-pagefind";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import rehypeCitation from "rehype-citation";
-import rehypeMermaid from "rehype-mermaid";
 import rehypeCallouts from "rehype-callouts";
 import rehypeKatex from "rehype-katex";
 
@@ -43,7 +42,6 @@ export default defineConfig({
             tooltipAttribute: "data-tooltip",
           },
         ],
-        rehypeMermaid,
         rehypeCallouts,
       ],
     }),
