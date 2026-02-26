@@ -6,6 +6,7 @@ import { SITE_TITLE, SITE_DESCRIPTION } from "../../consts";
 import FormattedDate from "../../components/FormattedDate.astro";
 import readingTime from "reading-time";
 import { PenTool, RotateCcw, Code, Lightbulb, Notebook, Youtube } from "lucide-astro";
+import { TAG_GROUPS } from "../../config/tagGroups";
 
 const capitalize = (s: string) => {
   if (typeof s !== "string" || !s) return s;
@@ -40,6 +41,24 @@ const posts = (await getCollection("ideas"))
 const allTags = [
   ...new Set(posts.flatMap((post) => post.data.tags || [])),
 ].sort((a, b) => a.localeCompare(b));
+
+function buildGroupedTags(tags: string[], groups: Record<string, string[]>) {
+  const seen = new Set<string>();
+  const result: Array<{ group: string; tags: string[] }> = [];
+  for (const [group, groupTags] of Object.entries(groups)) {
+    const ordered = groupTags.filter((t) => tags.includes(t));
+    if (ordered.length > 0) {
+      result.push({ group, tags: ordered });
+      ordered.forEach((t) => seen.add(t));
+    }
+  }
+  const other = tags.filter((t) => !seen.has(t));
+  if (other.length > 0) result.push({ group: "Other", tags: other });
+  return result;
+}
+
+const groupedTags = buildGroupedTags(allTags, TAG_GROUPS);
+
 const allTypes = [
   ...new Set(posts.map((post) => post.data.type).filter(Boolean)),
 ];
@@ -136,6 +155,7 @@ const hierarchicalPosts = allPostsData
       transition: all 0.2s ease;
       text-transform: capitalize;
       color: var(--sol-8);
+      white-space: nowrap;
     }
 
     .tag-list button:hover {
@@ -152,12 +172,92 @@ const hierarchicalPosts = allPostsData
       background-color: var(--accent);
       color: var(--black);
     }
+    .tag-group-outer {
+      width: 100%;
+      list-style: none;
+      position: relative;
+    }
+    .tag-group {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.25rem;
+    }
+    @media (max-width: 767px) {
+      .tag-group {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        scrollbar-width: none;
+      }
+      .tag-group::-webkit-scrollbar {
+        display: none;
+      }
+      .tag-group.has-overflow-right {
+        -webkit-mask-image: linear-gradient(to right, black calc(100% - 3rem), transparent 100%);
+        mask-image: linear-gradient(to right, black calc(100% - 3rem), transparent 100%);
+      }
+      .tag-group.has-overflow-left {
+        -webkit-mask-image: linear-gradient(to right, transparent 0%, black 3rem);
+        mask-image: linear-gradient(to right, transparent 0%, black 3rem);
+      }
+      .tag-group.has-overflow-left.has-overflow-right {
+        -webkit-mask-image: linear-gradient(to right, transparent 0%, black 3rem, black calc(100% - 3rem), transparent 100%);
+        mask-image: linear-gradient(to right, transparent 0%, black 3rem, black calc(100% - 3rem), transparent 100%);
+      }
+      .tag-group-outer.has-overflow-right::after,
+      .tag-group-outer.has-overflow-left::before {
+        position: absolute;
+        top: -4px;
+        bottom: 0;
+        display: flex;
+        align-items: center;
+        font-size: 1.5rem;
+        color: var(--sol-8);
+        opacity: 0.6;
+        pointer-events: none;
+      }
+      .tag-group-outer.has-overflow-right::after {
+        content: '›';
+        right: 0.3rem;
+      }
+      .tag-group-outer.has-overflow-left::before {
+        content: '‹';
+        left: 0.3rem;
+      }
+    }
+    .tag-group-label {
+      font-size: 0.65rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--sol-8);
+      opacity: 0.45;
+      padding: 0 0.25rem 0 0.5rem;
+      pointer-events: none;
+      white-space: nowrap;
+    }
     .select-filters {
       display: flex;
       gap: 1rem;
+      align-items: center;
     }
     .select-filters select {
       text-transform: capitalize;
+      color: var(--black);
+    }
+    #all-tags {
+      background: rgba(var(--gray-light), 0.8);
+      border: none;
+      border-radius: 4px;
+      padding: 0.25rem 1.25rem;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+      text-transform: capitalize;
+      color: var(--black);
+      white-space: nowrap;
+    }
+    #all-tags.active {
+      background-color: var(--accent);
       color: var(--black);
     }
     .post-grid {
@@ -515,6 +615,7 @@ const hierarchicalPosts = allPostsData
 
     <div class="js-required">
       <div class="select-filters">
+        <button class="active" id="all-tags">All Topics</button>
         <select id="type-filter">
           <option value="all">All types</option>
           {allTypes.map((type) => <option value={type}>{capitalize(type || '')}</option>)}
@@ -531,11 +632,15 @@ const hierarchicalPosts = allPostsData
 
       <div class="filters" data-pagefind-ignore>
         <ul class="tag-list">
-          <li><button class="active" id="all-tags">All Topics</button></li>
           {
-            allTags.map((tag) => (
-              <li>
-                <button data-tag={tag}>{tag}</button>
+            groupedTags.map(({ group, tags }) => (
+              <li class="tag-group-outer">
+                <div class="tag-group">
+                  <span class="tag-group-label" aria-hidden="true">{group}</span>
+                  {tags.map((tag) => (
+                    <button data-tag={tag}>{tag}</button>
+                  ))}
+                </div>
               </li>
             ))
           }
@@ -825,13 +930,32 @@ const hierarchicalPosts = allPostsData
 
       // Tag filtering
       const tagButtons = document.querySelectorAll(".tag-list button");
+      const allTagsButton = document.getElementById("all-tags");
+
+      function resetToAllTopics() {
+        tagButtons.forEach((btn) => btn.classList.remove("active"));
+        allTagsButton?.classList.add("active");
+        activeTag = "all";
+        history.replaceState(null, "", window.location.pathname);
+        filterPosts();
+      }
+
+      allTagsButton?.addEventListener("click", resetToAllTopics);
+
       tagButtons.forEach((button) => {
         button.addEventListener("click", () => {
-          tagButtons.forEach((btn) => btn.classList.remove("active"));
-          button.classList.add("active");
           const b = button as HTMLElement;
-          activeTag = b.id === "all-tags" ? "all" : b.dataset.tag || "all";
-          filterPosts();
+          // Clicking an already-selected tag deselects it (revert to All Topics)
+          if (button.classList.contains("active")) {
+            resetToAllTopics();
+          } else {
+            tagButtons.forEach((btn) => btn.classList.remove("active"));
+            allTagsButton?.classList.remove("active");
+            button.classList.add("active");
+            activeTag = b.dataset.tag || "all";
+            history.replaceState(null, "", `?tag=${encodeURIComponent(activeTag)}`);
+            filterPosts();
+          }
         });
       });
 
@@ -856,6 +980,34 @@ const hierarchicalPosts = allPostsData
           filterPosts();
         });
       }
+
+      // Activate filter from URL query param (e.g. linked from a post page tag)
+      const urlTag = new URLSearchParams(window.location.search).get("tag");
+      if (urlTag) {
+        const matchingButton = document.querySelector<HTMLElement>(
+          `.tag-list button[data-tag="${urlTag}"]`
+        );
+        if (matchingButton) {
+          tagButtons.forEach((btn) => btn.classList.remove("active"));
+          matchingButton.classList.add("active");
+          activeTag = urlTag;
+          filterPosts();
+        }
+      }
+      // Scroll-edge fades + chevrons for mobile tag groups (progressive enhancement)
+      function updateScrollFades(el: HTMLElement) {
+        const hasLeft = el.scrollLeft > 0;
+        const hasRight = el.scrollLeft + el.clientWidth < el.scrollWidth - 1;
+        el.classList.toggle("has-overflow-left", hasLeft);
+        el.classList.toggle("has-overflow-right", hasRight);
+        el.parentElement?.classList.toggle("has-overflow-left", hasLeft);
+        el.parentElement?.classList.toggle("has-overflow-right", hasRight);
+      }
+
+      document.querySelectorAll<HTMLElement>(".tag-group").forEach((group) => {
+        updateScrollFades(group);
+        group.addEventListener("scroll", () => updateScrollFades(group), { passive: true });
+      });
     });
   </script>
 </BaseLayout>

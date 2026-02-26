@@ -1,0 +1,52 @@
+// Tag group configuration for the ideas index page.
+// Order of groups controls render order.
+// Order within a group controls render order within that group.
+// Tags not listed here auto-appear in an implicit "Other" group at the end.
+export const TAG_GROUPS: Record<string, string[]> = {
+  Meta: [
+    "learning-in-public",
+    "research",
+    "tips",
+    "short",
+    "paper-club",
+    "MSCS",
+  ],
+  "AI/ML": [
+    "machine-learning",
+    "deep-learning",
+    "reinforcement-learning",
+    "NLP",
+    "large-language-models",
+    "computer-vision",
+    "generative-models",
+    "AI-safety",
+    "mechanistic-interpretability",
+    "information-retrieval",
+    "data-science",
+    "optimization",
+    "python",
+    "pyTorch",
+    "GPU",
+    "CUDA",
+  ],
+  Systems: [
+    "computer-science",
+    "software-engineering",
+    "algorithms",
+    "parallel-algorithms",
+    "computer-architecture",
+    "compilers",
+    "simulation",
+    "distributed-systems",
+    "operating-systems",
+    "multithreading",
+    "socket-programming",
+    "IPC",
+    "c",
+    "c++",
+    "go",
+    "node",
+    "typescript",
+    "git",
+  ],
+};
