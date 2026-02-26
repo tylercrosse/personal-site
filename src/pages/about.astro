@@ -16,10 +16,9 @@ import { Image } from "astro:assets";
   <section class="intro slide-in-block">
     <h1>Hi, I'm Tyler 👋</h1>
     <p class="lead">
-      I'm a software engineer turned graduate student, currently an MSCS student
-      at Georgia Tech focusing on <strong>AI safety</strong> and
-      <strong>mechanistic interpretability</strong>. I care about building
-      steerable, reliable AI systems—and the engineering that makes them real.
+      I'm a research engineer building infrastructure for <strong>AI safety</strong>. 
+      I'm a research engineer turned graduate student, currently an MSCS student
+      at Georgia Tech focusing on <strong>AI safety.</strong> I have 7+ years of industry experience as a Senior Software Engineer and Team Lead, and I'm currently finishing my MSCS at Georgia Tech specializing in machine learning and computing systems. My research focuses on evaluating how models can fail, understanding how neural networks work from the inside out, and building the engineering that makes that research possible at scale.
     </p>
   </section>
 
@@ -28,9 +27,8 @@ import { Image } from "astro:assets";
     <p>
       My path to computer science has been anything but conventional. I started
       with a degree in <strong>Biomedical Engineering</strong> (VCU), planning to
-      build medical devices. I was quickly drawn to software—shipping production
-      systems, leading engineering teams, and learning how to make complex systems
-      robust and maintainable.
+      build medical devices. I was quickly drawn to software, shipping production
+      systems, leading engineering teams, and learning how to make complex systems robust and maintainable.
     </p>
     <p>
       After nearly a decade in industry, breakthroughs like
@@ -39,12 +37,34 @@ import { Image } from "astro:assets";
         target="_blank"
         rel="noopener noreferrer">AlphaFold</a
       > and the rapid scaling of language models crystallized something for me: machine
-      learning wasn't just another tool—it was going to revolutionize science in
+      learning wasn't just another tool, it was going to revolutionize science in
       ways I hadn't imagined. That pushed me to deepen my foundations and focus on
       <strong>alignment</strong>: making powerful systems <em>understandable</em
       >, <em>steerable</em>, and
       <em>trustworthy</em>. That sent me back to school to pair strong systems
       skills with rigorous ML.
+    </p>
+  </section>
+
+  <section class="research slide-in-block">
+    <h2>Research</h2>
+    <p>I'm currently a research fellow in two alignment programs:</p>
+    <ul>
+      <li>
+        <strong>MARS (Redwood Research)</strong>: Developing adversarial attack
+        policies to stress-test AI control protocols and monitoring systems.
+      </li>
+      <li>
+        <strong>SPAR</strong>: Building evaluation infrastructure to measure
+        goal drift in frontier language model agents, with two papers submitted
+        to ICLR workshops.
+      </li>
+    </ul>
+    <p>
+      I completed ARENA (Alignment Research Engineer Accelerator) in London,
+      where my capstone applied mechanistic interpretability methods
+      (activation patching, steering vectors, path patching) to investigate how
+      moral fine-tuning rewires attention circuits in Gemma-2-2b.
     </p>
   </section>
 
@@ -60,13 +80,12 @@ import { Image } from "astro:assets";
           </p>
 
           <p class="description">
-            Specializing in Machine Learning and High-Performance Computing.
-            Coursework: Operating Systems, Machine Learning, High Dimensional
-            Data Analysis, Deep Learning, Reinforcement Learning. Built a
-            distributed, sequentially consistent file system in C++ (gRPC,
-            multithreading) and ran RL experiments (exact algorithms vs.
-            approximate algorithms). Current focus: mechanistic
-            interpretability, robustness & evaluation, and reproducible ML.
+            Specializing in Machine Learning and Computing Systems. Coursework
+            includes Deep Learning, Reinforcement Learning, GPU Hardware and
+            Software, Distributed Computing, and Operating Systems. Built
+            FlashAttention kernels, warp scheduling simulators, and branch
+            divergence analysis tools. Current focus: mechanistic
+            interpretability and ML infrastructure.
           </p>
         </div>
       </div>
@@ -369,6 +388,16 @@ import { Image } from "astro:assets";
     .journey p {
       font-size: 1.1rem;
       line-height: 1.7;
+      margin-bottom: 1.5rem;
+    }
+
+    .research p,
+    .research li {
+      font-size: 1.1rem;
+      line-height: 1.7;
+    }
+
+    .research ul {
       margin-bottom: 1.5rem;
     }
 
