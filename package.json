@@ -2,6 +2,7 @@
   "name": "personal-site",
   "type": "module",
   "version": "0.0.1",
+  "packageManager": "pnpm@10.30.3",
   "engines": {
     "node": ">=20.19"
   },
@@ -35,6 +36,10 @@
     "remark-math": "^6.0.0",
     "sharp": "^0.34.2"
   },
+  "optionalDependencies": {
+    "@rollup/rollup-darwin-arm64": "4.41.1",
+    "@rollup/rollup-linux-x64-gnu": "4.41.1"
+  },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^8.38.0",
     "@typescript-eslint/parser": "^8.38.0",
@@ -43,9 +48,28 @@
     "eslint-plugin-jsx-a11y": "^6.10.2"
   },
   "pnpm": {
+    "onlyBuiltDependencies": [
+      "@vercel/speed-insights",
+      "esbuild",
+      "sharp"
+    ],
     "overrides": {
       "mermaid": "11.12.0",
       "vite": "6.4.1"
+    },
+    "supportedArchitectures": {
+      "os": [
+        "current",
+        "linux"
+      ],
+      "cpu": [
+        "current",
+        "x64"
+      ],
+      "libc": [
+        "current",
+        "glibc"
+      ]
     }
   }
 }

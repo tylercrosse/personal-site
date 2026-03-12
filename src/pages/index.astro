@@ -56,10 +56,10 @@ const allPostsData = posts.map((post) => {
       <span class="word">Tyler</span>
     </h1>
     <p class="animated-subtitle slide-in-block">
-      I'm a research engineer focused on interpretability and ML infrastructure.<br />
-      Currently finishing my MSCS at Georgia Tech (ML & Computing Systems) while doing alignment research with SPAR and MARS. Previously a Senior SWE & Team Lead for 7 years. My work spans mechanistic interpretability, GPU systems, and building the tooling that makes safety research possible at scale.
-      <br />
-
+      I'm a research engineer working on interpretability and ML
+      infrastructure. I'm finishing my MSCS at Georgia Tech while doing
+      AI safety research with SPAR and MARS after 7 years as a Senior SWE &
+      Team Lead.
     </p>
   </section>
   <section class="posts slide-in-block" data-pagefind-ignore>
@@ -83,28 +83,35 @@ const allPostsData = posts.map((post) => {
 </BaseLayout>
 
 <style>
+  :global(main) {
+    padding-top: 1.5rem;
+  }
+
   .heading {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    height: 40vh;
-    min-height: 300px;
+    gap: 1rem;
+    min-height: clamp(220px, 28vh, 320px);
+    padding: 1.5rem 0 1rem;
     text-align: center;
   }
 
-
   .heading h1 {
-    font-size: 5rem;
+    font-size: clamp(3.5rem, 8vw, 5rem);
+    line-height: 1.02;
+    margin-bottom: 0;
   }
 
   @media (max-width: 520px) {
     .heading {
-      height: 70vh;
+      min-height: 0;
+      padding: 1rem 0 0.5rem;
     }
 
     .heading h1 {
-      font-size: 2.8rem;
+      font-size: clamp(2.8rem, 13vw, 3.5rem);
     }
   }
 
@@ -113,8 +120,28 @@ const allPostsData = posts.map((post) => {
     overflow: hidden;
   }
 
+  .animated-heading {
+    padding-bottom: 0.08em;
+  }
+
   .animated-subtitle {
-    max-width: 600px;
+    max-width: 38rem;
+    margin: 0;
+    font-size: clamp(1.15rem, 1.9vw, 1.4rem);
+    line-height: 1.5;
+    text-wrap: balance;
+  }
+
+  @media (max-height: 820px) {
+    .heading {
+      min-height: 0;
+      padding-top: 0.5rem;
+    }
+
+    .animated-subtitle {
+      font-size: clamp(1.15rem, 1.7vw, 1.4rem);
+      line-height: 1.4;
+    }
   }
 
   .word {
