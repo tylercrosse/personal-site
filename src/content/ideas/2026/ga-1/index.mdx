@@ -33,24 +33,24 @@ import algsCLRSImg from "../../../books/algs-clrs.jpg";
 > [!note]
 > This article is part of a broader series on my experience with CS 6515. You can find the high-level course overview and links to other parts in my main [Graduate Algorithms Retro](/ideas/2026/ga-retro/).
 
-This piece serves as both a personal study guide and a technical reference. I am currently taking Georgia Tech's [CS 6515: Intro to Graduate Algorithms](https://omscs.gatech.edu/cs-6515-intro-graduate-algorithms) in the Spring 2026 semester. I'm organizing these notes to consolidate my learning for Exam 1—following the Feynman technique of teaching to understand, while also sharing insights for those interested in the course or my background. My audience includes prospective OMSCS students, potential employers, and colleagues seeking to understand the course content and my current knowledge (along with what I still need to learn).
+I am taking Georgia Tech's [CS 6515: Intro to Graduate Algorithms](https://omscs.gatech.edu/cs-6515-intro-graduate-algorithms) in Spring 2026, and these notes grew out of my prep for Exam 1. They are mainly for me, but they should also be useful to anyone who wants a readable walkthrough of the material or a sense of what I am working through right now.
 
-Writing this kind of reflection involves balancing honesty about my learning journey and the extent of my understanding with the recognition that I'm still developing expertise. This course is notoriously demanding, and this write-up represents my attempt to process the material and build intuition under time pressure. The bulk of this article captures my study notes on Divide & Conquer and Dynamic Programming, with a short backtracking bridge to explain how DP often emerges from a naive recursive search. It also includes two interactive tools I built to visualize the core concepts.
+Most of the article covers Divide & Conquer and Dynamic Programming, with a short stop on Backtracking because it helps explain how many DP formulations start. I also built two small visualizers for the parts I found easiest to understand once I could see them.
 
 ### TL;DR
 
-- **Audience**: Prospective OMSCS students, colleagues, and hiring managers.
-- **Scope**: Study notes covering Divide & Conquer (Master Theorem) and Dynamic Programming (DAG patterns), with backtracking included as the conceptual bridge between the two.
-- **Takeaways**: Understand how recursion shows up as decomposition, search, and state reuse; formulate DP recurrences; and map abstract concepts to visual representations.
-- **Extras**: Interactive Master Theorem visualizer and DP DAG visualizer. Note: this piece focuses on formal algorithmic communication and mathematical structure, with Erickson's Backtracking-to-DP framing filling in a conceptual gap from the course. Jumping straight to pseudocode often masks underlying logical flaws.
+- **Audience**: Mostly prospective OMSCS students, colleagues, and anyone curious about how I am studying the course.
+- **Scope**: Divide & Conquer, Backtracking, and Dynamic Programming, with most of the space spent on Master Theorem and common DP patterns.
+- **Takeaways**: How recursion shows up as decomposition, search, and state reuse; how to write a DP recurrence cleanly; and how to match problem statements to familiar patterns.
+- **Extras**: An interactive Master Theorem visualizer and a DP DAG visualizer. I also borrow Erickson's backtracking-to-DP framing more explicitly than the course does, because it made that transition much easier for me to understand.
 
 ## Divide & Conquer
 
-Use this to map a recurrence to Master Theorem behavior and see which level dominates work as parameters change.
+Use the visualizer below to see how a recurrence shifts between the three Master Theorem cases and which level dominates the work.
 
 ### The 4-Step Solution Format
 
-The course encourages structuring problem-solving into distinct sections rather than diving straight into code. This approach builds a habit of thinking algorithmically and mathematically. By combining the course requirements with Jeff Erickson's "What, How, Why, How fast" framework, we get a robust template for explaining algorithms. _Note: Correctness is never assumed from the algorithm steps; it must be explicitly argued._
+The course wants algorithm answers written in sections instead of jumping straight to code. I found Erickson's "What, How, Why, How fast" structure a good fit for that style. _Note: Correctness is never assumed from the algorithm steps; it has to be argued._
 
 - **1. What: Problem Specification:** Explicitly define the problem the algorithm solves. Include the type and meaning of inputs, exactly what the output should be, and state any hidden assumptions.
 - **2. How: Algorithm Description:** Explain _how_ your algorithm solves the problem using a plain-English narrative. You can use paragraphs or high-level bullet points, but **pseudocode is strictly forbidden**.
@@ -63,14 +63,14 @@ The course encourages structuring problem-solving into distinct sections rather 
 - **4. How Fast: Runtime Analysis:** Analyze your algorithm using worst-case **Big-O notation**.
   - You can skip analyzing $O(1)$ operations.
   - You may assert the standard runtime of unmodified "black-box" algorithms without extra proof.
-  - If you modify a black box, you must justify how those changes impact the runtime—even if the overall Big-O doesn't change.
+  - If you modify a black box, you must justify how those changes impact the runtime, even if the overall Big-O doesn't change.
   - Always conclude with a single, fully simplified final runtime in Big-O notation.
 
 ---
 
 ### Guide to finding a D&C solution
 
-Follow this workflow to brainstorm and write your solution:
+This is the workflow I use to draft a D&C solution:
 
 1. **Identify the Pattern:** Determine if your problem maps to a standard algorithm.
    - _Sorted data_ usually points to Binary Search.
@@ -138,7 +138,7 @@ $$
 O(n^d) \times \left(\frac{a}{b^d}\right)^k
 $$
 
-The Master Theorem uses $\log_b(a)$ instead of just comparing $a$ to $b^d$. It is just a logarithmic algebraic rewrite of the exact same inequality!
+The Master Theorem uses $\log_b(a)$ instead of comparing $a$ directly to $b^d$, but the comparison is the same after you rewrite it.
 
 If you take $a=b^d$ and take the $\log_b$ of both sides, you get:
 
@@ -154,7 +154,7 @@ So, comparing $\log_b(a)$ to $d$ is mathematically identical to comparing the br
 
 ### Example Walkthrough: Majority Element
 
-Let's walk through a concrete example using the 4-step format.
+Here is a concrete example in the 4-step format.
 
 **1. What: Problem Specification**
 An array `A[1…n]` has a majority element if more than half its entries are the same. Given an array, design an $O(n \log n)$ algorithm to determine if it has a majority element, and if so, find it. The elements are not sortable (e.g., GIF files), so you can only test for equality `A[i] == A[j]` in $O(1)$ time. Expected output is the majority element or `NO_MAJORITY` if none exists.
@@ -168,7 +168,7 @@ An array `A[1…n]` has a majority element if more than half its entries are the
 6. Otherwise, return `NO_MAJORITY`.
 
 **3. Why: Justification of Correctness**
-If a majority element exists in the combined array, it *must* also be the majority element in at least one of its two halves. By recursively dividing the input space, we ensure that if a true majority element exists, it will emerge as a candidate from the base cases up through the recursion. Counting occurrences at each level guarantees we only promote elements that are genuine majorities for the specific subarray being considered.
+If a majority element exists in the combined array, it *must* be the majority element in at least one half. The recursion therefore surfaces the right candidate from below, and the counting step filters out any candidate that is not actually a majority for the current subarray.
 
 **4. How Fast: Runtime Analysis**
 - We split the problem into 2 subproblems: $a = 2$.
@@ -180,61 +180,61 @@ If a majority element exists in the combined array, it *must* also be the majori
 
 ### What to remember
 
-- **Problem Structure**: Always define the algorithm steps, provide an informal justification of correctness based on why the problem space shrinks and the base cases hold, and finish with a single Big-O limit.
+- **Problem Structure**: State the algorithm, explain why it works, and end with one simplified Big-O bound.
 - **Master Theorem Formula**: $T(n) = aT(n/b) + O(n^d)$
 - **Master Theorem Cases**:
   - $d > \log_b(a)$: Root-heavy $\to O(n^d)$ (combine step dominates).
   - $d = \log_b(a)$: Balanced $\to O(n^d \log n)$ (work is spread evenly).
   - $d < \log_b(a)$: Leaf-heavy $\to O(n^{\log_b a})$ (recursive calls dominate).
 
-If Divide & Conquer teaches how recursive calls can split into independent branches, Backtracking is the next useful contrast: recursive branches can also represent competing **choices**.
+Divide & Conquer splits a problem into independent branches. Backtracking uses recursion for a different reason: each branch is a different **choice**.
 
 ## Backtracking
 
-In *Algorithms* by Jeff Erickson, he introduces Backtracking as a recursive strategy that constructs solutions incrementally. When the algorithm faces multiple alternatives for the next decision, it recursively evaluates all of them and then chooses the best one.
+In *Algorithms*, Jeff Erickson presents backtracking as a way to build a solution one decision at a time. When there are several legal next moves, the algorithm tries them and keeps the best outcome.
 
 ### Building Solutions Incrementally
 
-My Graduate Algorithms course did not cover Backtracking directly, but I include it here because it highlights an entirely different way to think about recursion. It also helps motivate and frame the following section, Dynamic Programming.
+My Graduate Algorithms course did not cover Backtracking directly, but I am including it because it gives a cleaner lead-in to Dynamic Programming than the course notes did.
 
-Divide & Conquer is about decomposition and combination: split the problem, solve the independent parts, and combine them. Backtracking is about **search and decision making**. You keep a **partial solution** in your hands, ask what the next logical decision should be, and recursively explore all valid options. 
+Divide & Conquer is about decomposition and combination: split the problem, solve the pieces, combine the results. Backtracking is about **search**. You keep a **partial solution**, ask what the next decision is, and recurse on each legal option.
 
-Erickson's examples make the pattern feel broader than just "`n`-queens and friends":
+Erickson's examples make it clear that this is not just about `n`-queens:
 
 - In **`n`-queens**, the output is a sequence of queen positions, one per row.
 - In a **game tree**, the output is a sequence of moves, one choice per game state.
 - In **subset sum**, the output can be viewed as a sequence of include/exclude decisions over the input array.
 
-So this section is less a core syllabus topic than a necessary mental bridge. It explains why some algorithmic ideas naturally start as a raw recursive brute-force search over decisions before they are optimized into something faster.
+I mostly want this section for the transition into DP. A lot of DP problems make more sense once you first see the brute-force recursive search hiding underneath them.
 
-### The core mental model
+### The basic picture
 
-Erickson opens with `n`-queens, which makes the mental model concrete. Place queens one row at a time. On row $r$, try each column from left to right. If a square is attacked by an earlier queen, ignore it. If it is legal, place the queen there and recursively try to finish the remaining rows.
+Erickson opens with `n`-queens. Place queens one row at a time. On row $r$, try each column from left to right. If a square is attacked by an earlier queen, skip it. If it is legal, place a queen there and recurse on the remaining rows.
 
 That example makes two things clear:
 
-- Every recursive call corresponds to a **legal partial solution**.
-- The overall algorithm is just a **depth-first search of the recursion tree** of those partial solutions.
+- Every recursive call is a **legal partial solution**.
+- The full algorithm is just a **depth-first search of the recursion tree** of those partial solutions.
 
-But Erickson adds another point that is even more useful for design: a recursive call needs not only the part of the input you have not processed yet, but also a **summary of past decisions**. The art is figuring out how small that summary can be.
+The design point Erickson adds is more useful: a recursive call needs not only the unprocessed part of the input, but also a **summary of earlier decisions**. The real question is how small that summary can be.
 
 - For **`n`-queens**, you unfortunately need the previously placed queens in full detail.
 - For a **game tree**, you often only need the current game state; the exact move history may not matter.
 - For **subset sum**, you do not need the exact chosen subset, only the remaining items and the remaining target value.
 
-This is the part that felt missing in my original write-up. Backtracking is not just "try stuff recursively." It is a disciplined way to search an implicit tree where each node stores exactly the information needed to make the **next** decision. Pruning is simply the act of refusing to recurse into obviously illegal branches.
+Backtracking is not just "try stuff recursively." It is a search over an implicit tree where each node stores only the information needed to make the **next** decision. Pruning just means refusing to recurse into branches that are already invalid.
 
-That also explains why exponential runtime is the default. Even if the legality checks prune a lot of branches, the tree can still be enormous.
+That also explains why exponential runtime is the default. Even with good pruning, the tree can still be huge.
 
-It also helps explain when Backtracking does **not** naturally become DP. In `n`-queens, the full placement of earlier queens is usually too specific, so two branches rarely land in the exact same state and memoization buys very little. In problems like subset sum, however, many different decision paths can lead to the same reduced state, such as "same remaining items, same remaining target", and that overlap is exactly what DP exploits.
+It also explains when Backtracking does **not** naturally turn into DP. In `n`-queens, the full placement of earlier queens is so specific that two branches rarely reach the same state, so memoization buys little. In problems like subset sum, many different paths can lead to the same reduced state, such as "same remaining items, same remaining target." That overlap is what DP uses.
 
 ### Discovering repeated work
 
-The most powerful part of this Backtracking mindset is the **reformulation** step. Once you ask what minimal summary of past decisions is required, you often realize the recursive search should solve a slightly more general problem than the one you were originally asked. This generalized problem defines your recursive "state".
+The useful step here is the **reformulation**. Once you ask for the smallest summary of past decisions, you often realize the recursive search should solve a slightly more general problem than the original prompt. That generalized problem becomes the state.
 
 In the text segmentation example, you start with a clean recursive idea: choose the first word, and recursively segment the rest of the string. If any split works, return `true`.
 
-At first that sounds like recursion on explicit substrings. But Erickson then rewrites the problem in index form: instead of passing around a suffix `A[i..n]`, treat the original string as global and describe each subproblem only by the starting index `i`. That looks like a minor notation change, but it is a critical habit.
+At first that sounds like recursion on explicit substrings. Erickson then rewrites it in index form: instead of passing around a suffix `A[i..n]`, treat the original string as global and describe each subproblem only by the starting index `i`. It looks like a small notation change, but it is a useful habit.
 
 The resulting state is:
 
@@ -250,38 +250,38 @@ $$
 \Big( \text{IsWord}(i,j) \wedge \text{Splittable}(j+1) \Big)
 $$
 
-Once you write it this way, a glaring inefficiency reveals itself: the repeated work stops being hidden. Different branches of the recursion keep rediscovering the exact same suffix questions. "Can I segment starting at index 17?" is the exact same question no matter *how* I reached index 17.
+Once you write it this way, the repeated work becomes obvious. Different branches of the recursion keep asking the exact same suffix question. "Can I segment starting at index 17?" means the same thing no matter *how* you got to index 17.
 
-Because the state is so compact (just an index), the algorithm is bound to blindly evaluate the same states over and over. If you chart out the recursive calls, they don't form a continually expanding tree; the branches frequently merge back together into a graph of overlapping states.
+Because the state is so compact, the algorithm will evaluate the same states over and over. If you draw the recursive calls, they stop looking like a pure tree pretty quickly; branches keep merging into a graph of overlapping states.
 
-That's a helpful insight. First, you identify the next-decision structure. Second, you figure out the smallest summary of past decisions. Finally, you realize this minimal state causes recursive paths to overlap, meaning you can safely save (memoize) the answers instead of recomputing them. That evolutionary leap—from a redundant backtracking search to a cached web of states—is the exact definition of Dynamic Programming.
+That is the step from backtracking to DP. First identify the decision structure. Then shrink the state to the smallest summary that matters. Once many paths land on the same state, you stop recomputing and start saving answers.
 
 ### What to remember
 
-- **Backtracking works by making one decision per recursive call.** The target object is often naturally viewed as a sequence of decisions.
-- **`n`-queens is the canonical picture.** Each node is a legal partial board, and the algorithm is DFS over that implicit tree.
-- **The key design question is what summary of past decisions you actually need.** That summary is often the recursive state.
-- **Index formulations matter.** Rewriting recursion in terms of compact parameters (`i`, `j`, remaining target) exposes when the search tree revisits the exact same scenario.
-- **The backtracking algorithm is often just an intermediate draft.** Its main value is exposing overlapping subproblems before you optimize them.
+- **Backtracking makes one decision per recursive call.** The output often looks like a sequence of decisions.
+- **`n`-queens is the standard picture.** Each node is a legal partial board, and the algorithm does DFS over that implicit tree.
+- **The main design question is what past information you need to keep.** That is usually the recursive state.
+- **Index-based formulations matter.** Parameters like `i`, `j`, or remaining target make repeated states easier to see.
+- **The first backtracking solution is often a draft.** Its value is showing you where the overlapping subproblems are.
 
 ## Dynamic Programming
 
-After thinking about Backtracking this way, Dynamic Programming feels much less like a separate trick and much more like the next refinement step. You start with a recursive search over choices (Backtracking), identify the smallest state that actually matters, and then notice that many different branches keep asking for the same state again and again.
+After looking at Backtracking this way, Dynamic Programming feels less like a separate trick and more like the next step. Start with a recursive search over choices, shrink the state to what actually matters, and then notice that many branches keep asking for the same state.
 
-That is the key difference from Divide & Conquer. In D&C, the recursive calls are meant to be **independent**. In DP, the subproblems **overlap**. The recursive search is still there in spirit, but instead of exploring a huge tree of repeated work, we collapse equivalent calls into a Directed Acyclic Graph (DAG) of states and solve each state once.
+That is the main difference from Divide & Conquer. In D&C, the recursive calls are **independent**. In DP, the subproblems **overlap**. The search is still there in spirit, but instead of exploring a huge tree of repeated work, we collapse equivalent calls into a Directed Acyclic Graph (DAG) of states and solve each state once.
 
-So the advantage of DP is not that it avoids recursion conceptually, it is that it avoids recomputation. Once the subproblem definition is right, the rest is bookkeeping: memoize the state, or better yet in this course's style, compute the states bottom-up in a valid topological order.
+The advantage of DP is not that it avoids recursion conceptually. It avoids recomputation. Once the subproblem definition is right, the rest is bookkeeping: memoize the state, or in this course's style, compute the states bottom-up in a valid order.
 
-Use this section to inspect how different DP families map to DAG shapes, transitions, and extraction paths. *Click through the patterns and flavors in the visualizers below to see how the topology changes dynamically.*
+The rest of the section groups common DP families by the shape of their state graph, the transition they use, and where the final answer lives. *Click through the patterns and flavors in the visualizers below to see how the dependency structure changes.*
 
 ### Explaining Your Approach (The Output)
 
-There is a distinct difference between *discovering* a DP solution and *communicating* it. Just as we saw in the Divide & Conquer section, skipping straight to pseudocode for your final answer often masks underlying logical flaws. We use the same four-part "What, How, Why, How fast" template introduced earlier to document the final algorithm, but the expectations for each section shift slightly to better fit state definitions and recurrence relations.
+There is a real difference between *discovering* a DP solution and *writing one up*. As in the Divide & Conquer section, jumping straight to pseudocode can hide shaky reasoning. I still use the same four-part "What, How, Why, How fast" template, but the emphasis shifts a bit for state definitions and recurrences.
 
 **1. What: Problem Specification.** Define the problem you're trying to solve recursively in coherent and precise English. Translate the colloquial statement into sets, sequences, or mathematical terms. State clearly what subset of the input it operates on and any constraints. 
 
 **2. How: Algorithm Description.**
-- **(a) Subproblem Definition.** Define the state, like $T(i)$ or $T(i,j)$, purely in words. State clearly what subset of the input it operates on and whether it mandates including a specific element (e.g., "ending at index $i$"). Without a rigorous specification here, it is impossible to determine if your recurrence is correct.
+- **(a) Subproblem Definition.** Define the state, like $T(i)$ or $T(i,j)$, in words. State clearly what subset of the input it operates on and whether it forces inclusion of a specific element (for example, "ending at index $i$"). If this part is vague, the recurrence is usually vague too.
 - **(b) Recurrence.** Write the transition purely in mathematical notation. Give a clear recursive formula combining the answers to smaller instances of the exact same problem. A complete recurrence must cover:
   - All recursive step cases.
   - All necessary base cases.
@@ -303,24 +303,24 @@ There is a distinct difference between *discovering* a DP solution and *communic
 
 ### Problem-Solving Heuristics
 
-Before you can write out the rigorous 4-part explanation above, you have to actually figure out the algorithm on your scratch pad. Following Jeff Erickson's advice, discovering a DP algorithm is best done in two distinct stages: figuring out the recursion (the *hard* part) and building the table (the *mechanical* part). Ask yourself these questions in order:
+Before writing the polished 4-part explanation, you still have to figure the algorithm out on scratch paper. Erickson's split is useful here: first get the recursion right, then build the table. These are the questions I ask in that order:
 
 **Stage 1: Formulate the Problem Recursively (The Hard Part)**
-1. **What is the topology?** Is the input a 1D array, a pair of strings, items with weights, an interval, a tree, or a set of elements?
+1. **What is the shape of the state space?** Is the input a 1D array, a pair of strings, items with weights, an interval, a tree, or a set of elements?
 2. **What are you optimizing?** Max/min value? Count of ways? Length of a subsequence?
 3. **What constraint distinguishes the flavor?** Must it be contiguous (Kadane) vs. no-adjacent (Robber) vs. any subsequence (LIS)? Match-based (LCS) vs. cost-based (Edit Dist)? Items used once (0/1) vs. unlimited (Unbounded)?
-4. **Write the subproblem in words first.** This is the most important step. A correct recursive formula perfectly follows a clear English specification of the subproblem.
+4. **Write the subproblem in words first.** A good recurrence usually falls out of a precise English description of the subproblem.
 5. **Always define base cases.** Ensure every referenced table entry is well-defined. If $T(i)$ references $T(i-2)$, define $T(0)$ and possibly $T(-1)$.
 
 **Stage 2: Build Solutions Bottom-Up (The Mechanical Part)**
-6. **Identify the state space (the memoization structure).** What are all the different ways your recursive algorithm can call itself? This usually comes directly from the smallest summary of past decisions you discovered in the backtracking formulation. The number of combinations dictates the dimensions of your DP table.
-7. **Identify dependencies.** Except for base cases, what dictates a cell's value? (e.g., $T(i, j)$ might depend on $T(i-1, j-1)$). This is the point where the backtracking search tree collapses into a Directed Acyclic Graph (DAG) of dependencies.
+6. **Identify the state space (the memoization structure).** What are all the different ways your recursive algorithm can call itself? This usually comes from the smallest summary of past decisions. The number of combinations dictates the dimensions of your DP table.
+7. **Identify dependencies.** Except for base cases, what dictates a cell's value? (e.g., $T(i, j)$ might depend on $T(i-1, j-1)$). This is where the search tree turns into a DAG of dependencies.
 8. **Find a good evaluation order.** You must compute subproblems *before* the things that depend on them. The dependencies you just identified dictate whether you loop left-to-right, right-to-left, bottom-up, or diagonally. Provide bounds for all variables.
 9. **Analyze time.** The total running time is simply the number of distinct subproblems (table size) multiplied by the time to compute a single subproblem.
 
 ### Quick ID Guide: Which pattern is it?
 
-Before diving into the specific subproblem definitions and recurrences, it helps to build an intuition for recognizing which family a problem belongs to based on its inputs and constraints. In the framing above, these are the common DAG shapes you get after the recursive search has been compressed into reusable states:
+Before getting into specific subproblem definitions and recurrences, it helps to recognize which family a problem belongs to from its inputs and constraints. These are the common DAG shapes that show up once the recursive search has been compressed into reusable states:
 
 - Input is an array, asking for an optimal subsequence or subarray ending at index `i`? $\rightarrow$ [Pattern A: Linear (1D Chain)](#pattern-a-linear-1d-chain)
 - Input is two strings/arrays, or involves moving through a matrix? $\rightarrow$ [Pattern B: Grid](#pattern-b-grid-23--strings)
@@ -356,13 +356,13 @@ Before diving into the specific subproblem definitions and recurrences, it helps
 
 ### Pattern A: Linear (1D Chain)
 
-Linear patterns are the simplest form of Dynamic Programming. The problem space represents a 1D sequence (like an array or time series), and the DAG topology forms a straight chain moving left-to-right. The core question is always: *How does my current element connect to the best solution I've built so far?* The flavor changes depending on how far back you are allowed to look.
+Linear patterns are the simplest kind of Dynamic Programming. The state space is a 1D sequence, and the dependency graph is a straight chain from left to right. These problems usually feel like "walk through the array once, but keep the right summary of the past." The main question is: *How does the current element connect to the best solution so far?*
 
 <div class="viz-shell">
   <DPDagVisualizer client:visible pattern="A" />
 </div>
 
-The topology is a 1D array. The flavor depends on how far back you look and what you accumulate.
+The structure is a 1D array. The flavor depends on how far back you look and what each state stores.
 
 #### Flavor 1: "Look-Back-One" (Contiguous / Kadane's Style)
 
@@ -370,7 +370,7 @@ The topology is a 1D array. The flavor depends on how far back you look and what
 Given an array `A[1..n]`, find the maximum sum of any contiguous subarray.
 
 **2. How: Algorithm Description**
-**Concept:** _You must extend the immediately preceding subproblem, or start completely over. The current element must be included._
+**Concept:** _Either extend the previous subproblem or start over at the current element. The current element must be included._
 
 **(a) Subproblem:** T(i) = maximum sum of a contiguous subarray of A[1..i] which includes A[i].
 
@@ -395,7 +395,7 @@ $$
 > _Interpretation: either start a new subarray at A[i], or extend the best subarray ending at A[i-1]._
 
 **3. Why: Justification of Correctness**
-You must extend the immediately preceding subproblem, or start completely over. By checking both starting a new subarray at A[i] or extending the best subarray ending at A[i-1], we guarantee that the maximum contiguous subarray ending at any index is found. The current element must be included in T(i).
+Any optimal contiguous subarray ending at $i$ either starts at $A[i]$ or extends the best contiguous subarray ending at $i-1$. Checking both cases gives the right value for $T(i)$.
 
 **4. How Fast: Runtime Analysis**
 - **(1) Subproblems:** `O(n)`
@@ -411,7 +411,7 @@ You must extend the immediately preceding subproblem, or start completely over. 
 Given an array of values `A[1..n]`, find the maximum sum obtainable such that no two adjacent elements are selected.
 
 **2. How: Algorithm Description**
-**Concept:** _Adjacent elements cannot both be selected. Decide whether to take the current element (skip previous) or leave it (keep previous optimal). The current element need not be included._
+**Concept:** _Adjacent elements cannot both be selected. Either take the current element and skip the previous one, or leave it and keep the previous optimum._
 
 **(a) Subproblem:** T(i) = maximum sum obtainable from A[1..i] (A[i] may or may not be selected).
 
@@ -439,7 +439,7 @@ $$
 > _T(i-1) = skip A[i]; T(i-2) + A[i] = take A[i] and skip A[i-1]._
 
 **3. Why: Justification of Correctness**
-Adjacent elements cannot both be selected. For each step $i$, we decide whether to take the current element (which forces us to skip the previous, taking $T(i-2) + A[i]$) or leave it (keeping the previous optimal $T(i-1)$). The current element need not be included. This exhaustive check ensures we build the optimal non-adjacent sum.
+At step $i$, either take $A[i]$ and pair it with the best solution ending at $i-2$, or skip $A[i]$ and keep the best solution through $i-1$. Those are the only legal options, so the maximum of the two is correct.
 
 **4. How Fast: Runtime Analysis**
 - **(1) Subproblems:** `O(n)`
@@ -455,7 +455,7 @@ Adjacent elements cannot both be selected. For each step $i$, we decide whether 
 Given an array `A[1..n]`, find the length of the longest increasing subsequence. The sequence need not be contiguous.
 
 **2. How: Algorithm Description**
-**Concept:** _The sequence need not be contiguous. Scan all previous valid subproblems to find the best predecessor. The current element must be included._
+**Concept:** _The sequence need not be contiguous. Scan all earlier valid predecessors and extend the best one. The current element must be included._
 
 **(a) Subproblem:** T(i) = length of the longest increasing subsequence of A[1..i] which includes A[i].
 
@@ -481,7 +481,7 @@ $$
 > _If no j satisfies A[j] < A[i], the max is taken over {0} (set containing zero), so T(i) = 1._
 
 **3. Why: Justification of Correctness**
-To find the longest increasing subsequence ending at $i$, we can scan all previous valid subproblems $j$ where $A[j] < A[i]$ to find the best predecessor. If no $j$ satisfies this condition, the max is taken over $\{0\}$, effectively starting a new subsequence of length 1. The sequence need not be contiguous, and the current element must be included to allow extending the sequence.
+To compute the longest increasing subsequence ending at $i$, check every earlier index $j$ with $A[j] < A[i]$ and extend the best one. If no such $j$ exists, the subsequence starts at $i$ and has length 1.
 
 **4. How Fast: Runtime Analysis**
 - **(1) Subproblems:** `O(n)`
@@ -493,13 +493,13 @@ To find the longest increasing subsequence ending at $i$, we can scan all previo
 
 ### Pattern B: Grid (2D / Strings)
 
-Grid patterns lift the problem space into two dimensions. The constraints usually force movement strictly down, right, or diagonally down-right. This pattern frequently appears when comparing two separate sequences (like strings) against each other, or when physically navigating a 2D matrix. The core question is: *How many distinct paths or cumulative costs lead to my current cell from its immediate neighbors?*
+Grid patterns move the state space into two dimensions. The dependencies usually come from the cell above, the cell to the left, or the diagonal. They show up when you are aligning two sequences or when each move through a matrix depends on a small local neighborhood.
 
 <div class="viz-shell">
   <DPDagVisualizer client:visible pattern="B" />
 </div>
 
-The topology is the (i-1, j), (i, j-1), (i-1, j-1) neighborhood. The flavor depends on whether you match elements or accumulate path costs.
+The local neighborhood is usually `(i-1, j)`, `(i, j-1)`, and `(i-1, j-1)`. The flavor depends on whether you are matching symbols or accumulating cost.
 
 #### Flavor 1: "Match or Drop" (Longest Common Subsequence)
 
@@ -595,7 +595,7 @@ To transform A into B, we process from the ends. If the current characters match
 Given a grid of costs `C[1..n][1..m]`, you can only move right or down. Find the minimum cost to travel from the top-left cell to the bottom-right cell.
 
 **2. How: Algorithm Description**
-**Concept:** _Move through a physical grid accumulating weights. No matching — just movement constraints (right or down)._
+**Concept:** _Move through a grid and accumulate cost. The only constraint is that moves go right or down._
 
 **(a) Subproblem:** T(i,j) = minimum cost to reach cell (i,j) from cell (1,1).
 
@@ -621,7 +621,7 @@ T(i,j) &= C[i][j] + \min( T(i-1,j), T(i,j-1) ) \\
 $$
 
 **3. Why: Justification of Correctness**
-Because movement is restricted to right and down, any path reaching cell $(i, j)$ must come from either $(i-1, j)$ or $(i, j-1)$. By iteratively adding the current cell's cost $C[i][j]$ to the cheaper of these two immediate predecessors, we correctly accumulate the minimum path sum to everywhere in the grid.
+Because movement is restricted to right and down, any path to $(i, j)$ must come from either $(i-1, j)$ or $(i, j-1)$. So the cheapest path to $(i, j)$ is the cheaper of those two predecessors plus $C[i][j]$.
 
 **4. How Fast: Runtime Analysis**
 - **(1) Subproblems:** `O(n·m)`
@@ -633,13 +633,13 @@ Because movement is restricted to right and down, any path reaching cell $(i, j)
 
 ### Pattern C: Knapsack
 
-Knapsack patterns deal with constrained optimization: you have a limited capacity (weight, budget, etc.) and a menu of items to choose from. The state space is intrinsically 2D—one dimension tracks the items considered so far, while the other tracks the remaining capacity. The defining characteristic of the DAG topology is jumping "leftwards" across the capacity dimension when you choose an item. The core differences lie in item uniqueness (is an item reusable?).
+Knapsack patterns are constrained optimization problems: you have a limited capacity and a list of items. The state space is usually 2D, with one dimension for how many items you have considered and one for the remaining capacity. The important distinction is whether items can be reused.
 
 <div class="viz-shell">
   <DPDagVisualizer client:visible pattern="C" />
 </div>
 
-The topology involves jumping leftwards across a capacity dimension. The flavor changes based on whether items are unique, reusable, or you are counting combinations.
+The dependency graph jumps left across the capacity dimension whenever you take an item. The flavor changes based on whether items are unique, reusable, or being counted.
 
 #### Flavor 1: "Take It or Leave It" (0/1 Knapsack)
 
@@ -691,7 +691,7 @@ Each item forces a binary choice: either include it or exclude it. If the item's
 Given a target amount $W$ and $n$ coin denominations, find the minimum number of coins needed to make change. Each denomination can be used infinitely many times.
 
 **2. How: Algorithm Description**
-**Concept:** _If you take an item, you can take it again. You transition from the current row (i), not (i-1). Shown here as Minimum Coin Change._
+**Concept:** _If you take an item, you can take it again. That means you stay in the current row instead of moving to the previous one._
 
 **(a) Subproblem:** T(j) = minimum number of coins needed to make change for amount j, using coins from the given denominations.
 
@@ -719,7 +719,7 @@ $$
 > _Can also be written as 2D: T(i,w) = min( T(i-1,w), T(i, w-cᵢ) + 1 ), where row i means "using coins 1..i" and staying in row i allows reuse._
 
 **3. Why: Justification of Correctness**
-Since coins can be reused infinitely, any valid change configuration for amount $j$ ends with *some* coin $c_i$. To minimize coins used, we take 1 plus the minimum cost of the leftover amount ($j - c_i$). By checking every valid coin $c_i \le j$, we are guaranteed to find the minimum. This can also be written in 2D where staying in row $i$ achieves infinite reuse.
+If amount $j$ can be formed, the last coin used is some $c_i \le j$. So the answer is 1 plus the best solution for $j-c_i$, minimized over all valid coin choices.
 
 **4. How Fast: Runtime Analysis**
 - **(1) Subproblems:** `O(W)`
@@ -735,7 +735,7 @@ Since coins can be reused infinitely, any valid change configuration for amount 
 Given a target amount $W$ and $n$ coin denominations, find the total number of ways to make change.
 
 **2. How: Algorithm Description**
-**Concept:** _You are not maximizing value — you are summing all possible ways to reach a state. Replace max with +._
+**Concept:** _You are not maximizing value here. You are counting ways, so the transition adds cases instead of taking a max._
 
 **(a) Subproblem:** T(i,w) = number of ways to form amount w using coins from {1..i}.
 
@@ -766,7 +766,7 @@ $$
 > _Staying in row i (for the cᵢ ≤ w case) allows reuse of coin i. Moving to row i-1 only would give 0/1 counting._
 
 **3. Why: Justification of Correctness**
-Since we are counting combinations rather than maximizing value, we replace `max` with `+`. The total number of ways to form amount $w$ using coins $1..i$ is exactly the sum of the ways to form $w$ without using coin $c_i$ (moving to $i-1$) plus the ways to form $w - c_i$ using coins $1..i$ (staying in row $i$ to allow reuse).
+The number of ways to form amount $w$ with coins $1..i$ is the sum of two disjoint cases: ways that do not use $c_i$, and ways that use at least one $c_i$.
 
 **4. How Fast: Runtime Analysis**
 - **(1) Subproblems:** `O(n·W)`
@@ -778,13 +778,13 @@ Since we are counting combinations rather than maximizing value, we replace `max
 
 ### Pattern D: Interval (Pyramid)
 
-Interval patterns deal with optimally merging, splitting, or shrinking a continuous sequence. Unlike linear arrays where you build forward one element at a time, Interval DP considers an entire span `[i..j]` and discovers the optimal way to break it down. The DAG topology works hierarchically—the cost of a large interval depends on the previously computed costs of the smaller sub-intervals contained within it. The differences depend on *where* the split occurs.
+Interval patterns work on a continuous span `[i..j]`. Instead of building one index at a time, you solve bigger intervals from smaller ones. The main variation is how the interval gets reduced: split at some `k`, shrink from the edges, or reason about the last action inside the interval.
 
 <div class="viz-shell">
   <DPDagVisualizer client:visible pattern="D" />
 </div>
 
-The topology always merges sub-intervals. The flavor depends on whether you split at an arbitrary k, shrink from edges, or pivot on the last action.
+The structure always combines sub-intervals. The flavor depends on whether you split at an arbitrary `k`, shrink from the edges, or reason from the last action.
 
 #### Flavor 1: "The K-Split" (Matrix Chain Multiplication / Optimal BST)
 
@@ -861,7 +861,7 @@ $$
 > _Base case T(i,i+1): if A[i]=A[i+1] then 2, else 1. This is handled by the recurrence if you define T(i,i-1)=0 for empty intervals._
 
 **3. Why: Justification of Correctness**
-We don't need to try every arbitrary split point $k$. Instead, we compare the outermost elements. If they match, they can act as the matching ends of a palindrome, contributing $2$ to the length and leaving the inner interval $T(i+1, j-1)$. If they do not match, we shrink the interval from either the left or the right and take the maximum of those two options.
+We do not need an arbitrary split point here. If the outer characters match, they can be the ends of the palindrome and contribute 2. If they do not, the optimal subsequence must drop either the left end or the right end.
 
 **4. How Fast: Runtime Analysis**
 - **(1) Subproblems:** `O(n²)`
@@ -877,7 +877,7 @@ We don't need to try every arbitrary split point $k$. Instead, we compare the ou
 Given $n$ balloons with values $A[1..n]$, popping balloon $k$ yields $A[k-1] \cdot A[k] \cdot A[k+1]$ coins. Find the maximum coins obtained by bursting all balloons. Balloons $0$ and $n+1$ are virtual with value $1$.
 
 **2. How: Algorithm Description**
-**Concept:** _Instead of the first split, think about k as the last balloon popped in interval (i,j). This makes left and right subproblems independent._
+**Concept:** _Treat `k` as the last balloon popped in `(i,j)`. That makes the left and right subproblems independent._
 
 **(a) Subproblem:** T(i,j) = maximum coins from bursting all balloons in the open interval (i,j), where i and j are unpopped boundary balloons.
 
@@ -902,7 +902,7 @@ $$
 > _Boundaries A[0] and A[n+1] are sentinel values = 1. The key insight: choosing k last means the left/right subproblems don't interfere._
 
 **3. Why: Justification of Correctness**
-Working backwards, instead of picking the *first* balloon to pop, we pick the *last* balloon $k$ to pop in the interval. By making $k$ the last to pop, the left interval $(i,k)$ and right interval $(k,j)$ become completely independent, as $k$ remains as an unpopped boundary for both. We maximize over all possible choices of the last popped balloon $k$.
+Pick the *last* balloon popped in the interval, not the first. Once $k$ is last, the left interval $(i,k)$ and right interval $(k,j)$ stop interfering with each other, so we can optimize them independently and maximize over all choices of $k$.
 
 **4. How Fast: Runtime Analysis**
 - **(1) Subproblems:** `O(n²)`
@@ -914,13 +914,13 @@ Working backwards, instead of picking the *first* balloon to pop, we pick the *l
 
 ### Pattern E: Tree DP
 
-Tree DP adapts dynamic programming to hierarchical, non-linear data structures. Because a subtree's optimal answer only depends on its immediate children, trees perfectly satisfy the optimal substructure requirement. The algorithm almost always follows a recursive post-order traversal: compute the answers for the leaf nodes first, and merge them upward to the root. Tree DP often requires maintaining multiple distinct states (e.g., "included" vs "excluded") per node.
+Tree DP applies the same idea to hierarchical data. A subtree's answer depends only on its children, so post-order traversal usually gives the right evaluation order. You often need multiple states per node.
 
 <div class="viz-shell">
   <DPDagVisualizer client:visible pattern="E" />
 </div>
 
-Tree DP requires defining multiple states per node to handle inclusion/exclusion constraints. Fill order is post-order (leaves first, root last).
+Tree DP often uses multiple states per node to handle inclusion or exclusion choices. Fill order is post-order: leaves first, root last.
 
 #### Flavor 1: "Independent Set" (Max Weight Independent Set / House Robber III)
 
@@ -959,7 +959,7 @@ $$
 > _When u is excluded, each child is free to be included or not. When u is included, all children must be excluded._
 
 **3. Why: Justification of Correctness**
-In an independent set, if a node is included, its direct children must be excluded. If a node is excluded, its children can be either included or excluded. By maintaining two states for each node $u$, we correctly evaluate both local constraints and propagate the maximum possible weight from the leaves up to the root.
+If $u$ is included, its children must be excluded. If $u$ is excluded, each child is free to be included or excluded. Tracking both states at every node captures all legal cases.
 
 **4. How Fast: Runtime Analysis**
 - **(1) Subproblems:** `O(n)  (2 states per node)`
@@ -975,7 +975,7 @@ In an independent set, if a node is included, its direct children must be exclud
 Given a tree, find the diameter: the length of the longest path between any two nodes.
 
 **2. How: Algorithm Description**
-**Concept:** _The longest path may arch over a node. T(u) tracks the longest straight path down from u; a secondary equation tracks the arch._
+**Concept:** _The longest path may pass through a node. Track the best downward path from `u`, then combine the top two child paths when needed._
 
 **(a) Subproblem:** T(u) = length of the longest path starting at u and going downward into the subtree of u.
 
@@ -1017,7 +1017,7 @@ $$
 > _If u has ≤1 child, diameter through u is just T(u). Track the global max during the fill pass._
 
 **3. Why: Justification of Correctness**
-The longest path (diameter) of a tree either passes through the root of a subtree or does not. By calculating the longest downward path $T(u)$ for every node, we can form an arch through any node $u$ by summing its top two children's downward paths (plus 1). Tracking the maximum arch across all nodes guarantees finding the global diameter. If a node has $\le 1$ child, its diameter through $u$ is just $T(u)$.
+The longest path either passes through some node $u$ or stays entirely inside one subtree. Once the downward values $T(v)$ are known for the children of $u$, the best path through $u$ comes from combining the two largest child branches. Taking the maximum over all nodes gives the diameter.
 
 **4. How Fast: Runtime Analysis**
 - **(1) Subproblems:** `O(n)`
@@ -1029,13 +1029,13 @@ The longest path (diameter) of a tree either passes through the root of a subtre
 
 ### Pattern F: Bitmask (Subset DP)
 
-Bitmask DP operates on sets and combinations rather than traditional sequences. When the input size is incredibly small ($N \le 20$), an exponential $O(2^N)$ algorithm is often the intended solution. Bitmasks use the bits of an integer to encode which elements have been "used" or "visited" ($0$ for unused, $1$ for used). This allows subsets to become state variables in our recurrences, drastically cutting down on otherwise factorial $O(N!)$ brute-force explorations.
+Bitmask DP works on sets instead of plain sequences. When $N$ is small, usually around $20$ or less, an exponential $O(2^N)$ state space is often acceptable. A bitmask stores which elements are already used or visited, so subsets become direct state variables.
 
 <div class="viz-shell">
   <DPDagVisualizer client:visible pattern="F" />
 </div>
 
-Bitmasks track which elements have been visited/used. Subsets are encoded as integers where bit i indicates element i is in the set. The flavor changes based on whether you care about the ending node or just the groups formed.
+Each subset is encoded as an integer whose bits say which elements are present. The flavor changes based on whether the state also needs an endpoint.
 
 #### Flavor 1: "Path Building" (Traveling Salesperson Problem)
 
@@ -1043,7 +1043,7 @@ Bitmasks track which elements have been visited/used. Subsets are encoded as int
 Given $n$ cities and the distances between each pair, find the minimum distance to visit every city exactly once and end at a specific city $i$.
 
 **2. How: Algorithm Description**
-**Concept:** _You need to know which cities S you have visited AND which city i you are currently at, so you can extend to the next city j._
+**Concept:** _You need both the visited set `S` and the current city `i`, because the next move depends on both._
 
 **(a) Subproblem:** T(S,i) = minimum cost to visit exactly the cities in set S, starting from city 1 and ending at city i, where i ∈ S.
 
@@ -1068,7 +1068,7 @@ $$
 > _S\{i} means the set S with city i removed. Fill order: by increasing |S|. d(j,i) = distance from j to i._
 
 **3. Why: Justification of Correctness**
-To find the optimal path covering a subset of cities $S$ ending at $i$, we must have come from some other city $j \in S$. The optimal cost is the minimum over all valid prior cities $j$ of the cost to visit $S \setminus \{i\}$ ending at $j$, plus the distance from $j$ to $i$. This bitmask state tracks exactly which cities are visited to ensure no city is visited twice. Fill order is by increasing $|S|$.
+Any optimal path that visits the set $S$ and ends at $i$ must come from some earlier city $j \in S \setminus \{i\}$. So we try every possible predecessor $j$ and take the minimum.
 
 **4. How Fast: Runtime Analysis**
 - **(1) Subproblems:** `O(2ⁿ · n)`
@@ -1084,7 +1084,7 @@ To find the optimal path covering a subset of cities $S$ ending at $i$, we must 
 Given a set of $n$ elements and a cost function for forming a group out of any subset, find the optimal partitioning of all elements into groups to minimize the total cost.
 
 **2. How: Algorithm Description**
-**Concept:** _You don't care about order or endpoints — just split the universe into optimal subsets. Iterate over all submasks S' of S._
+**Concept:** _Order and endpoints do not matter here. Split the full set into one chosen group `S'` plus the rest, and try all submasks._
 
 **(a) Subproblem:** T(S) = minimum cost to optimally partition the elements in set S into groups.
 
@@ -1106,10 +1106,10 @@ T(S) &= \min_{\substack{S' \subseteq S \\ S' \ne \emptyset}} \{ T(S \setminus S'
 $$
 
 > [!note]
-> _The 3ⁿ runtime comes from iterating over all submasks of all masks. Each element is in S', in S\S', or not in S — three choices per element._
+> _The 3ⁿ runtime comes from iterating over all submasks of all masks. Each element is in S', in S\S', or not in S, giving three choices per element._
 
 **3. Why: Justification of Correctness**
-Any partition of set $S$ must contain some group $S'$. The optimal cost to partition $S$ is therefore the minimum over all possible non-empty groups $S' \subseteq S$ of the cost of $S'$ plus the optimal partitioning cost of the remaining elements $S \setminus S'$. Iterating over all submasks systematically evaluates every valid partitioning scheme.
+Any partition of $S$ must contain some non-empty group $S'$. Once that group is chosen, the rest of the problem is just the optimal partition of $S \setminus S'$, so checking all submasks covers every valid partition.
 
 **4. How Fast: Runtime Analysis**
 - **(1) Subproblems:** `O(2ⁿ)`
@@ -1119,16 +1119,16 @@ Any partition of set $S$ must contain some group $S'$. The optimal cost to parti
 
 ### What to remember
 
-- **Topologies**: 1D chain, 2D Grid, Knapsack, Interval (Pyramid), Tree, and Bitmask (Subsets).
-- **Subproblem Definition is Key**: T(i) / T(i, j) must be written in English mapping exactly to the components of the desired end state.
-- **Four required components**: (a) Subproblem, (b) Recurrence (with base cases & bounds), (c) Time/Space complexity analysis, (d) Return statement.
-- **No Recursion Allowed**: Formulate iterative topological sorts, utilizing 1-based indexing, table storage, without modifying immutable input sets.
+- **Common shapes**: 1D chain, 2D grid, knapsack, interval, tree, and bitmask.
+- **Subproblem definition matters**: `T(i)` or `T(i,j)` should map cleanly to the final goal in plain English.
+- **Four required components**: subproblem, recurrence, complexity analysis, and return statement.
+- **For this course**: write iterative fills in a valid dependency order, keep inputs immutable, and be explicit about indexing.
 
 ## Resources
 
 ### Books
 
-These are the books that have helped with the course.
+These are the books I have leaned on most for the course.
 
 <BookCard
   title="Algorithms"
@@ -1137,7 +1137,7 @@ These are the books that have helped with the course.
   url="https://highered.mheducation.com/sites/0073523402/"
 >
   <p>
-    The accompanying text for the course. It provides clear, concise, and elegant explanations of Divide & Conquer and Dynamic Programming concepts.
+    This is the course text. I keep coming back to it because the explanations are short, clean, and close to the style the class expects.
   </p>
 </BookCard>
 
@@ -1148,7 +1148,7 @@ These are the books that have helped with the course.
   url="https://jeffe.cs.illinois.edu/teaching/algorithms/"
 >
   <p>
-    This is a great book for learning algorithms. It is well-written, example-driven, and especially helpful for seeing how recursive backtracking formulations can be cleaned up into Dynamic Programming state definitions.
+    This has been the most useful supplement for me. Erickson is especially good at showing how a messy recursive search can be rewritten into a clean DP state.
   </p>
 </BookCard>
 
@@ -1159,6 +1159,6 @@ These are the books that have helped with the course.
   url="https://mitpress.mit.edu/9780262046305/introduction-to-algorithms/"
 >
   <p>
-    This is a classic algorithms textbook. It is very comprehensive and covers a wide range of topics. It is a great reference book for algorithms.
+    I use CLRS more as a reference than a teaching text. When I want a standard statement of an algorithm or a second presentation of a topic, it is usually the place I check.
   </p>
 </BookCard>
