@@ -1,6 +1,6 @@
 ---
 title: "Divide & Conquer, Backtracking, and Dynamic Programming"
-description: "A survey of recursive problem-solving patterns and interactive visualizations from Part 1 of my Graduate Algorithms course"
+description: "A survey of recursive problem-solving patterns and interactive visualizations for divide and conquer, backtracking, and dynamic programming"
 date: "2026-02-19"
 # updated: '2026-10-20'
 status: "in-progress"
@@ -33,18 +33,18 @@ import algsCLRSImg from "../../../books/algs-clrs.jpg";
 > [!note]
 > This article is part of a broader series on my experience with CS 6515. You can find the high-level course overview and links to other parts in my main [Graduate Algorithms Retro](/ideas/2026/ga-retro/).
 
-I am taking Georgia Tech's [CS 6515: Intro to Graduate Algorithms](https://omscs.gatech.edu/cs-6515-intro-graduate-algorithms) in Spring 2026, and this post collects the public textbook ideas and personal mental models that helped me get oriented. It is mainly for me, but it should also be useful to anyone who wants a readable walkthrough of the material or a sense of how I am studying it.
+This post sits inside a broader series about Georgia Tech's [CS 6515: Intro to Graduate Algorithms](https://omscs.gatech.edu/cs-6515-intro-graduate-algorithms), but the material here is intentionally limited to public textbook ideas, standard examples, and original visualizations.
 
-To keep it general, I am focusing here on standard algorithmic ideas, textbook examples, and my own visualizations rather than any course-internal materials.
+The aim is to provide a readable walkthrough of the material without reproducing course-internal guidance or assignment support documents.
 
-Most of the article covers Divide & Conquer and Dynamic Programming, with a short stop on Backtracking because it helps explain how many DP formulations start. I also built two small visualizers for the parts I found easiest to understand once I could see them.
+Most of the article covers Divide & Conquer and Dynamic Programming, with a short stop on Backtracking because it helps explain how many DP formulations start. Two small visualizers are included for the parts that benefit most from seeing the structure directly.
 
 ### TL;DR
 
-- **Audience**: Anyone learning algorithms, plus friends and colleagues who are curious about how I study technical material.
+- **Audience**: Anyone learning algorithms who wants a compact walkthrough of the main recursive patterns.
 - **Scope**: Divide & Conquer, Backtracking, and Dynamic Programming, with most of the space spent on Master Theorem and common DP patterns.
 - **Takeaways**: How recursion shows up as decomposition, search, and state reuse; how to write a DP recurrence cleanly; and how to match problem statements to familiar patterns.
-- **Extras**: An interactive Master Theorem visualizer and a DP DAG visualizer. I also borrow Erickson's backtracking-to-DP framing pretty heavily, because it made that transition much easier for me to understand.
+- **Extras**: An interactive Master Theorem visualizer and a DP DAG visualizer, plus a backtracking-to-DP transition framed largely through Erickson's presentation.
 
 ## Divide & Conquer
 
@@ -52,18 +52,18 @@ Use the visualizer below to see how a recurrence shifts between the three Master
 
 ### A 4-Step Writeup Template
 
-When I am trying to explain an algorithm clearly, I have found it useful to separate the explanation into four parts instead of jumping straight to code. Erickson's "What, How, Why, How fast" split is a good default. _The important point is that correctness does not come for free just because the steps sound plausible._
+Algorithm explanations are often clearer when they are separated into four parts instead of being collapsed immediately into code. Erickson's "What, How, Why, How fast" split is a good default. _The important point is that correctness does not come for free just because the steps sound plausible._
 
 - **1. What: Problem Specification:** Explicitly define the problem the algorithm solves. Include the type and meaning of inputs, exactly what the output should be, and state any hidden assumptions.
-- **2. How: Algorithm Description:** Explain _how_ your algorithm solves the problem using a plain-English narrative. You can use paragraphs or high-level bullet points, but **pseudocode is strictly forbidden**.
+- **2. How: Algorithm Description:** Explain _how_ the algorithm works using a plain-English narrative or a high-level structured outline.
   - Avoid writing code disguised as words (e.g., translating a script line-by-line). Deeply nested bullet points are usually a red flag.
   - Walk through every major step, ending with the final return statement.
   - If you are adapting a known algorithm, explicitly highlight the modifications you made.
 - **3. Why: Justification of Correctness:** Explain _why_ your algorithm works.
   - Write a narrative, informal justification (no formal mathematical or inductive proofs are required).
   - If you modified a known algorithm, you must explain why your specific tweaks are correct and successfully solve the problem.
-- **4. How Fast: Runtime Analysis:** Analyze your algorithm using worst-case **Big-O notation**.
-  - You can skip analyzing $O(1)$ operations.
+- **4. How Fast: Runtime Analysis:** Analyze the algorithm using **Big-O notation**, with worst-case analysis as the default unless some other model is stated explicitly.
+  - Small $O(1)$ steps usually do not need to be analyzed individually.
   - You may assert the standard runtime of unmodified "black-box" algorithms without extra proof.
   - If you modify a black box, you must justify how those changes impact the runtime, even if the overall Big-O doesn't change.
   - Always conclude with a single, fully simplified final runtime in Big-O notation.
@@ -72,21 +72,21 @@ When I am trying to explain an algorithm clearly, I have found it useful to sepa
 
 ### Guide to finding a D&C solution
 
-This is the workflow I use to draft a divide-and-conquer solution:
+A practical workflow for drafting a divide-and-conquer solution is:
 
 1. **Identify the Pattern:** Determine if your problem maps to a standard algorithm.
    - _Sorted data_ usually points to Binary Search.
    - _Unsorted data_ usually points to Merge Sort or FastSelect.
    - _Polynomials, convolution, or multiplication_ usually point to Fast Fourier Transform (FFT). For integer multiplication specifically, Karatsuba's algorithm is a classic approach ($O(n^{\log_2 3})$).
 2. **Define Modifications (If Any):** Decide if you can use the known algorithm "as is" or if it needs tweaking. If you tweak it, clearly outline what steps, inputs, or outputs are changing.
-3. **Draft the Steps:** Write out the algorithm's execution in clear words. Make sure to define your base cases (if needed) and ensure your algorithm ultimately returns exactly what the prompt asks for.
-4. **Draft the Proof of Correctness:** Write out your informal proof. To build a strong justification, answer questions like:
+3. **Draft the Steps:** Write out the algorithm's execution in clear words. Define the base cases if they are needed, and make sure the algorithm ultimately returns exactly what the prompt asks for.
+4. **Draft the Proof of Correctness:** Build an informal justification. Helpful questions include:
    - _Why is this specific black box suited for this input data?_
    - _Why did you make those specific modifications?_
    - _Why are we guaranteed that the problem space shrinks on each round?_
    - _Why are the base cases logically sound?_
    - _What is the logic behind branching left or right on each recursive call?_
-5. **Calculate the Runtime:** Step through your algorithm to build your final worst-case Big-O analysis.
+5. **Calculate the Runtime:** Step through the algorithm and summarize the final asymptotic running time.
 
 ### Master Theorem
 
@@ -197,7 +197,7 @@ In *Algorithms*, Jeff Erickson presents backtracking as a way to build a solutio
 
 ### Building Solutions Incrementally
 
-Backtracking is not the main focus of this post, but I am including it because it gives a cleaner lead-in to Dynamic Programming than jumping straight to tables and recurrences.
+Backtracking is not the main focus of this post, but it provides a cleaner lead-in to Dynamic Programming than jumping straight to tables and recurrences.
 
 Divide & Conquer is about decomposition and combination: split the problem, solve the pieces, combine the results. Backtracking is about **search**. You keep a **partial solution**, ask what the next decision is, and recurse on each legal option.
 
@@ -207,7 +207,7 @@ Erickson's examples make it clear that this is not just about `n`-queens:
 - In a **game tree**, the output is a sequence of moves, one choice per game state.
 - In **subset sum**, the output can be viewed as a sequence of include/exclude decisions over the input array.
 
-I mostly want this section for the transition into DP. A lot of DP problems make more sense once you first see the brute-force recursive search hiding underneath them.
+The section is included mainly for that transition. Many DP problems make more sense once the brute-force recursive search hiding underneath them has been made explicit.
 
 ### The basic picture
 
@@ -278,31 +278,31 @@ The rest of the section groups common DP families by the shape of their state gr
 
 ### Explaining a DP Solution
 
-There is a real difference between *discovering* a DP solution and *writing one up*. As in the Divide & Conquer section, jumping straight to code can hide shaky reasoning. I still use the same broad "What, How, Why, How fast" template, but the emphasis shifts toward state definitions and transitions.
+There is a real difference between *discovering* a DP solution and *writing one up*. As in the Divide & Conquer section, jumping straight to code can hide shaky reasoning. The same broad "What, How, Why, How fast" template still works, but the emphasis shifts toward state definitions and transitions.
 
 **1. What: Problem Specification.** Define the problem you're trying to solve recursively in coherent and precise English. Translate the colloquial statement into sets, sequences, or mathematical terms. State clearly what subset of the input it operates on and any constraints. 
 
 **2. How: State and Transition.**
 - **State.** Define the meaning of a table entry like $T(i)$ or $T(i,j)$ in plain English. A precise state definition usually does most of the conceptual work. If this part is vague, the recurrence is usually vague too.
-- **Recurrence.** Write the rule that computes one state from smaller ones purely in. Good transitions make the dependency graph obvious: who depends on whom, and what has to be known first. This should include the base cases and bounds for the variables.
+- **Recurrence.** Write the rule that computes one state from smaller ones in a precise mathematical or algorithmic form. Good transitions make the dependency graph obvious: who depends on whom, and what has to be known first. Base cases and variable bounds should be included.
 
 **3. Why: Justification of Correctness.** Explain the logical basis for the recurrence transitions. This acts as an informal inductive proof that your subproblem choices and state transitions correctly build the optimal solution.
 
-**4. How Fast: Implementation Analysis.** To prove the algorithm is efficient and complete, outline:
-1. **State Space:** The total number of distinct subproblems in Big-O.
-2. **Transition Time:** The runtime to calculate one subproblem, which dictates the total time for the problem as a whole.
-3. **Extraction:** Where and how to extract the final answer from the table.
-4. **Extraction Time:** The runtime of the extraction step.
+**4. How Fast: Efficiency Checklist.** For a complete analysis, it helps to separate four questions:
+1. **State Space:** How many distinct subproblems exist?
+2. **Transition Time:** How much work is required to compute one subproblem?
+3. **Extraction:** Where is the final answer located in the table or DAG?
+4. **Extraction Time:** How much additional work is required to read or reconstruct that answer?
 
 > [!note]
 > **On Extraction:** Just finding the optimal numeric value is often not enough. If a problem asks for the optimal sequence or path, you must trace back through the table/DAG to reconstruct your choices. This typically takes $O(n)$ or time proportional to the path length.
 
 > [!tip]
-> **Implementation Rules of Thumb:** Try to formulate DP as iterative, bottom-up table fills rather than top-down recursion with memoization. Think of the inputs as immutable, and map your base cases starting from index $0$ or $-1$ if necessary to avoid out-of-bounds edge cases.
+> **Implementation Rules of Thumb:** DP is often clearest when it is presented as a bottom-up table fill over immutable inputs. Base cases can start at index $0$ or even $-1$ if that keeps the recurrence well-defined at the boundaries.
 
 ### Problem-Solving Heuristics
 
-Before writing the polished explanation, you still have to figure the algorithm out on scratch paper. Erickson's split is useful here: first get the recursive idea right, then turn that into a table or DAG. These are the questions I ask in that order:
+Before a polished explanation can be written, the recursive idea usually has to be sorted out on scratch paper. Erickson's split is useful here: first get the recursive idea right, then turn that into a table or DAG. The following questions tend to help in that order:
 
 **Stage 1: Formulate the Problem Recursively (The Hard Part)**
 1. **What is the shape of the state space?** Is the input a 1D array, a pair of strings, items with weights, an interval, a tree, or a set of elements?
@@ -312,7 +312,7 @@ Before writing the polished explanation, you still have to figure the algorithm 
 5. **Always define base cases.** Ensure every referenced table entry is well-defined. If $T(i)$ references $T(i-2)$, define $T(0)$ and possibly $T(-1)$.
 
 **Stage 2: Build Solutions Bottom-Up (The Mechanical Part)**
-6. **Identify the state space (the memoization structure).** What are all the different ways your recursive algorithm can call itself? This usually comes from the smallest summary of past decisions. The number of combinations dictates the dimensions of your DP table.
+6. **Identify the state space.** What are all the different ways the recursive algorithm can call itself? This usually comes from the smallest summary of past decisions. The number of combinations dictates the dimensions of the DP table.
 7. **Identify dependencies.** Except for base cases, what dictates a cell's value? (e.g., $T(i, j)$ might depend on $T(i-1, j-1)$). This is where the search tree turns into a DAG of dependencies.
 8. **Find a good evaluation order.** You must compute subproblems *before* the things that depend on them. The dependencies you just identified dictate whether you loop left-to-right, right-to-left, bottom-up, or diagonally. Provide bounds for all variables.
 9. **Analyze time.** The total running time is simply the number of distinct subproblems (table size) multiplied by the time to compute a single subproblem.
