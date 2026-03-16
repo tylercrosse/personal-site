@@ -5,10 +5,10 @@ date: "2026-02-19"
 # updated: '2026-10-20'
 status: "in-progress"
 type: "retro"
-tags: ["algorithms", "computer-science", "MSCS"]
+tags: ["algorithms", "computer-science", "MSCS", "learning-in-public"]
 category: ['mscs']
 parent: '2026/ga-retro'
-draft: true
+draft: false
 audience: "All"
 media_subpath: "/ideas/ga-1/"
 # parent: '2025/dl-retro'
@@ -33,24 +33,26 @@ import algsCLRSImg from "../../../books/algs-clrs.jpg";
 > [!note]
 > This article is part of a broader series on my experience with CS 6515. You can find the high-level course overview and links to other parts in my main [Graduate Algorithms Retro](/ideas/2026/ga-retro/).
 
-I am taking Georgia Tech's [CS 6515: Intro to Graduate Algorithms](https://omscs.gatech.edu/cs-6515-intro-graduate-algorithms) in Spring 2026, and these notes grew out of my prep for Exam 1. They are mainly for me, but they should also be useful to anyone who wants a readable walkthrough of the material or a sense of what I am working through right now.
+I am taking Georgia Tech's [CS 6515: Intro to Graduate Algorithms](https://omscs.gatech.edu/cs-6515-intro-graduate-algorithms) in Spring 2026, and this post collects the public textbook ideas and personal mental models that helped me get oriented. It is mainly for me, but it should also be useful to anyone who wants a readable walkthrough of the material or a sense of how I am studying it.
+
+To keep it general, I am focusing here on standard algorithmic ideas, textbook examples, and my own visualizations rather than any course-internal materials.
 
 Most of the article covers Divide & Conquer and Dynamic Programming, with a short stop on Backtracking because it helps explain how many DP formulations start. I also built two small visualizers for the parts I found easiest to understand once I could see them.
 
 ### TL;DR
 
-- **Audience**: Mostly prospective OMSCS students, colleagues, and anyone curious about how I am studying the course.
+- **Audience**: Anyone learning algorithms, plus friends and colleagues who are curious about how I study technical material.
 - **Scope**: Divide & Conquer, Backtracking, and Dynamic Programming, with most of the space spent on Master Theorem and common DP patterns.
 - **Takeaways**: How recursion shows up as decomposition, search, and state reuse; how to write a DP recurrence cleanly; and how to match problem statements to familiar patterns.
-- **Extras**: An interactive Master Theorem visualizer and a DP DAG visualizer. I also borrow Erickson's backtracking-to-DP framing more explicitly than the course does, because it made that transition much easier for me to understand.
+- **Extras**: An interactive Master Theorem visualizer and a DP DAG visualizer. I also borrow Erickson's backtracking-to-DP framing pretty heavily, because it made that transition much easier for me to understand.
 
 ## Divide & Conquer
 
 Use the visualizer below to see how a recurrence shifts between the three Master Theorem cases and which level dominates the work.
 
-### The 4-Step Solution Format
+### A 4-Step Writeup Template
 
-The course wants algorithm answers written in sections instead of jumping straight to code. I found Erickson's "What, How, Why, How fast" structure a good fit for that style. _Note: Correctness is never assumed from the algorithm steps; it has to be argued._
+When I am trying to explain an algorithm clearly, I have found it useful to separate the explanation into four parts instead of jumping straight to code. Erickson's "What, How, Why, How fast" split is a good default. _The important point is that correctness does not come for free just because the steps sound plausible._
 
 - **1. What: Problem Specification:** Explicitly define the problem the algorithm solves. Include the type and meaning of inputs, exactly what the output should be, and state any hidden assumptions.
 - **2. How: Algorithm Description:** Explain _how_ your algorithm solves the problem using a plain-English narrative. You can use paragraphs or high-level bullet points, but **pseudocode is strictly forbidden**.
@@ -70,7 +72,7 @@ The course wants algorithm answers written in sections instead of jumping straig
 
 ### Guide to finding a D&C solution
 
-This is the workflow I use to draft a D&C solution:
+This is the workflow I use to draft a divide-and-conquer solution:
 
 1. **Identify the Pattern:** Determine if your problem maps to a standard algorithm.
    - _Sorted data_ usually points to Binary Search.
@@ -154,7 +156,7 @@ So, comparing $\log_b(a)$ to $d$ is mathematically identical to comparing the br
 
 ### Example Walkthrough: Majority Element
 
-Here is a concrete example in the 4-step format.
+Here is a concrete example in the 4-step template.
 
 **1. What: Problem Specification**
 An array `A[1…n]` has a majority element if more than half its entries are the same. Given an array, design an $O(n \log n)$ algorithm to determine if it has a majority element, and if so, find it. The elements are not sortable (e.g., GIF files), so you can only test for equality `A[i] == A[j]` in $O(1)$ time. Expected output is the majority element or `NO_MAJORITY` if none exists.
@@ -195,7 +197,7 @@ In *Algorithms*, Jeff Erickson presents backtracking as a way to build a solutio
 
 ### Building Solutions Incrementally
 
-My Graduate Algorithms course did not cover Backtracking directly, but I am including it because it gives a cleaner lead-in to Dynamic Programming than the course notes did.
+Backtracking is not the main focus of this post, but I am including it because it gives a cleaner lead-in to Dynamic Programming than jumping straight to tables and recurrences.
 
 Divide & Conquer is about decomposition and combination: split the problem, solve the pieces, combine the results. Backtracking is about **search**. You keep a **partial solution**, ask what the next decision is, and recurse on each legal option.
 
@@ -270,22 +272,19 @@ After looking at Backtracking this way, Dynamic Programming feels less like a se
 
 That is the main difference from Divide & Conquer. In D&C, the recursive calls are **independent**. In DP, the subproblems **overlap**. The search is still there in spirit, but instead of exploring a huge tree of repeated work, we collapse equivalent calls into a Directed Acyclic Graph (DAG) of states and solve each state once.
 
-The advantage of DP is not that it avoids recursion conceptually. It avoids recomputation. Once the subproblem definition is right, the rest is bookkeeping: memoize the state, or in this course's style, compute the states bottom-up in a valid order.
+The advantage of DP is not that it avoids recursion conceptually. It avoids recomputation. Once the subproblem definition is right, the rest is bookkeeping: store the answer for each state and evaluate states in an order that respects their dependencies.
 
 The rest of the section groups common DP families by the shape of their state graph, the transition they use, and where the final answer lives. *Click through the patterns and flavors in the visualizers below to see how the dependency structure changes.*
 
-### Explaining Your Approach (The Output)
+### Explaining a DP Solution
 
-There is a real difference between *discovering* a DP solution and *writing one up*. As in the Divide & Conquer section, jumping straight to pseudocode can hide shaky reasoning. I still use the same four-part "What, How, Why, How fast" template, but the emphasis shifts a bit for state definitions and recurrences.
+There is a real difference between *discovering* a DP solution and *writing one up*. As in the Divide & Conquer section, jumping straight to code can hide shaky reasoning. I still use the same broad "What, How, Why, How fast" template, but the emphasis shifts toward state definitions and transitions.
 
 **1. What: Problem Specification.** Define the problem you're trying to solve recursively in coherent and precise English. Translate the colloquial statement into sets, sequences, or mathematical terms. State clearly what subset of the input it operates on and any constraints. 
 
-**2. How: Algorithm Description.**
-- **(a) Subproblem Definition.** Define the state, like $T(i)$ or $T(i,j)$, in words. State clearly what subset of the input it operates on and whether it forces inclusion of a specific element (for example, "ending at index $i$"). If this part is vague, the recurrence is usually vague too.
-- **(b) Recurrence.** Write the transition purely in mathematical notation. Give a clear recursive formula combining the answers to smaller instances of the exact same problem. A complete recurrence must cover:
-  - All recursive step cases.
-  - All necessary base cases.
-  - Explicit bounds for all variables.
+**2. How: State and Transition.**
+- **State.** Define the meaning of a table entry like $T(i)$ or $T(i,j)$ in plain English. A precise state definition usually does most of the conceptual work. If this part is vague, the recurrence is usually vague too.
+- **Recurrence.** Write the rule that computes one state from smaller ones purely in. Good transitions make the dependency graph obvious: who depends on whom, and what has to be known first. This should include the base cases and bounds for the variables.
 
 **3. Why: Justification of Correctness.** Explain the logical basis for the recurrence transitions. This acts as an informal inductive proof that your subproblem choices and state transitions correctly build the optimal solution.
 
@@ -303,7 +302,7 @@ There is a real difference between *discovering* a DP solution and *writing one 
 
 ### Problem-Solving Heuristics
 
-Before writing the polished 4-part explanation, you still have to figure the algorithm out on scratch paper. Erickson's split is useful here: first get the recursion right, then build the table. These are the questions I ask in that order:
+Before writing the polished explanation, you still have to figure the algorithm out on scratch paper. Erickson's split is useful here: first get the recursive idea right, then turn that into a table or DAG. These are the questions I ask in that order:
 
 **Stage 1: Formulate the Problem Recursively (The Hard Part)**
 1. **What is the shape of the state space?** Is the input a 1D array, a pair of strings, items with weights, an interval, a tree, or a set of elements?
@@ -1121,14 +1120,14 @@ Any partition of $S$ must contain some non-empty group $S'$. Once that group is 
 
 - **Common shapes**: 1D chain, 2D grid, knapsack, interval, tree, and bitmask.
 - **Subproblem definition matters**: `T(i)` or `T(i,j)` should map cleanly to the final goal in plain English.
-- **Four required components**: subproblem, recurrence, complexity analysis, and return statement.
-- **For this course**: write iterative fills in a valid dependency order, keep inputs immutable, and be explicit about indexing.
+- **A good explanation has a few moving parts**: problem statement, state, transition, and complexity.
+- **Fill order matters**: whichever representation you use, dependencies have to be available before you try to use them.
 
 ## Resources
 
 ### Books
 
-These are the books I have leaned on most for the course.
+These are the books I have leaned on most while studying this material.
 
 <BookCard
   title="Algorithms"
@@ -1137,7 +1136,7 @@ These are the books I have leaned on most for the course.
   url="https://highered.mheducation.com/sites/0073523402/"
 >
   <p>
-    This is the course text. I keep coming back to it because the explanations are short, clean, and close to the style the class expects.
+    I keep coming back to this one because the explanations are short, clean, and close to the level of abstraction I want when I am first learning a topic.
   </p>
 </BookCard>
 
