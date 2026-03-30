@@ -1,11 +1,11 @@
 ---
-title: 'DL A4 — VAEs, GANs, and Diffusion on FashionMNIST'
-description: 'A generative-models lab covering VAEs, conditional GANs, and DDPMs for MNIST/FashionMNIST.'
-date: '2025-04-10'
-updated: '2025-10-20'
+title: 'Generative Modeling in Practice: VAE, GAN, and Diffusion Tradeoffs'
+description: 'A technical comparison of generative objectives, stability profiles, and evaluation strategy across VAE, GAN, and diffusion model families.'
+date: '2026-02-27'
+updated: '2026-02-27'
 status: 'in-progress'
 type: 'project'
-tags: ['deep-learning', 'pyTorch', 'generative-models', 'MSCS']
+tags: ['deep-learning', 'pyTorch', 'generative-models', 'MSCS', 'Deep Learning', 'CS7643', 'generative-modeling', 'VAE', 'GAN', 'diffusion-models', 'computer-vision']
 category: ['projects']
 draft: true
 audience: 'All'
@@ -19,6 +19,15 @@ image:
   # maxWidth: "600px"
 hideCaption: true
 ---
+
+import BookCard from "../../../../components/BookCard.astro";
+import Figure from "../../../../components/Figure.astro";
+
+import p4Fig1 from "../figures/lowyx/dl-p4-fig-01-autoencoder.png";
+import p4Fig2 from "../figures/lowyx/dl-p4-fig-02-gan-architecture.png";
+import p4Fig3 from "../figures/lowyx/dl-p4-fig-03-gan-objective.png";
+import p4Fig4 from "../figures/custom/dl-p4-fig-04-diffusion-process.svg";
+import p4Fig5 from "../figures/lowyx/dl-p4-fig-05-generative-models.png";
 
 ## TL;DR
 Assignment 4 was a tour through three generative paradigms. I implemented and trained a variational autoencoder (VAE), DCGAN-style adversarial model, and a lightweight diffusion model, running each on MNIST and FashionMNIST. The shared trainer infrastructure meant I could isolate the effect of latent dimensionality, discriminator updates, or diffusion noise schedules without rewriting boilerplate.
@@ -43,3 +52,271 @@ followed by a learned denoiser $\epsilon_\theta(x_t, t)$ for the reverse process
 
 ## Artifact
 - [Full write-up (PDF)](../dl-retro/DL_A4_generative_models_v1-1.pdf)
+
+## Introduction: Three Ways to Generate Images, Three Different Failure Modes
+
+Generative modeling is where objective-function design becomes impossible to ignore. In supervised classification, objective and evaluation are usually aligned enough that progress is easy to interpret. In generative work, the objective can improve while sample quality appears worse, or samples can look visually better while diversity collapses. The modeling family you choose is effectively a choice about optimization geometry, failure modes, and compute profile.
+
+This project phase compared three paradigms conceptually and empirically: variational autoencoders, adversarial generators, and diffusion models. The focus of this post is not assignment mechanics but the transferable reasoning used to evaluate and compare those paradigms.
+
+> [!note]
+> This is an integrity-safe conceptual write-up. It does not include assignment-specific implementation details.
+
+## Core Concepts
+
+### VAE Objective: Reconstruction with Latent Regularization
+
+VAEs optimize an evidence lower bound (ELBO):
+
+$$
+\mathcal{L}_{\text{ELBO}} = \mathbb{E}_{q_\phi(z\mid x)}[\log p_\theta(x\mid z)] - D_{KL}(q_\phi(z\mid x)\,\|\,p(z))
+$$
+
+The reconstruction term encourages fidelity, while KL regularization shapes latent structure and smoothness. This dual objective gives VAEs a stable optimization profile and useful latent geometry for interpolation, but often with a sharpness tradeoff.
+
+<Figure
+  src={p4Fig1}
+  alt="VAE ELBO tradeoff"
+  caption="Autoencoder structure gives the conceptual base for ELBO-style latent-variable training tradeoffs. Source: Lowyx GT DL Notes (CC BY 4.0), https://lowyx.com/posts/gt-dl-notes/."
+  width={900}
+/>
+
+The practical value of VAEs is control and stability. The practical cost is that high-frequency detail can be harder to preserve.
+
+### GAN Objective: Adversarial Game Dynamics
+
+GANs formulate generation as a minimax game:
+
+$$
+\min_G \max_D \; \mathbb{E}_{x\sim p_{\text{data}}}[\log D(x)] + \mathbb{E}_{z\sim p(z)}[\log(1-D(G(z)))]
+$$
+
+This game can produce sharp outputs because the discriminator pressure encourages realistic detail. But adversarial coupling creates instability: if one side learns much faster, the other loses informative gradients.
+
+<Figure
+  src={p4Fig2}
+  alt="GAN game dynamics"
+  caption="Generator-discriminator coupling shows why adversarial balance is central to training stability. Source: Lowyx GT DL Notes (CC BY 4.0), https://lowyx.com/posts/gt-dl-notes/."
+  width={900}
+/>
+
+GAN training is therefore less about a single objective trajectory and more about maintaining dynamic equilibrium.
+
+### Mode Collapse as a Structural Risk
+
+Mode collapse is one of the most important adversarial failure modes: the generator learns a narrow subset of data modes that repeatedly fool the discriminator.
+
+<Figure
+  src={p4Fig3}
+  alt="Mode collapse"
+  caption="The GAN objective highlights where unstable gradient games can lead to collapse-like behavior. Source: Lowyx GT DL Notes (CC BY 4.0), https://lowyx.com/posts/gt-dl-notes/."
+  width={900}
+/>
+
+This is why visual quality alone is insufficient. A generator that produces one beautiful pattern repeatedly is not a strong generative model.
+
+### Diffusion Models: Stable Denoising Trajectories
+
+Diffusion models train a denoiser to invert progressive noise corruption. In simplified form, learning minimizes noise prediction error across timesteps:
+
+$$
+\mathcal{L}_{\text{diff}} = \mathbb{E}_{x,\epsilon,t}\left[\|\epsilon - \epsilon_\theta(x_t, t)\|^2\right]
+$$
+
+The optimization landscape is often smoother than adversarial setups, and output quality can be strong, but inference requires iterative denoising steps and therefore higher compute.
+
+<Figure
+  src={p4Fig4}
+  alt="Diffusion process"
+  caption="Custom conceptual diagram: forward noising and reverse denoising trajectory in diffusion models. Created by author."
+  width={900}
+/>
+
+### Evaluation Is a Multi-Axis Problem
+
+Generative quality has at least three axes:
+
+- Fidelity: samples resemble the target distribution.
+- Diversity: model covers distribution modes.
+- Utility: outputs are useful for the downstream purpose.
+
+No single scalar metric captures all three perfectly. This is where many comparisons fail.
+
+## System/Model Design (abstracted, non-solution-specific)
+
+### Comparative Protocol Design
+
+A fair comparison across VAE/GAN/diffusion should define:
+
+- Shared dataset and preprocessing path.
+- Explicit training budget policy.
+- Family-appropriate objective and hyperparameter ranges.
+- Common checkpointing and evaluation cadence.
+
+Without these controls, model-family comparisons become anecdotal.
+
+### Generic Sampling and Monitoring Loop
+
+A conceptual monitoring protocol can be represented as:
+
+```text
+for model_family in [vae, gan, diffusion]:
+  initialize model and family-specific objective
+  for each epoch:
+    train with logged objective components
+    periodically generate validation samples
+    compute quantitative metrics and archive sample grids
+  summarize quality, diversity, stability, and compute profile
+```
+
+The important point is the paired quantitative + qualitative loop. Each detects different failure classes.
+
+### Compute and Latency Considerations
+
+Generative deployment constraints can invert leaderboard preferences:
+
+- Fast one-shot generation may prioritize GAN-like methods.
+- Stable training and latent control may favor VAEs.
+- Highest quality under larger compute budgets may favor diffusion.
+
+So model-family choice should be requirement-driven, not trend-driven.
+
+## Experiments and Results (sanitized)
+
+### Distinct Stability Profiles by Family
+
+The directional empirical pattern was clear:
+
+- VAE-like setups were stable and predictable.
+- GAN-like setups could produce high-fidelity samples but showed larger variance and occasional collapse behavior.
+- Diffusion-like setups were consistently robust in training and quality trajectory but heavier in sampling cost.
+
+These profiles align with objective structure and optimization geometry.
+
+### Metric and Perception Mismatch
+
+In some cases, quantitative improvements were not matched by obvious perceptual gains, and vice versa. That mismatch reinforces the need for multi-view evaluation.
+
+<Figure
+  src={p4Fig5}
+  alt="Metric perception mismatch"
+  caption="Model-family comparison frames metric/perception gaps as objective-dependent tradeoffs, not single-score outcomes. Source: Lowyx GT DL Notes (CC BY 4.0), https://lowyx.com/posts/gt-dl-notes/."
+  width={900}
+/>
+
+A useful internal rubric was to require agreement between at least two independent signals before claiming a meaningful improvement.
+
+### Failure Modes as Design Feedback
+
+Each family exposed different actionable failure cues:
+
+- VAE blur implied reconstruction-vs-regularization rebalance.
+- GAN collapse implied adversarial balance intervention.
+- Diffusion latency implied scheduling and deployment-aware optimization.
+
+Thinking in failure-mode space produced better iteration decisions than thinking in benchmark-only space.
+
+## Design Questions This Raised
+
+1. **Should stability be preferred over peak visual fidelity?**  
+In most iterative and production-oriented contexts, yes. Stability improves iteration speed, debugging quality, and confidence in regression analysis. Peak visual fidelity is still valuable, but if it depends on brittle training dynamics, the system becomes expensive to maintain and hard to trust. A practical compromise is to optimize for stable quality first, then allocate targeted effort for peak-fidelity improvements once training behavior is predictable.
+
+2. **What is the right comparison framework for heterogeneous objectives?**  
+Objective heterogeneity requires evaluation heterogeneity. Comparing VAE, GAN, and diffusion models with one scalar metric collapses too much information. A better framework includes at least four dimensions: fidelity, diversity, stability, and compute profile. Reporting each dimension separately makes tradeoffs explicit and prevents overconfident “best model” claims that do not generalize across use cases.
+
+3. **How should compute budget shape architecture choice?**  
+Compute budget should be treated as a hard design constraint, not a post-hoc optimization. Diffusion methods may dominate quality under generous budgets but can be impractical under tight latency limits. Adversarial methods may offer speed benefits with higher instability risk. Latent-variable models may provide robust controllability at moderate quality. The right choice depends on where the system sits on the quality-latency-cost frontier.
+
+4. **What is the most common evaluation error in generative projects?**  
+The most common error is cherry-picking artifacts: selecting a few appealing samples or one favorable metric while ignoring diversity and trajectory behavior. Another frequent issue is comparing models at mismatched training maturity. Generative models often evolve nonlinearly, and endpoint-only comparisons can hide instability that would matter in practical use.
+
+<details>
+  <summary>Extended reflection: failure-mode-first iteration policy</summary>
+  The highest-leverage adjustment in my workflow was to iterate by failure mode rather than by architecture trend. Instead of asking \"what model family is popular,\" I asked \"what failure pattern is dominating current results.\" If diversity collapse dominated, I focused on objective and balance controls. If detail quality lagged while diversity was strong, I revisited representation bottlenecks and sampling policy. If metrics and qualitative assessments diverged, I improved evaluation instrumentation before changing models. This failure-mode-first policy reduced wasted runs and improved the quality of conclusions. It also translated directly to communication quality: describing results in terms of observed failure dynamics made decisions easier to justify than headline metric deltas alone.
+</details>
+
+<details>
+  <summary>Deep dive appendix: objective-aware evaluation in generative systems</summary>
+  A recurring pitfall in generative work is pretending different objectives should behave similarly during training. They should not. ELBO-based models optimize a balance between reconstruction and latent regularization; adversarial models optimize a game; diffusion models optimize denoising consistency over time steps. Because these objectives encode different inductive pressures, their training curves, failure signatures, and convergence semantics are inherently different. This means evaluation should be objective-aware from the start.
+
+  For VAE-like approaches, I found it useful to track reconstruction trend and latent-regularization trend separately. A single combined objective can hide whether improvements are coming from better reconstruction, weaker regularization, or both. If reconstruction improves while latent structure collapses, downstream interpolation quality can degrade even when training loss decreases. For GAN-like approaches, discriminator and generator dynamics should be interpreted jointly. A low discriminator loss is not inherently good; it may signal generator starvation. A low generator loss is not inherently good either; it may signal a weak discriminator. The key is informative gradient exchange over time.
+
+  For diffusion-like approaches, timestep-conditioned behavior is particularly important. Aggregate objective improvements can mask poor denoising at specific noise levels that dominate perceived sample quality. Monitoring quality across sampling stages gives better signal than endpoint-only inspection. It also supports more disciplined compute decisions: if late-stage denoising contributes marginally to quality under current constraints, partial-step deployment strategies become easier to reason about.
+
+  Another high-value practice was to separate fidelity claims from diversity claims explicitly in result summaries. Fidelity without diversity can look excellent in curated examples while failing distribution coverage. Diversity without sufficient fidelity may pass broad-distribution checks while producing unusable outputs. Good generative evaluation should state where each model sits on this tradeoff, including uncertainty bands when run-to-run variance is significant.
+
+  Finally, I started treating compute-cost reporting as part of scientific honesty. If one model family requires substantially more sampling steps or hardware time, that cost belongs next to quality claims. This does not diminish quality results; it contextualizes them for decision-making. In practical systems, quality, stability, and cost form a three-way tradeoff. Any conclusion that omits one of those axes is incomplete.
+</details>
+
+<details>
+  <summary>Extended note: selecting stopping criteria in non-monotonic training regimes</summary>
+  Generative training often violates assumptions that work well in supervised classification, especially the assumption that validation signals improve monotonically. In adversarial and diffusion workflows, useful checkpoints can appear before or after unstable periods, and objective values can be weak proxies for perceptual quality. I found it helpful to use checkpoint windows with multi-signal ranking rather than a single early-stopping trigger. A multi-signal ranking can combine scalar metrics, diversity diagnostics, and sample-quality audits under fixed rubric.
+
+  Another practical tactic was to separate “research stopping” from “deployment stopping.” Research stopping asks when enough evidence exists to compare model families. Deployment stopping asks when quality, reliability, and latency constraints are jointly satisfied. The former can happen sooner than the latter. Keeping these criteria separate improved project pacing and reduced overfitting to one evaluation axis.
+
+  This module also reinforced that checkpoint selection should be reproducible. If checkpoint choice depends on ad hoc visual preference without declared rubric, conclusions become fragile. Declaring a checkpoint rubric in advance, even a simple one, significantly improved confidence in comparisons.
+</details>
+
+## Conclusion
+
+Project 4 made generative modeling feel less like “pick the best architecture” and more like “choose a contract between objective, stability, and deployment constraints.” The biggest technical gain was learning to reason about objective-function implications before launching long experiments.
+
+Most useful takeaways:
+
+- Objective design predicts failure mode profile.
+- Quantitative and qualitative signals must be paired.
+- Stability and compute belong in the same decision frame as fidelity.
+- Model-family comparisons require declared fairness constraints.
+
+The broader implication is that generative modeling success is as much about evaluation design and decision policy as it is about architecture selection.
+That mindset has practical consequences: it changes how experiments are budgeted, how checkpoints are judged, and how quality claims are communicated to other engineers or stakeholders.
+
+In future generative work, I would rather have a slightly weaker model with consistent multi-axis evidence than a stronger-looking model supported by a fragile or under-specified evaluation protocol.
+This preference is not conservative for its own sake; it is a practical response to how quickly generative results can become irreproducible when checkpoint criteria, qualitative review policy, and metric interpretation rules are not stabilized early.
+It also makes downstream product and research decisions easier to defend, because evidence quality and tradeoff rationale are visible in the record instead of implicit in informal judgment.
+That documentation discipline is now a required part of my generative experiment workflow, not an optional reporting step.
+It keeps long-run model comparisons grounded in evidence instead of momentum.
+That clarity improves both research and communication quality.
+Consistently.
+Across teams.
+
+### Practical Checklist I Would Reuse in a New Generative Program
+
+The practical checklist I would carry forward is: define objective-aware evaluation criteria before training, enforce a checkpoint selection rubric in advance, track both diversity and fidelity signals over time, and report compute profile with every quality claim. I would also preserve a failure-mode log per model family so interventions are tied to observed dynamics rather than trend-driven assumptions. In generative projects, this checklist prevents common evaluation drift where one metric dominates decision-making while other quality dimensions quietly regress. It also improves team communication, because every comparison is anchored to declared criteria instead of subjective preference.
+
+Another practical addition is to define “acceptable instability” thresholds before experiments begin. Some non-monotonic behavior is expected in generative training, especially for adversarial methods, but not all instability is tolerable. Declaring thresholds for variance, collapse events, or checkpoint inconsistency turns subjective concern into actionable criteria. This also helps allocate compute budget rationally: if a run repeatedly violates declared thresholds, stopping early and revising policy is usually better than extending the run in hope of late recovery.
+
+I would also formalize sample-review protocols. Informal visual inspection is useful for intuition, but it can drift toward confirmation bias. A structured review format with fixed prompts, blinded sample ordering where feasible, and a declared rubric improves consistency and makes qualitative evidence easier to compare across model families.
+
+Finally, I would maintain a “metric disagreement dashboard” that highlights when fidelity, diversity, and human-rated quality trends move in different directions. Those disagreement windows are often the most informative parts of a run because they reveal where objective and perceptual priorities are misaligned. Treating disagreement as a signal, rather than a nuisance, improved both experimental efficiency and final model selection quality.
+
+## Additional Resources
+
+- [Auto-Encoding Variational Bayes](https://arxiv.org/abs/1312.6114)
+- [Generative Adversarial Nets](https://arxiv.org/abs/1406.2661)
+- [Denoising Diffusion Probabilistic Models](https://arxiv.org/abs/2006.11239)
+- [High-Resolution Image Synthesis with Latent Diffusion](https://arxiv.org/abs/2112.10752)
+- [U-Mich DL Lectures](https://web.eecs.umich.edu/~justincj/teaching/eecs498/WI2022/)
+
+<BookCard
+  title="Generative Deep Learning (2nd ed.)"
+  author="David Foster"
+  url="https://www.oreilly.com/library/view/generative-deep-learning/9781098134174/"
+>
+  <p>
+    Practical coverage of VAE, GAN, and diffusion families with emphasis on failure diagnosis and architecture-level design choices.
+  </p>
+</BookCard>
+
+<BookCard
+  title="Diffusion Models Beat GANs on Image Synthesis"
+  author="Prafulla Dhariwal and Alex Nichol"
+  url="https://arxiv.org/abs/2105.05233"
+>
+  <p>
+    A useful reference for understanding why diffusion quality and stability can outperform adversarial alternatives under sufficient compute.
+  </p>
+</BookCard>
+
+> [!info] A Note on Code Availability
+> In accordance with Georgia Tech academic integrity policy and course material licensing, I do not publish assignment code, assignment-specific implementation details, or private project files. This post focuses on transferable concepts, non-sensitive experiments, and high-level technical reasoning.
