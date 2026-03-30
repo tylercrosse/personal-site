@@ -1,0 +1,67 @@
+<svg width="1200" height="520" viewBox="0 0 1200 520" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Diffusion Forward and Reverse Process</title>
+  <desc id="desc">Custom conceptual diagram showing forward noising and reverse denoising trajectories over timesteps.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#f3f7ff"/>
+      <stop offset="100%" stop-color="#eef8f2"/>
+    </linearGradient>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#334155"/>
+    </marker>
+    <style>
+      .label { font: 600 20px 'Helvetica Neue', Arial, sans-serif; fill: #0f172a; }
+      .small { font: 500 16px 'Helvetica Neue', Arial, sans-serif; fill: #334155; }
+      .step { font: 600 14px 'Helvetica Neue', Arial, sans-serif; fill: #0f172a; }
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="1200" height="520" fill="url(#bg)"/>
+
+  <text x="600" y="44" text-anchor="middle" class="label">Diffusion Models: Forward Noising and Reverse Denoising</text>
+
+  <rect x="60" y="90" width="500" height="360" rx="18" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="2"/>
+  <text x="310" y="126" text-anchor="middle" class="small">Forward Process q(x_t | x_{t-1}): add Gaussian noise</text>
+
+  <rect x="640" y="90" width="500" height="360" rx="18" fill="#dcfce7" stroke="#bbf7d0" stroke-width="2"/>
+  <text x="890" y="126" text-anchor="middle" class="small">Reverse Process p_theta(x_{t-1} | x_t): predict and remove noise</text>
+
+  <circle cx="130" cy="270" r="48" fill="#bfdbfe" stroke="#3b82f6" stroke-width="3"/>
+  <circle cx="250" cy="270" r="48" fill="#c7d2fe" stroke="#6366f1" stroke-width="3"/>
+  <circle cx="370" cy="270" r="48" fill="#d8b4fe" stroke="#a855f7" stroke-width="3"/>
+  <circle cx="490" cy="270" r="48" fill="#e2e8f0" stroke="#64748b" stroke-width="3"/>
+
+  <text x="130" y="275" text-anchor="middle" class="step">x0</text>
+  <text x="250" y="275" text-anchor="middle" class="step">x1</text>
+  <text x="370" y="275" text-anchor="middle" class="step">x2</text>
+  <text x="490" y="275" text-anchor="middle" class="step">x_T</text>
+
+  <line x1="178" y1="270" x2="202" y2="270" stroke="#334155" stroke-width="3" marker-end="url(#arrow)"/>
+  <line x1="298" y1="270" x2="322" y2="270" stroke="#334155" stroke-width="3" marker-end="url(#arrow)"/>
+  <line x1="418" y1="270" x2="442" y2="270" stroke="#334155" stroke-width="3" marker-end="url(#arrow)"/>
+
+  <text x="190" y="236" class="small">+eps</text>
+  <text x="310" y="236" class="small">+eps</text>
+  <text x="430" y="236" class="small">+eps</text>
+
+  <circle cx="710" cy="270" r="48" fill="#e2e8f0" stroke="#64748b" stroke-width="3"/>
+  <circle cx="830" cy="270" r="48" fill="#d9f99d" stroke="#84cc16" stroke-width="3"/>
+  <circle cx="950" cy="270" r="48" fill="#bbf7d0" stroke="#22c55e" stroke-width="3"/>
+  <circle cx="1070" cy="270" r="48" fill="#86efac" stroke="#16a34a" stroke-width="3"/>
+
+  <text x="710" y="275" text-anchor="middle" class="step">x_T</text>
+  <text x="830" y="275" text-anchor="middle" class="step">x2</text>
+  <text x="950" y="275" text-anchor="middle" class="step">x1</text>
+  <text x="1070" y="275" text-anchor="middle" class="step">xhat0</text>
+
+  <line x1="758" y1="270" x2="782" y2="270" stroke="#166534" stroke-width="3" marker-end="url(#arrow)"/>
+  <line x1="878" y1="270" x2="902" y2="270" stroke="#166534" stroke-width="3" marker-end="url(#arrow)"/>
+  <line x1="998" y1="270" x2="1022" y2="270" stroke="#166534" stroke-width="3" marker-end="url(#arrow)"/>
+
+  <text x="770" y="236" class="small">-eps_hat_theta</text>
+  <text x="890" y="236" class="small">-eps_hat_theta</text>
+  <text x="1010" y="236" class="small">-eps_hat_theta</text>
+
+  <text x="310" y="410" text-anchor="middle" class="small">Training sample is corrupted over t = 1...T</text>
+  <text x="890" y="410" text-anchor="middle" class="small">Model learns reverse transitions conditioned on timestep</text>
+</svg>

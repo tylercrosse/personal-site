@@ -1,10 +1,11 @@
 ---
-title: 'Deep Learning'
-description: 'A survey of concepts covered in my graduate Deep Learning course'
-date: '2025-10-20'
+title: 'Graduate Deep Learning: A Technical Retrospective'
+description: 'What I learned in Graduate Deep Learning through a project-first lens spanning optimization, vision, sequence modeling, generative methods, and interpretability.'
+date: '2026-02-27'
+updated: '2026-02-27'
 status: 'in-progress'
 type: 'retro'
-tags: ['deep-learning', 'python', 'pyTorch', 'computer-vision', 'NLP', 'computer-science', 'learning-in-public', 'MSCS']
+tags: ['deep-learning', 'python', 'pyTorch', 'computer-vision', 'NLP', 'computer-science', 'learning-in-public', 'MSCS', 'Deep Learning', 'CS7643', 'generative-modeling', 'interpretability', 'machine-learning']
 category: ['mscs']
 draft: true
 audience: 'All'
@@ -15,181 +16,354 @@ image:
 hideCaption: true
 ---
 
-import BookCard from "../../../../components/BookCard.astro";
 import Figure from "../../../../components/Figure.astro";
 
+import retroFig1 from "../figures/lowyx/dl-retro-fig-01-various-networks.png";
+import retroFig2 from "../figures/lowyx/dl-retro-fig-02-inception-idea.png";
+import retroFig3 from "../figures/lowyx/dl-retro-fig-03-generative-models2.png";
+import BookCard from "../../../../components/BookCard.astro";
 import mathematicsForMachineLearning from "../../../books/math-for-ml.jpg";
 import elementaryLinearAlgebra from "../../../books/elementary-linear-algebra.jpg";
 import deepLearningGoodfellow from "../../../books/dl-goodfellow.jpg";
 import deepLearningPrince from "../../../books/dl-prince.jpg";
 import handsOnMl from "../../../books/hands-on-ml.jpg";
-
 import computationalGraph from "./computational-graph-placeholder.png";
 import backprop from "./backprop-placeholder.png";
 import cnn from "./convolution-placeholder.png";
-// import transformer from "./transformer-placeholder.png";
-// import gan from "./gan-placeholder.png";
 
+## Introduction
 
-This piece serves as both a personal retrospective and a technical overview. I took Georgia Tech's [CS 7643: Deep Learning](https://omscs.gatech.edu/cs-7643-deep-learning) in the Spring 2025 semester. I'm revisiting the material to consolidate my learning - following the Feynman technique of teaching to understand, while also sharing insights for those interested in the course or my background. My audience includes prospective OMSCS students, potential employers, and colleagues seeking to understand the course content and my current knowledge. The bulk of this article summarizes the course material, with additional sections covering course logistics, my personal experience, and helpful resources.
+This post is my technical retrospective on Graduate Deep Learning. I wrote it in the same spirit as my GIOS and GPU retrospectives: part conceptual synthesis, part implementation reflection, and part calibration of what I now understand versus what still needs work.
 
-## Introduction to Deep Learning
+The course had a useful shape for systems-minded learning. It started with optimization and first-principles modeling, moved through modern vision and sequence architectures, and ended with generative modeling and interpretability-oriented analysis. That sequence matters: each module adds capability, but also adds failure modes and new opportunities to fool yourself with noisy results.
 
-Deep learning has become the driving force behind the recent explosion in AI capabilities, from image recognition to natural language understanding. This course provides a comprehensive tour of the field, starting with the foundational principles of neural networks and progressing through the advanced architectures that power today's most sophisticated models.
+I published deeper companion write-ups for each project:
 
-The course is structured into four main modules, each building on the last:
-1.  **Introduction to Neural Networks**: The fundamentals of neural networks, from linear classifiers to backpropagation.
-2.  **Convolutional Neural Networks (CNNs)**: The workhorses of computer vision.
-3.  **Structured Neural Representations**: Handling sequential data with RNNs, LSTMs, and the revolutionary Transformer architecture.
-4.  **Advanced Topics**: A look at the cutting edge, including Deep Reinforcement Learning and Generative Models.
+- **Project 1:** [Deep Learning Foundations from Scratch: Linear Models, Backprop, and Optimization](/ideas/2025/dl-p1/)
+- **Project 2:** [ConvNets and PyTorch Training Pipelines: From Baselines to Better Generalization](/ideas/2025/dl-p2/)
+- **Project 3:** [Machine Translation Systems: From Seq2Seq to Attention and Transformers](/ideas/2025/dl-p3/)
+- **Project 4:** [Generative Modeling in Practice: VAE, GAN, and Diffusion Tradeoffs](/ideas/2025/dl-p4/)
+- **Project 5 (Final):** [Interpreting Model Differences: A Research-Oriented Deep Learning Final Project](/ideas/2025/dl-p5/)
 
-We'll look at each module in turn, connecting the lecture concepts to the hands-on assignments that form the core of the learning experience.
-
-## Module 1: Introduction to Neural Networks
-
-This module lays the groundwork for the entire course, starting from first principles. We formalize supervised learning as the minimization of a loss functional
-
-$$
-\min_{\theta} \mathcal{L}(\theta) = -\frac{1}{N} \sum_{i=1}^N \left[ y_i \log \hat{y}_i + (1-y_i) \log (1-\hat{y}_i) \right],
-$$
-
-and then study how gradient descent iteratively updates the parameters by
-
-$$
-\theta^{(t+1)} = \theta^{(t)} - \eta \nabla_\theta \mathcal{L}(\theta^{(t)}).
-$$
-
-From there, we build up to a full understanding of a "vanilla" neural network. The key concept is the **computational graph**, which represents the network's operations as a directed graph so we can apply the chain rule efficiently—**backpropagation** is simply reverse-mode automatic differentiation on this graph.
+All six posts follow strict integrity boundaries: no assignment-specific solution details, no code disclosures for graded work, and no private project-file walkthroughs.
 
 <Figure
-  src={computationalGraph}
-  alt="Computational Graph"
-  caption="A computational graph illustrates how inputs are transformed by a series of operations to produce an output, enabling efficient backpropagation. Credit Justin Johnson."
+  src={retroFig1}
+  alt="Deep learning course concept map"
+  caption="Network-family overview captures the progression from shallow to deep compositional representations. Source: Lowyx GT DL Notes (CC BY 4.0), https://lowyx.com/posts/gt-dl-notes/."
+  width={920}
 />
 
-<Figure
-  src={backprop}
-  alt="Backpropagation"
-  caption="Backpropagation is a technique for efficiently computing the gradients of a neural network. Credit Justin Johnson."
-/>
+## Foundations and Optimization
 
-**Assignment 1** solidifies these concepts by having you build a neural network from scratch using only NumPy. This includes implementing:
-*   Forward and backward passes for various layers (e.g., ReLU, Softmax).
-*   Loss functions like Cross-Entropy.
-*   An optimizer using Stochastic Gradient Descent (SGD).
+### Optimization Was the Main Story, Not a Prelude
 
-This hands-on experience provides a deep intuition for how neural networks learn, before moving on to higher-level frameworks like PyTorch.
+Before this course, I understood optimization mostly as a set of knobs: learning rate, regularization, optimizer choice. After the course, I view optimization as the central design substrate that architecture sits on top of. A stronger architecture under unstable optimization policy is often worse than a simpler architecture under disciplined optimization and evaluation.
 
-## Module 2: Convolutional Neural Networks
+The first practical shift was geometric thinking. Instead of asking “why is this run bad?” at a high level, I learned to ask geometric questions:
 
-This module dives into Convolutional Neural Networks (CNNs), the architecture that revolutionized computer vision. We learn about the key building blocks: **convolutional layers**, which apply learnable filters to input images to detect features like edges and textures, and **pooling layers**, which downsample the feature maps to reduce dimensionality and create translational invariance. The discrete convolution that drives each layer is written as
+- Is curvature mismatch causing oscillation?
+- Is gradient noise too high for the current schedule?
+- Is regularization changing effective geometry in a helpful or destructive way?
+- Is the model underfit because capacity is low or because optimization never reached a useful basin?
+
+At the most abstract level, nearly every module still reduces to iterative parameter updates:
 
 $$
-(f * k)_{i,j} = \sum_m \sum_n f_{i+m, j+n}\, k_{m,n},
+\theta_{t+1} = \theta_t - \eta_t \nabla_{\theta}\mathcal{L}(\theta_t)
 $$
 
-so analyzing how receptive fields grow with depth feels much more concrete than when I first encountered CNNs in a purely code-first way. We explore classic CNN architectures and the techniques used to visualize what they've learned.
+What changes across modules is the shape of `\mathcal{L}`, noise in gradient estimates, and how strongly constraints (latency, stability, calibration) influence acceptable solutions.
 
-<Figure
-  src={cnn}
-  alt="Convolutional Neural Network"
-  caption="A typical CNN architecture, showing the flow from input image through convolutional and pooling layers to the final classification. Credit Justin Johnson."
-/>
+That framing worked repeatedly across modules. Vision, NLP, and generative tasks all looked different on the surface, but the optimization diagnostics stayed recognizable.
 
-**Assignment 2** is a two-part challenge. First, you implement the forward and backward passes for convolutional and max-pooling layers in NumPy, reinforcing the fundamentals. Then, you transition to PyTorch to build a more complex CNN, gaining familiarity with the framework that will be used for the rest of the course.
+### Reproducibility Became a Technical Requirement
 
-**Assignment 3** focuses on understanding what happens inside the "black box" of a CNN. You implement techniques to visualize the network's learned features and create adversarial examples to fool the model, providing insight into its strengths and weaknesses.
+A second shift was operational rather than mathematical: reproducibility became a first-class requirement. In early ML practice it is easy to move fast and inspect only endpoint metrics. In this course, that approach failed repeatedly. Small differences in data path, scheduler state, initialization, or checkpoint logic were enough to produce conclusions that looked persuasive and were wrong.
 
-## Module 3: Structured Neural Representations
+What helped:
 
-This module shifts focus from images to sequential data, like text and time series. We begin with **Recurrent Neural Networks (RNNs)** and their more powerful variant, **Long Short-Term Memory (LSTM)** networks, which are designed to handle long-range dependencies in data. A recurrent cell propagates information via
+- Config-driven runs instead of ad hoc script edits.
+- Explicit seed handling and repeated runs for sensitive comparisons.
+- Logging train and validation trajectories, not only final metrics.
+- Treating data preprocessing as versioned pipeline behavior.
 
-$$
-h_t = \tanh (W_{hh} h_{t-1} + W_{xh} x_t + b_h),
-$$
+This is the same engineering lesson I saw in GPU performance work: if the measurement protocol is weak, optimization claims are weak.
 
-while LSTMs extend this equation with gating to maintain a long-term cell state. The highlight of this module is the **Transformer architecture**, introduced in the seminal paper "Attention Is All You Need." Transformers dispense with recurrence entirely and rely on a mechanism called **self-attention** to weigh the importance of different words in a sequence:
+### Baselines Were More Valuable Than Expected
 
-$$
-\text{Attention}(Q,K,V) = \text{softmax}\left(\frac{QK^\top}{\sqrt{d_k}}\right) V.
-$$
+A recurring pattern across the term was that strong baselines outperformed weak novelty. A baseline with stable optimization, clear diagnostics, and controlled evaluation almost always produced better decisions than an ambitious variant with unclear instrumentation.
 
-This allows for massive parallelization and has made Transformers the state-of-the-art for nearly all NLP tasks. Compared with [yxlow's 2022 experience](https://lowyx.com/posts/gt-dl/)—which emphasized reinforcement learning earlier—our Spring 2025 section devoted **Project 3** entirely to RNNs, LSTMs, and Transformers so we could push sequence-to-sequence models further before touching policy gradients.
+This changed how I define progress. “More complex model” is not progress. “More reliable understanding of model behavior under controlled variation” is progress.
 
-{/* <Figure
-  src={transformer}
-  alt="The Transformer Architecture"
-  caption="The Transformer architecture, based on self-attention, has become the dominant model for natural language processing tasks."
-/> */}
+### Optimization Patterns That Transfer Across Model Families
 
-**Assignment 4** (my numbering) is an extensive project where you implement several sequence models:
-*   RNN and LSTM networks.
-*   A Sequence-to-Sequence (Seq2Seq) model with attention.
-*   The full Transformer model (encoder and decoder).
+One reason this course felt cohesive is that the same optimization patterns kept reappearing in different forms. In classification settings, instability looked like oscillating validation curves and widening train-validation gaps. In sequence settings, instability surfaced as degraded long-context behavior and brittle decoding sensitivity. In generative settings, instability surfaced as collapse, artifact spikes, or checkpoint volatility. Different symptoms, same underlying issue: the optimization policy and objective interaction was not yet aligned with the data regime.
 
-The final part of the assignment involves training a model to translate German to English, comparing the performance of the traditional Seq2Seq model against the more advanced Transformer, mirroring the techniques documented in [yxlow's course notes](https://lowyx.com/posts/gt-dl-notes/) but with newer PyTorch primitives.
+I started tracking optimization patterns in a common template regardless of model family:
 
-## Module 4: Advanced Topics
+- Early-epoch behavior (first signs of divergence or healthy descent).
+- Mid-epoch transition behavior around scheduler milestones.
+- Late-epoch stability and generalization drift.
+- Run-to-run variance under fixed configs.
 
-The final module provides a glimpse into the broader applications of deep learning and is where my experience diverged most from yxlow's recap. While the 2022 run concluded with reinforcement learning-heavy material, our **Project 4** centered on generative modeling for FashionMNIST: VAEs, GANs, and even a tiny diffusion model.
+This template was useful because it prevented me from reinventing diagnostics for each project. It also improved communication quality when comparing results across modules. Instead of saying “this model seems unstable,” I could point to specific pattern signatures and explain why the pattern implied a certain intervention.
 
-*   **Deep Reinforcement Learning**: We still covered the policy gradient and Q-learning families conceptually, but primarily as context for how deep nets integrate with classical RL objectives.
-*   **Variational Autoencoders (VAEs)**: We implemented the evidence lower bound
+The same transfer pattern applied to regularization. Whether the model was a CNN, transformer, or diffusion denoiser, regularization worked best when tuned relative to optimization stage and objective scale. Over-regularization created smooth but underfit trajectories; under-regularization created fast train gains with weak validation behavior. This is one reason I now think of regularization as part of optimization policy rather than as a static add-on.
 
-    $$
-    \mathcal{L}_{\text{ELBO}} = \mathbb{E}_{q_\phi(z|x)}[\log p_\theta(x|z)] - D_{\text{KL}}(q_\phi(z|x) \parallel p(z)),
-    $$
+## Vision and CNNs
 
-    which enforces both reconstruction fidelity and a structured latent prior.
-*   **Generative Adversarial Networks (GANs)**: Training revolved around the minimax problem
+### Convolutional Priors and Practical Representation Learning
 
-    $$
-    \min_G \max_D \mathbb{E}_{x \sim p_{\text{data}}}[\log D(x)] + \mathbb{E}_{z \sim p(z)}[\log(1-D(G(z)))].
-    $$
+The vision module reinforced why convolutional priors remain effective despite the rise of newer architecture families. Locality, parameter sharing, and hierarchical composition provide strong inductive bias for image data, especially when data and compute are constrained.
 
-    Implementing the alternating optimization loop demystified the stability issues everyone warns about.
-*   **Diffusion Models**: We explored how iteratively denoising a sample follows the reweighted score-matching objective, with the forward process defined as
+What I appreciated more in this course was the practical side of these priors. Receptive field growth is not just a textbook fact; it determines which errors a model can even represent. Aggressive downsampling can delete detail needed for hard classes. Insufficient context aggregation can trap the model in texture-level confusion.
 
-    $$
-    q(x_t | x_{t-1}) = \sqrt{1-\beta_t}\, x_{t-1} + \sqrt{\beta_t}\, \epsilon,
-    $$
+### Pipeline Quality Controlled Most of the Outcome
 
-    and learned networks predicting either $\epsilon$ or $x_0$.
+In framework-scale work, throughput increases quickly. That is useful, but it can mask evaluation problems. In the vision project phase, most meaningful improvements came from pipeline discipline:
 
-{/* <Figure
-  src={gan}
-  alt="Generative Adversarial Network"
-  caption="A GAN consists of a Generator that creates fake images and a Discriminator that tries to distinguish them from real images. Through this competition, both networks improve."
-/> */}
+- Consistent preprocessing and augmentation contracts.
+- Fair architecture comparisons under fixed budgets.
+- Better treatment of regularization and schedule interactions.
+- Reliability-aware metrics beyond top-1 accuracy.
 
-## Assignment Writeups
+This is where I became more careful about calibration. Two models with similar accuracy can behave very differently under uncertainty, and those differences matter for thresholded decisions or downstream human review.
 
-For readers who prefer compact, assignment-by-assignment recaps, I pulled my writeups into focused posts:
+### Ablation Design Was the Real Skill
 
-1. [DL A1 — Backprop from Scratch](/ideas/2025/dl-a1/): NumPy-based MNIST pipelines, theory problems, and paper reviews.
-2. [DL A2 — Practical CNNs and Imbalanced Data](/ideas/2025/dl-a2/): PyTorch CNNs on CIFAR-10 plus class-balanced focal loss experiments with ResNet-32.
-3. [DL A3 — Sequence Models, Attention, and Translation](/ideas/2025/dl-a3/): LSTMs, Seq2Seq with cosine attention, and Transformers for German→English.
-4. [DL A4 — VAEs, GANs, and Diffusion on FashionMNIST](/ideas/2025/dl-a4/): Generative modeling lab notes (VAE, GAN, DDPM) across MNIST/FashionMNIST.
-5. [DL Final Project — Crosscoding Reasoning Upgrades](/ideas/2025/dl-final-project/): Fine-tuning Qwen2.5-0.5B-Instruct on s1k and comparing representations with Crosscoders.
+The biggest conceptual gain from this portion of the course was ablation design. It is easy to run many experiments. It is harder to design them so the result is interpretable. Good ablation design means changing one dimension at a time, controlling compute budgets, and requiring consistency across runs before declaring a win.
 
-## Group Project
+Once that discipline is in place, model iteration becomes less emotional and more empirical.
 
-The course culminates in a group project where students can apply their knowledge to a real-world problem. This could involve reproducing the results of a research paper, exploring a novel architecture, or participating in a Kaggle-style competition. A popular project is the "Hateful Memes Challenge," which requires building a multimodal model that can understand the combination of text and images to detect hate speech.
+### What I Changed in Vision Experiment Design
+
+This module changed how I structure experiment plans before coding. I now define a hypothesis matrix first: each row is a hypothesis, each column is a control variable, and each cell states whether the variable is fixed or intentionally varied. That matrix turns a vague experiment into a testable protocol and makes post-hoc interpretation cleaner.
+
+I also became stricter about declaring budget fairness. In vision tasks, it is easy to accidentally compare models under different optimization maturity. One model might look better simply because it had a schedule that fit the epoch budget more naturally. Declaring fairness constraints up front made comparisons less fragile and reduced selection bias.
+
+Another change was integrating reliability checks into the default report. If confidence behavior or class-wise consistency degraded while top-1 improved slightly, I treated the result as mixed rather than positive. This made my conclusions more conservative, but also more transferable to real systems where uncertain predictions still have operational consequences.
+
+## Sequence Models and Attention
+
+### The Bottleneck-to-Attention Transition Finally Clicked
+
+Sequence modeling was the module where architecture history became practically useful. I understood the high-level narrative of seq2seq to attention to transformers before taking the course, but this was the first time I worked through why the transition was inevitable.
+
+Fixed-context bottlenecks are naturally fragile on long and structurally complex sequences. Attention mechanisms resolve that by turning alignment into dynamic retrieval. This improves representational flexibility, but it introduces new tuning sensitivity and new opportunities for superficial metric gains.
+
+### Transformer Intuition: Parallelism Plus Structured Inductive Choices
+
+Transformers are often presented as “attention replaces recurrence.” That is true, but incomplete. The architecture also depends on residual paths, normalization placement, positional signaling, and feed-forward width/depth balance. Each of those choices affects optimization behavior and final quality.
+
+In practical terms, I found three lessons durable:
+
+- Positional treatment is as important as attention in sequence tasks.
+- Training and decoding policy should be treated as separate design dimensions.
+- Automatic metrics need qualitative error taxonomies for decision-quality evaluation.
+
+### Decoding Policy Was a Hidden Confounder
+
+One of the most important system-level insights from the sequence module was that decoding policy can change observed quality materially. If two models are compared with different inference strategies, it becomes unclear whether gains come from better learned distributions or more expensive search.
+
+That realization carries into LLM systems work directly. Inference policy is not post-processing; it is part of system design.
+
+### Sequence Evaluation as Systems Engineering
+
+The sequence module also changed how I think about evaluation boundaries. Translation quality is not just a model property; it is a model-plus-policy property. Tokenization choices, length handling, and decoding heuristics all shape outcomes. This means reproducibility requires capturing those components with the same rigor used for architecture and optimizer settings.
+
+I found it useful to maintain a two-layer evaluation view:
+
+- **Model layer:** probability quality under fixed training and tokenization assumptions.
+- **System layer:** output quality under practical inference policy and latency constraints.
+
+Separating these layers reduced attribution errors and improved prioritization. If model-layer quality improved but system-layer quality did not, the next step was often decoding or policy work rather than architecture changes.
+
+This perspective generalizes to modern LLM deployment. Prompting policy, sampling controls, and safety constraints all interact with learned distributions. Treating those interactions as first-class engineering objects is now part of my default workflow.
+
+## Generative Modeling
+
+### Objective Function Choice Predicted Failure Modes
+
+The generative module was where objective-function design felt most concrete. VAE, GAN, and diffusion models each encode a different contract:
+
+- VAE: stable optimization and latent structure, often with sharpness tradeoffs.
+- GAN: potentially excellent perceptual fidelity, but adversarial instability and collapse risk.
+- Diffusion: robust quality trends and stable training, with heavier inference cost.
+
+Those are not abstract labels. They are operational profiles that affect experiment timelines, debugging burden, and deployment feasibility.
+
+### Metric Compression Became Impossible to Ignore
+
+Generative evaluation made clear that single metrics can hide critical behavior. It is easy to improve a scalar score while hurting diversity, or to produce visually appealing samples that cover only a narrow distribution slice.
+
+The only robust approach I found was mixed evaluation:
+
+- Quantitative metrics for comparability.
+- Structured qualitative review for artifact and diversity patterns.
+- Repeated checkpoints to observe trajectory, not just endpoints.
+
+This combination prevented overconfident conclusions and made model-family tradeoffs clearer.
+
+### Compute Awareness as a Modeling Skill
+
+Another lasting insight: compute profile is part of model quality. A high-fidelity model that cannot meet latency or throughput requirements is not automatically “better.” This is obvious in systems engineering, but deep learning discussions sometimes treat it as secondary.
+
+The generative module corrected that. Architectural preference is constraint-dependent, and constraint awareness should appear early in model selection, not at deployment handoff.
+
+### Generative Model Selection Under Product Constraints
+
+A practical takeaway from this section is that “best generative model” is an incomplete question. The better question is “best generative model under this objective mix and constraint envelope.” Objective mix includes quality target, diversity target, controllability needs, and reliability requirements. Constraint envelope includes hardware availability, latency budget, and maintenance complexity.
+
+Framing selection this way avoids architecture fashion cycles. It also encourages explicit tradeoff documentation. For example, a diffusion-based choice might be justified by superior robustness and output quality under offline workloads, while an adversarial or latent-variable choice might be better for low-latency settings with strict throughput requirements.
+
+This section also reinforced the value of checkpoint governance. In non-monotonic training regimes, selecting the right checkpoint is itself a methodological decision. If checkpoint choice is undocumented or subjective, comparisons are hard to trust. Declaring checkpoint criteria ahead of time improved both internal confidence and external communication.
 
 ## Course Overview
 
-The course is demanding and time-consuming, particularly the assignments. Access to a GPU is highly recommended for Assignments 2 and 4, as well as the group project. The course provides guidance on using services like Google Colab.
+### Projects At a Glance
 
-### Grading
+- [Project 1](/ideas/2025/dl-p1/): first-principles optimization and gradient-flow reasoning.
+- [Project 2](/ideas/2025/dl-p2/): convolutional modeling under controlled framework experimentation.
+- [Project 3](/ideas/2025/dl-p3/): sequence architecture and decoding-policy tradeoffs.
+- [Project 4](/ideas/2025/dl-p4/): VAE/GAN/diffusion comparison by objective and failure mode.
+- [Project 5](/ideas/2025/dl-p5/): interpretability-oriented representation comparison and evidence calibration.
 
-The grading breakdown from the Spring 2022 semester was as follows:
+<Figure
+  src={retroFig2}
+  alt="Project progression timeline"
+  caption="Inception-style multi-branch design reflects the course theme that representation quality improves when multiple scales are modeled explicitly. Source: Lowyx GT DL Notes (CC BY 4.0), https://lowyx.com/posts/gt-dl-notes/."
+  width={920}
+/>
 
-| Component      | Weight |
-|----------------|--------|
-| Assignments (4)| 55%    |
-| Quizzes (6)    | 20%    |
-| Final Project  | 20%    |
-| Participation  | 5%     |
+### The Through-Line Across Modules
+
+Looking back, the through-line was not “learn five unrelated model families.” It was “learn one methodology that works across model families.” That methodology has four components:
+
+1. Start with a controlled baseline.
+2. Add one meaningful change at a time.
+3. Evaluate with layered signals (trajectory, endpoint, reliability, qualitative checks).
+4. Report conclusions with explicit uncertainty.
+
+This methodology is what made the later, more complex projects manageable.
+
+### Model Family Comparison Mindset
+
+By the end of the course, I found it useful to compare model families along shared axes instead of competing narratives:
+
+- Optimization stability.
+- Data efficiency.
+- Inference cost.
+- Calibration/reliability behavior.
+- Failure observability.
+
+I now frame selection as an explicit utility tradeoff:
+
+$$
+U(\text{model}) = w_q Q - w_c C - w_r R
+$$
+
+where `Q` is task quality, `C` compute/latency cost, and `R` operational risk from instability or miscalibration. Different projects set different weights, which is why there is no globally best model family.
+
+<Figure
+  src={retroFig3}
+  alt="Model family comparison matrix"
+  caption="Generative-family landscape (latent, adversarial, diffusion) reinforces objective-dependent tradeoffs in quality, diversity, and compute. Source: Lowyx GT DL Notes (CC BY 4.0), https://lowyx.com/posts/gt-dl-notes/."
+  width={920}
+/>
+
+This matrix mindset reduced architecture tribalism and improved selection decisions.
+
+### What Project Order Taught Me
+
+The project order was more pedagogically effective than I expected. Starting with first-principles optimization and moving toward interpretability created a cumulative skill stack. By the time the final project arrived, I had enough tooling discipline to run evidence-based analysis rather than purely exploratory workflows.
+
+If the order were reversed, I likely would have over-indexed on advanced modeling ideas without enough measurement rigor. The progression from fundamentals to research-oriented analysis made the course feel less like five disconnected topics and more like one expanding systems methodology.
+
+## My Experience
+
+### What Improved Most
+
+The biggest improvement was not implementation speed. It was technical judgment. I became better at:
+
+- Distinguishing signal from optimization noise.
+- Designing comparisons that survive replication.
+- Diagnosing failure modes using trajectory and structure.
+- Writing conclusions that separate evidence from speculation.
+
+That judgment is what I value most from graduate-level project courses.
+
+### What Still Feels Open
+
+There is still a large gap between practical interpretability workflows and strong causal understanding of model internals. The final project made that clear. Interpretability tools are useful, but confidence calibration remains essential.
+
+I also want to keep improving in deployment-aware model design: translating architecture and objective choices into reliable systems with real latency, cost, and safety constraints.
+
+### Why This Course Fits the Broader Arc
+
+Relative to GIOS and GPU coursework, this class added the model-level layer that sits above systems and hardware. GIOS helped with concurrency and abstraction boundaries. GPU coursework helped with throughput and hardware-aware optimization. Deep Learning connected those perspectives to modern model behavior and evaluation.
+
+Taken together, the three courses form a useful stack:
+
+- Systems correctness and interface discipline.
+- Hardware-aware performance reasoning.
+- Model optimization and evidence-based evaluation.
+
+That stack is increasingly necessary for credible ML systems work.
+
+### Operating Principles I Am Taking Forward
+
+The strongest outcome of this course is a set of operating principles I can reuse beyond a specific class context. The first principle is **declare constraints before choosing architecture**. Model-family selection should start with task requirements, latency envelope, reliability requirements, and evaluation policy. This is easier said than done because architecture discussions are often trend-driven. Declared constraints force those discussions to become engineering decisions.
+
+The second principle is **separate exploratory and confirmatory workflows**. Exploration should be broad and cheap, designed to map the search space quickly. Confirmation should be narrow and repetitive, designed to validate claims under controlled conditions. Mixing these modes causes confusion because exploratory flexibility and confirmatory confidence pull in opposite directions.
+
+The third principle is **treat evaluation as a layered system**. A single metric is never the full story. Good evaluation includes objective trajectory, endpoint performance, uncertainty and reliability signals, and targeted qualitative analysis. In practice, each layer catches different classes of failure. Layered evaluation is more work, but it is also the difference between plausible numbers and robust conclusions.
+
+The fourth principle is **write scope into every claim**. Scope includes dataset regime, model family, inference policy, and compute context. Scoped claims are easier to maintain when new experiments arrive because they can be revised without rewriting the entire narrative. Unscoped claims often age poorly.
+
+The fifth principle is **preserve evidence trails**. This means config provenance, preprocessing definitions, seed protocols, and checkpoint criteria. Evidence trails matter most when results are surprising or contested. They convert disagreement from opinion to testable protocol changes.
+
+The sixth principle is **prioritize failure taxonomy over leaderboard chasing**. A failure taxonomy describes what breaks, where it breaks, and under what conditions it breaks. It converts model development into targeted diagnosis instead of generalized tuning. Across this course, the most productive iterations came from named failure classes, not from broad performance optimism.
+
+The final principle is **report uncertainty as a technical output**. Uncertainty is not an apology. It is a form of precision about evidence boundaries. This principle became especially important in the final interpretability work, but it improved every module once applied consistently.
+
+### Final Takeaway
+
+The most durable lesson from this course is straightforward: deep learning progress is not just architecture progress. It is experimental rigor, optimization discipline, and honest uncertainty management. If those are weak, headline numbers are fragile. If those are strong, even modest models can teach you a lot.
+
+That sentence is the shortest summary I can give of the class: rigorous method beats accidental wins, and rigorous method compounds.
+When I compare this course with earlier systems and GPU coursework, that compounding effect is what stands out most.
+It changed not only what I know about models, but how I structure technical inquiry when the stakes are uncertainty, scale, and real-world constraints.
+That shift in method is the part I expect to keep long after course content details fade.
+It is the lasting value of the course for me.
+That, more than any single metric result, is what I wanted from the experience.
+It delivered.
+Fully.
+
+### Where I Would Go Next
+
+The next area I want to push is integration between interpretability and deployment reliability. I now have a better workflow for generating and stress-testing representation hypotheses, but I want to connect that work more tightly to production-facing decision systems. Concretely, that means developing faster loops for: identifying failure slices, validating whether representational diagnostics predict those failures, and feeding that signal back into model selection or data strategy.
+
+I also want to improve compute-aware model planning earlier in project lifecycles. The generative module made clear that compute constraints should be a design input, not an implementation constraint discovered late. A better planning template would pair target quality with explicit latency and cost budgets from day one.
+
+Finally, I want to keep improving in uncertainty communication. One of the strongest habits from this course was writing conclusions with scope and caveats. I plan to carry that into future projects by standardizing claim tiers, reporting validation depth, and documenting where evidence is exploratory versus robust. That style may look conservative, but it scales better when systems become larger and decisions carry higher stakes.
+
+Another next step is to integrate these practices into a reusable project template: declared constraints, baseline contract, evaluation stack, robustness protocol, and confidence-reporting format. Having that template in place before a project starts reduces drift, keeps scope manageable, and improves comparability across efforts. It also makes collaboration easier because everyone can see where evidence is strong, where it is provisional, and what tests are still missing.
+
+I also want to extend this template with an explicit “stop doing” list: anti-patterns that repeatedly wasted time during the course, such as mixed-factor ablations, endpoint-only reporting, and unscoped claims. Capturing those anti-patterns alongside best practices should make future projects faster to bootstrap and harder to derail.
+
+## References
+
+- [GT Deep Learning Overview (Lowyx)](https://lowyx.com/posts/gt-dl/)
+- [GT Deep Learning Notes (Lowyx)](https://lowyx.com/posts/gt-dl-notes/)
+- [Justin Johnson U-Mich Deep Learning Lectures](https://web.eecs.umich.edu/~justincj/teaching/eecs498/WI2022/)
+- [Deep Learning Book](https://www.deeplearningbook.org/)
+- [CS231n Notes](https://cs231n.github.io/)
+- [Attention Is All You Need](https://arxiv.org/abs/1706.03762)
+- [Auto-Encoding Variational Bayes](https://arxiv.org/abs/1312.6114)
+- [Generative Adversarial Nets](https://arxiv.org/abs/1406.2661)
+- [Denoising Diffusion Probabilistic Models](https://arxiv.org/abs/2006.11239)
+- [Open Problems in Mechanistic Interpretability](https://arxiv.org/abs/2307.02591)
 
 ### Books
 
@@ -235,18 +409,3 @@ These are some of the key texts that are highly relevant to the course material.
   </p>
 </BookCard>
 
-### Other Resources
-
-Here are some of the excellent resources from other students that I found helpful:
-
-- [yxlow's Course Review](https://lowyx.com/posts/gt-dl/)
-- [yxlow's Course Notes](https://lowyx.com/posts/gt-dl-notes/)
-- [Monzer Saleh's Course Notes](https://monzersaleh.github.io/GeorgiaTech/CS7643_DeepLearning.html)
-
-## My Experience
-
-{/* TODO: Add personal experience here. */}
-
-Thanks for reading!
-
-## References

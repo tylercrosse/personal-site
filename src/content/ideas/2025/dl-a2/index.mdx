@@ -1,11 +1,11 @@
 ---
-title: 'DL A2 — Practical CNNs and Imbalanced Data'
-description: 'From NumPy convolutions to PyTorch ResNets and class-balanced focal loss on CIFAR-10.'
-date: '2025-02-17'
-updated: '2025-10-20'
+title: 'ConvNets and PyTorch Training Pipelines: From Baselines to Better Generalization'
+description: 'A technical deep dive into convolutional representations, experiment design, and practical model selection tradeoffs in vision systems.'
+date: '2026-02-27'
+updated: '2026-02-27'
 status: 'in-progress'
 type: 'project'
-tags: ['deep-learning', 'pyTorch', 'computer-vision', 'MSCS']
+tags: ['deep-learning', 'pyTorch', 'computer-vision', 'MSCS', 'Deep Learning', 'CS7643', 'CNN', 'PyTorch', 'training-pipeline', 'regularization']
 category: ['projects']
 draft: true
 audience: 'All'
@@ -19,6 +19,15 @@ image:
   # maxWidth: "600px"
 hideCaption: true
 ---
+
+import BookCard from "../../../../components/BookCard.astro";
+import Figure from "../../../../components/Figure.astro";
+
+import p2Fig1 from "../figures/lowyx/dl-p2-fig-01-2d-convolution.png";
+import p2Fig2 from "../figures/lowyx/dl-p2-fig-02-receptive-fields.png";
+import p2Fig3 from "../figures/lowyx/dl-p2-fig-03-augmentation-flipping.png";
+import p2Fig4 from "../figures/lowyx/dl-p2-fig-04-train-valid-loss.png";
+import p2Fig5 from "../figures/lowyx/dl-p2-fig-05-calibration.png";
 
 ## TL;DR
 Assignment 2 transitions the course from NumPy-only pedagogy to PyTorch-first workflows. Part I required hand-coding convolution and max-pooling layers plus a vanilla CNN in NumPy, reinforcing the tensor algebra behind `im2col`. Part II moved to PyTorch for CIFAR-10, where I trained baseline models (two-layer MLP + canonical CNN), designed a custom network, and experimented with class-balanced focal loss on an imbalanced split using ResNet-32.
@@ -39,3 +48,296 @@ where $p_t$ is the predicted probability assigned to the ground-truth class. Swe
 
 ## Artifact
 - [Full write-up (PDF)](../dl-retro/DL_A2.pdf)
+
+## Introduction: Moving from Derivation to Throughput
+
+The second project changes the optimization problem from “can I implement and reason about gradients?” to “can I run trustworthy experiments at framework speed?” That transition sounds straightforward, but it introduces a new class of failures. At first-principles scale, your main risks are math bugs and unstable updates. At framework scale, your main risks are confounders: silent preprocessing mismatches, unfair baseline comparisons, accidental budget differences, and noisy run-to-run variance that looks like progress.
+
+This post takes the same position as my other technical write-ups: concept-first depth, explicit design tradeoffs, and strict integrity boundaries. I do not include assignment-specific implementation details.
+
+> [!note]
+> Faster iteration only helps if the experimental protocol is stable enough that improvements are real.
+
+## Core Concepts
+
+### Notation and Intuition Snapshot
+
+For this post, let $X \in \mathbb{R}^{H \times W \times C}$ be the image tensor, $K$ the kernel size, $S$ stride, $P$ padding, and $\theta$ all trainable parameters. I use this notation to keep derivations compact and comparable across architecture variants.
+
+### Why Convolutions Still Matter in the Foundation Stage
+
+Convolutions embed strong inductive bias for image data: local interactions, translational consistency, and compositional hierarchy. A convolutional layer with shared kernels is effectively a prior that says “the same edge or texture detector can appear anywhere in the image.” That prior dramatically reduces sample complexity compared with fully connected alternatives.
+
+The operational consequence is that representation quality scales by depth and receptive field growth. Early layers extract local patterns; deeper layers integrate context and object structure.
+
+For a square kernel, the output spatial dimensions are:
+
+$$
+H_{\text{out}} = \left\lfloor \frac{H + 2P - K}{S} \right\rfloor + 1, \qquad
+W_{\text{out}} = \left\lfloor \frac{W + 2P - K}{S} \right\rfloor + 1
+$$
+
+This equation is operationally important: many failed ablations are actually shape-policy errors, not modeling errors.
+
+<Figure
+  src={p2Fig1}
+  alt="CNN pipeline"
+  caption="Convolution maps local neighborhoods into shared feature responses; stride and padding determine information retention and compute. Source: Lowyx GT DL Notes (CC BY 4.0), https://lowyx.com/posts/gt-dl-notes/."
+  width={900}
+/>
+
+### Receptive Field Growth and Semantic Abstraction
+
+Receptive field describes how much of the input can influence a unit. With stacked convolutions, pooling, or striding, receptive field expands as depth increases. That expansion is why deeper blocks transition from edge detectors to shape and object-part representations.
+
+One useful recurrence for layer `\ell` is:
+
+$$
+j_{\ell} = j_{\ell-1}s_{\ell}, \qquad
+r_{\ell} = r_{\ell-1} + (k_{\ell}-1)j_{\ell-1}, \qquad j_0=r_0=1
+$$
+
+where $j_\ell$ is effective jump and $r_\ell$ is receptive field. The derivation follows directly from composing stride-scaled neighborhoods layer by layer.
+
+<Figure
+  src={p2Fig2}
+  alt="Receptive field growth"
+  caption="Receptive field expansion with depth explains the transition from local texture features to larger semantic structures. Source: Lowyx GT DL Notes (CC BY 4.0), https://lowyx.com/posts/gt-dl-notes/."
+  width={900}
+/>
+
+A useful mental model is that each stage trades precision for context. If downsampling is too aggressive, fine detail disappears. If it is too conservative, compute rises and context integration stalls.
+
+### Optimization in a Framework-First Workflow
+
+Framework tooling removes gradient bookkeeping, but it does not remove optimization complexity. In fact, it can hide instability because high-level APIs make it easy to launch many runs without understanding why they differ.
+
+In practice, the most important optimization controls are:
+
+- Initialization and normalization compatibility.
+- Learning-rate schedule shape.
+- Weight decay policy and regularization interaction.
+- Batch-size effects on gradient noise.
+
+Batch normalization changes optimization geometry by re-centering and re-scaling activations:
+
+$$
+\hat{x} = \frac{x - \mu_B}{\sqrt{\sigma_B^2 + \epsilon}}, \qquad y = \gamma \hat{x} + \beta
+$$
+
+An important equation-level reminder is that SGD with momentum implicitly accumulates historical gradients:
+
+$$
+v_t = \beta v_{t-1} + (1-\beta) g_t, \qquad \theta_{t+1} = \theta_t - \eta v_t
+$$
+
+So changing `\eta`, `\beta`, or batch size alters both immediate and accumulated dynamics.
+
+With decoupled weight decay, update dynamics become:
+
+$$
+\theta_{t+1} = \theta_t - \eta \frac{\hat m_t}{\sqrt{\hat v_t}+\epsilon} - \eta\lambda\theta_t
+$$
+
+The key intuition is that the shrinkage term is explicit and independent of gradient direction, which usually makes regularization behavior easier to tune.
+
+### Data Augmentation as an Invariance Contract
+
+Augmentation is often treated as a bag of tricks. A better framing is: augmentation defines the invariances your model is encouraged to learn.
+
+If you add random crops, flips, and color shifts, you are telling the learner that label semantics should remain stable under those transforms. This can improve generalization, but only when the transformations are label-preserving for the task.
+
+<Figure
+  src={p2Fig3}
+  alt="Augmentation taxonomy"
+  caption="Simple geometric transforms enforce invariance assumptions and can improve out-of-slice generalization when they preserve labels. Source: Lowyx GT DL Notes (CC BY 4.0), https://lowyx.com/posts/gt-dl-notes/."
+  width={900}
+/>
+
+Poorly chosen augmentations can create optimization noise or force the model to solve irrelevant invariance constraints.
+
+### Calibration and Reliability Beyond Accuracy
+
+Top-1 accuracy is often insensitive to confidence quality. For deployment-oriented workflows, you need calibration-aware analysis: does the model assign confidence that matches empirical correctness frequency?
+
+Expected calibration error (ECE) captures this mismatch:
+
+$$
+\mathrm{ECE} = \sum_{m=1}^{M}\frac{|B_m|}{n}\left|\mathrm{acc}(B_m)-\mathrm{conf}(B_m)\right|
+$$
+
+<Figure
+  src={p2Fig5}
+  alt="Calibration and error decomposition"
+  caption="Calibration plots reveal confidence mismatch that top-1 metrics hide. Source: Lowyx GT DL Notes (CC BY 4.0), https://lowyx.com/posts/gt-dl-notes/."
+  width={900}
+/>
+
+This matters in thresholded systems, cascaded models, and human-in-the-loop interfaces where confidence drives action.
+
+## System/Model Design (abstracted, non-solution-specific)
+
+### Experimental Control Plane
+
+A practical way to scale experiments is to separate the control plane from the model plane.
+
+- **Model plane**: architecture variants, objectives, and regularization.
+- **Control plane**: configs, seed management, logging schema, and evaluation protocol.
+
+If these are entangled, your pipeline becomes difficult to audit. If they are separated, experiment management becomes composable.
+
+### Generic Experiment Runner
+
+A framework-agnostic runner can be represented as:
+
+```text
+load config
+set deterministic controls where feasible
+build data loaders with declared transforms
+instantiate model, optimizer, scheduler, and objective
+for each epoch:
+  train over batches with metric logging
+  evaluate on validation split
+  checkpoint best model under fixed criterion
+summarize run artifacts and comparison metadata
+```
+
+This pattern is simple but powerful. It turns each run into a record you can compare rather than a one-off result screenshot.
+
+### Ablation Strategy and Fairness Constraints
+
+Ablation quality depends on fairness constraints:
+
+- Same training budget across compared models.
+- Same data split and preprocessing path.
+- Same seed set when feasible.
+- Same early-stopping and checkpoint criteria.
+
+Without those constraints, “model A beats model B” is often untestable.
+
+## Experiments and Results (sanitized)
+
+### Curve Archetypes That Recur in Practice
+
+When plotting training and validation trajectories, several archetypes appear repeatedly:
+
+- Healthy convergence with narrowing train/validation gap.
+- Rapid train improvements with widening validation gap (overfitting).
+- Slow, flat curves from conservative LR or excessive regularization.
+- High-variance oscillation from mismatched schedule and batch regime.
+
+<Figure
+  src={p2Fig4}
+  alt="Optimization archetypes"
+  caption="Train-vs-validation trajectories are high-signal diagnostics for underfitting, overfitting, and schedule mismatch. Source: Lowyx GT DL Notes (CC BY 4.0), https://lowyx.com/posts/gt-dl-notes/."
+  width={900}
+/>
+
+The practical takeaway is that curves are not reporting artifacts. They are causal evidence for what to tune next.
+
+### Architecture Effects vs Training-Policy Effects
+
+One of the most useful findings in this stage is that architectural gains are often second-order relative to training-policy quality. Small schedule or regularization changes can move validation behavior more than substantial architecture modifications.
+
+This does not mean architecture is unimportant. It means architecture decisions should be evaluated in a tuned optimization context. Otherwise, you are comparing undertrained or mistuned instances instead of model families.
+
+### Reliability of Claimed Gains
+
+A disciplined comparison should ask:
+
+- Is the gain consistent across seeds?
+- Does it survive minor hyperparameter perturbations?
+- Does it hold under a fixed training budget?
+- Does confidence behavior improve along with raw accuracy?
+
+Only gains that pass this robustness filter should influence model selection.
+
+## Design Questions This Raised
+
+1. **How much complexity should be introduced in each experimental iteration?**  
+The default should be one meaningful change per iteration. This is less about caution and more about interpretability. If architecture, scheduler, augmentation, and objective all change together, regression diagnosis becomes expensive and often inconclusive. A disciplined cadence is: lock a baseline, introduce one controlled change, run a bounded sweep around that change, then decide whether to keep it. This strategy looks slower in the short term, but it improves cumulative learning speed because each run produces interpretable information rather than ambiguous outcomes.
+
+2. **When is a new model variant worth keeping in the model pool?**  
+A variant should survive three filters before it is considered a durable improvement: reproducibility filter, robustness filter, and operations filter. Reproducibility asks whether gains persist across seeds. Robustness asks whether gains survive modest hyperparameter perturbation. Operations asks whether the variant preserves acceptable training stability, inference cost, and monitoring clarity. Many variants pass one filter and fail the others. Keeping only variants that pass all three avoids accumulating fragile technical debt in the experiment stack.
+
+3. **Should calibration affect model choice in a course project context?**  
+Yes, because calibration is a proxy for decision reliability under uncertainty. Even when graded metrics prioritize accuracy, calibration quality can expose whether a model is making brittle overconfident errors. In realistic systems, those errors are expensive. A model with slightly lower top-1 but meaningfully better confidence behavior can be operationally preferable. Bringing calibration into selection criteria early builds better habits for deployment contexts where confidence governs downstream actions.
+
+4. **What is the real bottleneck once framework throughput is high?**  
+The bottleneck becomes epistemic, not computational: can you trust your conclusions? Framework speed makes it easy to generate many results quickly, but result volume is not evidence quality. The hard part is preserving fair comparison contracts, documenting exact run conditions, and preventing accidental confounders. High-throughput experimentation without strict controls produces dashboards full of numbers and very little reliable knowledge.
+
+<details>
+  <summary>Extended reflection: practical experiment governance patterns</summary>
+  The most transferable pattern from this stage was treating experiments like change-managed releases. Every run should have a declared purpose, declared success criterion, and declared rollback condition. If a run does not answer a specific question, it should not consume budget. Another useful pattern was budget normalization: compare model families under roughly equivalent compute or wall-clock envelopes before drawing broad claims. I also found it valuable to separate exploratory runs from confirmatory runs. Exploratory runs are wide and cheap, intended to discover promising regions. Confirmatory runs are narrow, repeated, and logged with stricter controls to validate claims. Finally, experiment summaries should include both wins and non-wins. Recording negative findings (for example, architecture changes that looked promising but failed robustness checks) prevents repeated dead ends and improves team memory if the work scales beyond one contributor.
+</details>
+
+<details>
+  <summary>Deep dive appendix: diagnosing vision model behavior without touching private assignment code</summary>
+  One recurring challenge in vision projects is that many different root causes produce similar headline symptoms. For example, a flat validation curve can come from underpowered architecture, over-aggressive regularization, poor augmentation policy, label noise, or simply a scheduler that decays too early. Distinguishing among those requires layered diagnostics. I found it useful to group diagnostics into three levels. Level one is optimization health: loss smoothness, gradient norms, and train-curve slope after warmup. Level two is representation behavior: whether feature-space separation improves over epochs, and whether confusion patterns become semantically coherent. Level three is decision reliability: calibration trend and confidence behavior on near-boundary cases. This hierarchy reduces random tuning because each level constrains likely causes before changes are made.
+
+  Another useful pattern is to track what I call trajectory signatures. A healthy signature includes monotonic or near-monotonic validation improvement early, then gradual saturation with stable train-validation gap. An overfit signature shows rapid train gains and widening generalization gap. A schedule-mismatch signature often shows abrupt stalls aligned with LR transitions. A data-policy signature appears when certain classes improve while semantically similar classes degrade, indicating augmentation or preprocessing mismatch. Writing these signatures down made comparisons faster and more objective.
+
+  I also learned to treat augmentation policy as model architecture by other means. If augmentation defines invariances, then poor augmentation introduces structural mismatch between training objective and deployment distribution. For instance, strong geometric transforms can help if target semantics are geometry-invariant, but the same transforms can be harmful when orientation encodes class signal. The policy must match task semantics, not generic best practice. In practice, this means starting with conservative transformations, validating class-wise impacts, and only then expanding policy breadth.
+
+  On the evaluation side, I found confusion-matrix evolution more informative than static confusion matrices. A single matrix at the end of training does not show whether class confusions are persistent or transient. Tracking confusion evolution reveals whether the model is learning a stable hierarchy or oscillating across error modes. If confusion relationships are unstable, optimization or data policy may still be the dominant bottleneck. If confusion relationships are stable but incorrect, architecture or representation capacity may be the next lever.
+
+  Finally, I became more explicit about claim language. Instead of writing “model X is better,” I now prefer “under matched compute and fixed policy constraints, model X produced a reproducible gain with comparable reliability.” That wording feels more technical because it is scoped and falsifiable. It also scales better when future reruns on new data slices or seeds revise the conclusion. This is the larger lesson from this project phase: good model development is not just producing higher numbers; it is building a measurement process where numbers mean what we think they mean.
+</details>
+
+<details>
+  <summary>Extended note: choosing between model-centric and data-centric iteration</summary>
+  An additional lesson from this stage was that data-centric iteration often outperformed model-centric iteration when baseline architecture quality was already reasonable. Small improvements in preprocessing consistency, class-balance handling, and augmentation realism frequently produced more stable gains than switching to a more complex model family. This does not make architecture irrelevant. It means architecture gains compound best when data pipeline quality is already high.
+
+  I also found it useful to formalize a decision rule: if multiple architecture variants have overlapping confidence intervals under controlled reruns, prioritize data and training-policy improvements first. If one architecture consistently separates across seeds and slices, then deeper architecture-specific optimization is justified. This rule prevented wasted cycles on low-signal architecture debates and improved the cadence of meaningful progress.
+</details>
+
+## Conclusion
+
+Project 2 converted model training from an implementation exercise into a methodology exercise. The most important shift was moving from “did this run improve?” to “is this improvement defensible under controlled comparison?”
+
+Durable lessons from this phase:
+
+- Treat experiment design as part of the model.
+- Keep baselines strong and reproducible.
+- Use calibration and trajectory diagnostics alongside endpoint metrics.
+- Optimize workflow clarity before scaling model complexity.
+
+In short, this stage made “experimental governance” feel as important as model architecture in practical vision work.
+That perspective changed how I prioritize work every time a new experiment branch is proposed.
+
+### Practical Checklist I Would Reuse in a New Vision Pipeline
+
+The operational checklist I would reuse is straightforward: lock preprocessing and augmentation contracts before tuning, establish one strong baseline with repeatable seeds, run narrow controlled ablations instead of broad mixed changes, and require each claimed gain to survive both trajectory inspection and uncertainty-aware comparison. I would also include calibration checks by default because confidence quality tends to degrade silently during aggressive tuning. This checklist is the bridge between quick experimentation and trustworthy results. Without it, framework speed can produce many candidate models but very little reliable knowledge.
+
+One more lesson worth emphasizing is that vision-model iteration benefits from explicit rollback criteria. If a candidate change improves one metric but degrades calibration, slice consistency, or convergence stability, the default should be to roll back and investigate rather than accept a mixed result. This discipline slows down short-term iteration but improves long-term model quality and team confidence in the experiment process.
+
+## Additional Resources
+
+- [CS231n: Convolutional Networks](https://cs231n.github.io/convolutional-networks/)
+- [PyTorch Tutorials](https://pytorch.org/tutorials/)
+- [Batch Normalization](https://arxiv.org/abs/1502.03167)
+- [Deep Residual Learning (ResNet)](https://arxiv.org/abs/1512.03385)
+- [GT Deep Learning Summary (Lowyx)](https://lowyx.com/posts/gt-dl/)
+
+<BookCard
+  title="Deep Learning for Vision Systems"
+  author="Mohamed Elgendy"
+  url="https://www.manning.com/books/deep-learning-for-vision-systems"
+>
+  <p>
+    A practical treatment of vision pipeline design, including data curation, model selection, and evaluation strategy for applied settings.
+  </p>
+</BookCard>
+
+<BookCard
+  title="PyTorch Documentation"
+  author="PyTorch Team"
+  url="https://pytorch.org/docs/stable/index.html"
+>
+  <p>
+    The primary reference for reliable framework usage. The optimization and data pipeline docs are especially important for reproducible experiments.
+  </p>
+</BookCard>
+
+> [!info] A Note on Code Availability
+> In accordance with Georgia Tech academic integrity policy and course material licensing, I do not publish assignment code, assignment-specific implementation details, or private project files. This post focuses on transferable concepts, non-sensitive experiments, and high-level technical reasoning.

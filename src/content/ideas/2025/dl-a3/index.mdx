@@ -1,11 +1,11 @@
 ---
-title: 'DL A3 — Sequence Models, Attention, and Translation'
-description: 'Implementing LSTMs, Seq2Seq with attention, and Transformers for German→English translation.'
-date: '2025-03-14'
-updated: '2025-10-20'
+title: 'Machine Translation Systems: From Seq2Seq to Attention and Transformers'
+description: 'A technical deep dive into sequence modeling design, decoding policy, and evaluation discipline for neural machine translation systems.'
+date: '2026-02-27'
+updated: '2026-02-27'
 status: 'in-progress'
 type: 'project'
-tags: ['deep-learning', 'pyTorch', 'NLP', 'MSCS']
+tags: ['deep-learning', 'pyTorch', 'NLP', 'MSCS', 'Deep Learning', 'CS7643', 'machine-translation', 'seq2seq', 'attention', 'transformers']
 category: ['projects']
 draft: true
 audience: 'All'
@@ -19,6 +19,15 @@ image:
   # maxWidth: "600px"
 hideCaption: true
 ---
+
+import BookCard from "../../../../components/BookCard.astro";
+import Figure from "../../../../components/Figure.astro";
+
+import p3Fig1 from "../figures/lowyx/dl-p3-fig-01-rnn-chained.png";
+import p3Fig2 from "../figures/lowyx/dl-p3-fig-02-self-attention.png";
+import p3Fig3 from "../figures/lowyx/dl-p3-fig-03-multi-head-attention.png";
+import p3Fig4 from "../figures/lowyx/dl-p3-fig-04-beam-search.png";
+import p3Fig5 from "../figures/lowyx/dl-p3-fig-05-alignment.png";
 
 ## TL;DR
 Assignment 3 compressed the semester’s sequential modeling content into one deliverable: theory work on RNN backprop, LSTM implementations from scratch, a Seq2Seq translator with cosine-similarity attention, and both lightweight and full Transformers. The tasks culminated in benchmarking German→English translation quality (perplexity + BLEU) before and after hyperparameter tuning.
@@ -39,3 +48,292 @@ where $q_t$ is the decoder query, $k_s$ encoder keys, and $v_s$ encoder values. 
 
 ## Artifact
 - [Full write-up (PDF)](../dl-retro/DL_A3.pdf)
+
+## Introduction: Learning to Model Sequences Without Losing Long-Range Context
+
+Sequence modeling for translation is where many intuitive assumptions from image classification stop working. In vision, a single forward pass often maps one input to one label. In translation, outputs are variable-length, autoregressive, and sensitive to both local word choice and long-range structure. The model is no longer choosing one class; it is generating a trajectory of conditional decisions.
+
+That shift introduces three practical concerns: representation bottlenecks, decoding policy effects, and evaluation ambiguity. This post is a concept-first retrospective on those concerns and how they changed my understanding of modern NLP systems.
+
+> [!note]
+> This write-up is intentionally integrity-safe: no assignment-specific code, no private files, and no graded-solution mechanics.
+
+## Core Concepts
+
+### Notation and Intuition Snapshot
+
+Let $x=(x_1,\dots,x_n)$ be source tokens, $y=(y_1,\dots,y_T)$ target tokens, and $\theta$ model parameters. I keep this notation fixed so architecture and decoding comparisons stay explicit.
+
+### Seq2Seq Framing and the Bottleneck Problem
+
+A classic sequence-to-sequence formulation encodes a source sentence into hidden states and then decodes target tokens one at a time. In early formulations, the decoder relies heavily on a compressed context representation, which creates a bottleneck for long inputs with rich structure.
+
+The sequence model factorization is:
+
+$$
+p_{\theta}(y \mid x)=\prod_{t=1}^{T}p_{\theta}(y_t \mid y_{<t},x)
+$$
+
+and teacher-forced training minimizes:
+
+$$
+\mathcal{L}_{\text{NLL}}(\theta)=-\sum_{t=1}^{T}\log p_{\theta}(y_t^\star \mid y_{<t}^\star,x)
+$$
+
+<Figure
+  src={p3Fig1}
+  alt="Seq2seq bottleneck"
+  caption="Chained recurrence highlights why fixed-size context bottlenecks degrade long-sequence translation quality. Source: Lowyx GT DL Notes (CC BY 4.0), https://lowyx.com/posts/gt-dl-notes/."
+  width={900}
+/>
+
+The bottleneck view is useful because it predicts specific failure types:
+
+- Dropped content for long source sentences.
+- Repetition in generated output.
+- Weak alignment between source and generated phrases.
+
+### Attention as Dynamic Information Routing
+
+Attention changed the seq2seq landscape by letting each decode step access source-side representations directly. Instead of relying on one static vector, the model computes dynamic relevance weights over encoder states.
+
+Scaled dot-product attention can be written as:
+
+$$
+\mathrm{Attention}(Q, K, V) = \mathrm{softmax}\left(\frac{QK^T}{\sqrt{d_k}}\right)V
+$$
+
+$QK^T$ scores relevance, scaling by $\sqrt{d_k}$ stabilizes magnitude, and softmax creates a distribution over source positions.
+
+<Figure
+  src={p3Fig2}
+  alt="Attention alignment"
+  caption="Self-attention turns alignment into differentiable retrieval over token states at each step. Source: Lowyx GT DL Notes (CC BY 4.0), https://lowyx.com/posts/gt-dl-notes/."
+  width={900}
+/>
+
+This mechanism improves long-range behavior, but it also adds optimization and interpretability complexity.
+
+### Transformer Blocks and Parallel Sequence Processing
+
+Transformers replace recurrent time-step dependence with self-attention and feed-forward blocks, enabling substantial parallelism during training. A typical block includes:
+
+- Multi-head self-attention.
+- Residual connections.
+- Layer normalization.
+- Position-wise feed-forward projection.
+
+<Figure
+  src={p3Fig3}
+  alt="Transformer block components"
+  caption="Multi-head attention captures multiple relation types concurrently before residual and feed-forward mixing. Source: Lowyx GT DL Notes (CC BY 4.0), https://lowyx.com/posts/gt-dl-notes/."
+  width={900}
+/>
+
+Multi-head attention is particularly important because it allows the model to represent different relation types simultaneously rather than forcing all dependencies through one attention map.
+
+$$
+\mathrm{head}_i=\mathrm{Attention}(QW_i^Q,KW_i^K,VW_i^V), \qquad
+\mathrm{MHA}(Q,K,V)=\mathrm{Concat}(\mathrm{head}_1,\dots,\mathrm{head}_h)W^O
+$$
+
+Derivation intuition: one attention map is one similarity projection; multi-head attention splits representation space so distinct relation types can be modeled in parallel before fusion.
+
+### Positional Information Is Not Optional
+
+Self-attention alone is permutation-invariant. Sequence order has to be injected explicitly via positional encodings or learned position embeddings. Without that signal, token sets are treated as bags, and syntax-sensitive tasks degrade.
+
+This is one reason architectural diagrams can be misleading: they show attention as the star, but positional treatment often determines whether attention can form meaningful structural hypotheses.
+
+### Decoding Policy Can Change Observed Model Quality
+
+Training objective and decoding policy are separate components. A model trained with teacher forcing may still produce different behavior at inference depending on greedy decoding, beam search, or sampling strategy.
+
+<Figure
+  src={p3Fig4}
+  alt="Decoding strategy tradeoffs"
+  caption="Beam-search branching makes the quality-latency tradeoff explicit at inference time. Source: Lowyx GT DL Notes (CC BY 4.0), https://lowyx.com/posts/gt-dl-notes/."
+  width={900}
+/>
+
+A practical implication is that model comparisons should control decoding policy; otherwise, differences may reflect search behavior rather than learned representation quality.
+
+A common beam-search score is:
+
+$$
+s(y)=\frac{1}{|y|^\alpha}\sum_{t=1}^{|y|}\log p_{\theta}(y_t \mid y_{<t},x)
+$$
+
+Length normalization $\alpha$ acts like a prior against short-sequence bias in raw log-probability maximization.
+
+## System/Model Design (abstracted, non-solution-specific)
+
+### Data and Tokenization Policy
+
+Translation systems are highly sensitive to tokenization and normalization choices. Minor preprocessing differences can alter vocabulary statistics, sequence length distributions, and optimization difficulty.
+
+A robust setup defines preprocessing as a versioned artifact, not an implicit script side effect.
+
+### Generic Training Protocol
+
+A non-assignment-specific training flow can be described as:
+
+```text
+prepare bilingual corpus and tokenization artifacts
+build vocabulary or subword model
+construct train/validation splits
+initialize model family (seq2seq or transformer)
+for each epoch:
+  train with teacher-forced objective
+  monitor validation perplexity and sequence metrics
+  checkpoint according to fixed criterion
+evaluate with fixed decoding policy and error taxonomy
+```
+
+The key engineering point is that each stage should emit artifacts sufficient to reproduce claims.
+
+### Evaluation Stack: Metrics + Error Analysis
+
+Sequence quality metrics provide compression, not full understanding. A practical evaluation stack combines:
+
+- Token-level objective trend.
+- Sequence-level automatic metric.
+- Targeted qualitative error categories.
+
+This layered approach prevents metric-only blind spots.
+
+## Experiments and Results (sanitized)
+
+### Directional Results Across Model Families
+
+The most stable pattern from this project phase was that attention-enabled models improved handling of longer and structurally complex examples compared with bottlenecked recurrent baselines. Transformer-style variants improved training throughput and often improved quality under matched optimization conditions.
+
+These gains were not automatic. They depended strongly on schedule tuning, regularization, and decoding policy control.
+
+### Error Taxonomy Was More Actionable Than a Single Score
+
+A single aggregate score hid many distinct failure classes. Grouping errors into categories produced better engineering decisions:
+
+- Lexical substitution errors.
+- Word-order and reordering errors.
+- Agreement/consistency errors.
+- Coverage omissions and hallucinated additions.
+
+<Figure
+  src={p3Fig5}
+  alt="Translation error taxonomy"
+  caption="Alignment visualizations make omission and reordering errors more diagnosable than scalar scores alone. Source: Lowyx GT DL Notes (CC BY 4.0), https://lowyx.com/posts/gt-dl-notes/."
+  width={900}
+/>
+
+When metric changes and error-category changes disagreed, the category-level signal was often more informative for deciding what to tune.
+
+### Hyperparameter Sensitivity and Stability
+
+Sequence models are sensitive to interacting knobs:
+
+- Learning-rate schedule and warmup.
+- Dropout or other regularization controls.
+- Batch composition and length distribution.
+- Decoder policy at evaluation time.
+
+The strongest methodological lesson was to avoid broad claims from single successful runs. Controlled repeats matter.
+
+## Design Questions This Raised
+
+1. **When is recurrent modeling still worth analyzing in a transformer era?**  
+Recurrent baselines are still valuable whenever the goal is controlled understanding of compression and temporal dependency handling. They are simpler to reason about in some respects and can reveal whether a claimed gain is genuinely architectural or mostly due to training-policy or decoding differences. In educational settings, they also provide a concrete contrast that makes attention mechanisms more understandable. Treating recurrent models as obsolete can hide useful intuition about memory bottlenecks, exposure bias, and sequential error accumulation.
+
+2. **How should decoding cost be treated in system-level comparisons?**  
+Decoding policy should be included in the model contract, not treated as an afterthought. Reporting translation quality without latency and search budget context can mislead readers into attributing gains to representation quality when they may come from more expensive inference. A fair report pairs quality with operational cost and makes search policy explicit. This improves decision quality in real systems where throughput constraints often dominate architecture preferences.
+
+3. **How much trust should be placed in a single translation score?**  
+A single score should be treated as a coarse indicator, not a verdict. Sequence metrics are useful for broad comparison, but they compress heterogeneous error types into one value. Two models with similar aggregate scores can differ substantially in fluency, faithfulness, reordering quality, or rare-token behavior. The practical fix is to combine scalar metrics with category-based qualitative audits and targeted slice evaluations.
+
+4. **What is the most common evaluation error in sequence modeling projects?**  
+The most common error is attribution mismatch: improvements from decoding strategy are reported as improvements from model learning. Another common issue is evaluating on overly narrow length or domain slices and then generalizing claims to broader settings. The antidote is explicit evaluation contracts: fixed decoding policy for architecture comparison, declared dataset slices, and repeated runs with uncertainty-aware reporting.
+
+<details>
+  <summary>Extended reflection: translation diagnostics that changed my workflow</summary>
+  The diagnostic approach that helped most was to inspect failures by class rather than by random sample. Grouping errors into lexical choice, agreement, reordering, and coverage made it easier to map failures to likely interventions. For example, if errors concentrated in long-distance agreement, tuning decoding alone was unlikely to fix the core issue. If errors concentrated in repeated phrases, decoding and training objective alignment both needed attention. I also started tracking length-conditioned quality because many models perform well on short sequences and degrade sharply on long ones. Finally, I found it useful to evaluate confidence patterns indirectly through output stability under small perturbations in decoding settings. If minor policy changes caused major output drift, the underlying probability distribution likely lacked calibration in critical regions.
+</details>
+
+<details>
+  <summary>Deep dive appendix: practical reasoning patterns for sequence-model debugging</summary>
+  Sequence-model debugging became much easier once I stopped treating translation as one metric optimization problem and started treating it as conditional planning under uncertainty. At each decode step, the model chooses from a large token space with incomplete certainty about future constraints. This means local mistakes can compound quickly, especially in long outputs. To diagnose this, I used stepwise analysis: where does probability mass concentrate early, when does entropy spike, and at which positions do competing hypotheses diverge? Even without assignment-specific details, this style of analysis reveals whether failures come from weak source encoding, weak alignment, or brittle decoding policy.
+
+  A second practical pattern was separating representation failures from inference failures. Representation failures usually appear as consistent semantic or syntactic errors across multiple decoding strategies. Inference failures often appear when output quality changes dramatically under different search settings while model probabilities remain broadly sensible. This distinction matters because the fix paths are different. Representation failures require training or architecture interventions. Inference failures often require decode-policy tuning, length penalties, or constraint-aware search.
+
+  I also learned to inspect length-conditioned behavior as a mandatory evaluation axis. Many models produce acceptable short-form output and degrade on longer sequences through omissions, repetitions, or agreement drift. If evaluation averages across all lengths, these weaknesses can remain hidden. Adding length-conditioned breakdowns made model behavior more legible and improved tuning priorities. For instance, if long-sequence degradation starts abruptly after a threshold, the root cause often relates to context management and not generic optimization.
+
+  Another useful practice was to evaluate robustness under small policy perturbations. If tiny decoding changes produce large output variation, the model distribution may be poorly calibrated in uncertain regions. That does not automatically imply a bad model, but it does imply caution in claims about deterministic quality. In deployment-oriented systems, this kind of fragility can produce inconsistent user experiences even when average benchmark scores look good.
+
+  Finally, I found that writing error narratives is an underrated engineering tool. A concise narrative like “model preserves fluency but drops low-frequency content under long-context load” is more actionable than a score delta alone. It directly suggests next interventions: vocabulary strategy, curriculum balance, alignment regularization, or decode constraints. This narrative discipline also improves communication in teams, because it ties observed behavior to plausible mechanism hypotheses rather than treating evaluation as scoreboard-only reporting.
+</details>
+
+<details>
+  <summary>Extended note: why sequence projects benefit from policy-level reproducibility</summary>
+  Sequence models amplify reproducibility issues because tokenization, batching policy, and decoding choices all interact with model behavior. I found it important to version not only model configurations but also tokenization artifacts, vocabulary policy, and evaluation scripts. Minor drift in any of those components can produce apparent quality changes that are unrelated to architecture or optimization updates.
+
+  A second reproducibility lesson was to keep decoding policy fixed during architecture comparison, then run a separate decoding sensitivity analysis as its own experiment. Mixing both changes in one sweep made attribution unclear. Splitting them improved interpretation quality and made write-ups easier to defend.
+
+  Finally, I became more conservative in claim wording for sequence tasks. Because outputs are structured and human-interpretable, cherry-picked examples can look disproportionately persuasive. To counter that, I used slice-level summaries and representative error classes before discussing individual examples. This improved both technical rigor and communication clarity.
+</details>
+
+## Conclusion
+
+Project 3 was where sequence modeling moved from “architecture diagrams” to concrete systems reasoning. The key insight is that translation quality is jointly produced by representation, optimization, and inference policy. Any one of those can dominate outcomes in practice.
+
+Most reusable takeaways:
+
+- Treat alignment as a first-class design concern.
+- Evaluate with both scalar metrics and error categories.
+- Control decoding policy in all model comparisons.
+- Use repeated, controlled experiments before drawing conclusions.
+
+This framing made sequence modeling less mysterious and more like classical engineering: define interfaces, control confounders, and iterate against a clear failure taxonomy.
+It also made retrospective analysis easier, because each improvement claim was attached to a specific intervention and a constrained evaluation context rather than a broad narrative.
+That discipline reduced false positives and made future tuning choices substantially more informed.
+It also improved team readability of results summaries.
+That made iteration loops faster and clearer.
+
+### Practical Checklist I Would Reuse in a New Sequence Project
+
+My reusable checklist for sequence work now includes: freeze tokenization and preprocessing artifacts before model sweeps, separate model-quality experiments from decoding-policy experiments, track length-conditioned performance as a required report dimension, and maintain an error taxonomy table alongside aggregate scores. I would also require at least one robustness run where decoding hyperparameters are perturbed slightly to expose fragility in uncertain regions. This set of checks makes sequence-model conclusions much more durable and avoids conflating search quality with learned distribution quality.
+
+I would also add a strict attribution rule: if decoding policy, length handling, and architecture are all changed in the same cycle, no quality claim should be promoted beyond exploratory status. This rule sounds conservative, but it prevents the exact failure that made sequence experiments confusing early on. In practice, attribution discipline improves progress because the next intervention is always informed by a clear causal hypothesis instead of blended effects.
+
+A final carry-forward practice is to produce compact error briefs after each major run group. Each brief summarizes where the model improved, where it regressed, and which failure classes remained unchanged. Over time these briefs create a high-signal audit trail that is far more informative than isolated metric tables and makes retrospective synthesis substantially easier.
+
+One additional habit I would preserve is explicit “claim freeze” checkpoints during tuning. At each checkpoint, I record what I currently believe about model behavior and what evidence supports it. Subsequent runs are then evaluated against that frozen claim set. This prevents narrative drift and makes it easier to notice when new results genuinely overturn earlier assumptions rather than merely adding noise.
+
+## Additional Resources
+
+- [Attention Is All You Need](https://arxiv.org/abs/1706.03762)
+- [Neural Machine Translation by Jointly Learning to Align and Translate](https://arxiv.org/abs/1409.0473)
+- [Sequence to Sequence Learning with Neural Networks](https://arxiv.org/abs/1409.3215)
+- [The Illustrated Transformer](https://jalammar.github.io/illustrated-transformer/)
+- [GT DL Notes (Lowyx)](https://lowyx.com/posts/gt-dl-notes/)
+
+<BookCard
+  title="Speech and Language Processing (3rd ed. draft)"
+  author="Daniel Jurafsky and James H. Martin"
+  url="https://web.stanford.edu/~jurafsky/slp3/"
+>
+  <p>
+    Strong conceptual treatment of sequence models, attention, decoding, and evaluation in NLP systems.
+  </p>
+</BookCard>
+
+<BookCard
+  title="The Annotated Transformer"
+  author="Harvard NLP"
+  url="https://nlp.seas.harvard.edu/annotated-transformer/"
+>
+  <p>
+    A practical, equation-connected walkthrough of transformer internals that bridges high-level intuition and implementation concepts.
+  </p>
+</BookCard>
+
+> [!info] A Note on Code Availability
+> In accordance with Georgia Tech academic integrity policy and course material licensing, I do not publish assignment code, assignment-specific implementation details, or private project files. This post focuses on transferable concepts, non-sensitive experiments, and high-level technical reasoning.
