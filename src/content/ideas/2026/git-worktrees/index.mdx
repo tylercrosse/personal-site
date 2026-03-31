@@ -1,0 +1,198 @@
+---
+title: 'Git Worktrees, branches without the context switch'
+description: 'Work on multiple branches at once without ever touching git stash.'
+date: '2026-03-30'
+status: 'complete'
+type: 'article'
+tags: ['git', 'tips', 'short']
+category: ['evergreen']
+draft: false
+media_subpath: "/ideas/git-worktrees/"
+hero:
+  alt: 'Squirrel Working away'
+  src: './squirrel-worker3.png'
+image:
+  path: './squirrel-worker.png'
+  alt: 'Squirrel Working away'
+hideCaption: true
+audience: 'Developers'
+---
+
+Pretend you're deep in a feature branch, half-finished changes everywhere, and a prod bug lands in your lap. Or a teammate asks you to review their PR while it's fresh. The old answer is `git stash`, context switch, do the thing, come back, `git stash pop`, and hope nothing exploded. There's a better answer: `git worktree`.
+
+### The same scenario, two ways
+
+Say you're mid-feature on a branch called `feature/search` and a teammate pings you: "can you look at my PR on `fix/auth-redirect`?" Here's how that plays out without worktrees:
+
+```bash
+git stash                              # save your half-finished work
+git checkout fix/auth-redirect         # switch branches
+# review the code, leave comments
+git checkout feature/search            # switch back
+git stash pop                          # restore your work and hope for no conflicts
+```
+
+Everything is sequential. You can't look at both branches at once, and if `stash pop` hits a conflict you're cleaning that up before you can get back to work.
+
+With worktrees, both branches exist on disk at the same time:
+
+```bash
+git worktree add ../review fix/auth-redirect   # check out their branch next door
+# open ../review in a second editor window, review, leave comments
+git worktree remove ../review                  # done, clean up
+```
+
+Your `feature/search` branch never moves. No stashing, no conflicts, no mental overhead of "where was I?"
+
+Here's what those two workflows look like over time:
+
+```
+Without worktrees (sequential):
+
+You:  ██ feature ██ ▓ stash ▓ ░░ review PR ░░ ▓ pop ▓ ██ feature ██
+                     ↑ context                  ↑ context
+                       switch                     switch
+
+With worktrees (parallel):
+
+Terminal 1:  ██████████████ feature (uninterrupted) ██████████████
+Terminal 2:              ░░░░ review PR ░░░░
+```
+
+### Stash vs. worktrees
+
+If you've read my [earlier post on git stash](/ideas/2020/git-stash), you know `git stash` is great for short interruptions, a quick "hold my coffee" before you switch branches and come right back. It's lightweight and fast, and for a lot of situations it's exactly the right tool.
+
+Worktrees solve a different shape of problem. Stash serializes your context: you set it aside, do something else, then restore it. Worktrees parallelize it: both things exist on disk simultaneously, and you move between them the same way you'd switch between terminal tabs. The longer the interruption, or the more parallel threads you're juggling, the more worktrees start to win. A hotfix you'll knock out in five minutes? Stash is fine. A PR review that'll take an hour while your feature branch keeps evolving? Reach for a worktree.
+
+They also compose well. Nothing stops you from stashing inside a worktree, and sometimes you want both.
+
+### What's a worktree?
+
+Normally, your repository has one working directory tied to one checked-out branch at a time. `git worktree` breaks that constraint by letting you check out additional branches as separate directories on disk, all backed by the same `.git` folder.
+
+Each worktree has its own `HEAD`, its own index (staging area), and its own untracked files. But they all share the same commit history, refs, and object store. One repo, multiple working directories.
+
+On disk, it looks like this:
+
+```
+Without worktrees:                With worktrees:
+
+my-repo/  (feature/search)       my-repo/   (feature/search)
+├── .git/                         ├── .git/  ← shared
+├── src/                          ├── src/
+├── package.json                  └── ...
+└── ...
+                                  ../hotfix/ (main)
+  one branch at a time,           ├── src/
+  switching replaces all files    └── ...
+
+                                  ../review/ (fix/auth-redirect)
+                                  ├── src/
+                                  └── ...
+
+                                  three branches, all on disk at once
+```
+
+The one rule: you can't check out the same branch in two worktrees at the same time. Each worktree needs its own branch.
+
+### Adding and removing worktrees
+
+```bash
+git worktree add ../hotfix main         # check out 'main' at ../hotfix
+git worktree add -b fix/login ../fix    # create a new branch + worktree together
+git worktree list                       # see all active worktrees
+git worktree remove ../hotfix           # clean up when done
+git worktree prune                      # remove stale metadata for deleted dirs
+```
+
+A common hotfix flow:
+
+```bash
+git worktree add ../hotfix main         # spin up a clean working dir on main
+cd ../hotfix
+# fix the bug, commit, push
+git worktree remove ../hotfix           # tear it down
+```
+
+Your original feature branch, messy state and all, sits exactly where you left it the whole time.
+
+### Parallel review
+
+Another pattern I reach for constantly is keeping a review worktree around for PR feedback:
+
+```bash
+git worktree add ../review origin/some-feature-branch
+# open ../review in your editor, poke around, leave notes
+git worktree remove ../review
+```
+
+No stashing, no branch switching, no losing your place.
+
+### Worktrees and coding agents
+
+Worktrees have also become the go-to isolation mechanism for AI coding agents. Tools like [Claude Code](https://code.claude.com/docs/en/common-workflows) and [OpenAI's Codex](https://developers.openai.com/codex/app/features) run agents that work autonomously on your codebase, and they use worktrees to do it safely.
+
+An agent working on a task needs its own environment where it can read, write, and run code without trampling your working directory or another agent's changes. Each agent gets its own worktree on its own branch, does its thing, and you review and merge the result.
+
+Without worktrees, you'd need to either let the agent edit your working directory (risky if you're also working) or clone the whole repo (slow, wasteful). Worktrees give you the isolation of a clone with the speed of a checkout.
+
+#### Parallel agents with Claude Code
+
+Claude Code has a `--worktree` flag that handles the setup for you. Say you're building a feature and want to split the backend and frontend work across two agents:
+
+```bash
+# Terminal 1: agent works on the API
+claude --worktree api-endpoints
+> Add REST endpoints for /api/search with pagination and filtering
+
+# Terminal 2: agent works on the UI, in parallel
+claude --worktree search-ui
+> Build the search results page with a filter sidebar
+```
+
+Each session gets its own worktree at `.claude/worktrees/<name>/` on its own branch. Both agents read, write, and run tests independently. When they finish, you review each branch and merge.
+
+Subagents (the smaller agents Claude spins up for subtasks within a session) can also run in isolated worktrees, each cleaned up automatically when the subagent finishes. The [Claude Code worktree docs](https://code.claude.com/docs/en/common-workflows) walk through the full setup.
+
+#### Codex and other tools
+
+OpenAI's Codex app takes a similar approach. When you create a new thread you choose between "Local" (direct project work) or "Worktree" (isolated changes). Automations, Codex's scheduled background tasks, [run in dedicated worktrees automatically](https://developers.openai.com/codex/app/features). Same pattern: give each agent its own working directory so parallel tasks can't collide.
+
+This isn't limited to specific tools. Any agent framework that needs filesystem isolation can use worktrees the same way. The pattern is general: create a worktree per task, let the agent work, merge the result.
+
+#### Structuring work for parallel agents
+
+The main thing that makes parallel agents effective is decomposing work into independent pieces. Tasks that touch different files or modules parallelize cleanly. Tasks with heavy overlap in the same files will produce merge conflicts, same as if two people edited the same code at once.
+
+A few patterns that work well:
+- **Backend + frontend** for the same feature (different directories, merge cleanly)
+- **Tests + implementation** when the interface is already defined
+- **Multiple independent bug fixes** that touch unrelated code
+- **Refactors scoped to separate modules**
+
+When Claude Code or Codex hands you a branch to review, that branch came from a worktree. Understanding that helps you reason about what the agent did and how to structure future tasks. Rick Hightower's [article on worktree isolation in Claude Code](https://medium.com/@richardhightower/git-worktree-isolation-in-claude-code-parallel-development-without-the-chaos-262e12b85cc5) and the [Upsun developer center guide](https://devcenter.upsun.com/posts/git-worktrees-for-parallel-ai-coding-agents/) go deeper if you're interested.
+
+### Things to watch for
+
+Each worktree is an independent directory, so any tooling that installs locally (`node_modules`, Python virtualenvs, build artifacts) needs to be set up per-worktree. This is a small tax but usually worth it.
+
+Worktrees also hold a lock on their branch. If you try to `git branch -d some-branch` while a worktree has it checked out, git will refuse. Run `git worktree list` to see what's active before you try to delete branches.
+
+Some editors get confused if you open two worktrees as separate projects. Language servers may spin up duplicate processes or step on each other's lock files. Usually manageable, just worth knowing.
+
+### TL;DR - Cheatsheet
+
+```bash
+git worktree add <path> <branch>               # check out an existing branch as a new worktree
+git worktree add -b <new-branch> <path> <base> # create a branch and worktree together
+git worktree list                              # show all active worktrees
+git worktree remove <path>                     # remove a worktree when done
+git worktree prune                             # clean up stale worktree metadata
+```
+
+#### Additional resources
+
+- The [official documentation](https://git-scm.com/docs/git-worktree) covers all flags and edge cases.
+- [Atlassian's worktree guide](https://www.atlassian.com/git/tutorials/git-worktree) has some useful diagrams if you want a more visual explanation of how they work.
+- My [earlier post on git stash](/ideas/2020/git-stash), the lighter-weight sibling to worktrees, good for quick context switches.
