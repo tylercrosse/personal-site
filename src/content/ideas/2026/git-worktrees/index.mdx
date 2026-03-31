@@ -157,9 +157,13 @@ Subagents (the smaller agents Claude spins up for subtasks within a session) can
 
 #### Codex and other tools
 
-OpenAI's Codex app takes a similar approach. When you create a new thread you choose between "Local" (direct project work) or "Worktree" (isolated changes). Automations, Codex's scheduled background tasks, [run in dedicated worktrees automatically](https://developers.openai.com/codex/app/features). Same pattern: give each agent its own working directory so parallel tasks can't collide.
+OpenAI's [Codex app](https://developers.openai.com/codex/app/worktrees) builds worktrees into its GUI. When you create a new thread you choose between "Local" (direct project work) or "Worktree" (isolated changes). You can pick any branch as the base, including one with unstaged changes. Codex creates the worktree in detached HEAD state and runs optional [setup scripts](https://developers.openai.com/codex/app/worktrees) to install dependencies or build the project, since worktrees are fresh checkouts that won't have your `node_modules` or virtualenv.
 
-This isn't limited to specific tools. Any agent framework that needs filesystem isolation can use worktrees the same way. The pattern is general: create a worktree per task, let the agent work, merge the result.
+Codex-managed worktrees auto-delete after a configurable period (default 15 days), with snapshots preserved so you can restore if needed. You can also move threads between Local and Worktree mode mid-conversation if you need to inspect something in your IDE. Automations, Codex's scheduled background tasks, [run in dedicated worktrees automatically](https://developers.openai.com/codex/app/features).
+
+Note: this is the Codex app (web GUI), not the Codex CLI. The CLI doesn't have worktree support as of this writing. If you're using the CLI and want isolation, you can always create worktrees yourself with `git worktree add` and run `codex` from that directory.
+
+The pattern itself isn't limited to specific tools. Any agent framework that needs filesystem isolation can use worktrees the same way: create a worktree per task, let the agent work, merge the result.
 
 #### Structuring work for parallel agents
 
@@ -193,6 +197,8 @@ git worktree prune                             # clean up stale worktree metadat
 
 #### Additional resources
 
-- The [official documentation](https://git-scm.com/docs/git-worktree) covers all flags and edge cases.
-- [Atlassian's worktree guide](https://www.atlassian.com/git/tutorials/git-worktree) has some useful diagrams if you want a more visual explanation of how they work.
+- The [official git worktree documentation](https://git-scm.com/docs/git-worktree) covers all flags and edge cases.
+- [Claude Code worktree docs](https://code.claude.com/docs/en/common-workflows) for running parallel agent sessions with `--worktree`.
+- [Codex app worktree docs](https://developers.openai.com/codex/app/worktrees) for using worktrees in OpenAI's Codex.
+- [GitKraken's worktree guide](https://www.gitkraken.com/learn/git/git-worktree) has some useful visuals if you want a more visual explanation.
 - My [earlier post on git stash](/ideas/2020/git-stash), the lighter-weight sibling to worktrees, good for quick context switches.
