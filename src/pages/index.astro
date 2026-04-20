@@ -1,6 +1,7 @@
 ---
 import { getCollection } from "astro:content";
 import readingTime from "reading-time";
+import { ExternalLink, PenTool, Youtube } from "lucide-astro";
 
 import BaseLayout from "../layouts/BaseLayout.astro";
 import PostCard from "../components/PostCard.astro";
@@ -62,6 +63,51 @@ const themeItems = [
   { label: "Which evals matter?" },
   { label: "How do humans oversee?" },
 ];
+
+const recentWorkGroups = [
+  {
+    heading: "Writing & Papers",
+    icon: PenTool,
+    items: [
+      {
+        title: "Attack Selection in Agentic AI Control Evals Can Decrease Safety",
+        href: "https://www.lesswrong.com/posts/WuKDzJxtiqcA9ZZRH",
+        meta: "Essay, LessWrong, Apr 2026",
+        external: true,
+      },
+      {
+        title: "Asymmetric Goal Drift in Coding Agents Under Value Conflict",
+        href: "https://arxiv.org/abs/2603.03456",
+        meta: "Paper, AI-WILD Workshop at ICLR 2026, Mar 2026",
+        external: true,
+      },
+      {
+        title: "Inherited Goal Drift: Contextual Pressure Can Undermine Agentic Goals",
+        href: "https://arxiv.org/abs/2603.03258",
+        meta: "Paper, AI-WILD Workshop at ICLR 2026, Mar 2026",
+        external: true,
+      },
+    ],
+  },
+  {
+    heading: "Talks",
+    icon: Youtube,
+    items: [
+      {
+        title: "Hierarchical Reasoning Models",
+        href: "/ideas/2025/hierarchical-reasoning-models/",
+        meta: "Talk, Latent Space Paper Club, Sep 2025",
+        external: false,
+      },
+      {
+        title: "Language Diffusion Survey",
+        href: "/ideas/2025/language-diffusion-survey/",
+        meta: "Talk, Latent Space Paper Club, May 2025",
+        external: false,
+      },
+    ],
+  },
+] as const;
 ---
 
 <BaseLayout title="Home">
@@ -92,9 +138,55 @@ const themeItems = [
     </section>
   )}
 
+  <section class="recent-work slide-in-block" aria-labelledby="recent-work-title">
+    <header class="recent-work-header">
+      <h2 id="recent-work-title">Recent Work</h2>
+    </header>
+    <div class="recent-work-grid">
+      {recentWorkGroups.map((group) => {
+        const GroupIcon = group.icon;
+        return (
+          <section class="work-group" aria-label={group.heading}>
+            <h3 class="work-group-title">
+              <GroupIcon class="work-group-icon" size={14} aria-hidden="true" />
+              <span>{group.heading}</span>
+            </h3>
+            <ul class="work-list">
+              {group.items.map((item) => (
+                <li class="work-item">
+                  <a
+                    href={item.href}
+                    class="work-link"
+                    target={item.external ? "_blank" : undefined}
+                    rel={item.external ? "noopener noreferrer" : undefined}
+                  >
+                    <span class="work-title-row">
+                      <span class="work-title">{item.title}</span>
+                      {item.external && (
+                        <>
+                          <ExternalLink
+                            class="work-link-icon"
+                            size={14}
+                            aria-hidden="true"
+                          />
+                          <span class="sr-only">opens in a new tab</span>
+                        </>
+                      )}
+                    </span>
+                  </a>
+                  <p class="work-meta">{item.meta}</p>
+                </li>
+              ))}
+            </ul>
+          </section>
+        );
+      })}
+    </div>
+  </section>
+
   <section class="notebook slide-in-block" aria-label="Selected writing">
     <header class="notebook-header">
-      <h2>Selected Writing</h2>
+      <h2>Selected Posts</h2>
       <a href="/ideas" class="notebook-all">all ideas →</a>
     </header>
     <div class="notebook-grid">
@@ -180,6 +272,158 @@ const themeItems = [
     border-top-color: var(--base03);
   }
 
+  /* Recent work */
+  .recent-work {
+    max-width: 1200px;
+    margin: 0 auto 3rem;
+    padding-inline: 0;
+    box-sizing: border-box;
+  }
+
+  .recent-work-header {
+    margin-bottom: 1.25rem;
+  }
+
+  .recent-work-header h2 {
+    font-family: var(--font-heading);
+    font-size: 1.35rem;
+    font-weight: 700;
+    margin: 0;
+  }
+
+  .recent-work-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.75rem;
+  }
+
+  @media (min-width: 900px) {
+    .recent-work-grid {
+      grid-template-columns: minmax(0, 1.3fr) minmax(0, 0.9fr);
+      gap: 2.5rem;
+    }
+  }
+
+  @media (min-width: 1100px) {
+    .recent-work {
+      padding-inline: 5rem;
+    }
+  }
+
+  .work-group {
+    min-width: 0;
+  }
+
+  .work-group-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--sol-7);
+  }
+
+  .work-group-icon {
+    flex-shrink: 0;
+    opacity: 0.85;
+    vertical-align: middle;
+  }
+
+  .work-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    border-top: 1px solid var(--main-border-color);
+  }
+
+  .work-item {
+    padding: 0.95rem 0;
+    border-bottom: 1px solid var(--main-border-color);
+    line-height: 1.35;
+  }
+
+  .work-link {
+    color: var(--sol-10);
+    text-decoration: none;
+    line-height: 1.35;
+  }
+
+  .work-link:hover {
+    color: var(--sol-9);
+  }
+
+  .work-link:focus-visible {
+    outline: 2px solid var(--blue);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+
+  .work-title {
+    font-family: var(--font-heading);
+    font-size: 1.02rem;
+    font-weight: 600;
+    line-height: 1.35;
+    text-decoration: underline;
+    text-decoration-color: transparent;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.14em;
+    transition:
+      color 0.2s ease,
+      text-decoration-color 0.2s ease;
+  }
+
+  .work-title-row {
+    display: inline;
+  }
+
+  .work-link-icon {
+    display: inline;
+    opacity: 0.72;
+  }
+
+  .work-meta {
+    margin: 0.5rem 0 0;
+    color: var(--sol-8);
+    font-size: 0.88rem;
+    line-height: 1.1;
+    transition: color 0.2s ease;
+  }
+
+  .work-link:hover .work-title,
+  .work-link:focus-visible .work-title {
+    text-decoration-color: currentColor;
+  }
+
+  .work-link:hover + .work-meta,
+  .work-link:focus-visible + .work-meta {
+    color: var(--sol-9);
+  }
+
+  :global([data-effective-theme="dark"]) .work-list,
+  :global([data-effective-theme="dark"]) .work-item {
+    border-color: var(--base03);
+  }
+
+  :global([data-effective-theme="dark"]) .work-link {
+    color: var(--sol-5);
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
   /* Showcase */
   .showcase {
     display: grid;
@@ -221,6 +465,8 @@ const themeItems = [
     justify-content: space-between;
     margin-bottom: 1.25rem;
     gap: 1rem;
+    padding-inline: 0;
+    box-sizing: border-box;
   }
 
   .notebook-header h2 {
@@ -260,6 +506,12 @@ const themeItems = [
     }
   }
 
+  @media (min-width: 1100px) {
+    .notebook-header {
+      padding-inline: 5rem;
+    }
+  }
+
   /* Entrance animations */
   .slide-in-block {
     opacity: 0;
@@ -275,11 +527,14 @@ const themeItems = [
   .divider.slide-in-block {
     animation-delay: 0.15s;
   }
-  .showcase.slide-in-block {
+  .recent-work.slide-in-block {
     animation-delay: 0.2s;
   }
+  .showcase.slide-in-block {
+    animation-delay: 0.25s;
+  }
   .notebook.slide-in-block {
-    animation-delay: 0.3s;
+    animation-delay: 0.35s;
   }
 
   @keyframes slideInBlock {
