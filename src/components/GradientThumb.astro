@@ -1,0 +1,30 @@
+---
+interface Props {
+  seed: string;
+  aspectRatio?: string;
+  className?: string;
+}
+
+const { seed, aspectRatio = "16 / 10", className = "" } = Astro.props;
+
+const hash = [...seed].reduce(
+  (h, c) => ((h << 5) - h + c.charCodeAt(0)) | 0,
+  0,
+);
+const hueA = Math.abs(hash) % 360;
+const hueB = (hueA + 35) % 360;
+const gradient = `linear-gradient(135deg, hsl(${hueA}, 70%, 55%), hsl(${hueB}, 65%, 45%))`;
+---
+
+<div
+  class={`gradient-thumb ${className}`}
+  style={`background: ${gradient}; aspect-ratio: ${aspectRatio};`}
+  aria-hidden="true"
+></div>
+
+<style>
+  .gradient-thumb {
+    width: 100%;
+    display: block;
+  }
+</style>

@@ -23,6 +23,7 @@ const ideas = defineCollection({
     tags: z.array(z.string()).optional(),
     category: z.array(z.string()).optional(),
     draft: z.boolean().optional(),
+    featured: z.boolean().optional(),
     audience: z.string().optional(),
     hero: z.object({
       alt: z.string(),
