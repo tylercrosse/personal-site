@@ -5,7 +5,7 @@ date: '2026-02-27'
 updated: '2026-02-27'
 status: 'in-progress'
 type: 'project'
-tags: ['deep-learning', 'large-language-models', 'mechanistic-interpretability', 'pyTorch', 'MSCS', 'Deep Learning', 'CS7643', 'interpretability', 'LLM', 'representation-learning', 'reasoning-models', 'research']
+tags: ['deep-learning', 'large-language-models', 'mechanistic-interpretability', 'pyTorch', 'research', 'MSCS']
 category: ['projects']
 draft: true
 audience: 'All'
@@ -23,6 +23,8 @@ hideCaption: true
 import BookCard from "../../../../components/BookCard.astro";
 import Figure from "../../../../components/Figure.astro";
 
+import deepLearningGoodfellow from "../../../books/dl-goodfellow.jpg";
+import deepLearningPrince from "../../../books/dl-prince.jpg";
 import p5Fig1 from "../figures/lowyx/dl-p5-fig-01-gradcam.png";
 import p5Fig2 from "../figures/lowyx/dl-p5-fig-02-guided-backprop.png";
 import p5Fig3 from "../figures/lowyx/dl-p5-fig-03-tsne.png";
@@ -307,6 +309,28 @@ I would also preserve a lightweight peer-review step for interpretability report
 - [Scaling Monosemanticity](https://transformer-circuits.pub/2024/scaling-monosemanticity/index.html)
 - [Open Problems in Mechanistic Interpretability](https://arxiv.org/abs/2307.02591)
 - [GT DL Notes (Lowyx)](https://lowyx.com/posts/gt-dl-notes/)
+
+<BookCard
+  title="Deep Learning"
+  author="Ian Goodfellow, Yoshua Bengio, and Aaron Courville"
+  img={deepLearningGoodfellow}
+  url="https://www.deeplearningbook.org/"
+>
+  <p>
+    Even for an interpretability-heavy final project, Goodfellow was the cleanest reference for grounding feature learning, representation geometry, and regularization concepts.
+  </p>
+</BookCard>
+
+<BookCard
+  title="Understanding Deep Learning"
+  author="Simon J. D. Prince"
+  img={deepLearningPrince}
+  url="https://udlbook.github.io/udlbook/"
+>
+  <p>
+    Prince was useful for translating abstract representation-learning language into more operational intuitions about what model internals encode and how to reason about those changes.
+  </p>
+</BookCard>
 
 <BookCard
   title="Mechanistic Interpretability Reading List"

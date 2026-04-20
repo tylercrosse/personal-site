@@ -5,7 +5,7 @@ date: '2026-02-27'
 updated: '2026-02-27'
 status: 'in-progress'
 type: 'project'
-tags: ['deep-learning', 'pyTorch', 'NLP', 'MSCS', 'Deep Learning', 'CS7643', 'machine-translation', 'seq2seq', 'attention', 'transformers']
+tags: ['deep-learning', 'NLP', 'pyTorch', 'MSCS']
 category: ['projects']
 draft: true
 audience: 'All'
@@ -23,6 +23,8 @@ hideCaption: true
 import BookCard from "../../../../components/BookCard.astro";
 import Figure from "../../../../components/Figure.astro";
 
+import deepLearningGoodfellow from "../../../books/dl-goodfellow.jpg";
+import deepLearningPrince from "../../../books/dl-prince.jpg";
 import p3Fig1 from "../figures/lowyx/dl-p3-fig-01-rnn-chained.png";
 import p3Fig2 from "../figures/lowyx/dl-p3-fig-02-self-attention.png";
 import p3Fig3 from "../figures/lowyx/dl-p3-fig-03-multi-head-attention.png";
@@ -314,6 +316,28 @@ One additional habit I would preserve is explicit “claim freeze” checkpoints
 - [Sequence to Sequence Learning with Neural Networks](https://arxiv.org/abs/1409.3215)
 - [The Illustrated Transformer](https://jalammar.github.io/illustrated-transformer/)
 - [GT DL Notes (Lowyx)](https://lowyx.com/posts/gt-dl-notes/)
+
+<BookCard
+  title="Deep Learning"
+  author="Ian Goodfellow, Yoshua Bengio, and Aaron Courville"
+  img={deepLearningGoodfellow}
+  url="https://www.deeplearningbook.org/"
+>
+  <p>
+    The sequence-modeling chapters helped frame recurrence, optimization difficulty, and representation bottlenecks before jumping into attention-heavy architectures.
+  </p>
+</BookCard>
+
+<BookCard
+  title="Understanding Deep Learning"
+  author="Simon J. D. Prince"
+  img={deepLearningPrince}
+  url="https://udlbook.github.io/udlbook/"
+>
+  <p>
+    I leaned on Prince for the intuition behind encoder-decoder models, attention, and transformer design choices when the formal papers were too compressed.
+  </p>
+</BookCard>
 
 <BookCard
   title="Speech and Language Processing (3rd ed. draft)"

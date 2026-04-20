@@ -5,7 +5,7 @@ date: '2026-02-27'
 updated: '2026-02-27'
 status: 'in-progress'
 type: 'project'
-tags: ['deep-learning', 'pyTorch', 'generative-models', 'MSCS', 'Deep Learning', 'CS7643', 'generative-modeling', 'VAE', 'GAN', 'diffusion-models', 'computer-vision']
+tags: ['deep-learning', 'generative-models', 'computer-vision', 'pyTorch', 'MSCS']
 category: ['projects']
 draft: true
 audience: 'All'
@@ -23,6 +23,8 @@ hideCaption: true
 import BookCard from "../../../../components/BookCard.astro";
 import Figure from "../../../../components/Figure.astro";
 
+import deepLearningGoodfellow from "../../../books/dl-goodfellow.jpg";
+import deepLearningPrince from "../../../books/dl-prince.jpg";
 import p4Fig1 from "../figures/lowyx/dl-p4-fig-01-autoencoder.png";
 import p4Fig2 from "../figures/lowyx/dl-p4-fig-02-gan-architecture.png";
 import p4Fig3 from "../figures/lowyx/dl-p4-fig-03-gan-objective.png";
@@ -297,6 +299,28 @@ Finally, I would maintain a “metric disagreement dashboard” that highlights 
 - [Denoising Diffusion Probabilistic Models](https://arxiv.org/abs/2006.11239)
 - [High-Resolution Image Synthesis with Latent Diffusion](https://arxiv.org/abs/2112.10752)
 - [U-Mich DL Lectures](https://web.eecs.umich.edu/~justincj/teaching/eecs498/WI2022/)
+
+<BookCard
+  title="Deep Learning"
+  author="Ian Goodfellow, Yoshua Bengio, and Aaron Courville"
+  img={deepLearningGoodfellow}
+  url="https://www.deeplearningbook.org/"
+>
+  <p>
+    The probabilistic modeling and representation-learning chapters stayed useful here, especially for grounding VAE objectives and adversarial tradeoffs in a broader deep learning framework.
+  </p>
+</BookCard>
+
+<BookCard
+  title="Understanding Deep Learning"
+  author="Simon J. D. Prince"
+  img={deepLearningPrince}
+  url="https://udlbook.github.io/udlbook/"
+>
+  <p>
+    Prince was the clearest reference I had for building intuition around latent-variable models, adversarial training behavior, and why diffusion methods trade compute for stability.
+  </p>
+</BookCard>
 
 <BookCard
   title="Generative Deep Learning (2nd ed.)"
