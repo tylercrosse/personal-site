@@ -1,0 +1,140 @@
+---
+import BaseLayout from "../../../../layouts/BaseLayout.astro";
+
+const tools = [
+  {
+    title: "Search Frontier Lab",
+    href: "/ideas/ga-2-tools/frontier.html",
+    tag: "Traversal",
+    description:
+      "Compare BFS and DFS step by step, inspect queue versus stack behavior, and watch how `prev[]`, `dist[]`, `pre[]`, `post[]`, and component labels evolve.",
+  },
+  {
+    title: "Shortest Path Comparator",
+    href: "/ideas/ga-2-tools/shortest-paths.html",
+    tag: "Paths",
+    description:
+      "Switch between BFS, Dijkstra, Bellman-Ford, and Floyd-Warshall to see how edge-weight assumptions change the meaning of distance.",
+  },
+  {
+    title: "Cuts Lab",
+    href: "/ideas/ga-2-tools/cuts.html",
+    tag: "Cuts",
+    description:
+      "Use crossing edges and residual reachability to connect Prim, Kruskal, and Ford-Fulkerson through a common cut-based lens.",
+  },
+  {
+    title: "Directed Structure Lab",
+    href: "/ideas/ga-2-tools/directed-structure.html",
+    tag: "Optional Deep Dive",
+    description:
+      "Explore DFS edge classifications, SCC condensation, and other directed-graph structure beyond the three main embeds in the article.",
+  },
+];
+---
+
+<BaseLayout title="Graph Tools">
+  <section class="hero">
+    <p class="eyebrow">Graduate Algorithms</p>
+    <h1>Graph Tools</h1>
+    <p class="lead">
+      A compact index of the graph labs used in the Part 2 post. The main article
+      embeds three of these directly; this page keeps the full set in one place.
+    </p>
+    <p class="backlink">
+      <a href="/ideas/2026/ga-2/">Back to the graphs article</a>
+    </p>
+  </section>
+
+  <section class="grid">
+    {
+      tools.map((tool) => (
+        <a class="card" href={tool.href}>
+          <small>{tool.tag}</small>
+          <h2>{tool.title}</h2>
+          <p>{tool.description}</p>
+        </a>
+      ))
+    }
+  </section>
+</BaseLayout>
+
+<style>
+  .hero {
+    max-width: 48rem;
+    margin: 0 auto 2rem;
+  }
+
+  .eyebrow {
+    margin: 0 0 0.5rem;
+    font-size: 0.8rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--sol-1);
+  }
+
+  .hero h1 {
+    margin-bottom: 0.8rem;
+  }
+
+  .lead {
+    font-size: 1.05rem;
+    line-height: 1.7;
+    color: var(--sol-1);
+  }
+
+  .backlink {
+    margin-top: 1rem;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+  }
+
+  .card {
+    display: block;
+    padding: 1.2rem;
+    border: 1px solid var(--sol-4);
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.02);
+    text-decoration: none;
+    color: inherit;
+    transition:
+      transform 140ms ease,
+      border-color 140ms ease,
+      background 140ms ease;
+  }
+
+  .card:hover {
+    transform: translateY(-2px);
+    border-color: var(--sol-8);
+    background: rgba(255, 255, 255, 0.04);
+  }
+
+  .card small {
+    display: inline-block;
+    margin-bottom: 0.75rem;
+    color: var(--sol-1);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .card h2 {
+    margin: 0 0 0.5rem;
+    font-size: 1.25rem;
+  }
+
+  .card p {
+    margin: 0;
+    line-height: 1.65;
+    color: var(--sol-1);
+  }
+
+  @media (max-width: 800px) {
+    .grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

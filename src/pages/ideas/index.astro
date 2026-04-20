@@ -5,26 +5,8 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 import { SITE_TITLE, SITE_DESCRIPTION } from "../../consts";
 import FormattedDate from "../../components/FormattedDate.astro";
 import readingTime from "reading-time";
-import { PenTool, RotateCcw, Code, Lightbulb, Notebook, Youtube } from "lucide-astro";
 import { TAG_GROUPS } from "../../config/tagGroups";
-
-const capitalize = (s: string) => {
-  if (typeof s !== "string" || !s) return s;
-  return s.charAt(0).toUpperCase() + s.slice(1);
-};
-
-// Map post types to their corresponding icons
-const getIconForType = (type: string) => {
-  const icons = {
-    'article': PenTool,
-    'retro': RotateCcw,
-    'project': Code,
-    'idea': Lightbulb,
-    'note': Notebook,
-    'talk': Youtube,
-  };
-  return icons[type as keyof typeof icons];
-};
+import { getIconForType, capitalize } from "../../utils/postIcons";
 
 const posts = (await getCollection("ideas"))
   .filter((post) => {

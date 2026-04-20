@@ -1,0 +1,246 @@
+---
+import { Image } from "astro:assets";
+import GradientThumb from "./GradientThumb.astro";
+import { getIconForType, capitalize } from "../utils/postIcons";
+
+interface PostData {
+  slug: string;
+  title: string;
+  description?: string;
+  date?: Date;
+  type?: string;
+  status?: string;
+  tags?: string[];
+  image?: { path?: any; alt?: string };
+  draft?: boolean;
+  readingTimeText: string;
+}
+
+interface Props {
+  post: PostData;
+  variant?: "showcase" | "compact" | "mini";
+  showDescription?: boolean;
+}
+
+const { post, variant = "compact", showDescription } = Astro.props;
+
+const Icon = getIconForType(post.type);
+
+const shouldShowDescription = showDescription ?? true;
+
+const metaDate = post.date
+  ? post.date.toLocaleDateString("en-us", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    })
+  : "";
+
+const primaryTag = post.tags?.[0];
+
+const imageHeight =
+  variant === "showcase" ? 520 : variant === "compact" ? 220 : 180;
+const gradientAspect =
+  variant === "showcase" ? "16 / 10" : variant === "compact" ? "16 / 9" : "4 / 3";
+---
+
+<a
+  href={`/ideas/${post.slug}/`}
+  class={`post-card post-card--${variant}`}
+  data-type={post.type}
+>
+  <div class="post-card-media">
+    {post.image?.path ? (
+      <Image
+        src={post.image.path}
+        alt={post.image.alt || ""}
+        width={1200}
+        height={imageHeight}
+      />
+    ) : (
+      <GradientThumb seed={post.slug} aspectRatio={gradientAspect} />
+    )}
+  </div>
+
+  <div class="post-card-body">
+    <div class="post-card-meta">
+      {post.draft && <span class="draft-indicator">DRAFT</span>}
+      {post.type && (
+        <span class="meta-chunk type-chunk">
+          {Icon && <Icon size={14} />}
+          {capitalize(post.type)}
+        </span>
+      )}
+      {variant !== "mini" && primaryTag && (
+        <span class="meta-chunk">{primaryTag}</span>
+      )}
+      {metaDate && <span class="meta-chunk">{metaDate}</span>}
+      {post.readingTimeText && <span class="meta-chunk">{post.readingTimeText}</span>}
+    </div>
+
+    <h3 class="post-card-title">{post.title}</h3>
+
+    {shouldShowDescription && post.description && (
+      <p class="post-card-description">{post.description}</p>
+    )}
+  </div>
+</a>
+
+<style>
+  .post-card {
+    border: 1px solid var(--main-border-color);
+    background-color: var(--base4);
+    border-radius: 8px;
+    overflow: hidden;
+    color: inherit;
+    text-decoration: none;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    transition:
+      transform 0.2s ease,
+      box-shadow 0.2s ease,
+      opacity 0.2s ease;
+  }
+
+  .post-card:hover {
+    opacity: 0.92;
+    transform: translateY(-2px);
+  }
+
+  .post-card:focus-visible {
+    outline: 2px solid var(--blue);
+    outline-offset: 2px;
+  }
+
+  :global([data-effective-theme="dark"]) .post-card {
+    border: 1px solid var(--base03);
+    background-color: var(--base02);
+  }
+
+  .post-card-media {
+    width: 100%;
+    overflow: hidden;
+    background: var(--bg-2);
+  }
+
+  .post-card-media :global(img) {
+    display: block;
+    width: 100%;
+    height: auto;
+    object-fit: cover;
+  }
+
+  .post-card--showcase .post-card-media :global(img),
+  .post-card--showcase :global(.gradient-thumb) {
+    aspect-ratio: 16 / 10;
+    height: auto;
+  }
+
+  .post-card--compact .post-card-media :global(img),
+  .post-card--compact :global(.gradient-thumb) {
+    aspect-ratio: 16 / 9;
+    height: auto;
+  }
+
+  .post-card--mini .post-card-media :global(img),
+  .post-card--mini :global(.gradient-thumb) {
+    aspect-ratio: 4 / 3;
+    height: auto;
+  }
+
+  .post-card-body {
+    padding: 1rem 1.1rem 1.1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+    flex: 1;
+  }
+
+  .post-card--showcase .post-card-body {
+    padding: 1.25rem 1.4rem 1.5rem;
+    gap: 0.7rem;
+  }
+
+  .post-card--mini .post-card-body {
+    padding: 0.85rem 0.95rem 1rem;
+    gap: 0.4rem;
+  }
+
+  .post-card-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem 1em;
+    font-size: 0.75rem;
+    text-transform: capitalize;
+    color: var(--sol-7);
+  }
+
+  .post-card--mini .post-card-meta {
+    font-size: 0.7rem;
+    gap: 0.25rem 0.9em;
+  }
+
+  .meta-chunk {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    white-space: nowrap;
+  }
+
+  .type-chunk :global(svg) {
+    flex-shrink: 0;
+    vertical-align: middle;
+  }
+
+  .post-card-title {
+    font-family: var(--font-heading);
+    font-weight: 700;
+    line-height: 1.2;
+    margin: 0;
+    color: var(--sol-10);
+  }
+
+  :global([data-effective-theme="dark"]) .post-card-title {
+    color: var(--sol-5);
+  }
+
+  .post-card--showcase .post-card-title {
+    font-size: clamp(1.5rem, 2.2vw, 1.9rem);
+  }
+
+  .post-card--compact .post-card-title {
+    font-size: 1.2rem;
+  }
+
+  .post-card--mini .post-card-title {
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.25;
+  }
+
+  .post-card-description {
+    margin: 0;
+    color: var(--sol-8);
+    font-size: 0.95rem;
+    line-height: 1.5;
+  }
+
+  .post-card--compact .post-card-description,
+  .post-card--mini .post-card-description {
+    font-size: 0.85rem;
+    line-height: 1.45;
+  }
+
+  .draft-indicator {
+    color: var(--green);
+    font-size: 0.6rem;
+    font-weight: bold;
+    padding: 2px 6px;
+    border-radius: 3px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-family: var(--font-body);
+  }
+</style>

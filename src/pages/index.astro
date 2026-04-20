@@ -1,245 +1,291 @@
 ---
 import { getCollection } from "astro:content";
-
-import BaseLayout from "../layouts/BaseLayout.astro";
-import FormattedDate from "../components/FormattedDate.astro";
 import readingTime from "reading-time";
 
+import BaseLayout from "../layouts/BaseLayout.astro";
+import PostCard from "../components/PostCard.astro";
+import SocialLinks from "../components/SocialLinks.astro";
+import CurrentlyList from "../components/CurrentlyList.astro";
+
 const posts = (await getCollection("ideas"))
-  .filter((post) => {
-    // In development, show all posts including drafts
-    // In production, only show published posts (not drafts)
-    return import.meta.env.DEV || !post.data.draft;
-  })
+  .filter((post) => import.meta.env.DEV || !post.data.draft)
   .sort((a, b) => {
     const aDate = a.data.pubDate || a.data.date;
     const bDate = b.data.pubDate || b.data.date;
     return new Date(bDate || 0).valueOf() - new Date(aDate || 0).valueOf();
   });
-// .slice(0, 10); // 10 posts
-
-const allTags = [
-  ...new Set(posts.flatMap((post) => post.data.tags || [])),
-].sort((a, b) => a.localeCompare(b));
-const allTypes = [
-  ...new Set(posts.map((post) => post.data.type).filter(Boolean)),
-];
-const allStatuses = [
-  ...new Set(posts.map((post) => post.data.status).filter(Boolean)),
-];
 
 const allPostsData = posts.map((post) => {
   const slug = post.id.replace(/(\/index)?\.(md|mdx)$/, "");
   const stats = readingTime(post.body || "");
   return {
     id: post.id,
-    slug: slug,
+    slug,
     title: post.data.title,
     description: post.data.description,
-    date: post.data.date,
-    updated: post.data.updated,
+    date: post.data.pubDate || post.data.date,
     type: post.data.type,
     status: post.data.status,
     tags: post.data.tags || [],
     image: post.data.image,
     draft: post.data.draft,
+    featured: post.data.featured,
     readingTimeText: stats.text,
   };
 });
+
+const featured = allPostsData.filter((p) => p.featured).slice(0, 3);
+const featuredIds = new Set(featured.map((p) => p.id));
+const recentCandidates = allPostsData.filter((p) => !featuredIds.has(p.id));
+const notebookTargetCount = 8;
+
+const diverseNotebook = recentCandidates.reduce<typeof allPostsData>((selected, post) => {
+  const primaryTag = post.tags[0];
+  if (!primaryTag) return selected;
+  if (selected.some((candidate) => candidate.tags[0] === primaryTag)) {
+    return selected;
+  }
+  return [...selected, post];
+}, []);
+
+const notebook = [
+  ...diverseNotebook,
+  ...recentCandidates.filter(
+    (post) => !diverseNotebook.some((candidate) => candidate.id === post.id),
+  ),
+].slice(0, notebookTargetCount);
+
+const themeItems = [
+  { label: "How do we align systems?" },
+  { label: "How do we spot deception?" },
+  { label: "What makes systems honest?" },
+  { label: "Which evals matter?" },
+  { label: "How do humans oversee?" },
+];
 ---
 
 <BaseLayout title="Home">
-  <section class="heading">
-    <h1 class="animated-heading">
-      <span class="word">Hi,</span>
-      <span class="word">I'm</span>
-      <span class="word">Tyler</span>
-    </h1>
-    <p class="animated-subtitle slide-in-block">
-      I'm a research engineer working on interpretability and ML
-      infrastructure. I'm finishing my MSCS at Georgia Tech while doing
-      AI safety research with SPAR and MARS after 7 years as a Senior SWE &
-      Team Lead.
-    </p>
+  <section class="profile slide-in-block">
+    <div class="profile-main">
+      <h1 class="profile-name">Tyler Crosse</h1>
+      <p class="profile-bio">
+        Research engineer working on AI safety.
+        </br>MSCS Georgia Tech. 7+ years as a senior SWE & team lead.
+      </p>
+      <SocialLinks showRss={false} />
+    </div>
+    <CurrentlyList heading="Themes" items={themeItems} />
   </section>
-  <section class="posts slide-in-block" data-pagefind-ignore>
-    <h2>Writing</h2>
-    <ul>
-      {
-        allPostsData.map((post) => (
-          <li>
-            <a href={`/ideas/${post.slug}/`}>
-              {post.date && <FormattedDate date={post.date} />} -
-              {post.draft && <span class="draft-indicator">DRAFT</span>}
-              <span class="title">{post.title}</span>
-              <span class="reading-time">{post.readingTimeText}</span>
-              <div class="description">{post.description}</div>
-            </a>
-          </li>
-        ))
-      }
-    </ul>
+
+  <hr class="divider slide-in-block" />
+
+  {featured.length > 0 && (
+    <section class="showcase slide-in-block" aria-label="Featured posts">
+      <div class="showcase-hero">
+        <PostCard post={featured[0]} variant="showcase" />
+      </div>
+      <div class="showcase-rail">
+        {featured.slice(1, 3).map((post) => (
+          <PostCard post={post} variant="compact" />
+        ))}
+      </div>
+    </section>
+  )}
+
+  <section class="notebook slide-in-block" aria-label="Selected writing">
+    <header class="notebook-header">
+      <h2>Selected Writing</h2>
+      <a href="/ideas" class="notebook-all">all ideas →</a>
+    </header>
+    <div class="notebook-grid">
+      {notebook.map((post) => (
+        <PostCard post={post} variant="mini" />
+      ))}
+    </div>
   </section>
 </BaseLayout>
 
 <style>
   :global(main) {
-    padding-top: 1.5rem;
+    padding: 2rem 1.5rem 4rem;
   }
 
-  .heading {
+  @media (min-width: 768px) {
+    :global(main) {
+      padding: 3rem 2rem 5rem;
+    }
+  }
+
+  /* Profile header */
+  .profile {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    max-width: 1200px;
+    margin: 0 auto 2.5rem;
+    padding-inline: 0;
+    box-sizing: border-box;
+  }
+
+  @media (min-width: 768px) {
+    .profile {
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: start;
+      gap: 3rem;
+      /* padding-inline: 3rem; */
+    }
+  }
+
+  @media (min-width: 1100px) {
+    .profile {
+      padding-inline: 5rem;
+    }
+  }
+
+  .profile-main {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
     gap: 1rem;
-    min-height: clamp(220px, 28vh, 320px);
-    padding: 1.5rem 0 1rem;
-    text-align: center;
+    max-width: 36rem;
   }
 
-  .heading h1 {
-    font-size: clamp(3.5rem, 8vw, 5rem);
-    line-height: 1.02;
-    margin-bottom: 0;
-  }
-
-  @media (max-width: 520px) {
-    .heading {
-      min-height: 0;
-      padding: 1rem 0 0.5rem;
-    }
-
-    .heading h1 {
-      font-size: clamp(2.8rem, 13vw, 3.5rem);
-    }
-  }
-
-  .animated-heading,
-  .animated-subtitle {
-    overflow: hidden;
-  }
-
-  .animated-heading {
-    padding-bottom: 0.08em;
-  }
-
-  .animated-subtitle {
-    max-width: 38rem;
+  .profile-name {
+    font-family: var(--font-heading);
+    font-size: clamp(3rem, 7vw, 5rem);
+    line-height: 1;
     margin: 0;
-    font-size: clamp(1.15rem, 1.9vw, 1.4rem);
-    line-height: 1.5;
-    text-wrap: balance;
+    font-weight: 700;
   }
 
-  @media (max-height: 820px) {
-    .heading {
-      min-height: 0;
-      padding-top: 0.5rem;
+  .profile-bio {
+    margin: 0;
+    color: var(--sol-8);
+    font-size: clamp(1.05rem, 1.25vw, 1.2rem);
+    line-height: 1.55;
+    max-width: 34rem;
+  }
+
+  .profile :global(.social-links) {
+    margin-left: -0.5rem;
+  }
+
+  .divider {
+    border: none;
+    border-top: 1px solid var(--main-border-color);
+    max-width: 1200px;
+    margin: 0 auto 2rem;
+  }
+
+  :global([data-effective-theme="dark"]) .divider {
+    border-top-color: var(--base03);
+  }
+
+  /* Showcase */
+  .showcase {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    max-width: 1200px;
+    margin: 0 auto 3rem;
+  }
+
+  @media (min-width: 900px) {
+    .showcase {
+      grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+      gap: 1.75rem;
+      /* align-items: start; */
     }
+  }
 
-    .animated-subtitle {
-      font-size: clamp(1.15rem, 1.7vw, 1.4rem);
-      line-height: 1.4;
+  .showcase-rail {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  @media (min-width: 600px) and (max-width: 899px) {
+    .showcase-rail {
+      grid-template-columns: repeat(2, 1fr);
     }
   }
 
-  .word {
-    display: inline-block;
-    opacity: 0;
-    transform: translateY(100%) translateZ(0);
-    filter: blur(20px);
-    animation: wordSlideIn 0.4s cubic-bezier(0.43, 0.195, 0.02, 1) forwards;
-  }
-
-  .animated-heading .word {
-    animation-delay: calc(var(--word-index, 0) * 0.05s);
-  }
-
-  .animated-subtitle .word {
-    animation-delay: calc(0.15s + var(--word-index, 0) * 0.05s);
-  }
-
-  @keyframes wordSlideIn {
-    to {
-      opacity: 1;
-      transform: translateY(0) translateZ(0);
-      filter: blur(0px);
-    }
-  }
-
-  /* Set CSS custom properties for animation delays */
-  .animated-heading .word:nth-child(1) {
-    --word-index: 0;
-  }
-  .animated-heading .word:nth-child(2) {
-    --word-index: 1;
-  }
-  .animated-heading .word:nth-child(3) {
-    --word-index: 2;
-  }
-
-  .posts {
-    max-width: 800px;
+  /* Notebook */
+  .notebook {
+    max-width: 1200px;
     margin: 0 auto;
   }
 
-  .posts ul {
-    padding: 0;
+  .notebook-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
+    gap: 1rem;
   }
 
-  .posts li {
-    list-style: none;
-    font-size: 1rem;
-    padding: 0.5rem 0;
-  }
-
-  .posts a {
-    text-decoration: none;
-    color: var(--sol-8);
-  }
-
-  .posts a:hover {
-    color: var(--sol-9);
-    text-decoration: underline;
-  }
-
-  .posts a .title {
-    font-weight: bold;
+  .notebook-header h2 {
     font-family: var(--font-heading);
+    font-size: 1.35rem;
+    font-weight: 700;
+    margin: 0;
   }
 
-  .draft-indicator {
-    background-color: var(--sol-yellow);
-    color: var(--green);
-    font-size: 0.7rem;
-    font-weight: bold;
-    padding: 2px 6px;
-    border-radius: 3px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+  .notebook-all {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: var(--sol-8);
+    text-decoration: none;
+    letter-spacing: 0.02em;
   }
 
+  .notebook-all:hover {
+    color: var(--sol-9);
+  }
+
+  .notebook-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+  }
+
+  @media (min-width: 600px) {
+    .notebook-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .notebook-grid {
+      grid-template-columns: repeat(4, 1fr);
+    }
+  }
+
+  /* Entrance animations */
   .slide-in-block {
     opacity: 0;
-    filter: blur(10px);
-    transform: scale(0.95);
+    filter: blur(8px);
+    transform: scale(0.98);
     will-change: transform, opacity, filter;
-    animation: slideInBlock 0.4s cubic-bezier(0.43, 0.195, 0.02, 1) forwards;
+    animation: slideInBlock 0.45s cubic-bezier(0.43, 0.195, 0.02, 1) forwards;
   }
 
-  .animated-subtitle.slide-in-block {
-    animation-delay: 0.4s;
+  .profile.slide-in-block {
+    animation-delay: 0.05s;
   }
-
-  .posts.slide-in-block {
-    animation-delay: 0.6s;
+  .divider.slide-in-block {
+    animation-delay: 0.15s;
+  }
+  .showcase.slide-in-block {
+    animation-delay: 0.2s;
+  }
+  .notebook.slide-in-block {
+    animation-delay: 0.3s;
   }
 
   @keyframes slideInBlock {
     to {
       opacity: 1;
-      filter: blur(0px);
+      filter: blur(0);
       transform: scale(1);
     }
   }

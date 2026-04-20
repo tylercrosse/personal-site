@@ -1,0 +1,83 @@
+---
+type Tone = "active" | "pending" | "muted";
+
+interface Item {
+  label: string;
+  tone?: Tone;
+}
+
+interface Props {
+  heading?: string;
+  items: Item[];
+}
+
+const { heading = "Currently", items } = Astro.props;
+---
+
+<aside class="currently">
+  <h2 class="currently-heading">{heading}</h2>
+  <ul class="currently-list">
+    {items.map(({ label, tone = "muted" }) => (
+      <li class={`currently-item currently-item--${tone}`}>
+        <span class="dot" aria-hidden="true"></span>
+        <span>{label}</span>
+      </li>
+    ))}
+  </ul>
+</aside>
+
+<style>
+  .currently {
+    font-family: var(--font-mono);
+  }
+
+  .currently-heading {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--sol-7);
+    margin: 0 0 0.75rem;
+  }
+
+  .currently-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+  }
+
+  .currently-item {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.85rem;
+    color: var(--sol-8);
+  }
+
+  .dot {
+    width: 0.55rem;
+    height: 0.55rem;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background-color: var(--sol-7);
+  }
+
+  .currently-item--active {
+    color: var(--sol-9);
+  }
+
+  .currently-item--active .dot {
+    background-color: var(--cyan);
+  }
+
+  .currently-item--pending .dot {
+    background-color: var(--orange);
+  }
+
+  .currently-item--muted .dot {
+    background-color: var(--sol-7);
+  }
+</style>
