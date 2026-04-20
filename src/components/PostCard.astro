@@ -26,8 +26,7 @@ const { post, variant = "compact", showDescription } = Astro.props;
 
 const Icon = getIconForType(post.type);
 
-const shouldShowDescription =
-  showDescription ?? (variant === "showcase");
+const shouldShowDescription = showDescription ?? true;
 
 const metaDate = post.date
   ? post.date.toLocaleDateString("en-us", {
@@ -36,7 +35,6 @@ const metaDate = post.date
       day: "numeric",
     })
   : "";
-const readingMinutes = post.readingTimeText.replace(/\s*read.*$/i, "").trim();
 
 const primaryTag = post.tags?.[0];
 
@@ -69,7 +67,7 @@ const gradientAspect =
       {post.draft && <span class="draft-indicator">DRAFT</span>}
       {post.type && (
         <span class="meta-chunk type-chunk">
-          {Icon && <Icon size={12} />}
+          {Icon && <Icon size={14} />}
           {capitalize(post.type)}
         </span>
       )}
@@ -77,7 +75,7 @@ const gradientAspect =
         <span class="meta-chunk">{primaryTag}</span>
       )}
       {metaDate && <span class="meta-chunk">{metaDate}</span>}
-      {readingMinutes && <span class="meta-chunk">{readingMinutes}</span>}
+      {post.readingTimeText && <span class="meta-chunk">{post.readingTimeText}</span>}
     </div>
 
     <h3 class="post-card-title">{post.title}</h3>
@@ -173,36 +171,27 @@ const gradientAspect =
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 0.4rem 0.55rem;
-    font-family: var(--font-mono);
-    font-size: 0.7rem;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--blue);
+    gap: 0.25rem 1em;
+    font-size: 0.75rem;
+    text-transform: capitalize;
+    color: var(--sol-7);
   }
 
   .post-card--mini .post-card-meta {
-    font-size: 0.65rem;
-    color: var(--sol-8);
-    text-transform: none;
-    letter-spacing: 0.02em;
+    font-size: 0.7rem;
+    gap: 0.25rem 0.9em;
   }
 
   .meta-chunk {
     display: inline-flex;
     align-items: center;
-    gap: 0.25rem;
+    gap: 0.3rem;
     white-space: nowrap;
-  }
-
-  .meta-chunk + .meta-chunk::before {
-    content: "·";
-    margin-right: 0.4rem;
-    opacity: 0.7;
   }
 
   .type-chunk :global(svg) {
     flex-shrink: 0;
+    vertical-align: middle;
   }
 
   .post-card-title {
@@ -238,8 +227,13 @@ const gradientAspect =
     line-height: 1.5;
   }
 
+  .post-card--compact .post-card-description,
+  .post-card--mini .post-card-description {
+    font-size: 0.85rem;
+    line-height: 1.45;
+  }
+
   .draft-indicator {
-    background-color: var(--sol-yellow, var(--yellow));
     color: var(--green);
     font-size: 0.6rem;
     font-weight: bold;

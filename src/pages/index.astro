@@ -69,8 +69,8 @@ const themeItems = [
     <div class="profile-main">
       <h1 class="profile-name">Tyler Crosse</h1>
       <p class="profile-bio">
-        Research engineer working on AI safety — interpretability & ML infra.
-        MSCS Georgia Tech. 7+ years as a senior SWE & team lead.
+        Research engineer working on AI safety.
+        </br>MSCS Georgia Tech. 7+ years as a senior SWE & team lead.
       </p>
       <SocialLinks showRss={false} />
     </div>
@@ -122,7 +122,9 @@ const themeItems = [
     grid-template-columns: 1fr;
     gap: 2rem;
     max-width: 1200px;
-    margin: 0 auto 2rem;
+    margin: 0 auto 2.5rem;
+    padding-inline: 0;
+    box-sizing: border-box;
   }
 
   @media (min-width: 768px) {
@@ -130,6 +132,13 @@ const themeItems = [
       grid-template-columns: minmax(0, 1fr) auto;
       align-items: start;
       gap: 3rem;
+      /* padding-inline: 3rem; */
+    }
+  }
+
+  @media (min-width: 1100px) {
+    .profile {
+      padding-inline: 5rem;
     }
   }
 
@@ -142,7 +151,7 @@ const themeItems = [
 
   .profile-name {
     font-family: var(--font-heading);
-    font-size: clamp(2.75rem, 6vw, 4.25rem);
+    font-size: clamp(3rem, 7vw, 5rem);
     line-height: 1;
     margin: 0;
     font-weight: 700;
@@ -151,9 +160,9 @@ const themeItems = [
   .profile-bio {
     margin: 0;
     color: var(--sol-8);
-    font-size: clamp(0.95rem, 1.1vw, 1.05rem);
+    font-size: clamp(1.05rem, 1.25vw, 1.2rem);
     line-height: 1.55;
-    max-width: 32rem;
+    max-width: 34rem;
   }
 
   .profile :global(.social-links) {
@@ -182,8 +191,9 @@ const themeItems = [
 
   @media (min-width: 900px) {
     .showcase {
-      grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+      grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
       gap: 1.75rem;
+      /* align-items: start; */
     }
   }
 
