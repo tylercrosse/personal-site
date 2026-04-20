@@ -1,0 +1,510 @@
+---
+title: "Graphs as Black Boxes: Search, Paths, Cuts, and Reductions"
+description: "A concept guide to graph algorithms through the black-box lens: traversal, shortest paths, cuts, and reductions"
+date: "2026-03-16"
+status: "in-progress"
+type: "retro"
+tags: ["algorithms", "computer-science", "graphs", "MSCS", "learning-in-public"]
+category: ['mscs']
+parent: '2026/ga-retro'
+draft: true
+audience: "All"
+media_subpath: "/ideas/ga-2/"
+image:
+  path: "TVM_Vaulted-Willow_Plan.jpg"
+  alt: "Graph blob art"
+hideCaption: true
+---
+
+import BookCard from "../../../../components/BookCard.astro";
+import algsDpvImg from "../../../books/algs-dpv.jpg";
+import algsEricksonImg from "../../../books/algs-erickson.png";
+import algsCLRSImg from "../../../books/algs-clrs.jpg";
+
+## Introduction
+
+> [!note]
+> This article is part of a broader series on CS 6515. The course context is real, but the material here is framed through public textbook ideas and original graph widgets rather than course-internal guidance.
+
+This post covers the graphs portion of the algorithms sequence: traversal, shortest paths, minimum spanning trees, and max flow. The unit is broad enough that a chapter-by-chapter retelling would be hard to read, so the material is organized around a smaller claim:
+
+> [!important]
+> Most graph problems in this unit become manageable once they are reduced to the right **black box**, and once the outputs of that black box are interpreted correctly.
+
+That framing is more useful than memorizing isolated procedures. A graph algorithm is rarely just "run DFS" or "run Dijkstra." The real question is what evidence is needed:
+
+- reachability or layer structure
+- parent pointers for a path
+- timestamps that certify structure
+- distances under a specific edge-weight regime
+- a cut argument that certifies safety or optimality
+
+The public textbook mapping behind this post is straightforward: DPV Chapters 3, 4, and 5 provide the core graph algorithms, while Erickson Chapters 5 through 11 provide a stronger intuition for why these routines behave the way they do.
+
+### TL;DR
+
+- **Audience**: Anyone learning graph algorithms who wants a compact conceptual map rather than a full handbook.
+- **Scope**: Traversal, shortest paths, MSTs, and max flow.
+- **Lens**: Graph algorithms as reusable black boxes with specific outputs, invariants, and failure conditions.
+- **Extras**: Three interactive labs for search frontiers, shortest paths, and cuts, plus an optional graph tools index for deeper exploration.
+
+> [!tip]
+> A public index of the graph widgets used here is available at [Graph Tools](/ideas/2026/ga-2/graph-tools/). The main article only embeds the three labs that pull the most conceptual weight.
+
+## Graphs as State + Structure
+
+Only a small slice of graph terminology is needed to make the rest of the unit legible.
+
+- An **undirected graph** models symmetric relationships; a **directed graph** models one-way structure.
+- A **path** is a sequence of edges; **reachability** asks whether such a path exists.
+- In undirected graphs, reachability partitions the graph into **connected components**.
+- In directed graphs, mutual reachability partitions the graph into **strongly connected components**.
+- A **DAG** is a directed graph with no directed cycles, which makes dependency order meaningful.
+- A **cut** is a partition of the vertices into two sides; edges that cross the partition often certify something important.
+
+The useful mental move is to treat a graph as a compact state space plus a structure of allowed transitions. From there, most problems take one of two forms:
+
+1. A state graph is already present, and the task is to extract the right evidence from it.
+2. The original problem is not obviously a graph problem, but it can be **reduced** to one.
+
+That is why the black-box lens works so well here. Once the right graph representation exists, the next question is not "how would this be coded from scratch?" but rather "which output artifact answers the original problem?"
+
+### Mini Glossary
+
+The following terms do most of the work in this post:
+
+- **Reachability**: whether one vertex can get to another by following edges.
+- **Connected component**: a maximal region of an undirected graph where every vertex is reachable from every other vertex.
+- **Strongly connected component**: a maximal region of a directed graph where reachability works in both directions.
+- **DAG**: a directed acyclic graph, which makes dependency order meaningful because no directed cycle can trap the ordering.
+- **Cut**: a partition of the vertices into two sides; crossing edges are often the objects that certify a safe MST choice or a min-cut bound.
+- **Residual graph**: the graph that records where additional flow can still be pushed, and in what amount.
+
+These are the terms worth keeping active. The full graph vocabulary is larger, but most of the unit keeps returning to these same structural ideas.
+
+## Traversal Black Boxes
+
+Traversal algorithms are the foundation of the unit because they expose structure before they optimize anything.
+
+<style>
+  {`
+    .graph-frame {
+      grid-column: 1 / 4 !important;
+      position: relative;
+      width: 100%;
+      max-width: 1600px;
+      margin: 1rem auto 2rem;
+      border: 1px solid rgba(32, 49, 74, 0.9);
+      border-radius: 18px;
+      overflow: hidden;
+      background: #07111f;
+      box-shadow: 0 18px 50px rgba(0, 0, 0, 0.18);
+    }
+
+    .graph-frame iframe {
+      display: block;
+      width: 100%;
+      border: 0;
+      background: #07111f;
+    }
+
+    .graph-frame--frontier iframe {
+      height: 1180px;
+    }
+
+    .graph-frame--paths iframe {
+      height: 1320px;
+    }
+
+    .graph-frame--cuts iframe {
+      height: 1240px;
+    }
+
+    .compact-table {
+      overflow-x: auto;
+      margin: 1rem 0 1.5rem;
+    }
+
+    .compact-table table {
+      width: 100%;
+      min-width: 760px;
+      border-collapse: collapse;
+    }
+
+    .compact-table th,
+    .compact-table td {
+      padding: 0.7rem 0.8rem;
+      border-bottom: 1px solid rgba(32, 49, 74, 0.55);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .compact-table th {
+      font-size: 0.88rem;
+    }
+
+    @media (max-width: 900px) {
+      .graph-frame--frontier iframe {
+        height: 980px;
+      }
+
+      .graph-frame--paths iframe {
+        height: 1120px;
+      }
+
+      .graph-frame--cuts iframe {
+        height: 1040px;
+      }
+    }
+  `}
+</style>
+
+### Search Frontier Lab
+
+<div class="graph-frame graph-frame--frontier">
+  <iframe
+    src="/ideas/ga-2-tools/frontier.html"
+    title="Search Frontier Lab"
+    loading="lazy"
+  />
+</div>
+
+### Depth-First Search
+
+- **What question it answers**: What structure is revealed by recursively exploring as far as possible before backing up?
+- **What output artifacts matter**: `prev[]`, `pre[]`, `post[]`, and component labels.
+- **What mental invariant matters**: DFS exposes the shape of the exploration tree and the timing relationships between vertices.
+- **Representative problem type**: Find connected components, detect cycles, classify edges, or gather evidence for topological order and SCCs.
+
+DFS is not the cleanest shortest-path tool, but it is the richest structural tool. The parent pointers recover discovery paths; the pre/post timestamps describe nesting relationships; and the resulting forest exposes how the graph decomposes.
+
+### Breadth-First Search
+
+- **What question it answers**: How far is every reachable vertex from the source in number of edges?
+- **What output artifacts matter**: `dist[]` and `prev[]`.
+- **What mental invariant matters**: BFS explores the graph in layers, so the first time a vertex is reached is by a shortest-hop path.
+- **Representative problem type**: Reachability, bipartite testing, and shortest unweighted paths.
+
+BFS should be thought of as a **frontier-expansion** black box. It does not extract as much structural evidence as DFS, but on unweighted graphs it gives exactly the right notion of distance.
+
+### Topological Sort
+
+- **What question it answers**: In what order can a DAG be processed so every edge points forward?
+- **What output artifacts matter**: a linear ordering, usually built from DFS postorder.
+- **What mental invariant matters**: a DAG has no directed cycle, so dependencies can be lined up consistently.
+- **Representative problem type**: Scheduling, prerequisite planning, and DAG dynamic programming.
+
+Topological sort is best seen as **DFS plus an interpretation of finishing times**. The traversal is not the final goal; the order implied by the traversal is.
+
+### Strongly Connected Components
+
+- **What question it answers**: Which vertices are mutually reachable, and what happens when each cycle-cluster is compressed into one meta-node?
+- **What output artifacts matter**: component labels and the SCC metagraph.
+- **What mental invariant matters**: once SCCs are compressed, the result is a DAG.
+- **Representative problem type**: Determine whether a directed graph is strongly connected, identify source/sink SCCs, or simplify a graph before higher-level reasoning.
+
+SCCs are the right abstraction whenever directed cycles are present but should be treated as internally interchangeable. The compression step is the real payoff: a complicated directed graph becomes a simpler DAG of components.
+
+For an optional visual deep dive into DFS timestamps, SCC condensation, and DAG structure, see the [Directed Structure Lab](/ideas/ga-2-tools/directed-structure.html).
+
+### How These Four Relate
+
+These traversal black boxes are not four unrelated tricks:
+
+- BFS is the cleanest answer when the graph is unweighted and the goal is shortest-hop distance.
+- DFS is the structural workhorse when timestamps, cycle evidence, or decomposition matter.
+- Topological sort is what DFS becomes when the graph is acyclic and order matters.
+- SCC is what DFS becomes when directed cycles need to be compressed before reasoning continues.
+
+This family handles problem patterns such as bipartite testing, curriculum scheduling, universal reachability in a DAG, and "what structure is forced by this directed graph?" questions.
+
+## Shortest-Path Black Boxes
+
+Shortest-path algorithms all solve the same headline problem, but they do not solve it under the same assumptions. The most important distinction is the **edge-weight regime**.
+
+### Shortest Path Comparator
+
+<div class="graph-frame graph-frame--paths">
+  <iframe
+    src="/ideas/ga-2-tools/shortest-paths.html"
+    title="Shortest Path Comparator"
+    loading="lazy"
+  />
+</div>
+
+### One Family, Four Regimes
+
+- **BFS**: single-source shortest paths when every edge has equal cost.
+- **Dijkstra**: single-source weighted shortest paths when every edge weight is nonnegative.
+- **Bellman-Ford**: single-source weighted shortest paths with negative edges, plus reachable negative-cycle detection.
+- **Floyd-Warshall**: all-pairs shortest paths via a matrix-style recurrence over allowed intermediate vertices.
+
+The right way to remember these is not by code structure but by the promise each algorithm can safely make.
+
+<div class="compact-table">
+  <table>
+    <thead>
+      <tr>
+        <th>Black box</th>
+        <th>Input assumptions</th>
+        <th>Output shape</th>
+        <th>Runtime</th>
+        <th>Failure mode / caution</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>BFS</code></td>
+        <td>Unweighted graph, or all edges treated as unit cost</td>
+        <td><code>dist[]</code>, <code>prev[]</code> from one source</td>
+        <td><code>O(n + m)</code></td>
+        <td>Optimizes hop count, not total weight</td>
+      </tr>
+      <tr>
+        <td><code>Dijkstra</code></td>
+        <td>Weighted graph with no negative edges</td>
+        <td><code>dist[]</code>, <code>prev[]</code> from one source</td>
+        <td><code>O((n + m) log n)</code></td>
+        <td>Breaks with negative edges</td>
+      </tr>
+      <tr>
+        <td><code>Bellman-Ford</code></td>
+        <td>Weighted graph, negative edges allowed</td>
+        <td><code>dist[]</code>, <code>prev[]</code>, and iteration-by-iteration evidence</td>
+        <td><code>O(nm)</code></td>
+        <td>Only detects negative cycles reachable from the source</td>
+      </tr>
+      <tr>
+        <td><code>Floyd-Warshall</code></td>
+        <td>Weighted graph, all-pairs objective</td>
+        <td><code>dist[u][v]</code> for every pair</td>
+        <td><code>O(n^3)</code></td>
+        <td>Expensive when only one source is needed</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+### BFS as a shortest-path tool
+
+When every edge means "one move," BFS is already a shortest-path algorithm. That is why state-space problems such as pouring puzzles or fuel-feasibility questions often collapse immediately into BFS once the state graph has been defined carefully.
+
+### Dijkstra as a greedy distance tool
+
+Dijkstra should be remembered as a method for **settling** vertices in order of currently known shortest distance. Its strongest use case is positive or nonnegative edge weights, where no later update can undercut a settled choice.
+
+This is the right black box for patterns such as:
+
+- finding the best weighted route between two cities
+- minimizing the largest edge threshold by transforming the objective
+- computing distances to and from a distinguished hub vertex
+
+### Bellman-Ford as a robust relaxation tool
+
+Bellman-Ford is slower, but that extra cost buys robustness. It permits negative edges and exposes how distance estimates evolve across path lengths. That makes it the correct tool whenever "greedy settlement" is unsafe.
+
+Two compact anchor examples:
+
+- **Currency exchange**: taking negative logs converts multiplicative exchange rates into additive edge weights.
+- **Negative-cycle detection**: improvement on the final relaxation round signals a cycle that keeps reducing path cost.
+
+### Floyd-Warshall as a matrix-style recurrence
+
+Floyd-Warshall belongs in the same family, but it feels different because the state is all pairs at once. The key recurrence asks:
+
+> Is the best path from `u` to `v` improved by allowing vertex `k` as an intermediate stop?
+
+That makes the algorithm useful whenever the problem is inherently all-pairs, or when many source-target queries must be answered from the same graph.
+
+This family covers patterns such as shortest cycle, shortest path constrained to pass through a chosen vertex, and all-pairs reachability or distance summaries.
+
+## Cut-Based Black Boxes
+
+The second half of the unit shifts from traversal and distances toward **certificates of optimality**. A cut is the common language.
+
+### Cuts Lab
+
+<div class="graph-frame graph-frame--cuts">
+  <iframe
+    src="/ideas/ga-2-tools/cuts.html"
+    title="Cuts Lab"
+    loading="lazy"
+  />
+</div>
+
+### Minimum Spanning Trees
+
+Kruskal and Prim can look very different operationally, but they are justified by the same idea:
+
+> [!important]
+> A light edge that crosses the right cut is a **safe** edge to add to an MST.
+
+That is the unifying concept.
+
+- **Kruskal** grows a forest and asks whether the next light edge safely connects two components.
+- **Prim** grows one tree and asks which boundary edge is the cheapest safe way to bring in the next vertex.
+
+The cut language explains why both work:
+
+- the algorithmic steps differ
+- the proof idea is the same
+- the output is a tree, but the real certificate is cut safety
+
+Useful anchor problems here include uniqueness under distinct weights, reasoning about what happens when one edge weight changes, and variants that constrain which vertices are allowed to be leaves.
+
+### Max Flow and Min Cut
+
+Max flow introduces a new kind of cut argument. The algorithmic object is now a **residual graph**, and the main loop asks whether an augmenting path still exists.
+
+- **What the algorithm returns**: a feasible flow and its value.
+- **What the residual graph exposes**: whether the current flow can still be improved.
+- **What the stopping condition means**: no residual `s-t` path remains.
+- **What the cut interpretation gives back**: a certificate that the current flow is maximum.
+
+Ford-Fulkerson is therefore not just "keep augmenting." The deeper picture is:
+
+1. residual reachability shows what capacity is still usable
+2. augmenting paths increase the flow
+3. once no such path exists, the reachable set in the residual graph defines a minimum cut
+
+That is why flow and MST belong in the same section. Both are cut-based topics; they just use cuts differently.
+
+### Beyond This Post
+
+Matching and bipartite reductions sit naturally nearby, but they are better thought of as **applications of flow and traversal** than as new conceptual foundations. Once the cut and residual ideas are in place, the reduction patterns start to look much less mysterious.
+
+## Quick Reference
+
+The full article is organized by concept, but it is still useful to have a compact reference view of the main graph black boxes.
+
+<div class="compact-table">
+  <table>
+    <thead>
+      <tr>
+        <th>Algorithm</th>
+        <th>Best used when</th>
+        <th>Key output</th>
+        <th>Runtime</th>
+        <th>Main caution</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>DFS</code></td>
+        <td>Structure matters more than distance</td>
+        <td>Parent tree, discovery/finish timing, component structure</td>
+        <td><code>O(n + m)</code></td>
+        <td>Not a shortest-path algorithm</td>
+      </tr>
+      <tr>
+        <td><code>BFS</code></td>
+        <td>The graph is unweighted or unit-weighted</td>
+        <td>Shortest-hop distances and recoverable source paths</td>
+        <td><code>O(n + m)</code></td>
+        <td>Optimizes hop count only</td>
+      </tr>
+      <tr>
+        <td><code>Topological Sort</code></td>
+        <td>A DAG must be processed in dependency order</td>
+        <td>A linear ordering consistent with edge direction</td>
+        <td><code>O(n + m)</code></td>
+        <td>Meaningful only for DAGs</td>
+      </tr>
+      <tr>
+        <td><code>SCC</code></td>
+        <td>Directed cycles should be compressed before reasoning continues</td>
+        <td>Component labels and a condensation DAG</td>
+        <td><code>O(n + m)</code></td>
+        <td>Answers mutual reachability, not path optimality</td>
+      </tr>
+      <tr>
+        <td><code>Dijkstra</code></td>
+        <td>Weighted shortest paths with nonnegative edges</td>
+        <td>Single-source weighted distances and predecessor structure</td>
+        <td><code>O((n + m) log n)</code></td>
+        <td>Unsafe with negative weights</td>
+      </tr>
+      <tr>
+        <td><code>Bellman-Ford</code></td>
+        <td>Negative edges may appear or negative cycles must be detected</td>
+        <td>Single-source distances plus relaxation evidence</td>
+        <td><code>O(nm)</code></td>
+        <td>Slower than Dijkstra when negative weights are absent</td>
+      </tr>
+      <tr>
+        <td><code>Floyd-Warshall</code></td>
+        <td>All-pairs distances are the real objective</td>
+        <td>A full pairwise distance table</td>
+        <td><code>O(n^3)</code></td>
+        <td>Overkill for single-source queries</td>
+      </tr>
+      <tr>
+        <td><code>Kruskal</code></td>
+        <td>An MST should be built by adding globally light safe edges</td>
+        <td>A minimum spanning forest that becomes an MST when connected</td>
+        <td><code>O(m log n)</code></td>
+        <td>Cut safety is the proof idea, not the edge order alone</td>
+      </tr>
+      <tr>
+        <td><code>Prim</code></td>
+        <td>An MST should be grown outward from one tree</td>
+        <td>Tree-parent structure of an MST</td>
+        <td><code>O(m log n)</code></td>
+        <td>Assumes the graph is treated as connected for the full tree output</td>
+      </tr>
+      <tr>
+        <td><code>Ford-Fulkerson</code></td>
+        <td>Maximum flow is needed and augmenting paths are the natural lens</td>
+        <td>A feasible max flow and, indirectly, a min-cut certificate</td>
+        <td><code>O(mC)</code> for integer capacities</td>
+        <td>The residual graph is the real state; the current flow alone is not enough</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+## What to Remember
+
+- Graph problems are often easier to solve by choosing the right black box than by staring at the original prompt directly.
+- DFS is the structural black box; BFS is the clean shortest-hop black box.
+- Topological order and SCCs are not separate worlds; they are interpretations of traversal evidence.
+- Shortest-path algorithms differ mainly by edge-weight regime and output scope.
+- MSTs and max flow are both best understood through cuts, not just through procedure.
+- A good reduction is one where the output artifact of the graph algorithm directly answers the original question.
+
+## Resources
+
+### Books
+
+<BookCard
+  title="Algorithms"
+  author="Sanjoy Dasgupta, Christos Papadimitriou, and Umesh Vazirani"
+  img={algsDpvImg}
+  url="https://highered.mheducation.com/sites/0073523402/"
+>
+  <p>
+    Chapters 3 through 5 are the backbone of this post: traversal, shortest paths, and spanning trees/flows in a compact textbook style.
+  </p>
+</BookCard>
+
+<BookCard
+  title="Algorithms"
+  author="Jeff Erickson"
+  img={algsEricksonImg}
+  url="https://jeffe.cs.illinois.edu/teaching/algorithms/"
+>
+  <p>
+    Erickson is especially useful for the mental model behind graph reductions, DAG structure, and why the same ideas keep reappearing under different surface forms.
+  </p>
+</BookCard>
+
+<BookCard
+  title="Introduction to Algorithms"
+  author="Thomas H. Cormen, Charles E. Leiserson, Ronald L. Rivest, Clifford Stein"
+  img={algsCLRSImg}
+  url="https://mitpress.mit.edu/9780262046305/introduction-to-algorithms/"
+>
+  <p>
+    Best used as a reference text when a second presentation of shortest paths, spanning trees, or flow algorithms is needed.
+  </p>
+</BookCard>
