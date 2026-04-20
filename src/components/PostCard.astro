@@ -29,15 +29,13 @@ const Icon = getIconForType(post.type);
 const shouldShowDescription =
   showDescription ?? (variant === "showcase");
 
-const monthYear = post.date
-  ? post.date.toLocaleDateString("en-us", { month: "short", year: "numeric" })
+const metaDate = post.date
+  ? post.date.toLocaleDateString("en-us", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    })
   : "";
-
-const monthDay = post.date
-  ? post.date.toLocaleDateString("en-us", { month: "short", day: "numeric" })
-  : "";
-
-const metaDate = variant === "mini" ? monthDay : monthYear;
 const readingMinutes = post.readingTimeText.replace(/\s*read.*$/i, "").trim();
 
 const primaryTag = post.tags?.[0];

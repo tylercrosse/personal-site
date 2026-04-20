@@ -36,16 +36,31 @@ const allPostsData = posts.map((post) => {
 
 const featured = allPostsData.filter((p) => p.featured).slice(0, 3);
 const featuredIds = new Set(featured.map((p) => p.id));
-const notebook = allPostsData
-  .filter((p) => !featuredIds.has(p.id))
-  .slice(0, 4);
+const recentCandidates = allPostsData.filter((p) => !featuredIds.has(p.id));
+const notebookTargetCount = 8;
 
-const currentlyItems = [
-  { label: "Open to full-time roles", tone: "active" as const },
-  { label: "Applying — MATS '26", tone: "pending" as const },
-  { label: "Considering PhD programs", tone: "pending" as const },
-  { label: "SPAR & MARS fellow", tone: "muted" as const },
-  { label: "Wrapping MSCS @ Georgia Tech", tone: "muted" as const },
+const diverseNotebook = recentCandidates.reduce<typeof allPostsData>((selected, post) => {
+  const primaryTag = post.tags[0];
+  if (!primaryTag) return selected;
+  if (selected.some((candidate) => candidate.tags[0] === primaryTag)) {
+    return selected;
+  }
+  return [...selected, post];
+}, []);
+
+const notebook = [
+  ...diverseNotebook,
+  ...recentCandidates.filter(
+    (post) => !diverseNotebook.some((candidate) => candidate.id === post.id),
+  ),
+].slice(0, notebookTargetCount);
+
+const themeItems = [
+  { label: "How do we align systems?" },
+  { label: "How do we spot deception?" },
+  { label: "What makes systems honest?" },
+  { label: "Which evals matter?" },
+  { label: "How do humans oversee?" },
 ];
 ---
 
@@ -59,7 +74,7 @@ const currentlyItems = [
       </p>
       <SocialLinks showRss={false} />
     </div>
-    <CurrentlyList items={currentlyItems} />
+    <CurrentlyList heading="Themes" items={themeItems} />
   </section>
 
   <hr class="divider slide-in-block" />
@@ -77,9 +92,9 @@ const currentlyItems = [
     </section>
   )}
 
-  <section class="notebook slide-in-block" aria-label="From the notebook">
+  <section class="notebook slide-in-block" aria-label="Selected writing">
     <header class="notebook-header">
-      <h2>From the notebook</h2>
+      <h2>Selected Writing</h2>
       <a href="/ideas" class="notebook-all">all ideas →</a>
     </header>
     <div class="notebook-grid">
