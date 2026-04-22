@@ -1,6 +1,6 @@
 ---
 title: 'Deep Learning Foundations from Scratch: Linear Models, Backprop, and Optimization'
-description: 'A technical deep dive into optimization geometry, gradient flow, and experimental discipline in first-principles neural network training.'
+description: 'A concept-first guide to linear classifiers, softmax, backpropagation, optimization geometry, and regularization through a from-scratch MNIST project.'
 date: '2026-02-27'
 updated: '2026-02-27'
 status: 'in-progress'
@@ -12,11 +12,8 @@ audience: 'All'
 media_subpath: "/ideas/dl-a1/"
 parent: '2025/dl-retro'
 image:
-  # path: "hero-clipart-blume-vintage-kunst-1631264278ngu.png"
-  # path: "hero-backprop.png"
   path: "hero-backprop4.png"
   alt: 'Green ripples abstract art'
-  # maxWidth: "800px"
 hideCaption: true
 ---
 
@@ -31,266 +28,225 @@ import p1Fig3 from "../figures/lowyx/dl-p1-fig-04-loss-surface.png";
 import p1Fig4 from "../figures/lowyx/dl-p1-fig-05-train-valid-loss.png";
 import p1Fig5 from "../figures/lowyx/dl-p1-fig-05-dropout.png";
 
-## TL;DR
-Assignment 1 forced me to implement every component of a supervised learning pipeline in pure NumPy: data loading for MNIST, softmax regression, a two-layer MLP, SGD with L2 regularization, and full training/validation/test evaluation. The deliverable coupled a detailed report (theory problems + paper reviews) with experiments on hyperparameter sweeps, making this the deepest “from first principles” refresher I have done since enrolling in OMSCS.
+## Introduction
 
-## Why it mattered
-- Re-derived the gradient of the softmax function and the XOR non-separability proof, which anchored the later computational-graph work in the course.
-- Implemented forward/backward passes for linear, ReLU, and sigmoid layers plus cross-entropy loss, proving to myself that PyTorch is a convenience, not a crutch.
-- Tuned learning rate, weight decay, and hidden width to reach >98% validation accuracy on MNIST while keeping the code unit-testable.
+The first deep learning assignment exposes the mechanics directly. Instead of importing a framework and calling `fit()`, you have to make the pipeline explicit: how scores are computed, how losses become gradients, how gradients update parameters, and how hyperparameters affect learning.
 
-## Representative objective
-The full loss combined cross-entropy with L2 regularization across weight matrices:
+In practice, that means Assignment 1 was less about "training MNIST" and more about learning the small set of concepts that almost every later deep learning system still depends on:
 
-$$
-J(\theta) = -\frac{1}{N}\sum_{i=1}^N y_i^\top \log \hat{y}_i + \lambda \sum_{l} \|W_l\|_2^2,
-$$
+- linear decision surfaces,
+- softmax and cross-entropy,
+- backpropagation,
+- optimization geometry,
+- regularization.
 
-which my vanilla SGD optimizer minimized via $\theta_{t+1} = \theta_t - \eta \nabla_\theta J(\theta_t)$.
-
-## Artifact
-- [Full write-up (PDF)](../dl-retro/DL_A1_Writeups.pdf)
-
-## Introduction: Building the Mental Model Before the Tooling
-
-The first project in a deep learning course is usually where two myths break at the same time. The first myth is that training a model is mostly about choosing a bigger architecture. The second myth is that once the code runs, optimization will naturally produce good behavior. In practice, neither is true. Early project work is where you learn that optimization dynamics are the product, and architecture is only one of the ingredients.
-
-I approached this write-up with the same style as my GIOS and GPU posts: concept-first, failure-mode-aware, and focused on the reasoning patterns I can reuse in future systems work. This is intentionally integrity-safe: no assignment-specific implementation details, no private code excerpts, and no walkthrough of graded solution mechanics.
+The project context was intentionally simple. I implemented softmax regression and a small multilayer perceptron in NumPy, tuned them on MNIST, and used that stripped-down setting to see exactly what each piece of the training stack was doing.
 
 > [!note]
-> The objective of this post is to explain *why* foundational training systems behave the way they do, not to document a specific assignment solution.
+> This article is intentionally integrity-safe. I use the assignment as motivation and context, but I do not publish restricted prompts, solution mechanics, or code.
 
-## Core Concepts
+## What the Project Was Really About
 
-### Linear Decision Surfaces Are More Informative Than They Look
+At a high level, the assignment asked me to build a supervised learning pipeline from the ground up: load the data, define a model, compute a loss, derive gradients, run optimization, and evaluate the result. That sounds elementary, but it is exactly the scale where the important abstractions become visible.
 
-Linear classifiers are often introduced as a toy baseline, but they remain one of the best tools for understanding optimization behavior. They are expressive enough to expose issues with data scaling, initialization, regularization, and learning-rate policy, while still simple enough that you can reason about every term in the objective.
+When you work without framework conveniences, you see quickly that a model is not just an architecture. It is also:
 
-If we write class scores as `s = Wx + b`, the model is saying: “project input features onto class-specific directions and choose the highest score.” That means every class decision boundary is a hyperplane, and confidence is tied to signed distance from that plane. The geometry matters because it directly maps to training dynamics: poor feature scale means anisotropic curvature, and anisotropic curvature means one learning rate can be too large for one direction and too small for another.
+- a representation of inputs,
+- a loss that defines what counts as a mistake,
+- a set of cached intermediate values for the backward pass,
+- an optimization policy,
+- and an evaluation protocol that tells you whether the run is actually healthy.
+
+The repo work for this assignment reinforced that point. I treated it as an exercise in verification as much as optimization: unit tests for core pieces, analytical gradients checked against numerical approximations, curve plots across small sweeps, and model selection based on validation behavior rather than trusting the final epoch or one lucky run.
+
+That is why this project is an effective entry point into the course. It forces you to understand deep learning as a system instead of a black box.
+
+## Linear Classifiers Are the Right Place to Start
+
+Linear models look limited, but they are the simplest place to build intuition. If the model computes class scores as
+
+$$
+s = Wx + b,
+$$
+
+then every prediction is built from a weighted projection of the input onto class-specific directions. The decision boundaries are hyperplanes, and confidence is tied to distance from those boundaries.
 
 <Figure
   src={p1Fig1}
-  alt="Decision boundary intuition"
-  caption="Loss-function geometry controls gradient signal shape and early optimization behavior. Source: Lowyx GT DL Notes (CC BY 4.0), https://lowyx.com/posts/gt-dl-notes/."
+  alt="Loss and decision boundary intuition"
+  caption="The geometry of a classifier already tells you a lot about the shape of the optimization problem. Source: Lowyx GT DL Notes (CC BY 4.0), https://lowyx.com/posts/gt-dl-notes/."
   width={900}
 />
 
-The key lesson is that baseline models are not a formality. They are instrumentation.
+The reason this matters is that optimization problems are easier to diagnose when the model class is simple. If a baseline linear model fails, the failure is often informative:
 
-### Softmax + Cross-Entropy Gives Probabilistic Semantics and Useful Gradients
+- the features may be poorly scaled,
+- the learning rate may be unstable,
+- the loss may not be aligned with the task,
+- or the data may require nonlinear structure the model cannot express.
 
-The standard multi-class objective combines softmax normalization with cross-entropy loss:
+That is why I think of linear models as instrumentation, not ceremony. In the assignment, they made it easier to tell whether a problem came from the training setup or from model capacity.
+
+## Softmax and Cross-Entropy Turn Scores into Learning Signal
+
+Scores alone are not enough. A classifier needs a loss that turns "the model is wrong" into a gradient with direction and magnitude. For multiclass classification, the standard move is to turn logits into probabilities with softmax:
 
 $$
-p(y=k \mid x) = \frac{e^{s_k}}{\sum_j e^{s_j}}, \qquad \mathcal{L} = -\log p(y=t \mid x)
+p(y = k \mid x) = \frac{e^{s_k}}{\sum_j e^{s_j}},
 $$
 
-The useful property is gradient structure. For class `k`, the derivative with respect to logit `s_k` is:
+and then penalize the probability assigned to the correct class with cross-entropy:
 
 $$
-\frac{\partial \mathcal{L}}{\partial s_k} = p_k - \mathbb{1}[k=t]
+\mathcal{L} = -\log p(y=t \mid x).
 $$
 
-That compact term gives immediate intuition: training increases the target class logit and decreases non-target logits in proportion to their predicted probability. When predictions are confidently wrong, updates are large. When predictions are already confident and correct, updates shrink. This is why softmax-cross-entropy remains such a robust default for classification pipelines.
+The key derivative is compact:
 
-### Backpropagation Is Dependency Accounting Over a Graph
+$$
+\frac{\partial \mathcal{L}}{\partial s_k} = p_k - \mathbb{1}[k=t].
+$$
 
-Backpropagation is often explained as “apply chain rule repeatedly,” which is true but incomplete. A more useful systems view is: backpropagation is a reverse dataflow pass that accumulates sensitivity through a directed acyclic graph of operations.
+That equation explains a lot of training behavior in one line. If the model is confidently wrong, the update is large. If it is already confident and correct, the update shrinks. Softmax plus cross-entropy is not just popular because it is conventional; it gives a clean and well-behaved learning signal for classification.
 
-That view clarifies three things:
+What the project made concrete here was numerical discipline. Once you compute these terms yourself, details like log stability, normalization, and shape consistency stop feeling like implementation trivia. They are part of the math.
 
-- Forward pass computes both outputs and cached intermediates.
-- Backward pass traverses dependencies in reverse topological order.
-- Each node contributes a local Jacobian; upstream gradients are accumulated, not overwritten.
+**Illustrative toy snippet, not assignment code:**
+
+```python
+import numpy as np
+
+def softmax_cross_entropy(logits, target_idx):
+    shifted = logits - logits.max(axis=-1, keepdims=True)
+    probs = np.exp(shifted)
+    probs = probs / probs.sum(axis=-1, keepdims=True)
+
+    loss = -np.log(probs[np.arange(len(target_idx)), target_idx]).mean()
+
+    grad = probs.copy()
+    grad[np.arange(len(target_idx)), target_idx] -= 1.0
+    grad /= len(target_idx)
+    return loss, grad
+```
+
+The main point of a snippet like this is not the syntax. It is that stability and gradient shape are part of the same design decision: once the logits are normalized carefully, the loss and gradient become simple enough to reason about directly.
+
+## Backpropagation Is Reverse Dataflow
+
+Backpropagation is usually introduced as repeated application of the chain rule. That is mathematically correct, but the more practical programming intuition is that backpropagation is a reverse pass over a computation graph.
 
 <Figure
   src={p1Fig2}
-  alt="Backpropagation dataflow"
-  caption="Backpropagation graph structure clarifies reverse-mode dependency flow and gradient accumulation paths. Source: Lowyx GT DL Notes (CC BY 4.0), https://lowyx.com/posts/gt-dl-notes/."
+  alt="Backpropagation graph"
+  caption="Backpropagation is easiest to understand as gradient flow through a graph of cached intermediate computations. Source: Lowyx GT DL Notes (CC BY 4.0), https://lowyx.com/posts/gt-dl-notes/."
   width={900}
 />
 
-In early projects, most instability bugs are not “advanced ML problems.” They are graph bookkeeping mistakes: silent shape mismatch, stale cache reuse, exploding values from unbounded activations, or poor numerical conditioning in normalization steps.
+Each node in that graph does two jobs:
 
-### Optimization Geometry Explains Most Training Pathologies
+1. produce a forward output,
+2. contribute a local derivative during the backward pass.
 
-SGD-like methods are local geometric procedures. They step in parameter space using gradient direction and a scalar step size. If curvature is uniform and smooth, this works well. If curvature is ill-conditioned, simple updates oscillate across steep directions and crawl along flat directions.
+That viewpoint makes several practical facts much clearer:
+
+- intermediate values have to be cached somewhere,
+- gradients accumulate from multiple downstream paths,
+- and a silent shape error can corrupt the whole backward pass.
+
+Implementing the assignment without autograd also makes a common point clear: many "deep learning bugs" are bookkeeping bugs, such as stale caches, wrong broadcast rules, transposed Jacobians, or mismatched tensor shapes.
+
+**Illustrative toy snippet, not assignment code:**
+
+```python
+import numpy as np
+
+def numerical_grad(f, x, eps=1e-5):
+    grad = np.zeros_like(x)
+    for i in range(x.size):
+        old = x.flat[i]
+        x.flat[i] = old + eps
+        plus = f(x)
+        x.flat[i] = old - eps
+        minus = f(x)
+        x.flat[i] = old
+        grad.flat[i] = (plus - minus) / (2 * eps)
+    return grad
+```
+
+A check like this is slow, but it is often enough to tell you whether a backward pass is conceptually correct before you trust a full training curve.
+
+## Optimization Geometry Explains Why Runs Behave So Differently
+
+Once gradients exist, the next question is how parameter updates move through the loss landscape. The simplest mental model is still the right one:
+
+$$
+\theta_{t+1} = \theta_t - \eta \nabla_\theta \mathcal{L}(\theta_t).
+$$
+
+But that simple rule behaves very differently depending on curvature, scale, and gradient noise.
 
 <Figure
   src={p1Fig3}
-  alt="Loss landscape intuition"
-  caption="Loss-surface curvature intuition helps explain step-size instability and slow progress in ill-conditioned directions. Source: Lowyx GT DL Notes (CC BY 4.0), https://lowyx.com/posts/gt-dl-notes/."
+  alt="Loss surface"
+  caption="Ill-conditioned loss surfaces explain why some learning rates oscillate while others barely move. Source: Lowyx GT DL Notes (CC BY 4.0), https://lowyx.com/posts/gt-dl-notes/."
   width={900}
 />
 
-This geometric framing explains recurring empirical patterns:
+The assignment made three optimization lessons stick:
 
-- Large learning rates can bounce across narrow valleys and never settle.
-- Very small learning rates can look stable while making negligible progress.
-- Batch size changes modify gradient noise, which can either stabilize or destabilize depending on the regime.
-- Weight decay changes effective geometry by shrinking parameter norms and discouraging brittle sharp solutions.
-
-### Regularization Is Capacity Control Under Uncertainty
-
-Regularization is not a single trick; it is a policy decision about what hypotheses the optimizer should prefer when multiple parameter settings fit the training data.
-
-For foundational models, L2 weight decay remains the most interpretable choice:
-
-$$
-\mathcal{L}_{\text{total}} = \mathcal{L}_{\text{data}} + \lambda \lVert W \rVert_2^2
-$$
-
-The penalty acts like a soft prior against large weights, typically improving validation behavior when data is limited or noisy. But over-regularization is easy: as `\lambda` rises, optimization becomes numerically stable while representational capacity collapses, creating clean but underfit trajectories.
-
-<Figure
-  src={p1Fig5}
-  alt="Bias variance tradeoff"
-  caption="Dropout-style regularization illustrates the bias-variance control tradeoff under limited data. Source: Lowyx GT DL Notes (CC BY 4.0), https://lowyx.com/posts/gt-dl-notes/."
-  width={900}
-/>
-
-## System/Model Design (abstracted, non-solution-specific)
-
-### Modular Training Architecture
-
-A robust first-principles training pipeline should separate concerns the way production systems do:
-
-1. Data interface and preprocessing.
-2. Model forward definition.
-3. Loss and regularization composition.
-4. Optimizer step and scheduler policy.
-5. Evaluation and logging.
-
-This modular split is not style preference. It is what makes controlled ablation possible. If model quality changes after a single modification, you should be able to isolate where that modification entered the pipeline.
-
-### A Generic Training Loop as a Reproducible Protocol
-
-The core loop can be represented without assignment-specific details:
-
-```text
-initialize parameters theta
-initialize optimizer state
-for epoch in 1..E:
-  for minibatch (x, y) in training_data:
-    y_hat = model(theta, x)
-    loss = objective(y_hat, y) + regularization(theta)
-    grads = backward(loss, theta)
-    theta = optimizer_update(theta, grads)
-  evaluate on validation split
-  log metrics, schedule state, and checkpoint metadata
-```
-
-What matters most in this pseudocode is not the syntax. It is the protocol discipline: fixed data split, deterministic seeds where feasible, and logging rich enough to reproduce conclusions.
-
-### Learning-Rate Policy Is a First-Class Design Choice
-
-In foundational projects, no single hyperparameter has more leverage than learning rate. A useful conceptual decomposition is:
-
-- **Base LR** controls global step magnitude.
-- **Warmup** avoids early instability when gradients are poorly scaled.
-- **Decay** allows coarse search early and fine convergence later.
+- **Learning rate is not a detail.** It is often the highest-leverage training choice.
+- **Training curves matter.** End-of-run accuracy hides most of the information you need to debug instability.
+- **Capacity and optimization interact.** Making the model wider or deeper does not help if the optimization regime is already fragile.
 
 <Figure
   src={p1Fig4}
-  alt="Learning rate regimes"
-  caption="Train-vs-validation curves make learning-rate and schedule effects visible over optimization phases. Source: Lowyx GT DL Notes (CC BY 4.0), https://lowyx.com/posts/gt-dl-notes/."
+  alt="Training curve diagnostics"
+  caption="Train-vs-validation curves are often the fastest way to tell whether a run is diverging, underfitting, or overfitting. Source: Lowyx GT DL Notes (CC BY 4.0), https://lowyx.com/posts/gt-dl-notes/."
   width={900}
 />
 
-Choosing LR policy before architecture expansion usually saves more time than increasing model complexity first.
+On a project like this, tuning can feel small-scale. It is not. It is where you learn that a model can fail because the optimizer never reaches a basin that generalizes well, not because the architecture is fundamentally wrong.
 
-## Experiments and Results (sanitized)
+## Regularization Is a Preference Over Solutions
 
-### Stable Patterns Across Optimization Regimes
+Many parameter settings can fit a training set. Regularization is the mechanism that tells the optimizer which kinds of solutions to prefer. In this assignment, the most important version was L2 weight decay:
 
-Across runs, several repeatable patterns emerged:
+$$
+\mathcal{L}_{\text{total}} = \mathcal{L}_{\text{data}} + \lambda \lVert W \rVert_2^2.
+$$
 
-- There is a narrow stability band for LR where both train and validation metrics improve consistently.
-- Outside that band, behavior degrades fast: high LR causes oscillatory or divergent loss; low LR produces shallow progress that can be mistaken for convergence.
-- The same model can look “good” or “bad” depending on schedule policy, even with identical data and objective.
+The interpretation is straightforward: the optimizer is penalized for relying on very large weights, which often improves generalization when the model could otherwise memorize brittle patterns.
 
-This is why single-run conclusions are fragile. Optimization policy can dominate architecture effects.
+<Figure
+  src={p1Fig5}
+  alt="Regularization and generalization"
+  caption="Regularization changes the set of solutions the optimizer prefers, which is why cleaner training dynamics do not always mean better generalization. Source: Lowyx GT DL Notes (CC BY 4.0), https://lowyx.com/posts/gt-dl-notes/."
+  width={900}
+/>
 
-### Why Capacity Increases Often Disappoint at First
+The broader lesson is that regularization is not a universal anti-overfitting switch. It changes the search problem. Too little regularization encourages brittle fits; too much regularization makes the run look stable while the model underfits.
 
-Increasing hidden size or depth in early projects often underperforms expectations. That is not evidence against larger models; it is evidence that larger models amplify unresolved optimization issues:
+That tradeoff showed up immediately in the project. The assignment was small enough that the effect of weight decay and hidden size was visible, but large enough that those choices genuinely changed validation behavior.
 
-- Poorly tuned LR becomes more destructive.
-- Weak regularization enables fast memorization.
-- Insufficient monitoring delays detection of drift or overfitting.
+## What This Project Made Concrete
 
-A better sequencing strategy is:
+By the end of the assignment, five ideas were more concrete than they were in lecture:
 
-1. Lock a stable optimization baseline.
-2. Scale capacity incrementally.
-3. Re-tune regularization and scheduler policy.
-4. Compare under equal compute budgets and seeds.
+- **PyTorch hides bookkeeping, not fundamentals.** The math of losses, gradients, and updates is still the same.
+- **Baselines are worth taking seriously.** A simple model can tell you a lot about data quality and training stability.
+- **Optimization is interactive.** Learning rate, regularization, batch size, and model size do not tune independently.
+- **Numerical stability matters early.** Softmax and cross-entropy are easy to write down and easy to implement badly.
+- **Training curves are better than anecdotes.** If you only look at final accuracy, you throw away most of the debugging signal.
 
-### Diagnostics That Matter More Than Endpoint Accuracy
+The repo artifacts from this project made those lessons visible: tests for activations, losses, optimizer updates, and network behavior; numerical checks for gradients; and saved plots across learning rate, regularization, batch size, and hidden size. None of that changes the theory, but it does change how quickly you notice when the theory and implementation have drifted apart.
 
-Endpoint accuracy is useful but low bandwidth. For debugging and model selection, trajectory diagnostics carry more signal:
-
-- Train vs validation gap over time.
-- Loss slope changes around scheduler events.
-- Variance across repeated runs.
-- Calibration behavior, not only top-1 correctness.
-
-The strongest practical lesson is that model development is a control problem with delayed feedback. If you only inspect final metrics, you lose most of the feedback channel.
-
-## Design Questions This Raised
-
-1. **When should optimization tuning stop and architecture work begin?**  
-The practical boundary is not “when loss goes down,” but “when optimization behavior is predictable under small perturbations.” If changing learning rate by a small factor completely changes training outcome, architecture comparisons are still noisy. A strong rule is to freeze architecture changes until the baseline exhibits stable convergence curves, bounded run-to-run variance, and reproducible validation ranking across a small seed set. Once those conditions hold, architecture differences become interpretable instead of confounded.
-
-2. **What defines a baseline that is genuinely decision-useful?**  
-A decision-useful baseline has three properties: reproducibility, diagnosability, and extensibility. Reproducibility means another run with the same config lands in the same performance band. Diagnosability means the logging is rich enough to explain failures in terms of optimization behavior rather than guesses. Extensibility means new experiments can branch from the baseline without hidden coupling to one-off code changes. In this sense, the baseline is infrastructure, not just a starter model.
-
-3. **How should regularization be selected when data, compute, and time are all constrained?**  
-Regularization should be tuned as a schedule-aware policy instead of a static checkbox. Early in training, mild regularization can stabilize updates and reduce brittle solutions. Later in training, too much regularization can suppress useful specialization and flatten improvements. The practical approach is to define a narrow regularization sweep around a stable learning-rate schedule and compare full trajectories, not just final points. If training and validation both stall, the issue may be over-regularization rather than insufficient model capacity.
-
-4. **Which metrics should gate progress claims in foundational projects?**  
-A single metric is rarely sufficient because foundational projects are where miscalibration and instability are most common. A better gating set includes: training objective trend, validation objective trend, task metric trend, and at least one reliability signal such as variance across reruns or confidence consistency. Claims should be written in conditional form: “under this optimization regime and evaluation protocol, model A improved over model B by a reproducible margin.” That phrasing captures both evidence and scope.
-
-<details>
-  <summary>Extended reflection: optimization debugging heuristics I would reuse</summary>
-  The most useful debugging heuristics from this stage were simple and repeatable. First, inspect gradient magnitude statistics early in training; if they explode or vanish immediately, architecture changes are a distraction. Second, use short controlled runs as diagnostics before launching long experiments. A 5-10 epoch pilot with dense logging often reveals scheduler or regularization issues that a long run would hide until late. Third, compare trajectory shape before comparing endpoints; two runs can end near the same accuracy with very different stability profiles, and the more stable run is usually the better foundation for downstream experiments. Fourth, checkpoint and audit intermediate states rather than only the best final checkpoint. Looking at how representations evolve over time gives stronger intuition for when the optimizer is truly learning versus memorizing. Finally, write down the intended failure criterion before tuning. If “failure” is undefined, tuning becomes open-ended and conclusions get post-rationalized. These heuristics are not specific to a single assignment and generalized directly into later projects in vision, sequence modeling, and generative work.
-</details>
-
-<details>
-  <summary>Deep dive appendix: practical schedule design under uncertainty</summary>
-  Learning-rate schedule design became more intuitive once I treated it as a staged control policy instead of a single hyperparameter. In the first stage, warmup protects against unstable early updates when activations and gradients are still poorly scaled. In the second stage, a moderate plateau allows rapid representation acquisition. In the third stage, decay shifts the optimizer from exploration to consolidation. The exact boundaries vary by model and data regime, but the staged logic generalizes. This framing also clarifies why abrupt schedule changes can produce surprising regressions: the model may not be ready for the next regime when the scheduler transitions.
-
-  Another useful pattern is to pair schedule changes with explicit monitoring triggers. For example, if validation loss slope flattens while training loss continues dropping, it may indicate overfitting pressure and justify earlier decay or stronger regularization. If both losses plateau prematurely, the schedule may be too conservative. These signals are imperfect, but they improve decision quality compared with fixed schedules applied blindly across all experiments.
-
-  The broader takeaway is that schedule policy is part of model specification. Two runs with identical architectures but different schedule behavior can represent meaningfully different systems. Reporting this clearly made my comparisons cleaner and helped avoid attributing schedule-driven improvements to architecture changes.
-</details>
-
-## Conclusion
-
-Project 1 established the engineering habits that made later projects tractable: reason in terms of geometry, instrument the training loop, and treat reproducibility as a requirement instead of an afterthought. The key conceptual upgrade was recognizing that optimization policy is part of the model.
-
-The most transferable outcomes were:
-
-- Build analysis hooks before chasing model complexity.
-- Use baselines to validate methodology, not just to check boxes.
-- Interpret instability through geometry and schedule interactions.
-- Make conclusions only from controlled comparisons.
-
-Those four points now act as a gate: if a new experiment plan violates any one of them, I expect noisy results and revise before running.
-They also gave me a reusable debugging order: verify gradients, verify schedule behavior, then scale capacity only after convergence is demonstrably stable.
-
-### Practical Checklist I Would Reuse in a New Foundational Project
-
-If I had to restart this phase in a new environment, I would use a strict checklist: validate data scale and label integrity first, run a tiny overfit test to confirm gradient flow, instrument gradient and activation statistics before long training, and define LR schedule policy before architecture sweeps. I would also enforce a report template that includes trajectory plots, not just endpoints, and a short uncertainty note on every comparison claim. This checklist sounds procedural, but it is exactly what prevents wasted compute and false confidence. Foundational projects are where habits are formed, and the highest-return habit is to treat every run as an experiment with explicit controls.
+That is why I still think this is a foundational assignment in the course. It gives you a compact setting where many later deep learning ideas can be traced back to something visible and understandable.
 
 ## Additional Resources
 
-- [CS231n: Neural Networks Part 1](https://cs231n.github.io/neural-networks-1/)
-- [CS231n: Optimization and Backprop](https://cs231n.github.io/optimization-2/)
-- [Deep Learning Book (Goodfellow et al.)](https://www.deeplearningbook.org/)
-- [Understanding Deep Learning (Prince)](https://udlbook.github.io/udlbook/)
-- [Justin Johnson: Deep Learning for Computer Vision](https://web.eecs.umich.edu/~justincj/teaching/eecs498/WI2022/)
 - [GT Deep Learning Notes (Lowyx)](https://lowyx.com/posts/gt-dl-notes/)
+- [CS231n: Neural Networks Part 1](https://cs231n.github.io/neural-networks-1/)
+- [CS231n: Optimization and Backpropagation](https://cs231n.github.io/optimization-2/)
 
 <BookCard
   title="Deep Learning"
@@ -299,7 +255,7 @@ If I had to restart this phase in a new environment, I would use a strict checkl
   url="https://www.deeplearningbook.org/"
 >
   <p>
-    Chapters on optimization, regularization, and practical methodology are especially useful for building first-principles intuition before relying on high-level frameworks.
+    A strong reference for why linear models, losses, backpropagation, and regularization fit together as one optimization story rather than separate topics.
   </p>
 </BookCard>
 
@@ -310,19 +266,6 @@ If I had to restart this phase in a new environment, I would use a strict checkl
   url="https://udlbook.github.io/udlbook/"
 >
   <p>
-    A more intuitive companion to the course notes for loss surfaces, backpropagation, and optimization behavior, especially when I wanted the geometric story without losing the implementation details.
+    A useful complement when the same concepts need more geometric intuition and fewer jumps in notation.
   </p>
 </BookCard>
-
-<BookCard
-  title="CS231n Notes"
-  author="Stanford Vision Lab"
-  url="https://cs231n.github.io/"
->
-  <p>
-    Clear, compact explanations of gradient flow, activation behavior, initialization, and optimization tricks that generalize beyond vision workloads.
-  </p>
-</BookCard>
-
-> [!info] A Note on Code Availability
-> In accordance with Georgia Tech academic integrity policy and course material licensing, I do not publish assignment code, assignment-specific implementation details, or private project files. This post focuses on transferable concepts, non-sensitive experiments, and high-level technical reasoning.

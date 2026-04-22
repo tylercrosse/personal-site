@@ -1,44 +1,50 @@
 ---
 title: 'Interpreting Model Differences: A Research-Oriented Deep Learning Final Project'
-description: 'A technical deep dive into interpretability methodology, representation comparison, and evidence quality in model-diff style analysis.'
+description: 'A concept-first guide to representation comparison, Crosscoders, and evidence quality in interpretability work, grounded in a Qwen reasoning project.'
 date: '2026-02-27'
 updated: '2026-02-27'
 status: 'in-progress'
 type: 'project'
-tags: ['deep-learning', 'large-language-models', 'mechanistic-interpretability', 'pyTorch', 'research', 'MSCS']
+tags: ['deep-learning', 'mechanistic-interpretability', 'pyTorch', 'research', 'MSCS']
 category: ['projects']
 draft: true
 audience: 'All'
 media_subpath: "/ideas/dl-final-project/"
 parent: '2025/dl-retro'
 image:
-  # path: "hero-vintage-blumen-kunst-clipart.png"
-  # path: "hero-crosscoder.png"
   path: "hero-crosscoder2.png"
   alt: 'Green ripples abstract art'
-  # maxWidth: "600px"
 hideCaption: true
 ---
 
 import BookCard from "../../../../components/BookCard.astro";
-import Figure from "../../../../components/Figure.astro";
 
 import deepLearningGoodfellow from "../../../books/dl-goodfellow.jpg";
 import deepLearningPrince from "../../../books/dl-prince.jpg";
-import p5Fig1 from "../figures/lowyx/dl-p5-fig-01-gradcam.png";
-import p5Fig2 from "../figures/lowyx/dl-p5-fig-02-guided-backprop.png";
-import p5Fig3 from "../figures/lowyx/dl-p5-fig-03-tsne.png";
-import p5Fig4 from "../figures/lowyx/dl-p5-fig-04-relationships.png";
 
-## TL;DR
-For the final project our team fine-tuned **Qwen2.5-0.5B-Instruct** on the publicly released s1k reasoning traces and then used Crosscoders—a sparse autoencoder variant—to compare mid-layer activations between the base and fine-tuned checkpoints. We confirmed that scaling test-time reasoning steps improves accuracy on gsm8k and MATH-500, but the Crosscoder showed that the latent geometry at layer 12 remains largely conserved, suggesting downstream utilization changes rather than wholesale feature rewrites.
+## Introduction
 
-## What we built
-- Training pipeline in LoRA/QLoRA that squeezed 5 epochs of s1k fine-tuning into a 16 GB GPU by capping block size at 2048, enabling a 0.38 final training loss in ~30 minutes.
-- Evaluation harness that sweeps chain-of-thought token budgets to estimate *scaling slopes* (accuracy delta per additional 256 generated tokens) on gsm8k, boolq, and math-500.
-- Crosscoder atop frozen activations: encoder $B$, decoder $W$, and sparse ReLU features that reconstruct both model states so we can compare which features activate exclusively after fine-tuning.
+The final project changed the central question from "how do I improve model performance?" to "what changed inside the model when performance improved?" That shift matters because modern language models often get better through fine-tuning or test-time scaling before we have a clean explanation for what internal computation actually changed.
 
-## Key results
+Our project used that gap as the organizing idea. We fine-tuned **Qwen2.5-0.5B-Instruct** on the public `s1k` reasoning traces, evaluated how its reasoning performance changed as we allowed more generated tokens, and then used a Crosscoder to compare activations between the base and fine-tuned models.
+
+This post is more project-specific than the earlier assignment write-ups, but the main goal is still conceptual: to explain what representation comparison can tell us, what it cannot tell us, and why interpretability needs stronger evidence standards than a single visualization or similarity score.
+
+> [!note]
+> This write-up discusses methodology and findings at a high level. It does not publish private course logistics or solution-like implementation detail.
+
+## What We Studied
+
+At a high level, the project had three moving parts:
+
+1. fine-tune a small reasoning-capable language model on `s1k`,
+2. evaluate how accuracy changes as the model gets more test-time tokens,
+3. compare internal activations before and after fine-tuning with a Crosscoder.
+
+What the repo work made clearer is that this was not just a fine-tune-plus-analysis project. It also required curating and decontaminating training data, evaluating the model across several token budgets rather than one fixed decode length, and collecting activations under matched prompt slices so that the comparison target stayed well defined.
+
+The key results were directionally clear:
+
 | Dataset  | Model      | Scaling | Accuracy |
 |----------|------------|---------|----------|
 | gsm8k    | Pretrained | -0.0014 | 41.8     |
@@ -48,267 +54,163 @@ For the final project our team fine-tuned **Qwen2.5-0.5B-Instruct** on the publi
 | math-500 | Pretrained | 0.0115  | 34.8     |
 | math-500 | Fine-tuned | 0.0253  | 48.0     |
 
-We saw the biggest lift on math-500, while boolq slightly regressed—likely because the s1k traces are math-heavy.
+The fine-tuned model improved on the math-heavy benchmarks and showed stronger positive scaling with extra generation budget. The representation comparison, however, did **not** show a large internal rewrite at the layer we studied. That mismatch was central to the project.
 
-## Representative objective
-The Crosscoder fits a sparse autoencoder to both activation sets simultaneously:
+## Why Better Behavior Is Not Yet an Explanation
+
+Standard model evaluation is output-first. If benchmark accuracy improves, we say the model is better. That is informative, but incomplete.
+
+Interpretability asks a harder question: what internal change produced the behavioral change, and how much evidence do we actually have for that claim?
+
+That is difficult because several things can happen at once:
+
+- the model can use existing features differently,
+- a small representational shift can matter more than a large visible one,
+- or the relevant change may happen in a different layer, on a different prompt slice, or under a different measurement.
+
+This is why interpretability work has to be explicit about what kind of claim it is making. "I found a visualization" is not the same as "I identified the mechanism responsible for the behavior change."
+
+## Representation Comparison Starts with Matched Conditions
+
+If you want to compare two models, you need to compare them under matched inputs and matched measurement choices. Otherwise, you risk attributing differences to the model when they actually come from prompt selection, tokenization differences, or noisy sampling.
+
+The conceptual move behind our project was simple:
+
+- take a base model and a fine-tuned model,
+- run both on the same prompt set,
+- capture activations at the same layer,
+- and compare those activations in a shared feature space.
+
+That framing helps because it shifts the problem from vague intuition to a more concrete decomposition:
+
+- which features appear shared,
+- which features appear specialized,
+- and how stable those observations are across slices.
+
+The hard part is that similarity does not imply causal importance. A feature can look different without explaining the behavioral gain, and an important causal shift can be too subtle for a coarse summary metric.
+
+**Illustrative pseudocode, not project code:**
+
+```text
+prompts = sample_prompt_slice()
+
+base_acts = collect_activations(base_model, prompts, layer=L)
+tuned_acts = collect_activations(tuned_model, prompts, layer=L)
+
+shared_space = fit_shared_dictionary(base_acts, tuned_acts)
+shared_features, shifted_features = compare_feature_usage(
+    shared_space, base_acts, tuned_acts
+)
+
+report(shared_features, shifted_features)
+```
+
+This is the minimum structure needed to keep the comparison honest: same prompts, same layer, same measurement choice, then a shared representation space for the actual comparison.
+
+## Crosscoders Are Paired Sparse Autoencoders
+
+The Crosscoder is the central modeling tool in this project. Conceptually, it is a sparse autoencoder designed to work on activations from two related models at once.
+
+Instead of learning features for only one activation space, it learns a shared latent dictionary that tries to reconstruct both model states. That makes it well suited for asking whether a feature is mostly shared, mostly model-specific, or differently weighted across the two models.
+
+The training objective balances reconstruction quality and sparsity:
 
 $$
 \min_{W,B} \; \|X - W\,\sigma(B^\top X)\|_2^2 + \|Y - W\,\sigma(B^\top Y)\|_2^2 + \lambda \|\sigma(B^\top X)\|_1,
 $$
 
-where $X$ and $Y$ are activations from the base and fine-tuned models, respectively, and $\sigma$ is ReLU. High reconstruction fidelity (>93% cross-entropy recovery) implied that shared features dominate even after fine-tuning.
+where `X` and `Y` are activation sets from the base and fine-tuned models, and `\sigma` is ReLU.
 
-## Artifact
-- [Project paper (PDF)](../dl-retro/DL_Final_Project.pdf)
+The intuition is straightforward:
 
-## Introduction: From Building Models to Understanding Them
+- the reconstruction terms force the latent features to preserve information relevant to reconstruction,
+- the sparsity term encourages a smaller, more interpretable active set,
+- and the paired setup makes comparison between model states easier than two independent SAEs would.
 
-The final project changed the question from “How do I maximize task performance?” to “What changed internally when model behavior changed?” That shift is subtle but important. Standard model development is usually output-first: if benchmark metrics improve, we celebrate and move on. Interpretability work adds a second layer: can we characterize *why* behavior changed and how robust that explanation is?
+That said, Crosscoders do not solve interpretability by themselves. They generate a more structured comparison space. The scientific work still comes from deciding what counts as stable evidence inside that space.
 
-For modern language and reasoning systems, this question is no longer optional. Capability scaling is rapid, but internal mechanism understanding lags behind. A research-oriented final project is a good place to practice making claims with explicit uncertainty and evidence discipline.
+## Behavior Metrics and Representation Metrics Answer Different Questions
 
-> [!note]
-> This post discusses methodology and conceptual findings only. It does not disclose assignment-specific implementation details.
+One of the strongest lessons from this project is that behavior-level metrics and representation-level metrics are complementary, not interchangeable.
 
-## Core Concepts
+Behavior-level evaluation answers:
 
-### Notation and Intuition Snapshot
+- did the model get better on the task,
+- and did more test-time computation help?
 
-Let `Z_A, Z_B \in \mathbb{R}^{n \times d}` denote activation matrices from two model variants over matched inputs. I use feature sets `F_A, F_B` for sparse dictionary features and `\Delta\mathcal{B}` for behavior deltas on the same evaluation slices.
+Representation-level analysis answers:
 
-### Mechanistic Interpretability as Representation Science
+- where do the two models still look similar,
+- where do they diverge,
+- and are those divergences stable across prompts or slices?
 
-Mechanistic interpretability aims to map internal activations to reusable conceptual features. Instead of treating a model as a black box from prompt to output, it treats intermediate computation as analyzable structure.
+The project used "scaling" as one of the behavior metrics: how much accuracy improved as the model was allowed more generated tokens. That metric is particularly relevant for reasoning work because it captures something closer to "benefit from additional thinking time" than one fixed-budget accuracy score can.
 
-In practice, this means asking:
+But no behavior metric can tell you directly which internal feature changed. Likewise, no similarity statistic can tell you by itself that a discovered feature caused the performance gain. That separation is important.
 
-- Which latent features activate for which input patterns?
-- Which features are shared across model variants?
-- Which features are specific to a finetuned or behavior-shifted model?
-- Are observed feature differences stable across data slices?
-
-This is less about extracting a single “true explanation” and more about constructing evidence-backed hypotheses.
-
-### Cross-Model Representation Comparison
-
-Model-diff style analysis compares representations from two related systems (for example baseline vs adapted variant) under matched input conditions. A useful abstraction is feature overlap vs feature specialization.
-
-<Figure
-  src={p5Fig2}
-  alt="Feature overlap analysis"
-  caption="Gradient-based attribution maps show where evidence concentration differs across models on matched inputs. Source: Lowyx GT DL Notes (CC BY 4.0), https://lowyx.com/posts/gt-dl-notes/."
-  width={900}
-/>
-
-A central challenge is avoiding superficial correlation claims. If a feature appears model-specific, that does not immediately imply causal relevance to downstream behavior.
-
-### Similarity and Alignment Signals
-
-Representation analysis commonly uses similarity objectives or alignment statistics. A generic template is cosine similarity between normalized feature vectors:
-
-$$
-\mathrm{sim}(u, v) = \frac{u \cdot v}{\|u\|\|v\|}
-$$
-
-This is useful for measuring proximity in activation space, but similarity is not sufficient for mechanism claims. High similarity can reflect broad shared structure without identifying causal pathways.
-
-For representation-level comparison, centered kernel alignment is often more stable than raw cosine aggregation:
-
-$$
-\mathrm{CKA}(Z_A,Z_B)=\frac{\|Z_A^\top Z_B\|_F^2}{\|Z_A^\top Z_A\|_F\|Z_B^\top Z_B\|_F}
-$$
-
-Feature overlap can be summarized with a set statistic:
-
-$$
-\mathrm{Jaccard}(F_A,F_B)=\frac{|F_A \cap F_B|}{|F_A \cup F_B|}
-$$
-
-Derivation intuition: cosine focuses on pairwise direction, while CKA normalizes global alignment and is less sensitive to isotropic rescaling of features.
-
-### Evaluation Beyond Behavioral Benchmarks
-
-Interpretability conclusions require a layered evidence stack:
-
-- Behavior-level changes (task metrics, error profiles).
-- Representation-level changes (feature activation patterns, overlap metrics).
-- Robustness checks (across prompts, seeds, data slices, and perturbations).
-
-<Figure
-  src={p5Fig3}
-  alt="Interpretability evaluation stack"
-  caption="Projection-space structure (e.g., t-SNE) can reveal cluster drift between model variants, but should be treated as suggestive evidence. Source: Lowyx GT DL Notes (CC BY 4.0), https://lowyx.com/posts/gt-dl-notes/."
-  width={900}
-/>
-
-If one layer disagrees strongly with the others, conclusions should be downgraded.
-
-## System/Model Design (abstracted, non-solution-specific)
-
-### End-to-End Interpretability Pipeline
-
-A generic analysis pipeline can be described as:
+**Illustrative pseudocode, not project code:**
 
 ```text
-define comparison pair (model A, model B)
-select matched evaluation prompts/tasks
-collect activation traces at chosen layers
-learn or apply feature dictionary representation
-compute feature overlap and specialization statistics
-cross-check with behavior-level metrics
-run robustness tests and summarize confidence levels
+dataset = curate_and_decontaminate(raw_sources)
+tuned_model = fine_tune(base_model, dataset)
+
+for budget in token_budgets:
+    behavior_metrics[budget] = evaluate(tuned_model, tasks, max_tokens=budget)
+
+matched_acts = collect_matched_activations(
+    base_model, tuned_model, prompt_slice
+)
+representation_metrics = compare_internal_features(matched_acts)
+
+combine(behavior_metrics, representation_metrics, robustness_checks)
 ```
 
-This format emphasizes reproducibility and explicit claim boundaries.
+That sequencing matters. Behavior is evaluated across token budgets, representation is compared under matched conditions, and the final claim only becomes stronger if both kinds of evidence point in the same direction.
 
-A compact claim-confidence scoring rubric I used is:
+## What We Found
 
-$$
-S_{\text{claim}} = w_b z(\Delta\mathcal{B}) + w_r z(\mathrm{CKA\ shift}) + w_s z(\mathrm{slice\ stability}) - w_u z(\mathrm{uncertainty})
-$$
+The fine-tuned model clearly improved on the math-focused tasks. The main representational result was that, at the layer we analyzed, the Crosscoder found that most of the geometry still looked shared rather than radically rewritten.
 
-This is not a proof metric; it is a reporting metric to prevent certainty inflation when one evidence channel dominates.
+That suggests a few plausible interpretations:
 
-### Data and Prompt Selection Matters
+- the important change may be subtle rather than large,
+- the key shift may happen in later layers or under different prompts,
+- or the fine-tuned model may be reusing broadly similar features with different coordination or weighting.
 
-Interpretability findings are highly conditioned on inputs. If prompt coverage is narrow, representation conclusions can be artifacts of slice bias. A stronger approach samples prompt sets across task types and difficulty bands, then checks whether observed feature patterns persist.
+This kind of outcome is common in interpretability work. The project did not produce a simple "we found the one reasoning neuron" story. Instead, it reinforced a more conservative lesson: improved behavior can arise from changes that are distributed, conditional, and hard to isolate with one analysis method.
 
-### Instrumentation and Logging Requirements
+## Evidence Quality Matters More Than Elegant Visuals
 
-Compared with standard training experiments, interpretability workflows require richer metadata:
+Interpretability work is especially vulnerable to overconfident storytelling. It is easy to produce a compelling figure, a cluster plot, or a similarity score and then say more than the evidence warrants.
 
-- Layer and hook definitions.
-- Activation normalization policy.
-- Input sampling provenance.
-- Post-processing definitions for feature metrics.
+What this project made clearer for me is that interpretability claims should usually be built from three layers:
 
-Without this metadata, representation claims are hard to reproduce or audit.
+1. **behavior evidence**: did something measurable change?
+2. **representation evidence**: do internal activations show structured differences?
+3. **robustness evidence**: do those differences persist across prompts, slices, seeds, or measurement choices?
 
-<Figure
-  src={p5Fig1}
-  alt="Interpretability workflow"
-  caption="Class-activation style views make spatial evidence pathways inspectable and support cross-model qualitative checks. Source: Lowyx GT DL Notes (CC BY 4.0), https://lowyx.com/posts/gt-dl-notes/."
-  width={900}
-/>
+If one of those layers is weak, the claim should be weaker too. That is not a limitation of the field so much as a reminder that mechanistic understanding is harder than benchmark improvement.
 
-## Experiments and Results (sanitized)
+## What This Project Changed for Me
 
-### What Representation Comparison Contributed
+The final project left me with three durable takeaways:
 
-The strongest contribution of representation comparison was not a single metric gain. It was the ability to generate better hypotheses about *where* behavior differences might come from. In several cases, representation-level anomalies appeared before large behavior-level changes were obvious in aggregate metrics.
+- **Better outputs are not yet a mechanism.** Performance is the starting point, not the full explanation.
+- **Model comparison needs matched conditions.** Prompt selection, token budget, layer choice, and metric choice all matter.
+- **Interpretability is about evidence discipline.** A common outcome is a narrower hypothesis with better-calibrated confidence, not a definitive story.
 
-That is valuable for debugging, safety analysis, and model selection.
+It also serves as a natural endpoint for the course. Earlier projects teach how to optimize models. The final project asks what it would mean to understand one.
 
-### Where Results Were Fragile
+## Artifact
 
-Some apparent findings weakened under broader prompt slices or alternate measurement settings. This fragility is expected and should be treated as signal, not failure:
-
-- It identifies which claims are context-dependent.
-- It highlights sensitivity to instrumentation choices.
-- It forces confidence calibration in final conclusions.
-
-### Behavior-Representation Agreement
-
-When behavior-level and representation-level signals aligned, confidence increased meaningfully. When they diverged, the right move was to classify conclusions as provisional.
-
-This is the core methodological pattern:
-
-1. Observe candidate feature difference.
-2. Test association with behavior change.
-3. Stress-test association under perturbation.
-4. Assign confidence tier rather than binary true/false judgment.
-
-<Figure
-  src={p5Fig4}
-  alt="Claim confidence ladder"
-  caption="Relationship diagrams are useful for hypothesis generation, but confidence should still come from robustness-backed evidence tiers. Source: Lowyx GT DL Notes (CC BY 4.0), https://lowyx.com/posts/gt-dl-notes/."
-  width={900}
-/>
-
-## Design Questions This Raised
-
-1. **How strong can causal claims be in representation analysis workflows?**  
-Without intervention-based tests, causal claims should usually be treated as limited. Most interpretability pipelines in practical settings are correlational: they identify stable associations between activation patterns and behavior differences. Those associations are valuable for hypothesis generation, but they are not proof of mechanism. The right reporting standard is to separate descriptive claims (what pattern appears) from causal claims (what pattern drives behavior) and to communicate confidence accordingly.
-
-2. **What level of validation is enough before publishing conclusions?**  
-A useful minimum bar is cross-slice robustness: the claim should survive variation across prompt subsets, seeds, and metric definitions. For higher-confidence claims, include perturbation checks and negative controls that intentionally break the hypothesized mechanism. If a claim collapses under minor protocol changes, it should be downgraded to exploratory status. Validation depth should scale with claim strength.
-
-3. **How should interpretability connect to practical model engineering decisions?**  
-Interpretability adds the most value when it changes concrete choices: which model to deploy, which data slice to prioritize, which failure mode to monitor, or which safety check to strengthen. If interpretability outputs never affect decisions, they risk becoming aesthetic analysis rather than engineering evidence. Integrating representation findings with operational metrics keeps the work grounded.
-
-4. **What is the most common reporting failure in interpretability projects?**  
-The most common failure is certainty inflation. Visualizations and feature stories can look convincing even when they depend on narrow slices or fragile definitions. A second failure is under-reporting null results. In interpretability work, null results are useful because they constrain hypothesis space and reduce confirmation bias.
-
-<details>
-  <summary>Extended reflection: evidence tiers for interpretability claims</summary>
-  I found it helpful to classify conclusions into evidence tiers. Tier 1 is observational: a repeatable representation pattern exists under fixed settings. Tier 2 is associative: the pattern tracks a behavior change across multiple slices. Tier 3 is stress-tested: the association survives perturbations and alternate measurement definitions. Tier 4 is intervention-supported: manipulating the relevant feature pathway changes behavior in predicted directions. Most course-scale projects should expect to land around Tier 1 or Tier 2, with selective Tier 3 checks where feasible. This tiering framework improves communication quality because it makes uncertainty explicit and prevents over-interpretation. It also helps prioritize next steps: moving from Tier 1 to Tier 2 often requires broader coverage data; moving from Tier 2 to Tier 3 requires robustness protocol design; moving beyond that requires intervention tooling that may be outside project scope. By organizing results this way, interpretability work becomes cumulative rather than rhetorical.
-
-  Another workflow improvement was maintaining a claim ledger. For each hypothesis, I recorded supporting tests, conflicting tests, known caveats, and confidence tier. This reduced hindsight bias and made final reporting cleaner. It also made collaboration easier because assumptions and boundaries were visible. In future work, I would pair this ledger with lightweight preregistration of key confirmatory checks so exploratory flexibility does not quietly turn into selective reporting.
-</details>
-
-<details>
-  <summary>Deep dive appendix: practical safeguards against interpretability over-claiming</summary>
-  Interpretability projects create a particular kind of risk: explanation fluency can outrun evidence quality. A plot that is visually compelling can trigger strong narrative confidence even when the underlying analysis is slice-dependent or metric-sensitive. To reduce this risk, I found it useful to treat every interpretability output as a candidate claim that must pass explicit checks before promotion. The first check is replication under fixed conditions. The second check is robustness under minor perturbations. The third check is coherence with behavior-level evidence. If any check fails, the claim remains exploratory.
-
-  Another safeguard is to maintain symmetry between positive and negative evidence. If a feature appears to align with one behavior increase, test whether the same feature appears in settings where that behavior does not increase. If negative controls are missing, confirmation bias can accumulate silently. This is particularly important in high-dimensional representation spaces where spurious associations are easy to find.
-
-  I also learned to separate tooling confidence from conclusion confidence. A stable extraction or visualization pipeline does not imply that the resulting interpretation is robust. Tooling stability is necessary because it reduces procedural noise, but interpretation confidence still depends on cross-slice consistency and behavior linkage. Keeping these two confidence notions separate made final reporting clearer and less prone to overstatement.
-
-  A fourth safeguard is scope labeling. Every claim should declare its scope: model family, data regime, task type, and evaluation protocol. Without scope labels, readers may generalize findings beyond what evidence supports. Scope labeling also helps future iterations because it makes it easier to test exactly where a claim breaks when new data or models are introduced.
-
-  Finally, I found that interpretability work benefits from explicit decision hooks. A decision hook is a statement of how a potential finding would change engineering action. Examples include prioritizing a data slice for further curation, adjusting evaluation coverage for a known failure mode, or selecting one model variant over another for safer behavior under uncertainty. If a finding has no plausible decision hook, it may still be intellectually interesting, but it should be reported with appropriately lower practical weight.
-</details>
-
-<details>
-  <summary>Extended note: connecting interpretability workflows to ML systems governance</summary>
-  One broader takeaway from the final project is that interpretability work can function as governance infrastructure when it is integrated early. Governance here does not mean bureaucracy. It means building evidence pathways that help teams reason about why a model is selected, what risks are known, and where uncertainty remains. Representation analysis can contribute to that pathway by surfacing model-specific blind spots and by flagging behavior slices where confidence should be reduced.
-
-  In practical terms, this suggests pairing interpretability outputs with model cards, evaluation dashboards, and incident postmortems. If a model fails on a critical slice, interpretability tools can provide candidate hypotheses for failure mechanism and guide targeted follow-up experiments. This is especially useful in fast-moving model development cycles where retraining is frequent and regression risk is high.
-
-  A second governance-oriented lesson is to preserve audit trails for interpretability conclusions. When claims are tied to explicit datasets, prompts, and measurement definitions, later teams can reproduce or challenge those claims without starting from scratch. This makes interpretability work cumulative across project boundaries, which is essential if the goal is long-term reliability rather than one-off analysis.
-</details>
-
-## Conclusion
-
-The final project shifted my perspective from model *performance* to model *evidence quality*. A strong interpretability workflow does not promise perfect transparency. It offers a disciplined way to make and test hypotheses about internal computation.
-
-Most transferable lessons:
-
-- Representation analysis is useful when paired with behavior validation.
-- Confidence should be graded, not absolute.
-- Robustness checks are part of the result, not optional appendices.
-- Interpretability pipelines require the same reproducibility rigor as training pipelines.
-
-That combination turns interpretability from an interesting side analysis into a decision-support capability that can influence real model governance.
-It also improves collaboration quality, because uncertainty and claim scope are explicit instead of implicit.
-
-The key operational goal is not to produce the most elegant explanatory narrative, but to produce the most reliable evidence package for high-impact model decisions.
-In that sense, interpretability quality is measured less by rhetorical clarity and more by whether independent reviewers can reproduce, challenge, and refine the same conclusions using the documented protocol.
-That standard is demanding, but it is exactly what makes interpretability findings useful beyond a single author or a single project cycle.
-It also sets the right expectation for future collaborators: claims are starting points for verification, not final truths.
-That orientation keeps interpretability work constructive even when findings are partial or contested.
-It also reduces the chance of institutionalizing weak assumptions in later model-development cycles.
-That is especially important when interpretability outputs are reused in safety and policy discussions where overconfident conclusions can propagate quickly.
-Clear protocol discipline helps prevent that failure mode.
-
-### Practical Checklist I Would Reuse in a New Interpretability Study
-
-For future interpretability work, I would enforce a checklist that starts with explicit claim tiers, predeclared robustness checks, and scope labels for every conclusion. I would then require each claim to link to a decision hook explaining why the finding matters for model selection, risk mitigation, or evaluation coverage. Finally, I would maintain a claim ledger with both supporting and contradictory evidence so confidence updates are transparent over time. This checklist keeps interpretability grounded in engineering utility and reduces the risk of narrative overreach from visually persuasive but fragile analyses.
-
-I would additionally require at least one adversarial sanity check per major claim: intentionally alter part of the analysis pipeline in a way that should break the claimed relation. If the claim survives when it should not, the signal may be procedural artifact rather than mechanism evidence. This kind of negative test is common in mature experimental disciplines and fits interpretability work well.
-
-Another carry-forward practice is explicit disagreement logging. When behavior-level and representation-level evidence conflict, the disagreement itself should be documented as a first-class result with candidate explanations and next tests. Treating disagreement as data, rather than as noise to smooth over in the narrative, keeps the work scientifically honest and often points directly to the highest-value follow-up experiments.
-
-I would also preserve a lightweight peer-review step for interpretability reports: before finalizing claims, have someone uninvolved in the analysis challenge scope, evidence sufficiency, and alternative explanations. Even a short review pass can catch certainty inflation and ambiguous language that the primary author no longer sees after many iterations. This is a low-cost control that materially improves claim quality.
+- [Project paper (PDF)](../dl-retro/DL_Final_Project.pdf)
 
 ## Additional Resources
 
-- [Toy Models of Superposition](https://arxiv.org/abs/2209.10652)
-- [A Mathematical Framework for Transformer Circuits](https://transformer-circuits.pub/2021/framework/index.html)
+- [s1: Simple test-time scaling](https://arxiv.org/abs/2501.19393)
+- [TransformerLens](https://github.com/TransformerLensOrg/TransformerLens)
 - [Scaling Monosemanticity](https://transformer-circuits.pub/2024/scaling-monosemanticity/index.html)
 - [Open Problems in Mechanistic Interpretability](https://arxiv.org/abs/2307.02591)
-- [GT DL Notes (Lowyx)](https://lowyx.com/posts/gt-dl-notes/)
 
 <BookCard
   title="Deep Learning"
@@ -317,7 +219,7 @@ I would also preserve a lightweight peer-review step for interpretability report
   url="https://www.deeplearningbook.org/"
 >
   <p>
-    Even for an interpretability-heavy final project, Goodfellow was the cleanest reference for grounding feature learning, representation geometry, and regularization concepts.
+    Still relevant here as background on feature learning and representation geometry, even though the final project sits much closer to modern LLM interpretability than to classic supervised learning.
   </p>
 </BookCard>
 
@@ -328,29 +230,6 @@ I would also preserve a lightweight peer-review step for interpretability report
   url="https://udlbook.github.io/udlbook/"
 >
   <p>
-    Prince was useful for translating abstract representation-learning language into more operational intuitions about what model internals encode and how to reason about those changes.
+    Helpful for keeping the representation-learning concepts legible while switching from image models to LLM interpretability questions.
   </p>
 </BookCard>
-
-<BookCard
-  title="Mechanistic Interpretability Reading List"
-  author="Neel Nanda"
-  url="https://www.neelnanda.io/mechanistic-interpretability"
->
-  <p>
-    A practical map of key papers and techniques for moving from high-level interest to concrete interpretability experiments.
-  </p>
-</BookCard>
-
-<BookCard
-  title="Distill: Feature Visualization"
-  author="Distill"
-  url="https://distill.pub/2017/feature-visualization/"
->
-  <p>
-    Foundational perspective on interpreting internal representations and the limits of visualization-driven conclusions.
-  </p>
-</BookCard>
-
-> [!info] A Note on Code Availability
-> In accordance with Georgia Tech academic integrity policy and course material licensing, I do not publish assignment code, assignment-specific implementation details, or private project files. This post focuses on transferable concepts, non-sensitive experiments, and high-level technical reasoning.
