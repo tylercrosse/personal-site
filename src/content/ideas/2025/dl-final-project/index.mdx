@@ -22,28 +22,26 @@ import BookCard from "../../../../components/BookCard.astro";
 import deepLearningGoodfellow from "../../../books/dl-goodfellow.jpg";
 import deepLearningPrince from "../../../books/dl-prince.jpg";
 
-## Introduction
+The final project centers on a different question: what changed inside the model when performance improved? Modern language models often get better through fine-tuning or test-time scaling before there is a clean explanation for what internal computation actually changed.
 
-The final project changed the central question from "how do I improve model performance?" to "what changed inside the model when performance improved?" That shift matters because modern language models often get better through fine-tuning or test-time scaling before we have a clean explanation for what internal computation actually changed.
+The project fine-tuned **Qwen2.5-0.5B-Instruct** on the public `s1k` reasoning traces, evaluated how its reasoning performance changed as more generated tokens were allowed, and then used a Crosscoder to compare activations between the base and fine-tuned models.
 
-Our project used that gap as the organizing idea. We fine-tuned **Qwen2.5-0.5B-Instruct** on the public `s1k` reasoning traces, evaluated how its reasoning performance changed as we allowed more generated tokens, and then used a Crosscoder to compare activations between the base and fine-tuned models.
-
-This post is more project-specific than the earlier assignment write-ups, but the main goal is still conceptual: to explain what representation comparison can tell us, what it cannot tell us, and why interpretability needs stronger evidence standards than a single visualization or similarity score.
+This post is more project-specific than the earlier assignment write-ups. The goal is still conceptual: to explain the scope and limits of representation comparison, and why interpretability needs stronger evidence standards than a single visualization or similarity score.
 
 > [!note]
-> This write-up discusses methodology and findings at a high level. It does not publish private course logistics or solution-like implementation detail.
+> This write-up discusses methodology and findings without publishing private course logistics or solution-like implementation detail.
 
-## What We Studied
+## Project Scope
 
-At a high level, the project had three moving parts:
+The project had three moving parts:
 
 1. fine-tune a small reasoning-capable language model on `s1k`,
 2. evaluate how accuracy changes as the model gets more test-time tokens,
 3. compare internal activations before and after fine-tuning with a Crosscoder.
 
-What the repo work made clearer is that this was not just a fine-tune-plus-analysis project. It also required curating and decontaminating training data, evaluating the model across several token budgets rather than one fixed decode length, and collecting activations under matched prompt slices so that the comparison target stayed well defined.
+The project also required curating and decontaminating training data, evaluating the model across several token budgets instead of one fixed decode length, and collecting activations under matched prompt slices so that the comparison target stayed well defined.
 
-The key results were directionally clear:
+The results:
 
 | Dataset  | Model      | Scaling | Accuracy |
 |----------|------------|---------|----------|
@@ -54,34 +52,34 @@ The key results were directionally clear:
 | math-500 | Pretrained | 0.0115  | 34.8     |
 | math-500 | Fine-tuned | 0.0253  | 48.0     |
 
-The fine-tuned model improved on the math-heavy benchmarks and showed stronger positive scaling with extra generation budget. The representation comparison, however, did **not** show a large internal rewrite at the layer we studied. That mismatch was central to the project.
+The fine-tuned model improved on the math-heavy benchmarks and showed stronger positive scaling with extra generation budget. At the layer studied, representation comparison showed no large internal rewrite. That mismatch framed the project.
 
 ## Why Better Behavior Is Not Yet an Explanation
 
-Standard model evaluation is output-first. If benchmark accuracy improves, we say the model is better. That is informative, but incomplete.
+Standard model evaluation is output-first. Benchmark accuracy shows whether behavior improved, but it does not identify the internal change responsible.
 
-Interpretability asks a harder question: what internal change produced the behavioral change, and how much evidence do we actually have for that claim?
+Interpretability asks a harder question: what internal change produced the behavioral change, and what evidence supports that claim?
 
-That is difficult because several things can happen at once:
+Several things can happen at once:
 
 - the model can use existing features differently,
 - a small representational shift can matter more than a large visible one,
 - or the relevant change may happen in a different layer, on a different prompt slice, or under a different measurement.
 
-This is why interpretability work has to be explicit about what kind of claim it is making. "I found a visualization" is not the same as "I identified the mechanism responsible for the behavior change."
+Interpretability work has to be explicit about what kind of claim it is making. A visualization is weaker evidence than a claim about the mechanism responsible for the behavior change.
 
 ## Representation Comparison Starts with Matched Conditions
 
 If you want to compare two models, you need to compare them under matched inputs and matched measurement choices. Otherwise, you risk attributing differences to the model when they actually come from prompt selection, tokenization differences, or noisy sampling.
 
-The conceptual move behind our project was simple:
+The comparison setup was simple:
 
 - take a base model and a fine-tuned model,
 - run both on the same prompt set,
 - capture activations at the same layer,
 - and compare those activations in a shared feature space.
 
-That framing helps because it shifts the problem from vague intuition to a more concrete decomposition:
+It breaks the problem into a more concrete decomposition:
 
 - which features appear shared,
 - which features appear specialized,
@@ -105,13 +103,13 @@ shared_features, shifted_features = compare_feature_usage(
 report(shared_features, shifted_features)
 ```
 
-This is the minimum structure needed to keep the comparison honest: same prompts, same layer, same measurement choice, then a shared representation space for the actual comparison.
+This is the minimum structure for an honest comparison: same prompts, same layer, same measurement choice, then a shared representation space for the actual comparison.
 
 ## Crosscoders Are Paired Sparse Autoencoders
 
-The Crosscoder is the central modeling tool in this project. Conceptually, it is a sparse autoencoder designed to work on activations from two related models at once.
+The Crosscoder is the central modeling tool in this project: a sparse autoencoder designed to work on activations from two related models at once.
 
-Instead of learning features for only one activation space, it learns a shared latent dictionary that tries to reconstruct both model states. That makes it well suited for asking whether a feature is mostly shared, mostly model-specific, or differently weighted across the two models.
+It learns a shared latent dictionary that tries to reconstruct both model states. That makes it useful for asking whether a feature is mostly shared, mostly model-specific, or differently weighted across the two models.
 
 The training objective balances reconstruction quality and sparsity:
 
@@ -121,17 +119,17 @@ $$
 
 where `X` and `Y` are activation sets from the base and fine-tuned models, and `\sigma` is ReLU.
 
-The intuition is straightforward:
+In this objective:
 
 - the reconstruction terms force the latent features to preserve information relevant to reconstruction,
 - the sparsity term encourages a smaller, more interpretable active set,
 - and the paired setup makes comparison between model states easier than two independent SAEs would.
 
-That said, Crosscoders do not solve interpretability by themselves. They generate a more structured comparison space. The scientific work still comes from deciding what counts as stable evidence inside that space.
+Crosscoders provide a more structured comparison space. The scientific work still comes from deciding what counts as stable evidence inside that space.
 
 ## Behavior Metrics and Representation Metrics Answer Different Questions
 
-One of the strongest lessons from this project is that behavior-level metrics and representation-level metrics are complementary, not interchangeable.
+Behavior-level metrics and representation-level metrics answer different questions and need to be read together.
 
 Behavior-level evaluation answers:
 
@@ -146,7 +144,7 @@ Representation-level analysis answers:
 
 The project used "scaling" as one of the behavior metrics: how much accuracy improved as the model was allowed more generated tokens. That metric is particularly relevant for reasoning work because it captures something closer to "benefit from additional thinking time" than one fixed-budget accuracy score can.
 
-But no behavior metric can tell you directly which internal feature changed. Likewise, no similarity statistic can tell you by itself that a discovered feature caused the performance gain. That separation is important.
+Behavior metrics do not identify internal features directly. Similarity statistics do not establish causality by themselves. Keeping that separation clear matters.
 
 **Illustrative pseudocode, not project code:**
 
@@ -165,41 +163,41 @@ representation_metrics = compare_internal_features(matched_acts)
 combine(behavior_metrics, representation_metrics, robustness_checks)
 ```
 
-That sequencing matters. Behavior is evaluated across token budgets, representation is compared under matched conditions, and the final claim only becomes stronger if both kinds of evidence point in the same direction.
+The sequence matters. Behavior is evaluated across token budgets, representation is compared under matched conditions, and the final claim only becomes stronger if both kinds of evidence point in the same direction.
 
-## What We Found
+## Findings
 
-The fine-tuned model clearly improved on the math-focused tasks. The main representational result was that, at the layer we analyzed, the Crosscoder found that most of the geometry still looked shared rather than radically rewritten.
+The fine-tuned model improved on the math-focused tasks. At the layer analyzed, the Crosscoder found that most of the geometry remained shared.
 
-That suggests a few plausible interpretations:
+A few plausible interpretations fit:
 
-- the important change may be subtle rather than large,
-- the key shift may happen in later layers or under different prompts,
+- the important change may be subtle in magnitude,
+- the relevant shift may happen in later layers or under different prompts,
 - or the fine-tuned model may be reusing broadly similar features with different coordination or weighting.
 
-This kind of outcome is common in interpretability work. The project did not produce a simple "we found the one reasoning neuron" story. Instead, it reinforced a more conservative lesson: improved behavior can arise from changes that are distributed, conditional, and hard to isolate with one analysis method.
+This kind of outcome is common in interpretability work. The analysis points toward a more conservative lesson: improved behavior can arise from changes that are distributed, conditional, and hard to isolate with one analysis method.
 
-## Evidence Quality Matters More Than Elegant Visuals
+## Evidence Quality Matters More Than Pretty Visuals
 
 Interpretability work is especially vulnerable to overconfident storytelling. It is easy to produce a compelling figure, a cluster plot, or a similarity score and then say more than the evidence warrants.
 
-What this project made clearer for me is that interpretability claims should usually be built from three layers:
+Interpretability claims usually need three layers:
 
 1. **behavior evidence**: did something measurable change?
 2. **representation evidence**: do internal activations show structured differences?
 3. **robustness evidence**: do those differences persist across prompts, slices, seeds, or measurement choices?
 
-If one of those layers is weak, the claim should be weaker too. That is not a limitation of the field so much as a reminder that mechanistic understanding is harder than benchmark improvement.
+If one of those layers is weak, the claim should be weaker too. That is less a limitation of the field than a reminder that mechanistic understanding is harder than benchmark improvement.
 
-## What This Project Changed for Me
+## Recap
 
-The final project left me with three durable takeaways:
+To recap, here are the main interpretability questions this project focused on:
 
-- **Better outputs are not yet a mechanism.** Performance is the starting point, not the full explanation.
-- **Model comparison needs matched conditions.** Prompt selection, token budget, layer choice, and metric choice all matter.
-- **Interpretability is about evidence discipline.** A common outcome is a narrower hypothesis with better-calibrated confidence, not a definitive story.
+- **Output gains do not specify a mechanism.** Performance is the starting point for explanation.
+- **Model comparison requires matched conditions.** Prompt selection, token budget, layer choice, and metric choice all matter.
+- **Interpretability depends on evidence discipline.** A common outcome is a narrower hypothesis with better-calibrated confidence.
 
-It also serves as a natural endpoint for the course. Earlier projects teach how to optimize models. The final project asks what it would mean to understand one.
+Earlier projects focus on optimization. The final project focuses on internal comparison and explanation.
 
 ## Artifact
 

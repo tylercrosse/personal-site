@@ -28,29 +28,29 @@ import p4Fig3 from "../figures/lowyx/dl-p4-fig-03-gan-objective.png";
 import p4Fig4 from "../figures/custom/dl-p4-fig-04-diffusion-process.svg";
 import p4Fig5 from "../figures/lowyx/dl-p4-fig-05-generative-models.png";
 
-## Introduction
+## Generative Models Force Tradeoffs
 
-Generative modeling makes it clear that one objective or one metric is rarely enough. In supervised learning, the target is usually explicit. In generative modeling, the model is trying to capture a distribution, so fidelity, diversity, controllability, and compute cost can all move in different directions.
+Generative modeling makes it clear that one objective or metric is rarely enough. In supervised learning, the target is usually explicit. In generative modeling, the model is trying to capture a distribution, so fidelity, diversity, controllability, and compute cost can all move in different directions.
 
-The comparison between VAE, GAN, and diffusion models is useful for exactly that reason. These are not small variants of the same method. They are different answers to the question: what should a generative model optimize, and what kinds of failures should we expect from that choice?
+Comparing VAE, GAN, and diffusion models is useful for exactly that reason. These are not small variants of the same method. They give different answers to the question: what should a generative model optimize, and what kinds of failures should follow from that choice?
 
-This assignment made those differences concrete by having me work across MNIST and FashionMNIST with all three families, then compare the results using both generated samples and quantitative evaluation.
+The assignment puts those differences side by side across MNIST and FashionMNIST, with all three families compared through generated samples and quantitative evaluation.
 
-## What the Project Asked at a High Level
+## Project Scope
 
-At a high level, the assignment moved through three families:
+The assignment moved through three families:
 
 1. a VAE with an encoder, decoder, latent sampling, and ELBO loss,
 2. a GAN with alternating generator and discriminator updates,
 3. a diffusion model with forward noising and reverse denoising.
 
-That progression mirrors the conceptual progression of the field. The project compared how objective design creates specific strengths, weaknesses, and debugging patterns.
+The sequence mirrors the field's progression. The project compared how objective design creates specific strengths, weaknesses, and debugging patterns.
 
-The repo made those differences concrete at the workflow level too. Separate trainers, config families, saved sample grids, and metric-oriented tuning runs made it obvious that each model family needed a different debugging protocol rather than one shared recipe.
+The repo made the workflow differences obvious too. Separate trainers, config families, saved sample grids, and metric-oriented tuning runs showed that each model family needed its own debugging protocol.
 
 ## VAEs Trade Sharpness for Structure and Stability
 
-The VAE starts from a basic question: what if generation should happen through a structured latent space rather than directly from noise to pixels?
+The VAE starts from a structured latent space between data and sampling.
 
 The standard objective is the evidence lower bound:
 
@@ -72,7 +72,7 @@ The first term rewards faithful reconstructions. The KL term shapes the latent d
 
 The cost is that pixel-level sharpness can suffer. In practice, VAEs often look blurrier than adversarial models because the objective rewards broad probabilistic coverage more than visual crispness.
 
-This is why VAEs are better understood as structured probabilistic models, not as weaker GANs.
+VAEs are structured probabilistic models with a different objective and failure profile from GANs.
 
 **Illustrative toy snippet, not assignment code:**
 
@@ -90,7 +90,7 @@ kl = -0.5 * (1 + logvar - mu.pow(2) - logvar.exp()).mean()
 loss = recon_loss + beta * kl
 ```
 
-The important idea is that the objective is doing two jobs at once: reconstructing the data and shaping the latent space so that sampling remains meaningful.
+The point is that the objective is doing two jobs at once: reconstructing the data and shaping the latent space so that sampling remains meaningful.
 
 ## GANs Trade Stability for Sharpness
 
@@ -107,7 +107,7 @@ $$
   width={900}
 />
 
-That adversarial setup can produce sharp samples because the discriminator keeps pressuring the generator toward more realistic detail. But it also creates an unstable optimization problem. If one side learns much faster than the other, gradients become uninformative and training quality degrades.
+That adversarial setup can produce sharp samples because the discriminator keeps pushing the generator toward more realistic detail. But it also creates an unstable optimization problem. If one side learns much faster than the other, gradients become uninformative and training quality degrades.
 
 Mode collapse is the standard example of this failure mode.
 
@@ -120,11 +120,11 @@ Mode collapse is the standard example of this failure mode.
 
 A model that repeatedly generates a narrow family of convincing samples is still a poor generator if it is missing large parts of the distribution.
 
-That different failure mode showed up clearly in the repo structure. VAE work centered on beta and reconstruction tradeoffs, GAN work included collapse-oriented stress configs and long sample grids across training, and diffusion work revolved around timestep and noise-schedule choices. Each family failed differently, so each family had to be debugged differently.
+The repo made that failure pattern visible. VAE work centered on beta and reconstruction tradeoffs, GAN work included collapse-oriented stress configs and long sample grids across training, and diffusion work revolved around timestep and noise-schedule choices. Each family failed differently, so each one had to be debugged differently.
 
-## Diffusion Models Trade Sampling Speed for Robust Optimization
+## Diffusion Models Trade Sampling Speed for Stable Optimization
 
-Diffusion models start from another question: what if generation were framed as learning to reverse a gradual corruption process?
+Diffusion models ask a different question: what if generation were framed as learning to reverse a gradual corruption process?
 
 The forward process progressively adds noise:
 
@@ -142,9 +142,9 @@ and training teaches a model to predict the noise or denoise each corrupted samp
   width={900}
 />
 
-Conceptually, diffusion is attractive because the training problem is often smoother and more stable than adversarial training. The main drawback is inference cost: high-quality generation usually requires many denoising steps.
+Diffusion is attractive because the training problem is often smoother and more stable than adversarial training. The main drawback is inference cost: high-quality generation usually requires many denoising steps.
 
-This shows that training stability and deployment efficiency are not the same thing.
+Training stability and deployment efficiency are separate concerns.
 
 **Illustrative toy snippet, not assignment code:**
 
@@ -158,15 +158,15 @@ eps_hat = model(x_t, t)
 x_prev = (x_t - (1 - alpha_t).sqrt() * eps_hat) / alpha_t.sqrt()
 ```
 
-This toy view is enough to see the contract: corrupt a clean example with scheduled noise, then train a model to predict or remove that noise one step at a time.
+That is enough to see the contract: corrupt a clean example with scheduled noise, then train a model to predict or remove that noise one step at a time.
 
 ## Evaluation Has to Be Multi-Axis
 
-Generative modeling breaks the habit of relying on one summary number. An adequate evaluation protocol has to ask at least four questions:
+Generative modeling breaks the habit of relying on one summary number. Evaluation has to ask at least four questions:
 
 - Do the samples look plausible?
 - Does the model cover enough of the distribution?
-- Are the outputs fit for the task we care about?
+- Are the outputs fit for the task at hand?
 - What is the compute cost of getting that quality?
 
 <Figure
@@ -176,25 +176,25 @@ Generative modeling breaks the habit of relying on one summary number. An adequa
   width={900}
 />
 
-That is why metrics like FID are informative but incomplete. A good scalar score does not guarantee healthy diversity, and a visually nice sample grid does not guarantee the model is learning the right distribution.
+Metrics like FID are informative but incomplete. A good scalar score does not guarantee healthy diversity, and a visually nice sample grid does not guarantee the model is learning the right distribution.
 
-One framing from the assignment was that each family has a characteristic debugging style:
+In the assignment, each family had a characteristic debugging style:
 
 - VAE issues often look like reconstruction-vs-latent tradeoffs,
 - GAN issues often look like balance problems or collapse,
 - diffusion issues often look like schedule, sampling, or compute-budget problems.
 
-The repo evidence for that was concrete: multiple config families, saved outputs across epochs, and FID-oriented tuning runs. That setup made it harder to fool yourself with one especially good sample grid or one unusually bad run.
+The repo showed that directly: multiple config families, saved outputs across epochs, and FID-oriented tuning runs. That setup made it harder to fool yourself with one especially good sample grid or one unusually bad run.
 
-## What This Assignment Made Concrete
+## Recap
 
-The assignment made three general lessons stick:
+To recap, here are the main tradeoffs this project focused on:
 
-- **Objective choice predicts failure mode.** The loss is not a side detail; it is the model's contract with the data.
-- **Visual quality is not enough.** Diversity and coverage can fail even when samples look appealing.
+- **Objective choice predicts failure mode.** The loss defines the model's contract with the data.
+- **Visual quality captures only one axis of model quality.** Diversity and coverage can still fail when samples look appealing.
 - **Compute belongs in model quality discussions.** A model that trains cleanly but samples slowly is still making a tradeoff.
 
-That is why generative modeling is a useful part of the course. It forces a broader way of comparing models. Instead of asking which family is "best," you have to ask what you want from the model and which failure mode you are most willing to manage.
+Generative modeling is useful course material because it forces comparison across objectives, failure modes, and deployment constraints.
 
 ## Additional Resources
 

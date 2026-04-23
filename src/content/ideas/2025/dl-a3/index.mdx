@@ -28,26 +28,26 @@ import p3Fig3 from "../figures/lowyx/dl-p3-fig-03-multi-head-attention.png";
 import p3Fig4 from "../figures/lowyx/dl-p3-fig-04-beam-search.png";
 import p3Fig5 from "../figures/lowyx/dl-p3-fig-05-alignment.png";
 
-## Introduction
+## Sequence Modeling Exposes the Bottleneck
 
-Sequence modeling is where the course makes the limitations of fixed-size summaries clear. Translation is not just classification over longer inputs. The model has to read one sequence, generate another, preserve meaning, handle order, and make coherent decisions one token at a time.
+Sequence modeling makes the limitations of fixed-size summaries clear. In translation, the model has to read one sequence, generate another, preserve meaning, handle order, and make coherent decisions one token at a time.
 
-The assignment made that progression concrete by asking me to implement an LSTM, a seq2seq model with attention, and transformer-based variants. The main point was not only that newer architectures work better. It was that each architecture addresses a different bottleneck.
+The assignment walks through that progression with an LSTM, a seq2seq model with attention, and transformer-based variants. Each architecture addresses a different bottleneck.
 
 > [!note]
-> I use the assignment only as context here. The goal of this post is to explain the concepts that matter, not to publish restricted implementation details.
+> The assignment appears here only as context. The goal of this post is to explain the concepts that matter without publishing restricted implementation details.
 
-## What the Project Asked at a High Level
+## Project Scope
 
-At a high level, the project moved through three stages:
+The project moved through three stages:
 
 1. understand recurrence and gating well enough to build an LSTM,
 2. move from encoder-decoder bottlenecks to attention,
 3. compare recurrent models against transformer-style sequence processing.
 
-That makes the assignment a compact map of modern NLP architecture history. The through-line is always the same question: how does the model preserve, retrieve, and use information from earlier in the sequence?
+The assignment is a compact map of modern NLP architecture history. The same question runs through all three stages: how does the model preserve, retrieve, and use information from earlier in the sequence?
 
-The repo work made that comparison more explicit than the prose alone does. It included separate training paths, saved best configurations, side-by-side model comparison scripts, and direct inspection of translated outputs under matched evaluation settings.
+The repo made the comparison explicit. It included separate training paths, saved best configurations, side-by-side model comparison scripts, and direct inspection of translated outputs under matched evaluation settings.
 
 ## Translation Is Conditional Sequence Modeling
 
@@ -63,7 +63,7 @@ That factorization immediately creates several difficulties:
 - each new token depends on earlier output choices,
 - and mistakes can compound over time.
 
-These are not implementation details. They are the reason sequence modeling needs different architectures and evaluation methods than standard image classification.
+These are not implementation details. They are why sequence modeling needs different architectures and evaluation methods than standard image classification.
 
 ## Seq2Seq Models Expose the Bottleneck Problem
 
@@ -76,23 +76,23 @@ Classic encoder-decoder models compress the source sequence into hidden states a
   width={900}
 />
 
-The bottleneck framing predicts the failure modes you actually see:
+The bottleneck framing predicts the failure modes you see:
 
 - omitted content,
 - repetitions,
 - weak alignment between source and output,
 - and degraded performance on longer sequences.
 
-That is why the seq2seq stage of the assignment matters. It makes the architectural limitation feel inevitable rather than historical.
+The seq2seq stage matters because it makes the architectural limitation feel like a direct consequence of the setup.
 
 ## Attention Turns Retrieval Into Part of the Computation
 
-Attention is the idea that each decode step should be allowed to retrieve the most relevant source-side information dynamically instead of relying on one compressed context vector.
+Attention lets each decode step retrieve the most relevant source-side information dynamically, with access to source states throughout decoding.
 
 <Figure
   src={p3Fig2}
   alt="Attention map"
-  caption="Attention can be understood as dynamic retrieval over token states, not just as another block in the network. Source: Lowyx GT DL Notes (CC BY 4.0), https://lowyx.com/posts/gt-dl-notes/."
+  caption="Attention can be understood as dynamic retrieval over token states within the network. Source: Lowyx GT DL Notes (CC BY 4.0), https://lowyx.com/posts/gt-dl-notes/."
   width={900}
 />
 
@@ -102,9 +102,9 @@ $$
 \mathrm{Attention}(Q, K, V) = \mathrm{softmax}\left(\frac{QK^T}{\sqrt{d_k}}\right)V.
 $$
 
-The softmax weights determine which positions matter for the current decision. That simple move changes the whole character of the model. Alignment is no longer implicit and fragile; it becomes something the network can compute step by step.
+The softmax weights determine which positions matter for the current decision. That changes the character of the model. Alignment is no longer implicit and fragile; the network can compute it step by step.
 
-This is the point where sequence modeling begins to feel more like information routing than memory compression.
+At that point, sequence modeling looks more like information routing than memory compression.
 
 **Illustrative toy snippet, not assignment code:**
 
@@ -121,7 +121,7 @@ def scaled_dot_product_attention(q, k, v, mask=None):
 
 The important part is the structure: compare keys against the current query, suppress invalid positions with a mask when needed, and turn those scores into a weighted retrieval step.
 
-## Transformers Reorganize the Whole Computation
+## Transformers Reorganize the Computation
 
 Transformers push the idea further by making attention, residual paths, layer normalization, and feed-forward blocks the dominant computation pattern.
 
@@ -132,17 +132,17 @@ Transformers push the idea further by making attention, residual paths, layer no
   width={900}
 />
 
-The most important conceptual consequences are:
+The main consequences are:
 
 - recurrence is no longer the main path for combining information,
 - many dependencies can be modeled in parallel during training,
 - and positional information has to be injected explicitly because attention alone is permutation-invariant.
 
-That last point is easy to miss. Attention gets the spotlight, but position encodings and residual structure are part of why transformer models can organize language at all.
+Attention gets the spotlight, but positional encodings and residual structure are part of why transformer models can organize language at all.
 
-The assignment made this clearer by forcing a comparison between recurrent and transformer-style models under roughly the same task. The newer model family was not just faster; it was built around a different answer to "where should relevant information come from at each step?"
+The assignment clarifies this by comparing recurrent and transformer-style models on roughly the same task. The newer family also gives a different answer to "where should relevant information come from at each step?"
 
-## Decoding Is Part of the System, Not an Afterthought
+## Decoding Belongs to the System
 
 Even with a trained sequence model, inference policy still matters. Greedy decoding, beam search, and sampling can produce materially different behavior from the same learned distribution.
 
@@ -153,9 +153,9 @@ Even with a trained sequence model, inference policy still matters. Greedy decod
   width={900}
 />
 
-That is why translation quality is really a model-plus-decoder property. If two systems are compared with different inference policies, it becomes much harder to tell whether the gain came from better learned representations or just a different search strategy.
+Translation quality is a model-plus-decoder property. If two systems are compared with different inference policies, it becomes harder to tell whether the gain came from better learned representations or from a different search strategy.
 
-One lesson from the project is that sequence evaluation is inseparable from inference design.
+In the project, sequence evaluation was inseparable from inference design.
 
 **Illustrative toy snippet, not assignment code:**
 
@@ -178,33 +178,33 @@ for _ in range(max_steps):
     beams = sorted(candidates, key=lambda x: x[1], reverse=True)[:beam_width]
 ```
 
-This is a useful contrast because it makes decoding policy visible: one path commits immediately, while the other keeps several plausible continuations alive and scores them jointly.
+The contrast makes decoding policy visible: one path commits immediately, while the other keeps several plausible continuations alive and scores them jointly.
 
 ## Metrics Need Error Analysis
 
-Perplexity and BLEU are informative, but they compress too much. Translation errors are structurally different from one another. A model can get the broad meaning right while damaging word order, or preserve fluency while dropping a crucial content word.
+Perplexity and BLEU are informative, but they compress too much. Translation errors are structurally different from one another. A model can get the broad meaning right while damaging word order, or preserve fluency while dropping a content word that matters.
 
 <Figure
   src={p3Fig5}
   alt="Alignment and translation errors"
-  caption="Alignment views are valuable because they make omission and reordering errors more visible than a scalar metric can. Source: Lowyx GT DL Notes (CC BY 4.0), https://lowyx.com/posts/gt-dl-notes/."
+  caption="Alignment views help because they make omission and reordering errors more visible than a scalar metric can. Source: Lowyx GT DL Notes (CC BY 4.0), https://lowyx.com/posts/gt-dl-notes/."
   width={900}
 />
 
-What the assignment made concrete is that error taxonomies are more actionable than a single score. Once you separate lexical substitution, reordering, omission, and repetition, it becomes much easier to decide whether the next intervention should be architectural, optimization-related, or decoder-related.
+The assignment showed that error taxonomies are more actionable than a single score. Once you separate lexical substitution, reordering, omission, and repetition, it becomes easier to decide whether the next intervention should be architectural, optimization-related, or decoder-related.
 
-The repo work reflected that too. There were separate scripts for reporting perplexity and comparing model outputs, because scalar metrics tell you that a difference exists, while direct output inspection starts to tell you what kind of difference it is.
+The repo reflected that too. There were separate scripts for reporting perplexity and comparing model outputs, because scalar metrics tell you that a difference exists, while output inspection starts to show what kind of difference it is.
 
-## What This Assignment Made Concrete
+## Recap
 
-The project turned several high-level NLP ideas into operational ones:
+To recap, here are the main sequence-modeling ideas this project focused on:
 
-- **Bottlenecks are an architectural problem, not just a tuning problem.**
-- **Attention is a retrieval mechanism, not just a named module.**
+- **Bottlenecks originate in model structure and show up in training and evaluation.**
+- **Attention is a retrieval mechanism built into the computation.**
 - **Transformers solve more than one problem at once: dependency modeling, training parallelism, and representational flexibility.**
 - **Decoding and evaluation policies shape what "good performance" even means.**
 
-This assignment is a compact setting for studying the historical arc from RNNs to attention to transformers. The motivation for that transition becomes much clearer once you work through the older bottlenecks directly.
+Working through the older bottlenecks makes the move from RNNs to attention to transformers easier to justify.
 
 ## Additional Resources
 

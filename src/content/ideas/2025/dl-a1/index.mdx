@@ -28,11 +28,11 @@ import p1Fig3 from "../figures/lowyx/dl-p1-fig-04-loss-surface.png";
 import p1Fig4 from "../figures/lowyx/dl-p1-fig-05-train-valid-loss.png";
 import p1Fig5 from "../figures/lowyx/dl-p1-fig-05-dropout.png";
 
-## Introduction
+## The Training Stack in Plain Sight
 
 The first deep learning assignment exposes the mechanics directly. Instead of importing a framework and calling `fit()`, you have to make the pipeline explicit: how scores are computed, how losses become gradients, how gradients update parameters, and how hyperparameters affect learning.
 
-In practice, that means Assignment 1 was less about "training MNIST" and more about learning the small set of concepts that almost every later deep learning system still depends on:
+Assignment 1 centers on the small set of concepts that almost every later deep learning system still depends on:
 
 - linear decision surfaces,
 - softmax and cross-entropy,
@@ -40,16 +40,16 @@ In practice, that means Assignment 1 was less about "training MNIST" and more ab
 - optimization geometry,
 - regularization.
 
-The project context was intentionally simple. I implemented softmax regression and a small multilayer perceptron in NumPy, tuned them on MNIST, and used that stripped-down setting to see exactly what each piece of the training stack was doing.
+The project context is intentionally simple: softmax regression and a small multilayer perceptron in NumPy on MNIST. That stripped-down setting makes each piece of the training stack easier to inspect directly.
 
 > [!note]
-> This article is intentionally integrity-safe. I use the assignment as motivation and context, but I do not publish restricted prompts, solution mechanics, or code.
+> This article is intentionally integrity-safe. The assignment provides motivation and context, but this post does not publish restricted prompts, solution mechanics, or code.
 
-## What the Project Was Really About
+## The Assignment as a System
 
-At a high level, the assignment asked me to build a supervised learning pipeline from the ground up: load the data, define a model, compute a loss, derive gradients, run optimization, and evaluate the result. That sounds elementary, but it is exactly the scale where the important abstractions become visible.
+The assignment builds a supervised learning pipeline from the ground up: load the data, define a model, compute a loss, derive gradients, run optimization, and evaluate the result. The scale is small, but it is exactly where the important abstractions become visible.
 
-When you work without framework conveniences, you see quickly that a model is not just an architecture. It is also:
+Without framework conveniences, a model includes:
 
 - a representation of inputs,
 - a loss that defines what counts as a mistake,
@@ -57,9 +57,9 @@ When you work without framework conveniences, you see quickly that a model is no
 - an optimization policy,
 - and an evaluation protocol that tells you whether the run is actually healthy.
 
-The repo work for this assignment reinforced that point. I treated it as an exercise in verification as much as optimization: unit tests for core pieces, analytical gradients checked against numerical approximations, curve plots across small sweeps, and model selection based on validation behavior rather than trusting the final epoch or one lucky run.
+The repo work emphasizes verification as much as optimization: unit tests for core pieces, analytical gradients checked against numerical approximations, curve plots across small sweeps, and model selection based on validation behavior instead of trusting the final epoch or one lucky run.
 
-That is why this project is an effective entry point into the course. It forces you to understand deep learning as a system instead of a black box.
+The assignment makes deep learning visible as a system of interacting parts.
 
 ## Linear Classifiers Are the Right Place to Start
 
@@ -78,14 +78,14 @@ then every prediction is built from a weighted projection of the input onto clas
   width={900}
 />
 
-The reason this matters is that optimization problems are easier to diagnose when the model class is simple. If a baseline linear model fails, the failure is often informative:
+This matters because optimization problems are easier to diagnose when the model class is simple. If a baseline linear model fails, the failure is often informative:
 
 - the features may be poorly scaled,
 - the learning rate may be unstable,
 - the loss may not be aligned with the task,
 - or the data may require nonlinear structure the model cannot express.
 
-That is why I think of linear models as instrumentation, not ceremony. In the assignment, they made it easier to tell whether a problem came from the training setup or from model capacity.
+In this setting, linear models work as instrumentation. They make it easier to tell whether a problem comes from the training setup or from model capacity.
 
 ## Softmax and Cross-Entropy Turn Scores into Learning Signal
 
@@ -101,15 +101,15 @@ $$
 \mathcal{L} = -\log p(y=t \mid x).
 $$
 
-The key derivative is compact:
+The derivative is compact:
 
 $$
 \frac{\partial \mathcal{L}}{\partial s_k} = p_k - \mathbb{1}[k=t].
 $$
 
-That equation explains a lot of training behavior in one line. If the model is confidently wrong, the update is large. If it is already confident and correct, the update shrinks. Softmax plus cross-entropy is not just popular because it is conventional; it gives a clean and well-behaved learning signal for classification.
+That equation explains a lot of training behavior in one line. If the model is confidently wrong, the update is large. If it is already confident and correct, the update shrinks. Softmax plus cross-entropy remains standard because it gives a clean and well-behaved learning signal for classification.
 
-What the project made concrete here was numerical discipline. Once you compute these terms yourself, details like log stability, normalization, and shape consistency stop feeling like implementation trivia. They are part of the math.
+The project made the numerical discipline concrete. Once you compute these terms yourself, details like log stability, normalization, and shape consistency stop feeling like implementation trivia. They are part of the math.
 
 **Illustrative toy snippet, not assignment code:**
 
@@ -129,11 +129,11 @@ def softmax_cross_entropy(logits, target_idx):
     return loss, grad
 ```
 
-The main point of a snippet like this is not the syntax. It is that stability and gradient shape are part of the same design decision: once the logits are normalized carefully, the loss and gradient become simple enough to reason about directly.
+The point is not the syntax. Stability and gradient shape come from the same design decision: once the logits are normalized carefully, the loss and gradient become simple enough to reason about directly.
 
-## Backpropagation Is Reverse Dataflow
+## Backpropagation as Reverse Dataflow
 
-Backpropagation is usually introduced as repeated application of the chain rule. That is mathematically correct, but the more practical programming intuition is that backpropagation is a reverse pass over a computation graph.
+Backpropagation is a reverse pass over a computation graph. The chain-rule framing is mathematically correct, but the graph view is more useful in code.
 
 <Figure
   src={p1Fig2}
@@ -147,7 +147,7 @@ Each node in that graph does two jobs:
 1. produce a forward output,
 2. contribute a local derivative during the backward pass.
 
-That viewpoint makes several practical facts much clearer:
+That viewpoint makes several practical facts clear:
 
 - intermediate values have to be cached somewhere,
 - gradients accumulate from multiple downstream paths,
@@ -175,7 +175,7 @@ def numerical_grad(f, x, eps=1e-5):
 
 A check like this is slow, but it is often enough to tell you whether a backward pass is conceptually correct before you trust a full training curve.
 
-## Optimization Geometry Explains Why Runs Behave So Differently
+## Optimization Geometry
 
 Once gradients exist, the next question is how parameter updates move through the loss landscape. The simplest mental model is still the right one:
 
@@ -192,9 +192,9 @@ But that simple rule behaves very differently depending on curvature, scale, and
   width={900}
 />
 
-The assignment made three optimization lessons stick:
+Three optimization lessons stuck:
 
-- **Learning rate is not a detail.** It is often the highest-leverage training choice.
+- **Learning rate is not a detail.** It is often the training choice that matters most.
 - **Training curves matter.** End-of-run accuracy hides most of the information you need to debug instability.
 - **Capacity and optimization interact.** Making the model wider or deeper does not help if the optimization regime is already fragile.
 
@@ -205,9 +205,9 @@ The assignment made three optimization lessons stick:
   width={900}
 />
 
-On a project like this, tuning can feel small-scale. It is not. It is where you learn that a model can fail because the optimizer never reaches a basin that generalizes well, not because the architecture is fundamentally wrong.
+On a project like this, tuning can look small-scale. It is where you learn that a model can fail because the optimizer never reaches a basin that generalizes well, not because the architecture is fundamentally wrong.
 
-## Regularization Is a Preference Over Solutions
+## Regularization Picks Among Solutions
 
 Many parameter settings can fit a training set. Regularization is the mechanism that tells the optimizer which kinds of solutions to prefer. In this assignment, the most important version was L2 weight decay:
 
@@ -224,23 +224,23 @@ The interpretation is straightforward: the optimizer is penalized for relying on
   width={900}
 />
 
-The broader lesson is that regularization is not a universal anti-overfitting switch. It changes the search problem. Too little regularization encourages brittle fits; too much regularization makes the run look stable while the model underfits.
+Regularization is not a universal anti-overfitting switch; it changes the search problem. Too little regularization encourages brittle fits; too much regularization makes the run look stable while the model underfits.
 
 That tradeoff showed up immediately in the project. The assignment was small enough that the effect of weight decay and hidden size was visible, but large enough that those choices genuinely changed validation behavior.
 
-## What This Project Made Concrete
+## Recap
 
-By the end of the assignment, five ideas were more concrete than they were in lecture:
+To recap, here are the main concepts this project focused on:
 
-- **PyTorch hides bookkeeping, not fundamentals.** The math of losses, gradients, and updates is still the same.
+- **PyTorch hides bookkeeping while leaving the underlying losses, gradients, and updates unchanged.**
 - **Baselines are worth taking seriously.** A simple model can tell you a lot about data quality and training stability.
 - **Optimization is interactive.** Learning rate, regularization, batch size, and model size do not tune independently.
 - **Numerical stability matters early.** Softmax and cross-entropy are easy to write down and easy to implement badly.
-- **Training curves are better than anecdotes.** If you only look at final accuracy, you throw away most of the debugging signal.
+- **Training curves carry more debugging signal than final accuracy alone.**
 
-The repo artifacts from this project made those lessons visible: tests for activations, losses, optimizer updates, and network behavior; numerical checks for gradients; and saved plots across learning rate, regularization, batch size, and hidden size. None of that changes the theory, but it does change how quickly you notice when the theory and implementation have drifted apart.
+The repo artifacts make those concepts visible: tests for activations, losses, optimizer updates, and network behavior; numerical checks for gradients; and saved plots across learning rate, regularization, batch size, and hidden size. None of that changes the theory, but it does change how quickly theory and implementation drift becomes visible.
 
-That is why I still think this is a foundational assignment in the course. It gives you a compact setting where many later deep learning ideas can be traced back to something visible and understandable.
+It is a foundational assignment in the course because it gives a compact setting where many later deep learning ideas can be traced back to something visible and understandable.
 
 ## Additional Resources
 
@@ -255,7 +255,7 @@ That is why I still think this is a foundational assignment in the course. It gi
   url="https://www.deeplearningbook.org/"
 >
   <p>
-    A strong reference for why linear models, losses, backpropagation, and regularization fit together as one optimization story rather than separate topics.
+    A strong reference for why linear models, losses, backpropagation, and regularization fit together within one optimization story.
   </p>
 </BookCard>
 

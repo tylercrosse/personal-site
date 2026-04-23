@@ -28,11 +28,11 @@ import p2Fig3 from "../figures/lowyx/dl-p2-fig-03-augmentation-flipping.png";
 import p2Fig4 from "../figures/lowyx/dl-p2-fig-04-train-valid-loss.png";
 import p2Fig5 from "../figures/lowyx/dl-p2-fig-05-calibration.png";
 
-## Introduction
+## From Derivation to Experiments
 
 Assignment 2 shifts the course from derivation to controlled experimentation. The project begins with hand-built convolution and pooling layers, then moves to PyTorch models on CIFAR-10, and finally asks what happens when the data distribution is imbalanced and accuracy is no longer the whole story.
 
-That makes the assignment a bridge between two kinds of understanding:
+The assignment bridges two kinds of understanding:
 
 - why convolutional models work in the first place,
 - and why experiment discipline matters once a framework lets you iterate quickly.
@@ -40,17 +40,17 @@ That makes the assignment a bridge between two kinds of understanding:
 > [!note]
 > This write-up keeps the assignment context at a high level and stays on the integrity-safe side of the course boundary.
 
-## What the Project Made Explicit
+## Architecture and Protocol
 
-At a high level, the assignment asked me to do three related things:
+The assignment does three related things:
 
 1. implement core CNN building blocks from scratch,
 2. move to framework-scale training on CIFAR-10,
-3. reason about imbalance and confidence, not just raw accuracy.
+3. reason about imbalance and confidence alongside raw accuracy.
 
-The underlying lesson is that computer vision performance comes from both architecture and protocol. Convolution gives the model the right bias for images, but the training loop, data transforms, and evaluation setup decide whether the comparison you are making is meaningful.
+Computer vision performance comes from both architecture and protocol. Convolution gives the model the right bias for images, but the training loop, data transforms, and evaluation setup decide whether the comparison is meaningful.
 
-The repo ended up mirroring that split. There is one layer of work dedicated to implementing and checking the low-level operations, and another dedicated to running controlled PyTorch experiments, tracking trial configurations, and comparing models under fixed evaluation rules.
+The repo mirrored that split. One layer of work was dedicated to implementing and checking the low-level operations, and another to running controlled PyTorch experiments, tracking trial configurations, and comparing models under fixed evaluation rules.
 
 ## Convolution Is a Structured Prior
 
@@ -76,7 +76,7 @@ $$
 
 That formula is easy to forget once frameworks hide it. It still matters, because many practical mistakes in CNN work are shape-policy mistakes: too much downsampling, mismatched feature-map sizes, or pooling decisions that throw away detail too early.
 
-In the project, building convolution and max-pooling from scratch made those assumptions visible. The layers were no longer just boxes in a diagram; they were concrete operations with cost, geometry, and failure modes.
+Building convolution and max-pooling from scratch made those assumptions visible. The layers were no longer just boxes in a diagram; they were concrete operations with cost, geometry, and failure modes.
 
 ## Receptive Fields Explain Why Depth Helps
 
@@ -95,11 +95,11 @@ That idea is conceptually simple, but it explains a lot of design tradeoffs:
 - too much aggressive downsampling and fine detail disappears,
 - more depth does not automatically help unless the receptive field is growing in a way that matches the scale of the task.
 
-This is one reason CNN design feels more principled once you stop thinking of layers as arbitrary stacks and start thinking in terms of information retained, compressed, or discarded at each stage.
+CNN design feels more principled once you stop thinking of layers as arbitrary stacks and start thinking in terms of information retained, compressed, or discarded at each stage.
 
-## Training Pipelines Matter Almost as Much as Architecture
+## Training Protocols Matter Too
 
-PyTorch makes experimentation faster, but it also makes it easier to confuse speed with rigor. Once I moved from NumPy layers to framework-scale training, the central question became less "can I implement this model?" and more "am I making a fair comparison?"
+PyTorch makes experimentation faster, but it also makes it easier to confuse speed with rigor. With framework-scale training, the central question shifts toward whether the comparison is fair.
 
 <Figure
   src={p2Fig4}
@@ -114,7 +114,7 @@ Three ideas mattered most here:
 - **schedules change what counts as a fair baseline**,
 - **repeatable evaluation is more informative than a lucky run**.
 
-That is what the CIFAR portion of the assignment taught. The framework removes derivative bookkeeping, but it does not remove the need for careful protocol design. If one model gets a different schedule, a more permissive augmentation policy, or a looser checkpoint rule, the comparison stops being informative.
+The CIFAR portion of the assignment made that plain. The framework removes derivative bookkeeping, but it does not remove the need for careful protocol design. If one model gets a different schedule, a more permissive augmentation policy, or a looser checkpoint rule, the comparison stops being informative.
 
 **Illustrative toy snippet, not assignment code:**
 
@@ -139,11 +139,11 @@ for epoch in range(num_epochs):
         best_state = {k: v.detach().clone() for k, v in model.state_dict().items()}
 ```
 
-The habit that matters here is not the exact loop structure. It is separating training from evaluation and keeping the best validated state instead of assuming the latest state is the best one.
+The important habit is separating training from evaluation and keeping the best validated state instead of assuming the latest state is the best one.
 
 ## Augmentation Is an Invariance Contract
 
-Data augmentation is often described as a practical trick. A better framing is that augmentation states which transformations the model should treat as label-preserving.
+Data augmentation states which transformations the model should treat as label-preserving.
 
 <Figure
   src={p2Fig3}
@@ -154,11 +154,11 @@ Data augmentation is often described as a practical trick. A better framing is t
 
 Random crops, flips, and color jitter are not inherently good. They help when they encode a sensible prior for the task, and they hurt when the transformation breaks the label semantics.
 
-This was one of the broader lessons from the assignment: training data is not fixed just because the dataset is fixed. The transform pipeline is part of the model's worldview.
+The assignment also makes clear that training data is not fixed just because the dataset is fixed. The transform pipeline is part of the model's worldview.
 
-## Calibration and Imbalance Are First-Class Concerns
+## Calibration and Imbalance
 
-The last major idea from this assignment is that accuracy is too compressed to tell you what the model is doing. This becomes clear as soon as the class distribution becomes long-tailed or the output confidence is poorly matched to reality.
+The last major idea is that accuracy is too compressed to tell you what the model is doing. This becomes clear as soon as the class distribution becomes long-tailed or the output confidence is poorly matched to reality.
 
 Expected calibration error (ECE) is one way to measure that mismatch:
 
@@ -173,7 +173,7 @@ $$
   width={900}
 />
 
-The imbalanced-data section of the project made this concrete. Techniques like focal loss change which examples dominate the learning signal. Once classes are imbalanced, a model can look decent on average while under-serving precisely the cases you care about most.
+The imbalanced-data section made this concrete. Techniques like focal loss change which examples dominate the learning signal. Once classes are imbalanced, a model can look decent on average while under-serving precisely the cases you care about most.
 
 **Illustrative toy snippet, not assignment code:**
 
@@ -197,18 +197,18 @@ def expected_calibration_error(probs, labels, n_bins=10):
 
 This kind of metric check matters because a model can improve on accuracy while still being overconfident or underconfident in ways that matter downstream.
 
-## What This Assignment Made Concrete
+## Recap
 
-By the end of the project, four ideas were much harder to forget:
+To recap, here are the main concepts this project focused on:
 
-- **Convolution is a design prior, not just a historical architecture choice.**
+- **Convolution encodes a design prior that still shapes model design.**
 - **Framework speed increases the need for fair experimental controls.**
 - **Augmentation changes the task the model is effectively being trained on.**
 - **Accuracy alone is not enough once confidence and imbalance matter.**
 
-That is also why the repo accumulated tuning scripts, saved trial configurations, and multiple checkpoints. The useful part of that machinery was not automation for its own sake; it was a way to make model comparisons reproducible enough to trust.
+The repo accumulated tuning scripts, saved trial configurations, and multiple checkpoints. The useful part of that machinery was not automation for its own sake; it was a way to make model comparisons reproducible enough to trust.
 
-That combination makes this assignment a turning point in the course. It takes the mathematical foundations from the first project and pushes them into a setting where experimentation, not just derivation, becomes the main engineering skill.
+It is a turning point in the course because it takes the mathematical foundations from the first project and pushes them into a setting where experimentation becomes a core engineering skill alongside derivation.
 
 ## Additional Resources
 
@@ -234,6 +234,6 @@ That combination makes this assignment a turning point in the course. It takes t
   url="https://udlbook.github.io/udlbook/"
 >
   <p>
-    Helpful when I wanted a more intuitive explanation of receptive fields, representation learning, and the practical side of training image models.
+    Helpful for a more intuitive explanation of receptive fields, representation learning, and the practical side of training image models.
   </p>
 </BookCard>
