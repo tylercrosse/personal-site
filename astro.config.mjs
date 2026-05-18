@@ -27,6 +27,7 @@ export default defineConfig({
     "/ideas/language-models": "/ideas/2023/language-models",
     "/ideas/semantic-search": "/ideas/2023/semantic-search",
     "/ideas/tech-debt": "/ideas/2023/tech-debt",
+    "/booking-page": "/booking",
   },
   integrations: [
     mdx({
@@ -45,7 +46,12 @@ export default defineConfig({
         rehypeCallouts,
       ],
     }),
-    sitemap(),
+    sitemap({
+      filter: (page) => {
+        const { pathname } = new URL(page);
+        return pathname !== "/booking/" && pathname !== "/booking-page/";
+      },
+    }),
     react(),
     pagefind(),
   ],

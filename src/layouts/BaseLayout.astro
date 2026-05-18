@@ -10,12 +10,14 @@ interface Props {
   title?: string;
   description?: string;
   image?: string | ImageMetadata;
+  noindex?: boolean;
 }
 
 const {
   title = SITE_TITLE,
   description = SITE_DESCRIPTION,
   image,
+  noindex = false,
 } = Astro.props;
 ---
 
@@ -24,6 +26,7 @@ const {
   <head>
     <title>{title} | {SITE_TITLE}</title>
     <BaseHead title={title} description={description} image={image} />
+    {noindex && <meta name="robots" content="noindex, nofollow" />}
   </head>
   <body>
     <Header />
