@@ -1,0 +1,120 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+
+const appointmentUrl =
+  "https://calendar.google.com/calendar/appointments/schedules/AcZssZ0_w8Gr0iQPetqyZeaFlCbq_lGH-Vw4DaopoYqxmfvF1fDyQM96c5cHqDEHsCVDJSBGvTNK5rCO?gv=true";
+---
+
+<BaseLayout
+  title="Booking"
+  description="Book time with Tyler Crosse."
+  noindex={true}
+>
+  <section class="booking-page slide-in-block" aria-labelledby="booking-title">
+    <div class="booking-copy">
+      <h1 id="booking-title">Book time with me</h1>
+      <p class="lead">
+        Pick a time from the calendar below and Google Calendar will handle the
+        invite.
+      </p>
+    </div>
+
+    <div class="calendar-frame">
+      <iframe
+        src={appointmentUrl}
+        title="Google Calendar appointment scheduler"
+        loading="lazy"
+        referrerpolicy="no-referrer-when-downgrade"
+      ></iframe>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  :global(main) {
+    padding: 2.5rem 1.5rem 4rem;
+  }
+
+  .booking-page {
+    width: min(100%, 1200px);
+    margin: 0 auto;
+  }
+
+  .booking-copy {
+    margin-bottom: 1.75rem;
+  }
+
+  .eyebrow {
+    margin: 0 0 0.35rem;
+    color: var(--sol-1);
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    letter-spacing: 0;
+    text-transform: uppercase;
+  }
+
+  h1 {
+    margin-bottom: 0.75rem;
+  }
+
+  .lead {
+    max-width: 64ch;
+    margin: 0;
+    color: var(--sol-1);
+    font-size: 1.05rem;
+    line-height: 1.6;
+  }
+
+  .calendar-frame {
+    overflow: hidden;
+    border: 1px solid var(--main-border-color);
+    border-radius: 8px;
+    background: #fff;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    color-scheme: light;
+  }
+
+  :global([data-effective-theme="dark"]) .calendar-frame {
+    border-color: var(--sol-dark-3);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  }
+
+  iframe {
+    display: block;
+    width: 100%;
+    height: clamp(640px, 100vh, 1600px);
+    border: 0;
+    color-scheme: light;
+    background: #fff;
+  }
+
+  .slide-in-block {
+    opacity: 0;
+    filter: blur(8px);
+    transform: scale(0.98);
+    will-change: transform, opacity, filter;
+    animation: slideInBlock 0.45s cubic-bezier(0.43, 0.195, 0.02, 1) forwards;
+  }
+
+  @keyframes slideInBlock {
+    to {
+      opacity: 1;
+      filter: blur(0);
+      transform: scale(1);
+    }
+  }
+
+  @media (max-width: 720px) {
+    :global(main) {
+      padding: 1.5rem 1rem 3rem;
+    }
+
+    h1 {
+      font-size: 2.3rem;
+    }
+
+    iframe {
+      height: 680px;
+    }
+  }
+</style>
