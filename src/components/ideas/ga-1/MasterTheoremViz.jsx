@@ -168,12 +168,8 @@ function TreeVisualization({ a, b, d, maxDepth }) {
         viewBox={`0 0 ${svgWidth} ${svgHeight}`}
         style={{ overflow: "visible" }}
       >
-        <g id="edges">
-          {treeData.map((level, i) => renderLevel(level, i).edges)}
-        </g>
-        <g id="nodes">
-          {treeData.map((level, i) => renderLevel(level, i).nodes)}
-        </g>
+        <g>{treeData.map((level, i) => renderLevel(level, i).edges)}</g>
+        <g>{treeData.map((level, i) => renderLevel(level, i).nodes)}</g>
       </svg>
       {/* Work per level bar overlay */}
       <div
