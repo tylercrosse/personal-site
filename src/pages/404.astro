@@ -1,0 +1,361 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+
+<BaseLayout
+  title="404 — Page not found"
+  description="The page you're looking for couldn't be found."
+  noindex={true}
+>
+  <section class="notfound" aria-labelledby="notfound-title">
+    <div class="hero slide-in-block">
+      <h1 id="notfound-title" class="code">404</h1>
+      <p class="tagline">Page not found.</p>
+      <div class="terminal">
+        <div class="terminal-chrome" aria-hidden="true">
+          <span class="dot"></span><span class="dot"></span><span class="dot"
+          ></span>
+        </div>
+        <div class="terminal-body">
+          <p class="subtitle">
+            The link may be stale, the post may have moved, or the URL doesn't
+            point anywhere real.
+          </p>
+          <p class="comment">// out of distribution</p>
+        </div>
+      </div>
+      <button id="search-cta" class="search-cta js-required" type="button">
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <circle cx="11" cy="11" r="8"></circle>
+          <path d="m21 21-4.35-4.35"></path>
+        </svg>
+        <span>Search the site</span>
+        <kbd class="kbd-hint">⌘K</kbd>
+      </button>
+    </div>
+
+    <nav class="links slide-in-block" aria-label="Where to go next">
+      <a href="/" class="link-card">
+        <span class="link-label">Home</span>
+        <span class="link-meta">Start over</span>
+      </a>
+      <a href="/ideas" class="link-card">
+        <span class="link-label">Ideas</span>
+        <span class="link-meta">Notes & writing</span>
+      </a>
+      <a href="/about" class="link-card">
+        <span class="link-label">About</span>
+        <span class="link-meta">Who I am</span>
+      </a>
+    </nav>
+  </section>
+</BaseLayout>
+
+<style>
+  :global(main) {
+    padding: 3rem 1.5rem 5rem;
+  }
+
+  .notfound {
+    width: min(100%, 880px);
+    margin: 0 auto;
+  }
+
+  .hero {
+    margin-bottom: 2.5rem;
+  }
+
+  .code {
+    margin: 0 0 0.5rem;
+    font-family: var(--font-heading);
+    font-size: clamp(5rem, 18vw, 11rem);
+    line-height: 0.95;
+    font-weight: 700;
+    color: var(--sol-10);
+    letter-spacing: -0.04em;
+  }
+
+  .tagline {
+    margin: 0 0 1rem;
+    font-family: var(--font-heading);
+    font-size: clamp(1.4rem, 3vw, 1.9rem);
+    font-weight: 600;
+    color: var(--sol-9);
+    letter-spacing: -0.01em;
+  }
+
+  .terminal {
+    max-width: 56ch;
+    margin: 1rem 0 1.5rem;
+    border: 1px solid var(--main-border-color);
+    border-radius: 6px;
+    overflow: hidden;
+    background-color: var(--sol-light-4);
+  }
+
+  .terminal-chrome {
+    display: flex;
+    gap: 0.4rem;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--main-border-color);
+    background-color: var(--sol-light-3);
+  }
+
+  .dot {
+    width: 0.6rem;
+    height: 0.6rem;
+    border-radius: 50%;
+    background-color: var(--sol-7);
+  }
+
+  .terminal-body {
+    padding: 0.85rem 1rem;
+  }
+
+  .subtitle {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: 0.92rem;
+    line-height: 1.6;
+    color: var(--sol-8);
+  }
+
+  .comment {
+    margin: 0.5rem 0 0;
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    color: var(--sol-7);
+  }
+
+  .search-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0 0 1.75rem;
+    padding: 0.6rem 0.9rem;
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    color: var(--sol-9);
+    background: transparent;
+    border: 1px solid var(--main-border-color);
+    border-radius: 6px;
+    cursor: pointer;
+    transition:
+      background-color 0.2s ease,
+      border-color 0.2s ease,
+      transform 0.2s ease;
+  }
+
+  .search-cta:hover {
+    background-color: var(--sol-light-4);
+    border-color: var(--sol-7);
+    transform: translateY(-1px);
+  }
+
+  .search-cta:focus-visible {
+    outline: 2px solid var(--blue);
+    outline-offset: 3px;
+  }
+
+  .search-cta svg {
+    opacity: 0.8;
+  }
+
+  .kbd-hint {
+    margin-left: 0.15rem;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    padding: 0.1rem 0.35rem;
+    border: 1px solid var(--main-border-color);
+    border-radius: 3px;
+    color: var(--sol-7);
+    background-color: var(--sol-light-3);
+  }
+
+  .links {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+    border-top: 1px solid var(--main-border-color);
+    padding-top: 1.25rem;
+  }
+
+  @media (min-width: 640px) {
+    .links {
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+    }
+  }
+
+  .link-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    padding: 0.95rem 1rem;
+    border-bottom: 1px solid var(--main-border-color);
+    text-decoration: none;
+    color: var(--sol-10);
+    transition:
+      background-color 0.2s ease,
+      transform 0.2s ease;
+  }
+
+  @media (min-width: 640px) {
+    .link-card {
+      border-bottom: none;
+      border: 1px solid var(--main-border-color);
+      border-radius: 6px;
+    }
+  }
+
+  .link-card:hover {
+    background-color: var(--sol-light-4);
+    transform: translateY(-1px);
+  }
+
+  .link-card:focus-visible {
+    outline: 2px solid var(--blue);
+    outline-offset: 3px;
+  }
+
+  .link-label {
+    font-family: var(--font-heading);
+    font-size: 1.05rem;
+    font-weight: 600;
+    line-height: 1.2;
+  }
+
+  .link-label::after {
+    content: " →";
+    display: inline-block;
+    margin-left: 0.15em;
+    color: var(--sol-7);
+    transition: transform 0.2s ease;
+  }
+
+  .link-card:hover .link-label::after {
+    transform: translateX(3px);
+    color: var(--orange);
+  }
+
+  .link-meta {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    color: var(--sol-7);
+    letter-spacing: 0.02em;
+  }
+
+  :global([data-effective-theme="dark"]) .code {
+    color: var(--base3);
+  }
+
+  :global([data-effective-theme="dark"]) .tagline {
+    color: var(--base2);
+  }
+
+  :global([data-effective-theme="dark"]) .terminal {
+    border-color: var(--base03);
+    background-color: var(--sol-dark-3);
+  }
+
+  :global([data-effective-theme="dark"]) .terminal-chrome {
+    border-bottom-color: var(--base03);
+    background-color: var(--sol-dark-4);
+  }
+
+  :global([data-effective-theme="dark"]) .dot {
+    background-color: var(--sol-light-7);
+  }
+
+  :global([data-effective-theme="dark"]) .subtitle {
+    color: var(--sol-light-8);
+  }
+
+  :global([data-effective-theme="dark"]) .comment {
+    color: var(--sol-light-7);
+  }
+
+  :global([data-effective-theme="dark"]) .search-cta {
+    color: var(--base2);
+    border-color: var(--base03);
+  }
+
+  :global([data-effective-theme="dark"]) .search-cta:hover {
+    background-color: var(--sol-dark-3);
+    border-color: var(--sol-light-7);
+  }
+
+  :global([data-effective-theme="dark"]) .kbd-hint {
+    border-color: var(--base03);
+    background-color: var(--sol-dark-4);
+    color: var(--sol-light-7);
+  }
+
+  :global([data-effective-theme="dark"]) .link-card {
+    color: var(--base2);
+  }
+
+  :global([data-effective-theme="dark"]) .link-card:hover {
+    background-color: var(--sol-dark-3);
+  }
+
+  :global([data-effective-theme="dark"]) .links,
+  :global([data-effective-theme="dark"]) .link-card {
+    border-color: var(--base03);
+  }
+
+  :global([data-effective-theme="dark"]) .link-meta {
+    color: var(--sol-light-7);
+  }
+
+  .slide-in-block {
+    opacity: 0;
+    filter: blur(8px);
+    transform: scale(0.98);
+    will-change: transform, opacity, filter;
+    animation: slideInBlock 0.45s cubic-bezier(0.43, 0.195, 0.02, 1) forwards;
+  }
+
+  .hero.slide-in-block {
+    animation-delay: 0.05s;
+  }
+
+  .links.slide-in-block {
+    animation-delay: 0.2s;
+  }
+
+  @keyframes slideInBlock {
+    to {
+      opacity: 1;
+      filter: blur(0);
+      transform: scale(1);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .slide-in-block {
+      animation: none;
+      opacity: 1;
+      filter: none;
+      transform: none;
+    }
+  }
+</style>
+
+<script>
+  document
+    .getElementById("search-cta")
+    ?.addEventListener("click", () => {
+      document.getElementById("omnibar-trigger")?.click();
+    });
+</script>
