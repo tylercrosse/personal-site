@@ -13,12 +13,18 @@ import { Image } from "astro:assets";
     >
       <div class="book-card">
         <div class="book-cover">
-          <Image
-            src={img || "https://via.placeholder.com/150x220.png"}
-            alt={alt || title}
-            width="150"
-            height="220"
-          />
+          {
+            img ? (
+              <Image src={img} alt={alt || title} width={150} />
+            ) : (
+              <Image
+                src="https://via.placeholder.com/150x220.png"
+                alt={alt || title}
+                width={150}
+                height={220}
+              />
+            )
+          }
         </div>
         <div class="book-info">
           <h4>{title}</h4>
@@ -32,12 +38,18 @@ import { Image } from "astro:assets";
   ) : (
     <div class="book-card">
       <div class="book-cover">
-        <Image
-          src={img || "https://via.placeholder.com/150x220.png"}
-          alt={alt || title}
-          width="150"
-          height="220"
-        />
+        {
+          img ? (
+            <Image src={img} alt={alt || title} width={150} />
+          ) : (
+            <Image
+              src="https://via.placeholder.com/150x220.png"
+              alt={alt || title}
+              width={150}
+              height={220}
+            />
+          )
+        }
       </div>
       <div class="book-info">
         <h4>{title}</h4>
@@ -122,4 +134,3 @@ import { Image } from "astro:assets";
     margin-bottom: 0;
   }
 </style>
-

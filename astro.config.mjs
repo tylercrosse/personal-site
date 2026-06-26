@@ -9,10 +9,27 @@ import remarkMath from "remark-math";
 import rehypeCitation from "rehype-citation";
 import rehypeCallouts from "rehype-callouts";
 import rehypeKatex from "rehype-katex";
+import { unified } from "@astrojs/markdown-remark";
+
+const remarkPlugins = [remarkMath, remarkGfm];
+const rehypePlugins = [
+  [rehypeKatex, { strict: false }],
+  [
+    rehypeCitation,
+    {
+      bibliography: "src/references.bib",
+      linkCitations: true,
+      showTooltips: true,
+      tooltipAttribute: "data-tooltip",
+    },
+  ],
+  rehypeCallouts,
+];
 
 // https://astro.build/config
 export default defineConfig({
   site: "https://tylercrosse.com",
+  compressHTML: true,
   redirects: {
     // Redirect pages from old site to new ones
     "/ideas/git-stash": "/ideas/2020/git-stash",
@@ -30,22 +47,7 @@ export default defineConfig({
     "/booking-page": "/booking",
   },
   integrations: [
-    mdx({
-      remarkPlugins: [remarkGfm, remarkMath],
-      rehypePlugins: [
-        [rehypeKatex, { strict: false }],
-        [
-          rehypeCitation,
-          {
-            bibliography: "src/references.bib",
-            linkCitations: true,
-            showTooltips: true,
-            tooltipAttribute: "data-tooltip",
-          },
-        ],
-        rehypeCallouts,
-      ],
-    }),
+    mdx(),
     sitemap({
       filter: (page) => {
         const { pathname } = new URL(page);
@@ -56,8 +58,7 @@ export default defineConfig({
     pagefind(),
   ],
   markdown: {
-    remarkPlugins: [remarkMath, remarkGfm],
-    rehypePlugins: [[rehypeKatex, { strict: false }]],
+    processor: unified({ remarkPlugins, rehypePlugins }),
     shikiConfig: {
       themes: {
         light: "solarized-light",

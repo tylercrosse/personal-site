@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import { TOKENS, TYPO, SIZES, buttonStyles } from "./vizTheme";
 
 const C = {
@@ -2556,6 +2556,10 @@ const PATTERN_META = {
 };
 
 function LinearDAG({ graph }) {
+  const svgId = useId().replace(/:/g, "");
+  const markerDefaultId = `ad-${svgId}`;
+  const markerActiveId = `aa-${svgId}`;
+  const glowId = `gl-${svgId}`;
   const { nodes, edges } = graph,
     n = nodes.length;
   const W = Math.max(700, n * 80),
@@ -2568,7 +2572,7 @@ function LinearDAG({ graph }) {
     <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: "auto" }}>
       <defs>
         <marker
-          id="ad"
+          id={markerDefaultId}
           markerWidth="6"
           markerHeight="4"
           refX="6"
@@ -2578,7 +2582,7 @@ function LinearDAG({ graph }) {
           <path d="M0,0 L6,2 L0,4" fill={C.edgeDim} />
         </marker>
         <marker
-          id="aa"
+          id={markerActiveId}
           markerWidth="6"
           markerHeight="4"
           refX="6"
@@ -2587,7 +2591,7 @@ function LinearDAG({ graph }) {
         >
           <path d="M0,0 L6,2 L0,4" fill={C.edgeActive} />
         </marker>
-        <filter id="gl">
+        <filter id={glowId}>
           <feGaussianBlur stdDeviation="3" result="b" />
           <feMerge>
             <feMergeNode in="b" />
@@ -2608,9 +2612,13 @@ function LinearDAG({ graph }) {
             fill="none"
             stroke={e.active ? C.edgeActive : C.edgeDim}
             strokeWidth={e.active ? 2 : 1}
-            markerEnd={e.active ? "url(#aa)" : "url(#ad)"}
+            markerEnd={
+              e.active
+                ? `url(#${markerActiveId})`
+                : `url(#${markerDefaultId})`
+            }
             opacity={e.active ? 1 : 0.5}
-            filter={e.active ? "url(#gl)" : undefined}
+            filter={e.active ? `url(#${glowId})` : undefined}
           />
         );
       })}
@@ -2625,7 +2633,7 @@ function LinearDAG({ graph }) {
               fill={nd.onPath ? C.nodeOnPath : C.nodeDefault}
               stroke={nd.onPath ? C.accent : C.border}
               strokeWidth={nd.onPath ? 2 : 1}
-              filter={nd.onPath ? "url(#gl)" : undefined}
+              filter={nd.onPath ? `url(#${glowId})` : undefined}
             />
             <text
               x={p.x}
@@ -2666,6 +2674,11 @@ function LinearDAG({ graph }) {
 }
 
 function GridDAG({ graph }) {
+  const svgId = useId().replace(/:/g, "");
+  const markerDefaultId = `gd-${svgId}`;
+  const markerActiveId = `ga-${svgId}`;
+  const markerTakeId = `gt-${svgId}`;
+  const glowId = `gg-${svgId}`;
   const { nodes, edges, rows, cols, X, Y, rowLabels, colLabels } = graph;
   const cellW = 50,
     cellH = 40,
@@ -2689,7 +2702,7 @@ function GridDAG({ graph }) {
       {/* <defs> ... (Shortened for brevity but assume full content) same markers as before ...</defs> */}
       <defs>
         <marker
-          id="gd"
+          id={markerDefaultId}
           markerWidth="5"
           markerHeight="4"
           refX="5"
@@ -2699,7 +2712,7 @@ function GridDAG({ graph }) {
           <path d="M0,0 L5,2 L0,4" fill={C.edgeDim} />
         </marker>
         <marker
-          id="ga"
+          id={markerActiveId}
           markerWidth="5"
           markerHeight="4"
           refX="5"
@@ -2709,7 +2722,7 @@ function GridDAG({ graph }) {
           <path d="M0,0 L5,2 L0,4" fill={C.edgeActive} />
         </marker>
         <marker
-          id="gt"
+          id={markerTakeId}
           markerWidth="5"
           markerHeight="4"
           refX="5"
@@ -2718,7 +2731,7 @@ function GridDAG({ graph }) {
         >
           <path d="M0,0 L5,2 L0,4" fill={C.orange} />
         </marker>
-        <filter id="gg">
+        <filter id={glowId}>
           <feGaussianBlur stdDeviation="2" result="b" />
           <feMerge>
             <feMergeNode in="b" />
@@ -2791,10 +2804,12 @@ function GridDAG({ graph }) {
         const f = pos(fn.gridRow, fn.gridCol),
           t = pos(tn.gridRow, tn.gridCol);
         let s = e.active ? C.edgeActive : C.edgeDim,
-          mk = e.active ? "url(#ga)" : "url(#gd)";
+          mk = e.active
+            ? `url(#${markerActiveId})`
+            : `url(#${markerDefaultId})`;
         if (e.type === "take" && e.active) {
           s = C.orange;
-          mk = "url(#gt)";
+          mk = `url(#${markerTakeId})`;
         }
         return (
           <line
@@ -2807,7 +2822,7 @@ function GridDAG({ graph }) {
             strokeWidth={e.active ? 2 : 1}
             markerEnd={mk}
             // opacity={e.active ? 1 : 0.3}
-            filter={e.active ? "url(#gg)" : undefined}
+            filter={e.active ? `url(#${glowId})` : undefined}
           />
         );
       })}
@@ -2824,7 +2839,7 @@ function GridDAG({ graph }) {
               fill={nd.onPath ? C.nodeOnPath : C.nodeDefault}
               stroke={nd.onPath ? C.accent : C.border}
               strokeWidth={nd.onPath ? 1.5 : 0}
-              filter={nd.onPath ? "url(#gg)" : undefined}
+              filter={nd.onPath ? `url(#${glowId})` : undefined}
             />
             <text
               x={p.x}
