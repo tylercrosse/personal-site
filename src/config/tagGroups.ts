@@ -16,6 +16,7 @@ export const TAG_GROUPS: Record<string, string[]> = {
     "deep-learning",
     "reinforcement-learning",
     "NLP",
+    "agents",
     "large-language-models",
     "computer-vision",
     "generative-models",
@@ -32,6 +33,7 @@ export const TAG_GROUPS: Record<string, string[]> = {
   Systems: [
     "computer-science",
     "software-engineering",
+    "applications",
     "algorithms",
     "parallel-algorithms",
     "computer-architecture",
