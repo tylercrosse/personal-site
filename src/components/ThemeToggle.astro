@@ -77,6 +77,8 @@
 </style>
 
 <script>
+  import { trackSiteEvent } from "../utils/siteAnalytics";
+
   // Theme management
   const themes = ['light', 'dark', 'system'] as const;
   type Theme = typeof themes[number];
@@ -109,12 +111,13 @@
     }
   }
 
-  function cycleTheme() {
+  function cycleTheme(method: 'button' | 'shortcut') {
     const currentTheme = getStoredTheme();
     const currentIndex = themes.indexOf(currentTheme);
     const nextIndex = (currentIndex + 1) % themes.length;
     const nextTheme = themes[nextIndex];
     applyTheme(nextTheme);
+    trackSiteEvent('theme_toggle', { method, theme: nextTheme });
   }
 
   // Initialize theme on page load
@@ -125,30 +128,41 @@
 
   // Set up event listeners
   function setupThemeToggle() {
+    const analyticsWindow = window as Window & {
+      __themeToggleHotkeyBound?: boolean;
+      __themeToggleMediaBound?: boolean;
+    };
     const button = document.getElementById('theme-toggle');
-    if (button) {
-      button.addEventListener('click', cycleTheme);
+    if (button && button.dataset.themeToggleBound !== 'true') {
+      button.dataset.themeToggleBound = 'true';
+      button.addEventListener('click', () => cycleTheme('button'));
     }
 
     // Listen for system theme changes
-    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-      const currentTheme = getStoredTheme();
-      if (currentTheme === 'system') {
-        applyTheme('system');
-      }
-    });
+    if (!analyticsWindow.__themeToggleMediaBound) {
+      analyticsWindow.__themeToggleMediaBound = true;
+      window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+        const currentTheme = getStoredTheme();
+        if (currentTheme === 'system') {
+          applyTheme('system');
+        }
+      });
+    }
 
     // Add hotkey support for theme toggling
-    document.addEventListener('keydown', (event: KeyboardEvent) => {
-      // Don't trigger while typing
-      if ((event.target as HTMLElement).closest('input, textarea, [contenteditable]')) {
-        return;
-      }
+    if (!analyticsWindow.__themeToggleHotkeyBound) {
+      analyticsWindow.__themeToggleHotkeyBound = true;
+      document.addEventListener('keydown', (event: KeyboardEvent) => {
+        // Don't trigger while typing
+        if ((event.target as HTMLElement).closest('input, textarea, [contenteditable]')) {
+          return;
+        }
 
-      if (event.key.toLowerCase() === 't') {
-        cycleTheme();
-      }
-    });
+        if (event.key.toLowerCase() === 't') {
+          cycleTheme('shortcut');
+        }
+      });
+    }
   }
 
   // Initialize on DOM content loaded

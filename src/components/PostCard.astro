@@ -45,6 +45,9 @@ const gradientAspect =
 <a
   href={`/ideas/${post.slug}/`}
   class={`post-card post-card--${variant}`}
+  data-analytics-post-card
+  data-analytics-type={post.type || "unknown"}
+  data-analytics-variant={variant}
   data-type={post.type}
 >
   <div class="post-card-media">

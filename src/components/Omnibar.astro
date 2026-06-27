@@ -95,6 +95,8 @@
 </div>
 
 <script>
+  import { pathnameFromHref, trackSiteEvent } from "../utils/siteAnalytics";
+
   class Omnibar {
     private overlay: HTMLElement;
     private input: HTMLInputElement;
@@ -129,13 +131,13 @@
 
     private setupEventListeners() {
       // Trigger click
-      this.trigger.addEventListener("click", () => this.open());
+      this.trigger.addEventListener("click", () => this.open("button"));
 
       // Keyboard shortcuts
       document.addEventListener("keydown", (e) => {
         if ((e.metaKey || e.ctrlKey) && (e.key === "k" || e.key === "/")) {
           e.preventDefault();
-          this.open();
+          this.open("shortcut");
         }
 
         if (this.isOpen()) {
@@ -159,14 +161,6 @@
         if (e.target === this.overlay) {
           this.close();
         }
-        // If the click is on a sub-result item, open the page
-        const subResultItem = (e.target as HTMLElement).closest(
-          ".sub-result-item"
-        ) as HTMLElement;
-        if (subResultItem && subResultItem.dataset.href) {
-          window.location.href = subResultItem.dataset.href;
-          this.close();
-        }
       });
 
       // Search input
@@ -180,6 +174,7 @@
           ".result-item"
         ) as HTMLElement;
         if (resultItem && resultItem.dataset.href) {
+          this.trackResultClick(resultItem, "click");
           window.location.href = resultItem.dataset.href;
         }
       });
@@ -435,15 +430,28 @@
       }
     }
 
+    private trackResultClick(item: HTMLElement, method: "click" | "keyboard") {
+      trackSiteEvent("search_result_click", {
+        method,
+        path: pathnameFromHref(item.dataset.href),
+        result_kind: item.classList.contains("sub-result-item")
+          ? "sub_result"
+          : "result",
+        source: this.isSearching ? "search" : "default",
+      });
+    }
+
     private navigateToSelected() {
       const selectedItem = this.resultItems[this.selectedIndex];
       if (selectedItem && selectedItem.dataset.href) {
+        this.trackResultClick(selectedItem, "keyboard");
         window.location.href = selectedItem.dataset.href;
         this.close();
       }
     }
 
-    private open() {
+    private open(method: "button" | "shortcut") {
+      const wasOpen = this.isOpen();
       document.body.appendChild(this.overlay);
       this.overlay.style.display = "flex";
       this.input.focus();
@@ -454,6 +462,10 @@
       this.selectedIndex = 0; // Select first default item
       this.updateSelection(); // Visually mark it
       document.body.style.overflow = "hidden";
+
+      if (!wasOpen) {
+        trackSiteEvent("search_open", { method });
+      }
     }
 
     private close() {

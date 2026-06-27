@@ -28,7 +28,7 @@ const rehypePlugins = [
 
 // https://astro.build/config
 export default defineConfig({
-  site: "https://tylercrosse.com",
+  site: "https://www.tylercrosse.com",
   compressHTML: true,
   redirects: {
     // Redirect pages from old site to new ones

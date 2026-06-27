@@ -9,6 +9,8 @@ import TableOfContents from "../components/TableOfContents.astro";
 import Comments from "../components/Comments.astro";
 import BaseLayout from "./BaseLayout.astro";
 import { PenTool, RotateCcw, Code, Lightbulb, Notebook, Youtube } from "lucide-astro";
+import { getBlogPostingStructuredData } from "../utils/structuredData";
+import { getTopicForTag, getTopicPath } from "../config/topicLandingPages";
 
 type Props = CollectionEntry<"ideas">["data"] & {
   headings?: MarkdownHeading[];
@@ -19,6 +21,7 @@ const {
   title,
   description,
   pubDate,
+  date,
   updated,
   heroImage,
   image,
@@ -53,6 +56,18 @@ const imageData = getImageData();
 
 // For Open Graph, pass the processed ImageMetadata if available, otherwise the string path
 const ogImage = image?.path || heroImage;
+const postUrl = new URL(Astro.url.pathname, Astro.site);
+const blogPostingStructuredData = getBlogPostingStructuredData({
+  site: Astro.site,
+  url: postUrl,
+  title,
+  description,
+  image: ogImage,
+  publishedAt: pubDate || date,
+  modifiedAt: updated || pubDate || date,
+  tags,
+  section: type,
+});
 
 // Map post types to their corresponding icons
 const getIconForType = (type: string) => {
@@ -71,12 +86,18 @@ const capitalize = (s: string) => {
   if (typeof s !== "string" || !s) return s;
   return s.charAt(0).toUpperCase() + s.slice(1);
 };
+
+const tagHref = (tag: string) => {
+  const topic = getTopicForTag(tag);
+  return topic ? getTopicPath(topic.slug) : `/ideas?tag=${encodeURIComponent(tag)}`;
+};
 ---
 
 <BaseLayout
   title={title}
   description={description}
   image={ogImage}
+  structuredData={blogPostingStructuredData}
 >
   <style>
     main {
@@ -295,7 +316,7 @@ const capitalize = (s: string) => {
             tags && tags.length > 0 && (
               <div class="tags">
                 {tags.map((tag) => (
-                  <a class="tag" href={`/ideas?tag=${encodeURIComponent(tag)}`}>{tag}</a>
+                  <a class="tag" href={tagHref(tag)}>{tag}</a>
                 ))}
               </div>
             )

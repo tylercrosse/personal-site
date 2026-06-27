@@ -1,0 +1,55 @@
+<script>
+  import {
+    externalTargetFromHref,
+    pathnameFromHref,
+    trackSiteEvent,
+  } from "../utils/siteAnalytics";
+
+  function initSiteAnalytics() {
+    const analyticsWindow = window as Window & {
+      __siteAnalyticsBound?: boolean;
+    };
+
+    if (analyticsWindow.__siteAnalyticsBound) return;
+    analyticsWindow.__siteAnalyticsBound = true;
+
+    document.addEventListener("click", (event) => {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+
+      const postCard = target.closest<HTMLAnchorElement>(
+        "[data-analytics-post-card]"
+      );
+      if (postCard) {
+        trackSiteEvent("post_card_click", {
+          path: pathnameFromHref(postCard.href),
+          type: postCard.dataset.analyticsType,
+          variant: postCard.dataset.analyticsVariant,
+        });
+        return;
+      }
+
+      const link = target.closest<HTMLAnchorElement>("a[href]");
+      if (!link) return;
+
+      const outboundTarget =
+        link.dataset.analyticsTarget || externalTargetFromHref(link.href);
+      if (!outboundTarget) return;
+
+      trackSiteEvent("outbound_link_click", {
+        source: link.dataset.analyticsSource || "link",
+        target: outboundTarget,
+      });
+    });
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initSiteAnalytics, {
+      once: true,
+    });
+  } else {
+    initSiteAnalytics();
+  }
+
+  document.addEventListener("astro:page-load", initSiteAnalytics);
+</script>

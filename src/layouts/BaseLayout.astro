@@ -4,13 +4,16 @@ import SpeedInsights from "@vercel/speed-insights/astro";
 import BaseHead from "../components/BaseHead.astro";
 import Header from "../components/Header.astro";
 import Footer from "../components/Footer.astro";
+import SiteAnalytics from "../components/SiteAnalytics.astro";
 import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
+import type { StructuredDataInput } from "../utils/structuredData";
 
 interface Props {
   title?: string;
   description?: string;
   image?: string | ImageMetadata;
   noindex?: boolean;
+  structuredData?: StructuredDataInput;
 }
 
 const {
@@ -18,6 +21,7 @@ const {
   description = SITE_DESCRIPTION,
   image,
   noindex = false,
+  structuredData,
 } = Astro.props;
 ---
 
@@ -25,7 +29,12 @@ const {
 <html lang="en">
   <head>
     <title>{title} | {SITE_TITLE}</title>
-    <BaseHead title={title} description={description} image={image} />
+    <BaseHead
+      title={title}
+      description={description}
+      image={image}
+      structuredData={structuredData}
+    />
     {noindex && <meta name="robots" content="noindex, nofollow" />}
   </head>
   <body>
@@ -34,22 +43,24 @@ const {
       <slot />
     </main>
     <Footer />
-  </body><style>
-    main {
-      max-width: 1600px;
-      margin: 0 auto;
-    }
-  </style>
-  <noscript>
     <style>
-      .js-required {
-        display: none !important;
-      }
-      .js-missing {
-        display: block !important;
+      main {
+        max-width: 1600px;
+        margin: 0 auto;
       }
     </style>
-  </noscript>
-  <Analytics />
-  <SpeedInsights />
+    <noscript>
+      <style>
+        .js-required {
+          display: none !important;
+        }
+        .js-missing {
+          display: block !important;
+        }
+      </style>
+    </noscript>
+    <Analytics />
+    <SpeedInsights />
+    <SiteAnalytics />
+  </body>
 </html>
