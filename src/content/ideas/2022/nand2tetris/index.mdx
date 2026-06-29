@@ -1,0 +1,25 @@
+---
+title: 'From Nand to Tetris'
+description: 'Building a modern computer from first principles — a two-part retrospective on the Nand2Tetris course'
+date: '2022-03-12'
+status: 'complete'
+type: 'retro'
+category: ['budding']
+tags: ['computer-architecture', 'computer-science', 'learning-in-public', 'typescript']
+media_subpath: '/ideas/nand2tetris/'
+draft: false
+audience: 'All'
+image:
+  path: "./hero2.png"
+  alt: "Black-and-white ink illustration showing the progression from logic gates to computer hardware, binary code, and a stack of Tetris blocks, evoking the Nand2Tetris courses path from basic circuits to a working computer."
+hideCaption: true
+---
+
+[Build a Modern Computer from First Principles](https://www.nand2tetris.org/), better known as Nand2Tetris, is a MOOC taught by Noam Nisan and Shimon Schocken [on Coursera](https://www.coursera.org/learn/build-a-computer/home). The course walks you through 12 projects that stack sequentially, starting from a Nand gate and ending with a working computer running a Tetris game you wrote yourself.
+
+As a largely self-taught developer, I took this course to strengthen my [computer science fundamentals](https://teachyourselfcs.com/). It made me a better software engineer. I wrote up each half as I went:
+
+1. [From Boolean Logic Gates to an Assembler](/ideas/2021/nand2tetris-part1/): The first half of the course. Boolean logic, arithmetic, memory, machine language, CPU architecture, and an assembler. We build the Hack computer up from Nand gates.
+2. [The Hack Virtual Machine](/ideas/2022/nand2tetris-vm-translator/): The start of the second half. Stack machines, virtual memory segments, and a VM translator that compiles VM bytecode down to Hack assembly.
+
+The two halves meet at the assembler. The first half ends by translating symbolic machine language into binary, and the second half picks up translating VM code into that same assembly.
