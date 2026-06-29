@@ -3,6 +3,13 @@ import HeaderLink from "./HeaderLink.astro";
 import ThemeToggle from "./ThemeToggle.astro";
 import Omnibar from "./Omnibar.astro";
 import { SITE_TITLE } from "../consts";
+import {
+  getLiveTopicsWithCounts,
+  getTopicPath,
+} from "../config/topicLandingPages";
+import { getIconForTopic } from "../utils/topicIcons";
+
+const topics = await getLiveTopicsWithCounts();
 ---
 
 <header>
@@ -16,7 +23,65 @@ import { SITE_TITLE } from "../consts";
     >
     <div class="internal-links">
       <HeaderLink href="/">Home</HeaderLink>
-      <HeaderLink href="/ideas">Ideas</HeaderLink>
+      <div class="nav-item has-menu">
+        <HeaderLink href="/ideas">Ideas</HeaderLink>
+        {
+          topics.length > 0 && (
+            <Fragment>
+              <button
+                type="button"
+                class="ideas-caret"
+                aria-expanded="false"
+                aria-controls="ideas-menu"
+                aria-label="Browse topic guides"
+              >
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </button>
+            <div id="ideas-menu" class="ideas-menu" hidden>
+              <div class="ideas-menu-grid">
+                {topics.map(({ topic, count }) => {
+                  const Icon = getIconForTopic(topic.slug);
+                  return (
+                    <a href={getTopicPath(topic.slug)} class="ideas-menu-item">
+                      <span class="ideas-menu-icon">
+                        <Icon size={18} />
+                      </span>
+                      <span class="ideas-menu-text">
+                        <span class="ideas-menu-title">
+                          {topic.title}
+                          <span class="ideas-menu-count">{count}</span>
+                        </span>
+                        <span class="ideas-menu-blurb">{topic.menuBlurb}</span>
+                      </span>
+                    </a>
+                  );
+                })}
+              </div>
+              <div class="ideas-menu-footer">
+                <a href="/ideas" class="ideas-menu-all">
+                  Browse all ideas →
+                </a>
+                <span class="ideas-menu-caption">
+                  Topic guides · auto-built from tags
+                </span>
+              </div>
+            </div>
+            </Fragment>
+          )
+        }
+      </div>
       <HeaderLink href="/about">About</HeaderLink>
       <div
         class="js-missing"
@@ -125,6 +190,146 @@ import { SITE_TITLE } from "../consts";
   .social-links a {
     display: flex;
   }
+
+  /* Ideas dropdown */
+  .nav-item.has-menu {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+  .nav-item.has-menu > :global(a) {
+    /* The caret sits flush against the link; trim its right padding. */
+    padding-right: 0.2em;
+  }
+  .ideas-caret {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.3em;
+    margin: 0;
+    border: none;
+    background: transparent;
+    color: rgb(var(--black));
+    cursor: pointer;
+    border-radius: 4px;
+    transition:
+      transform 0.2s ease,
+      background-color 0.2s ease;
+  }
+  .ideas-caret:hover {
+    background-color: rgba(var(--black), 6%);
+  }
+  .ideas-caret[aria-expanded="true"] {
+    transform: rotate(180deg);
+  }
+
+  .ideas-menu {
+    position: fixed;
+    top: var(--ideas-menu-top, 4rem);
+    left: var(--ideas-menu-left, 1rem);
+    z-index: 1100;
+    box-sizing: border-box;
+    width: min(620px, calc(100vw - 2rem));
+    max-height: calc(100vh - var(--ideas-menu-top, 4rem) - 1rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 1rem;
+    background: white;
+    border: 1px solid var(--main-border-color, rgba(var(--black), 10%));
+    border-radius: 12px;
+    box-shadow: 0 12px 32px rgba(var(--black), 12%);
+  }
+  .ideas-menu[hidden] {
+    display: none;
+  }
+  .ideas-menu-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.4rem;
+  }
+  .ideas-menu-item {
+    display: flex;
+    gap: 0.7rem;
+    padding: 0.6rem 0.7rem;
+    border-radius: 8px;
+    border-bottom: none;
+    transition: background-color 0.15s ease;
+  }
+  .ideas-menu-item:hover {
+    background-color: var(--base4, rgba(var(--black), 4%));
+  }
+  .ideas-menu-icon {
+    display: flex;
+    flex-shrink: 0;
+    padding-top: 0.15rem;
+    color: var(--accent);
+  }
+  .ideas-menu-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    min-width: 0;
+  }
+  .ideas-menu-title {
+    display: flex;
+    align-items: baseline;
+    gap: 0.4rem;
+    font-weight: 700;
+    font-size: 0.95rem;
+    line-height: 1.2;
+    color: rgb(var(--black));
+  }
+  .ideas-menu-count {
+    font-weight: 500;
+    font-size: 0.8rem;
+    color: var(--sol-8, rgb(var(--gray)));
+    opacity: 0.65;
+  }
+  .ideas-menu-blurb {
+    font-size: 0.82rem;
+    line-height: 1.35;
+    color: var(--sol-8, rgb(var(--gray)));
+  }
+  .ideas-menu-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--main-border-color, rgba(var(--black), 10%));
+  }
+  /* Scoped under .ideas-menu-footer so it out-specifies the generic `nav a`
+     rule (Astro's cid attributes bump that selector above a bare class). */
+  .ideas-menu-footer .ideas-menu-all {
+    padding: 0;
+    border-bottom: none;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--accent);
+  }
+  .ideas-menu-footer .ideas-menu-all:hover {
+    color: var(--accent);
+    text-decoration: underline;
+  }
+  .ideas-menu-caption {
+    font-size: 0.75rem;
+    color: var(--sol-8, rgb(var(--gray)));
+    opacity: 0.55;
+  }
+
+  :global([data-effective-theme="dark"]) .ideas-menu {
+    background: #073642;
+    border-color: var(--base01, rgba(255, 255, 255, 12%));
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 35%);
+  }
+  :global([data-effective-theme="dark"]) .ideas-menu-item:hover {
+    background-color: rgba(255, 255, 255, 6%);
+  }
+  :global([data-effective-theme="dark"]) .ideas-caret:hover {
+    background-color: rgba(255, 255, 255, 8%);
+  }
+
   @media (max-width: 720px) {
     .social-links {
       display: none;
@@ -134,6 +339,18 @@ import { SITE_TITLE } from "../consts";
     }
     .internal-links {
       gap: 0.25rem;
+    }
+    .ideas-menu {
+      width: calc(100vw - 2rem);
+      border-radius: 10px;
+    }
+    .ideas-menu-grid {
+      grid-template-columns: 1fr;
+    }
+    .ideas-menu-footer {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.4rem;
     }
   }
 </style>
@@ -172,6 +389,121 @@ import { SITE_TITLE } from "../consts";
     window.addEventListener("scroll", update, { passive: true });
   }
 
-  // Initialize when DOM is loaded
-  document.addEventListener("DOMContentLoaded", initHeadroom);
+  function initIdeasMenu() {
+    const navItem = document.querySelector<HTMLElement>(".nav-item.has-menu");
+    const caret = document.querySelector<HTMLButtonElement>(".ideas-caret");
+    const menu = document.querySelector<HTMLElement>("#ideas-menu");
+    if (!navItem || !caret || !menu) return;
+    if (navItem.dataset.ideasMenuInitialized === "true") return;
+    navItem.dataset.ideasMenuInitialized = "true";
+
+    const canHover = window.matchMedia("(hover: hover) and (pointer: fine)");
+    let hoverTimer: ReturnType<typeof setTimeout> | undefined;
+    const viewportGutter = 16;
+
+    function positionMenu() {
+      const svg = caret!.querySelector("svg");
+      const anchorRect = (svg ?? caret!).getBoundingClientRect();
+      const headerRect = navItem!.closest("header")?.getBoundingClientRect();
+      const menuWidth = menu!.offsetWidth;
+      const desktopAlignmentOffset = window.matchMedia("(min-width: 721px)")
+        .matches
+        ? 200
+        : 0;
+      const maxLeft = window.innerWidth - viewportGutter - menuWidth;
+      const idealLeft =
+        anchorRect.right + desktopAlignmentOffset - menuWidth;
+      const left = Math.max(
+        viewportGutter,
+        Math.min(idealLeft, maxLeft)
+      );
+      const top = Math.max(
+        viewportGutter,
+        (headerRect?.bottom ?? anchorRect.bottom) + 8
+      );
+
+      menu!.style.setProperty("--ideas-menu-left", `${Math.round(left)}px`);
+      menu!.style.setProperty("--ideas-menu-top", `${Math.round(top)}px`);
+    }
+
+    function open() {
+      clearTimeout(hoverTimer);
+      menu!.hidden = false;
+      positionMenu();
+      caret!.setAttribute("aria-expanded", "true");
+    }
+    function close() {
+      menu!.hidden = true;
+      caret!.setAttribute("aria-expanded", "false");
+    }
+    function toggle() {
+      menu!.hidden ? open() : close();
+    }
+
+    caret.addEventListener("click", (event) => {
+      event.preventDefault();
+      if (canHover.matches && event.detail > 0) {
+        open();
+        return;
+      }
+      toggle();
+    });
+
+    // Desktop: open on hover, with a small grace period so the cursor can
+    // travel from the caret into the panel without it closing.
+    navItem.addEventListener("mouseenter", () => {
+      if (canHover.matches) open();
+    });
+    navItem.addEventListener("mouseleave", () => {
+      if (canHover.matches) hoverTimer = setTimeout(close, 150);
+    });
+    menu.addEventListener("mouseenter", () => {
+      if (canHover.matches) clearTimeout(hoverTimer);
+    });
+    menu.addEventListener("mouseleave", () => {
+      if (canHover.matches) hoverTimer = setTimeout(close, 150);
+    });
+
+    // Close when a topic link is chosen (before navigation).
+    menu.addEventListener("click", (event) => {
+      if ((event.target as HTMLElement).closest("a")) close();
+    });
+
+    // Close on Escape, returning focus to the caret.
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && !menu.hidden) {
+        close();
+        caret.focus();
+      }
+    });
+
+    // Close on outside click / focus moving away.
+    document.addEventListener("click", (event) => {
+      if (!menu.hidden && !navItem.contains(event.target as Node)) close();
+    });
+    navItem.addEventListener("focusout", () => {
+      // Defer so the newly focused element is settled before we check it.
+      setTimeout(() => {
+        if (!navItem.contains(document.activeElement)) close();
+      }, 0);
+    });
+
+    window.addEventListener("resize", () => {
+      if (!menu!.hidden) positionMenu();
+    });
+    window.addEventListener(
+      "scroll",
+      () => {
+        if (!menu!.hidden) close();
+      },
+      { passive: true }
+    );
+  }
+
+  // Initialize when DOM is loaded, and re-run after client-side navigation.
+  document.addEventListener("DOMContentLoaded", () => {
+    initHeadroom();
+    initIdeasMenu();
+  });
+  document.addEventListener("astro:page-load", initIdeasMenu);
 </script>

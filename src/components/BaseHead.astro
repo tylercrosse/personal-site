@@ -6,17 +6,28 @@ import "../styles/global.css";
 import { SITE_TITLE } from "../consts";
 import RecentPostsScript from "./RecentPostsScript.astro";
 import { getImage } from "astro:assets";
+import {
+  getSiteStructuredData,
+  normalizeStructuredData,
+  type StructuredDataInput,
+} from "../utils/structuredData";
 
 interface Props {
   title: string;
   description: string;
   image?: string | ImageMetadata;
+  structuredData?: StructuredDataInput;
 }
 
 const canonicalURL = new URL(Astro.url.pathname, Astro.site);
 const defaultImage = "/blog-placeholder-2.jpg";
 
-const { title, description, image = defaultImage } = Astro.props;
+const {
+  title,
+  description,
+  image = defaultImage,
+  structuredData,
+} = Astro.props;
 
 // Helper function to get the proper image URL for Open Graph
 const getImageURL = async (imageInput: string | ImageMetadata | undefined) => {
@@ -52,6 +63,10 @@ const getImageURL = async (imageInput: string | ImageMetadata | undefined) => {
 };
 
 const imageURL = await getImageURL(image);
+const structuredDataItems = [
+  ...getSiteStructuredData(Astro.site),
+  ...normalizeStructuredData(structuredData),
+];
 ---
 
 <!-- Theme script to prevent FOUC -->
@@ -146,3 +161,9 @@ const imageURL = await getImageURL(image);
 <meta property="twitter:title" content={`${title} | ${SITE_TITLE}`} />
 <meta property="twitter:description" content={description} />
 <meta property="twitter:image" content={imageURL} />
+
+{
+  structuredDataItems.map((item) => (
+    <script type="application/ld+json" set:html={JSON.stringify(item)} />
+  ))
+}

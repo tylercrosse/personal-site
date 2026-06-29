@@ -9,6 +9,13 @@ import TableOfContents from "../components/TableOfContents.astro";
 import Comments from "../components/Comments.astro";
 import BaseLayout from "./BaseLayout.astro";
 import { PenTool, RotateCcw, Code, Lightbulb, Notebook, Youtube } from "lucide-astro";
+import { getBlogPostingStructuredData } from "../utils/structuredData";
+import {
+  getTopicForTag,
+  getTopicPath,
+  getLiveTopics,
+  type TopicLandingPage,
+} from "../config/topicLandingPages";
 
 type Props = CollectionEntry<"ideas">["data"] & {
   headings?: MarkdownHeading[];
@@ -53,6 +60,18 @@ const imageData = getImageData();
 
 // For Open Graph, pass the processed ImageMetadata if available, otherwise the string path
 const ogImage = image?.path || heroImage;
+const postUrl = new URL(Astro.url.pathname, Astro.site);
+const blogPostingStructuredData = getBlogPostingStructuredData({
+  site: Astro.site,
+  url: postUrl,
+  title,
+  description,
+  image: ogImage,
+  publishedAt: pubDate,
+  modifiedAt: updated || pubDate,
+  tags,
+  section: type,
+});
 
 // Map post types to their corresponding icons
 const getIconForType = (type: string) => {
@@ -71,12 +90,30 @@ const capitalize = (s: string) => {
   if (typeof s !== "string" || !s) return s;
   return s.charAt(0).toUpperCase() + s.slice(1);
 };
+
+// Tags are filters: every tag chip refines the /ideas list. (Topic membership
+// is surfaced separately, below, as a "Part of" destination link.)
+const tagHref = (tag: string) => `/ideas?tag=${encodeURIComponent(tag)}`;
+
+// The topic hubs this post belongs to — deduped, and limited to hubs that
+// actually exist in this build. This is the reciprocal half of the cluster:
+// the hub links down to its posts, each post links back up to its hub.
+const liveTopicSlugs = new Set((await getLiveTopics()).map((t) => t.slug));
+const topicsForPost = new Map<string, TopicLandingPage>();
+for (const tag of tags ?? []) {
+  const topic = getTopicForTag(tag);
+  if (topic && liveTopicSlugs.has(topic.slug)) {
+    topicsForPost.set(topic.slug, topic);
+  }
+}
+const postTopics = [...topicsForPost.values()];
 ---
 
 <BaseLayout
   title={title}
   description={description}
   image={ogImage}
+  structuredData={blogPostingStructuredData}
 >
   <style>
     main {
@@ -171,6 +208,45 @@ const capitalize = (s: string) => {
     }
     .tag:hover {
       background: rgb(var(--accent-dark));
+    }
+
+    .post-topics {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.5em;
+      margin-top: 1.5em;
+      font-size: 0.7em;
+    }
+
+    .post-topics-label {
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-weight: 600;
+      color: var(--sol-7);
+    }
+
+    .topic-pill {
+      border: 1px solid var(--main-border-color);
+      border-radius: 6px;
+      padding: 0.3em 0.7em;
+      color: var(--sol-8);
+      text-decoration: none;
+      transition: background-color 0.2s ease;
+    }
+
+    .topic-pill:hover {
+      background: var(--base4);
+      color: var(--sol-10);
+    }
+
+    :global([data-effective-theme="dark"]) .topic-pill {
+      border-color: var(--base01);
+    }
+
+    :global([data-effective-theme="dark"]) .topic-pill:hover {
+      background: var(--base02);
+      color: var(--sol-10);
     }
 
     .hero-image {
@@ -290,6 +366,18 @@ const capitalize = (s: string) => {
         </div>
         <h1>{title}</h1>
         <div class="description">{description}</div>
+        {
+          postTopics.length > 0 && (
+            <div class="post-topics">
+              <span class="post-topics-label">Part of</span>
+              {postTopics.map((topic) => (
+                <a class="topic-pill" href={getTopicPath(topic.slug)}>
+                  {topic.title}
+                </a>
+              ))}
+            </div>
+          )
+        }
         <div class="meta">
           {
             tags && tags.length > 0 && (
