@@ -60,6 +60,18 @@ const imageData = getImageData();
 
 // For Open Graph, pass the processed ImageMetadata if available, otherwise the string path
 const ogImage = image?.path || heroImage;
+const postUrl = new URL(Astro.url.pathname, Astro.site);
+const blogPostingStructuredData = getBlogPostingStructuredData({
+  site: Astro.site,
+  url: postUrl,
+  title,
+  description,
+  image: ogImage,
+  publishedAt: pubDate,
+  modifiedAt: updated || pubDate,
+  tags,
+  section: type,
+});
 
 // Map post types to their corresponding icons
 const getIconForType = (type: string) => {
@@ -101,6 +113,7 @@ const postTopics = [...topicsForPost.values()];
   title={title}
   description={description}
   image={ogImage}
+  structuredData={blogPostingStructuredData}
 >
   <style>
     main {
