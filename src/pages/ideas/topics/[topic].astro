@@ -1,0 +1,279 @@
+---
+import { getCollection } from "astro:content";
+import readingTime from "reading-time";
+
+import BaseLayout from "../../../layouts/BaseLayout.astro";
+import PostCard from "../../../components/PostCard.astro";
+import {
+  getTopicPath,
+  getLiveTopics,
+  type TopicLandingPage,
+} from "../../../config/topicLandingPages";
+import { getCollectionPageStructuredData } from "../../../utils/structuredData";
+
+export async function getStaticPaths() {
+  // Only build hubs that clear the post-count threshold, so we never ship a
+  // thin landing page. Membership is fully tag-driven — nothing is hand-listed.
+  const topics = await getLiveTopics();
+  return topics.map((topic) => ({
+    params: { topic: topic.slug },
+    props: { topic },
+  }));
+}
+
+type Props = {
+  topic: TopicLandingPage;
+};
+
+const { topic } = Astro.props;
+const topicTags = new Set(topic.tags);
+
+const posts = (await getCollection("ideas"))
+  .filter((post) => import.meta.env.DEV || !post.data.draft)
+  .filter((post) => post.data.tags?.some((tag) => topicTags.has(tag)))
+  .sort((a, b) => {
+    const aDate = a.data.pubDate || a.data.date;
+    const bDate = b.data.pubDate || b.data.date;
+    return new Date(bDate || 0).valueOf() - new Date(aDate || 0).valueOf();
+  });
+
+const postCards = posts.map((post) => {
+  const slug = post.id.replace(/(\/index)?\.(md|mdx)$/, "");
+  const stats = readingTime(post.body || "");
+  return {
+    id: post.id,
+    slug,
+    title: post.data.title,
+    description: post.data.description,
+    date: post.data.pubDate || post.data.date,
+    type: post.data.type,
+    status: post.data.status,
+    tags: post.data.tags || [],
+    image: post.data.image,
+    draft: post.data.draft,
+    readingTimeText: stats.text,
+  };
+});
+
+const pageUrl = new URL(getTopicPath(topic.slug), Astro.site);
+const structuredData = getCollectionPageStructuredData({
+  site: Astro.site,
+  url: pageUrl,
+  name: `${topic.title} | Tyler Crosse`,
+  description: topic.description,
+  items: postCards.map((post) => ({
+    name: post.title,
+    url: new URL(`/ideas/${post.slug}/`, Astro.site),
+  })),
+});
+---
+
+<BaseLayout
+  title={topic.title}
+  description={topic.description}
+  structuredData={structuredData}
+>
+  <section class="topic-page">
+    <header class="topic-header slide-in-block">
+      <a href="/ideas/" class="back-link">Ideas</a>
+      <!-- <p class="eyebrow">Topic Guide</p> -->
+      <h1>{topic.title}</h1>
+      <p class="lede">{topic.description}</p>
+      {
+        topic.intro && topic.intro.length > 0 && (
+          <div class="intro">
+            {topic.intro.map((para) => (
+              <p>{para}</p>
+            ))}
+          </div>
+        )
+      }
+      <div class="topic-tags" aria-label={`${topic.title} source tags`}>
+        {
+          topic.tags.map((tag) => (
+            <a href={`/ideas?tag=${encodeURIComponent(tag)}`}>{tag}</a>
+          ))
+        }
+      </div>
+    </header>
+
+    <section
+      class="topic-posts slide-in-block"
+      aria-labelledby="topic-posts-title"
+    >
+      <!-- <div class="section-heading">
+        <h2 id="topic-posts-title">Writing</h2>
+        <span>
+          {postCards.length} {postCards.length === 1 ? "post" : "posts"}
+        </span>
+      </div> -->
+      <div class="post-grid">
+        {postCards.map((post) => <PostCard post={post} variant="compact" />)}
+      </div>
+    </section>
+  </section>
+</BaseLayout>
+
+<style>
+  :global(main) {
+    padding: 2rem 1.5rem 4rem;
+  }
+
+  .topic-page {
+    width: min(100%, 1120px);
+    margin: 0 auto;
+  }
+
+  .topic-header {
+    padding: 1rem 0 0;
+    /* border-bottom: 1px solid var(--sol-7); */
+  }
+
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    margin-bottom: 1.25rem;
+    color: var(--sol-1);
+    font-size: 0.9rem;
+    text-decoration: none;
+  }
+
+  .back-link::before {
+    content: "←";
+    margin-right: 0.4em;
+  }
+
+  .back-link:hover {
+    color: var(--sol-9);
+  }
+
+  .eyebrow {
+    margin: 0 0 0.4rem;
+    color: var(--sol-1);
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  h1 {
+    margin: 0 0 0.85rem;
+    font-size: clamp(2.6rem, 7vw, 4.8rem);
+    line-height: 0.98;
+  }
+
+  .lede {
+    max-width: 70ch;
+    margin: 0;
+    color: var(--sol-1);
+    font-size: 1.05rem;
+    line-height: 1.65;
+  }
+
+  .intro {
+    max-width: 70ch;
+    margin-top: 1.1rem;
+  }
+
+  .intro p {
+    margin: 0 0 0.85rem;
+    color: var(--sol-1);
+    font-size: 1rem;
+    line-height: 1.7;
+  }
+
+  .intro p:last-child {
+    margin-bottom: 0;
+  }
+
+  .topic-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5em;
+    margin-top: 1.25rem;
+    font-size: 0.85rem;
+  }
+
+  /* Match the tag chips on individual posts (.tag in BlogPost.astro). */
+  .topic-tags a {
+    background: rgb(var(--accent));
+    color: var(--blue);
+    padding-right: 0.5em;
+    border-radius: 0.25em;
+    text-decoration: none;
+    transition: background-color 0.2s ease;
+    text-transform: capitalize;
+  }
+
+  .topic-tags a:hover {
+    background: rgb(var(--accent-dark));
+  }
+
+  .topic-posts {
+    padding-top: 2rem;
+  }
+
+  .section-heading {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .section-heading h2 {
+    margin: 0;
+    font-size: 1.4rem;
+  }
+
+  .section-heading span {
+    color: var(--sol-1);
+    font-size: 0.9rem;
+  }
+
+  .post-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem;
+  }
+
+  .slide-in-block {
+    opacity: 0;
+    filter: blur(10px);
+    transform: scale(0.98);
+    will-change: transform, opacity, filter;
+    animation: slideInBlock 0.4s cubic-bezier(0.43, 0.195, 0.02, 1) forwards;
+  }
+
+  .slide-in-block:nth-child(2) {
+    animation-delay: 0.12s;
+  }
+
+  @keyframes slideInBlock {
+    to {
+      opacity: 1;
+      filter: blur(0);
+      transform: scale(1);
+    }
+  }
+
+  @media (max-width: 900px) {
+    .post-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 640px) {
+    :global(main) {
+      padding: 1.5rem 1rem 3rem;
+    }
+
+    .topic-header {
+      padding-top: 0.25rem;
+    }
+
+    .post-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

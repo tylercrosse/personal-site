@@ -6,6 +6,7 @@ import { SITE_TITLE, SITE_DESCRIPTION } from "../../consts";
 import FormattedDate from "../../components/FormattedDate.astro";
 import readingTime from "reading-time";
 import { TAG_GROUPS } from "../../config/tagGroups";
+import { getTopicPath, getLiveTopics } from "../../config/topicLandingPages";
 import { getIconForType, capitalize } from "../../utils/postIcons";
 
 const posts = (await getCollection("ideas"))
@@ -40,6 +41,10 @@ function buildGroupedTags(tags: string[], groups: Record<string, string[]>) {
 }
 
 const groupedTags = buildGroupedTags(allTags, TAG_GROUPS);
+
+// Only show hubs that were actually built (cleared the post-count threshold),
+// so the rail never links to a topic page that doesn't exist.
+const liveTopics = await getLiveTopics();
 
 const allTypes = [
   ...new Set(posts.map((post) => post.data.type).filter(Boolean)),
@@ -241,6 +246,43 @@ const hierarchicalPosts = allPostsData
     #all-tags.active {
       background-color: var(--accent);
       color: var(--black);
+    }
+    .topic-guides {
+      margin: 0 0 1.4rem;
+    }
+    .topic-guides-label {
+      color: var(--sol-8);
+      display: block;
+      font-size: 0.65rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      margin: 0 0 0.5rem;
+      opacity: 0.45;
+      text-transform: uppercase;
+    }
+    .topic-guide-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+    }
+    .topic-guide-links a {
+      border: 1px solid var(--main-border-color);
+      border-radius: 6px;
+      color: var(--sol-8);
+      font-size: 0.85rem;
+      padding: 0.3rem 0.65rem;
+      text-decoration: none;
+    }
+    .topic-guide-links a:hover {
+      background-color: var(--base4);
+      color: var(--sol-10);
+    }
+    :global([data-effective-theme="dark"]) .topic-guide-links a {
+      border-color: var(--base01);
+    }
+    :global([data-effective-theme="dark"]) .topic-guide-links a:hover {
+      background-color: var(--base02);
+      color: var(--sol-10);
     }
     .post-grid {
       display: flex;
@@ -623,6 +665,18 @@ const hierarchicalPosts = allPostsData
       </div>
 
       <div class="filters" data-pagefind-ignore>
+        {
+          liveTopics.length > 0 && (
+            <div class="topic-guides">
+              <span class="topic-guides-label">Topic Guides</span>
+              <div class="topic-guide-links">
+                {liveTopics.map((topic) => (
+                  <a href={getTopicPath(topic.slug)}>{topic.title}</a>
+                ))}
+              </div>
+            </div>
+          )
+        }
         <ul class="tag-list">
           {
             groupedTags.map(({ group, tags }) => (
