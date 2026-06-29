@@ -10,7 +10,7 @@ draft: false
 audience: 'Developers'
 media_subpath: "/ideas/usage-bar/"
 image:
-  path: 'abs-hero.jpg'
+  path: 'abs-hero6.png'
   alt: 'CC Usage Bar shown in light and dark mode, diagonal split'
   hideCaption: true
 ---
@@ -18,31 +18,31 @@ image:
 import Figure from "../../../../components/Figure.astro";
 import heroImage from "./hero-noshadow.png";
 
-There's a strange gap in the AI coding tools everyone uses daily: they don't easily show you how much of your usage budget you have left unless you interrupt what you're doing to ask. Claude Code has `/usage`. Codex has `/status`. Both only work inside a running session. When you've got three terminals open and an agent is mid-task, checking your budget means either interrupting it or opening a fourth terminal just to type one command.
+There's a strange gap in the AI coding tools I use every day: they don't make it easy to see how much of your usage budget is left. Claude Code has `/usage`. Codex has `/status`. Both only work inside a running session. When you have three terminals open and an agent is mid-task, checking your budget means interrupting it or opening another terminal just to type one command.
 
-I was looking for an a menu bar or similar to be able to check on my usage and came across [CC Usage Bar](https://github.com/lionhylra/cc-usage-bar), a minimal macOS menu bar app by [lionhylra](https://github.com/lionhylra) that solves this for Claude Code. One icon in the menu bar; click it and a popover shows your current usage. The clever part is how it gets that number. It never goes near your credentials: no Keychain access, no API call, no OAuth token held in memory. It spawns `claude` in a pseudo-terminal, sends `/usage`, captures the output, and renders it. One click, and the number is always live.
+I was looking for a menu bar app or something similar and came across [CC Usage Bar](https://github.com/lionhylra/cc-usage-bar), a minimal macOS app by [lionhylra](https://github.com/lionhylra) that solves this for Claude Code. Click the menu bar icon and a popover shows your current usage. The clever part is how it gets that number. It never goes near your credentials: no Keychain access, no API call, no OAuth token held in memory. It spawns `claude` in a pseudo-terminal, sends `/usage`, captures the output, and renders it.
 
-However, it didn't show Codex usage. I've been on the $20 plan for both for a few months and switch off when I hit more limits, or have a task that is better suited for one, and then supplement with OpenCode and additional credits as needed.
+It didn't show Codex usage, though. I've been on the $20 plan for both Claude and ChatGPT for a few months. I switch between them when I hit limits or when a task fits one tool better, then supplement with OpenCode and extra credits as needed.
 
 <Figure src={heroImage} alt="CC Usage Bar in light and dark mode, diagonal split" caption="Screenshot of Usage Bar app showing light and dark modes"/>
 
-Extending `lionhylra`'s work to also cover [OpenAI Codex](https://github.com/openai/codex) sounded like a fun and useful project. I forked the repo and refactored around a provider abstraction so additional CLIs can be added without rewriting the driving logic. The [full repo is here](https://github.com/tylercrosse/cc-usage-bar), and the rest of this post is about the one part that didn't go smoothly.
+Extending `lionhylra`'s work to also cover [OpenAI Codex](https://github.com/openai/codex) sounded useful enough to be worth a fork. I refactored the app around a provider abstraction so additional CLIs can be added without rewriting the driving logic. The [full repo is here](https://github.com/tylercrosse/cc-usage-bar), and the rest of this post is about the part that didn't go smoothly.
 
-### The approach, briefly
+## The approach
 
-The original app's flow is simple: spawn `claude` in a PTY, watch the output stream for the `Claude Code v\d+` banner, send `/usage`, watch for the result, render it as native UI. A state machine walks through `waitingForBanner` → `waitingForPrompt` → `waitingForResult` → `capturing`. An `ANSIParser` reconstructs a virtual screen from the ANSI escape sequences so the raw terminal output can be rendered with full color fidelity.
+The original app's flow is simple: spawn `claude` in a PTY, watch the output stream for the `Claude Code v\d+` banner, send `/usage`, watch for the result, and render it as native UI. A state machine walks through `waitingForBanner` → `waitingForPrompt` → `waitingForResult` → `capturing`. An `ANSIParser` reconstructs a virtual screen from the ANSI escape sequences so the raw terminal output can be rendered with its colors intact.
 
 The natural extension was to factor the provider-specific bits (command, banner pattern, usage command, prompt triggers, trim strategy) into a `Provider` struct and run one `UsageViewModel` per provider. Claude's config went in cleanly. Codex's config went in cleanly. The code was symmetric and felt done.
 
 Then I ran it, and Codex never worked.
 
-### The Codex discovery
+### The Codex parsing
 
 The app hung at `waitingForBanner` every time. Codex would launch, sit there for ten seconds, and time out. No banner match, no `/status` echo, nothing.
 
-The first thing I checked was whether `codex` was even running. It was: `log stream` showed it alive and printing. So the bytes were arriving, but the banner detector wasn't seeing them.
+The first thing I checked was whether `codex` was even running. It was: `log stream` showed it alive and printing. The bytes were arriving, but the banner detector wasn't seeing them.
 
-The second thing I checked was whether the ANSI stripper was dropping too much. Codex spams OSC title-update sequences (`\u{1B}]0;codex-workdir\u{07}`) and the regex only handled CSI sequences. I fixed that. The buffer was cleaner, but the banner still didn't match.
+The second thing I checked was whether the ANSI stripper was dropping too much. Codex emits OSC title-update sequences (`\u{1B}]0;codex-workdir\u{07}`), and the regex only handled CSI sequences. I fixed that. The buffer was cleaner, but the banner still didn't match.
 
 The third thing I checked was the actual bytes. I dumped the scan buffer mid-flight and saw something like this:
 
@@ -54,43 +54,43 @@ Not as a contiguous string. One character per line, each wrapped in its own curs
 
 The two CLIs look identical on screen. They write to that screen in opposite ways. Claude Code is built on [Ink](https://github.com/vadimdemedes/ink), a React-for-terminals library that emits text the way you'd write a sentence: a run of characters, left to right. Codex is built on [ratatui](https://ratatui.rs/), a Rust library that treats the terminal as a grid and paints it cell by cell. For each character it moves the cursor to a coordinate, then writes a single glyph. The welcome banner isn't a line of text the app prints. It's a grid of cells the TUI fills in, one escape sequence per cell. By the time the bytes reach the scan buffer, "OpenAI Codex" has been smeared across dozens of separate `\u{1B}[<row>;<col>H<char>` jumps, and the word never appears as a word at all.
 
-Two interfaces that are identical to a human eye can be byte-incompatible to a program reading them, and nothing in the output tells you which kind you're looking at until you go digging.
+Two interfaces that look identical to a person can be byte-incompatible to a program reading them. Nothing in the output tells you which kind you're looking at until you go digging.
 
 Another pain is that Codex scrolls aggressively. The welcome box renders, then the prompt renders below it, and the whole thing scrolls up. By the time the read handler runs, the banner has already scrolled off the virtual screen. The `ANSIParser`'s screen reconstruction was producing mangled one-char-per-line output because the cursor-positioning escapes were moving the write head around faster than a line buffer could keep up.
 
-None of this is a bug in Codex. It's just how ratatui works. A grid-based TUI emits cursor moves because moving the cursor around the grid is the entire job. The two frameworks have genuinely different output shapes, and the original app's string detection only worked because Claude Code's framework happens to emit searchable text, which is a happy coincidence.
+None of this is a bug in Codex. It's just how ratatui works. A grid-based TUI emits cursor moves because moving the cursor around the grid is the entire job. The two frameworks have different output shapes, and the original app's string detection only worked because Claude Code's framework happens to emit searchable text.
 
-### The fix: stop reading, start timing
+### The fix: using timers instead of reading
 
-Once the problem was "the banner will never appear as a substring," the solution was to stop trying to detect the banner at all. The Codex parsinggets timers instead of string adapters:
+Once the problem was "the banner will never appear as a substring," the fix was to stop trying to detect the banner at all. Codex gets timers instead of string adapters:
 
 1. **`bootDelay`** (~3.5s): after launch, just wait. Don't look for a banner. Assume the CLI is up after three and a half seconds and send `/status` into the void.
 2. **`submitDelay`** (~0.6s): then press Enter.
-3. **`captureWindow`** (~4s): set the state machine to `capturing` immediately, fire a SIGWINCH resize trick at 40% through to force a full repaint, and finalize at the end.
+3. **`captureWindow`** (~4s): set the state machine to `capturing` immediately, fire a SIGWINCH resize trick 40% of the way through to force a full repaint, then finalize at the end.
 
-The SIGWINCH trick is worth noting, because ratatui, like most diff-rendering TUIs, only repaints the cells it thinks changed. Capture the stream as-is and you get a partial frame: whatever cells happened to update since the last render. Forcing a PTY resize (`cols → cols-1 → cols`) makes the TUI think the terminal dimensions changed, so on the next frame it repaints every cell. That gives you one clean full frame to parse. Trim the captured bytes to the `╭ … ╰` box containing `5h limit:` and you're done.
+The SIGWINCH trick is worth noting, because ratatui, like most diff-rendering TUIs, only repaints the cells it thinks changed. Capture the stream as-is and you get a partial frame: whatever cells happened to update since the last render. Forcing a PTY resize (`cols → cols-1 → cols`) makes the TUI think the terminal dimensions changed, so on the next frame it repaints every cell. That gives you one clean full frame to parse. Trim the captured bytes to the `╭ … ╰` box containing `5h limit:` and the app has the number it needs.
 
 Claude kept the original string-based flow. Codex got the timer-based flow. The `Provider` struct carries `bootDelay` and `captureWindow` as optionals; `nil` means "use the string path," non-nil means "use the timer path." One abstraction, two completely different driving strategies underneath.
 
-### The fragile contract
+## A fragile API
 
-All of this drove home the point that building off of unofficial outputs like terminal logging can be finicky. It holds until it doesn't, and "it doesn't" looks like a silent hang with no error to grep for.
+Building on unofficial terminal output is finicky. It works until it doesn't, and when it fails it can look like a silent hang with no error to grep for.
 
-It's tempting to file this under one weird rendering bug. I think it's bigger than that. A whole class of tools right now works the way CC Usage Bar does: usage meters, editor integrations, the glue between your terminal and the model, all of them driving a CLI they don't own and scraping back whatever it happens to print. That output is not an API. Nobody versioned it. Nobody has promised it would keep its shape. String-matching on it only worked because Claude Code's framework emits searchable text, and that was an accident of which framework the authors happened to pick. Point the same code at a tool built on ratatui instead of Ink and it will just quietly fail.
+It's tempting to file this under one weird rendering bug. I think it's bigger than that. A lot of tools now work the way CC Usage Bar does: usage meters, editor integrations, and terminal glue all drive a CLI they don't own and scrape back whatever it happens to print. That output is not an API. Nobody versioned it. Nobody promised it would keep its shape. String-matching only worked because Claude Code's framework emits searchable text, which was an accident of implementation. Point the same code at a tool built on ratatui instead of Ink and it quietly fails.
 
-The timer-based fix is uglier. Fixed delays a bit of a hack. A slow machine under load could occasionally grab a partial frame. I tried to make it honest about what it doesn't know: it makes no claim to understand Codex's output stream, it just gives the CLI enough time to settle and grabs a frame. If a capture comes back partial, the next refresh corrects it. In practice it's been solid.
+The timer-based fix is uglier. Fixed delays are a hack. A slow machine under load could occasionally grab a partial frame. I tried to make the implementation honest about what it doesn't know: it doesn't claim to understand Codex's output stream. It gives the CLI enough time to settle and grabs a frame. If a capture comes back partial, the next refresh corrects it. In practice it's been solid.
 
-### One Swift aside
+## A Swift aside
 
-For anyone doing PTY work in Swift, one snag is worth flagging. Main-actor isolation fought me the whole way. The read handler runs on a `DispatchSourceRead`, which is a nonisolated context, but the state it needs to touch (`scanBuffer`, `state`, `isFetching`) is main-actor isolated. Swift 6's strict concurrency would have forced an async hop on every single read, which is the last thing you want in a tight PTY loop. So the project stays on `SWIFT_VERSION = 5.0` with `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor`. That combination lets you opt out per call with `nonisolated` and reach for `MainActor.assumeIsolated` in the timer body. It's a pragmatic middle ground, and it's also the first thing that'll need a real rethink if this ever moves to Swift 6 strict mode.
+For anyone doing PTY work in Swift, one snag is worth flagging. Main-actor isolation fought me the whole way. The read handler runs on a `DispatchSourceRead`, which is a nonisolated context, but the state it needs to touch (`scanBuffer`, `state`, `isFetching`) is main-actor isolated. Swift 6's strict concurrency would have forced an async hop on every read, which is the last thing you want in a tight PTY loop. So the project stays on `SWIFT_VERSION = 5.0` with `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor`. That combination lets you opt out per call with `nonisolated` and reach for `MainActor.assumeIsolated` in the timer body. It's a pragmatic middle ground, and it's also the first thing that'll need a real rethink if this ever moves to Swift 6 strict mode.
 
 
-### Reflection
+## Reflection
 
-This was a fun thing to hack on for a few hours. I hope you find it interesting or useful!
+This was a fun thing to hack on for a few hours.
 
 ### Try it
 
-The app is [available on GitHub](https://github.com/tylercrosse/cc-usage-bar) under MIT, with a [1.2 release](https://github.com/tylercrosse/cc-usage-bar/releases/tag/1.2) that includes a prebuilt `CCUsageBar.zip`. It runs on macOS 14 Sonoma or later. Claude Code is required; Codex is optional (the Codex panel shows a setup hint if `codex` isn't on your PATH).
+The app is [available on GitHub](https://github.com/tylercrosse/cc-usage-bar) under MIT, with prebuilt zips on the [releases page](https://github.com/tylercrosse/cc-usage-bar/releases). It runs on macOS 14 Sonoma or later. Claude Code is required; Codex is optional. The app bootstraps common macOS CLI install paths before launching either command, but custom installs may still need `claude` or `codex` symlinked somewhere standard like `~/.local/bin`, `/opt/homebrew/bin`, or `/usr/local/bin`.
 
 For the full engineering log, see [`docs/CODEX_INTEGRATION_NOTES.md`](https://github.com/tylercrosse/cc-usage-bar/blob/main/docs/CODEX_INTEGRATION_NOTES.md) in the repo. It covers the PTY setup, the ANSI parser, the SIGWINCH trick, the build-without-Xcode `build.sh`, and every bug and fix in the order they happened. This post is the story; that doc is the wiring diagram.
