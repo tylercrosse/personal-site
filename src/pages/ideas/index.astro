@@ -65,6 +65,7 @@ const allPostsData = posts.map((post) => {
     draft: post.data.draft,
     readingTimeText: stats.text,
     parent: post.data.parent,
+    order: post.data.order,
   };
 });
 
@@ -84,11 +85,16 @@ const hierarchicalPosts = allPostsData
   .filter((post) => !post.parent) // Only top-level posts
   .map((post) => {
     const children = childrenByParent.get(post.slug) || [];
-    // Sort children chronologically (oldest to newest)
+    // Explicit order first, then chronologically (oldest to newest), then title.
     children.sort((a, b) => {
+      const orderDelta = (a.order ?? Infinity) - (b.order ?? Infinity);
+      if (orderDelta !== 0) return orderDelta;
       const aDate = a.date;
       const bDate = b.date;
-      return new Date(aDate || 0).valueOf() - new Date(bDate || 0).valueOf();
+      const dateDelta =
+        new Date(aDate || 0).valueOf() - new Date(bDate || 0).valueOf();
+      if (dateDelta !== 0) return dateDelta;
+      return a.title.localeCompare(b.title);
     });
     return {
       ...post,

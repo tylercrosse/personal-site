@@ -48,6 +48,7 @@ type TopicPost = {
   draft?: boolean;
   readingTimeText: string;
   parent?: string;
+  order?: number;
 };
 
 type TopicBlock =
@@ -100,6 +101,7 @@ const allPostCards: TopicPost[] = allPosts.map((post) => {
     draft: post.data.draft,
     readingTimeText: stats.text,
     parent: post.data.parent,
+    order: post.data.order,
   };
 });
 
@@ -132,6 +134,7 @@ for (const parentSlug of parentSlugs) {
     .filter((post) => post.parent === parent.slug && topicSlugs.has(post.slug))
     .sort(
       (a, b) =>
+        (a.order ?? Infinity) - (b.order ?? Infinity) ||
         dateValue(a.date) - dateValue(b.date) ||
         a.title.localeCompare(b.title)
     );

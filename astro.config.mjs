@@ -25,6 +25,9 @@ const rehypePlugins = [
   ],
   rehypeCallouts,
 ];
+const viteCacheDir = process.argv.includes("build")
+  ? "node_modules/.vite-build"
+  : "node_modules/.vite";
 
 // https://astro.build/config
 export default defineConfig({
@@ -57,6 +60,9 @@ export default defineConfig({
     react(),
     pagefind(),
   ],
+  vite: {
+    cacheDir: viteCacheDir,
+  },
   markdown: {
     processor: unified({ remarkPlugins, rehypePlugins }),
     shikiConfig: {

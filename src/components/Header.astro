@@ -235,7 +235,7 @@ const topics = await getLiveTopicsWithCounts();
     overscroll-behavior: contain;
     padding: 1rem;
     background: white;
-    border: 1px solid var(--main-border-color, rgba(var(--black), 10%));
+    /* border: 1px solid var(--main-border-color, rgba(var(--black), 10%)); */
     border-radius: 12px;
     box-shadow: 0 12px 32px rgba(var(--black), 12%);
   }
@@ -297,7 +297,11 @@ const topics = await getLiveTopicsWithCounts();
     gap: 1rem;
     margin-top: 0.5rem;
     padding-top: 0.5rem;
-    border-top: 1px solid var(--main-border-color, rgba(var(--black), 10%));
+    border-top: 1px solid var(--base4);
+  }
+
+  :global([data-effective-theme="dark"]) .ideas-menu-footer {
+    border-top: 1px solid var(--base01);
   }
   /* Scoped under .ideas-menu-footer so it out-specifies the generic `nav a`
      rule (Astro's cid attributes bump that selector above a bare class). */
@@ -320,7 +324,7 @@ const topics = await getLiveTopicsWithCounts();
 
   :global([data-effective-theme="dark"]) .ideas-menu {
     background: #073642;
-    border-color: var(--base01, rgba(255, 255, 255, 12%));
+    /* border-color: var(--base01, rgba(255, 255, 255, 12%)); */
     box-shadow: 0 12px 32px rgba(0, 0, 0, 35%);
   }
   :global([data-effective-theme="dark"]) .ideas-menu-item:hover {

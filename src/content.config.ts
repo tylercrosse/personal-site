@@ -45,6 +45,9 @@ const ideas = defineCollection({
         media_subpath: z.string().optional(),
         // Parent post relationship (for grouping project posts under retro posts)
         parent: z.string().optional(),
+        // Explicit position within a parent's thread, ascending. Falls back to
+        // date then title when omitted (see [topic].astro / ideas/index.astro).
+        order: z.number().optional(),
       })
       .transform((data) => {
         // Transform Gatsby 'date' field to Astro 'pubDate' if needed
