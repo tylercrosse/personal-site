@@ -1,0 +1,79 @@
+{
+  "home": {
+    "eyebrow": "AI safety · machine learning · systems",
+    "title": "Tyler Crosse",
+    "description": "Machine learning and AI safety, from research experiments to production systems.",
+    "accent": "#268bd2",
+    "motif": "orbit",
+    "image": "/social/home.jpg",
+    "alt": "Tyler Crosse: machine learning and AI safety, from research experiments to production systems"
+  },
+  "about": {
+    "eyebrow": "About",
+    "title": "Hi, I’m Tyler",
+    "description": "Machine learning and AI safety, from research experiments to production systems.",
+    "accent": "#2aa198",
+    "motif": "portrait",
+    "image": "/social/about.jpg",
+    "alt": "Portrait of Tyler Crosse with a short description of his AI safety and engineering background"
+  },
+  "ideas": {
+    "eyebrow": "Tyler Crosse",
+    "title": "Ideas",
+    "description": "Research notes, technical projects, and things I’m still working through.",
+    "accent": "#b58900",
+    "motif": "notebook",
+    "image": "/social/ideas.jpg",
+    "alt": "Ideas by Tyler Crosse: research notes, technical projects, and work in progress"
+  },
+  "topics": {
+    "machine-learning": {
+      "eyebrow": "Ideas · Topic",
+      "title": "Machine Learning",
+      "description": "Supervised learning, evaluation, and model behavior.",
+      "accent": "#859900",
+      "motif": "scatter",
+      "image": "/social/topics/machine-learning.jpg",
+      "alt": "Machine Learning topic guide by Tyler Crosse"
+    },
+    "deep-learning": {
+      "eyebrow": "Ideas · Topic",
+      "title": "Deep Learning",
+      "description": "Architectures, training, and the messy practice of it.",
+      "accent": "#6c71c4",
+      "motif": "network",
+      "image": "/social/topics/deep-learning.jpg",
+      "alt": "Deep Learning topic guide by Tyler Crosse"
+    },
+    "gpu-computer-architecture": {
+      "eyebrow": "Ideas · Topic",
+      "title": "GPU & Computer Architecture",
+      "titleLines": ["GPU & Computer", "Architecture"],
+      "description": "CUDA kernels, memory hierarchies, and what the hardware really does.",
+      "accent": "#cb4b16",
+      "motif": "chip",
+      "image": "/social/topics/gpu-computer-architecture.jpg",
+      "alt": "GPU and Computer Architecture topic guide by Tyler Crosse"
+    },
+    "operating-systems-distributed-systems": {
+      "eyebrow": "Ideas · Topic",
+      "title": "Operating Systems & Distributed Systems",
+      "titleLines": ["Operating Systems &", "Distributed Systems"],
+      "description": "Processes, IPC, and systems that span machines.",
+      "accent": "#268bd2",
+      "motif": "systems",
+      "image": "/social/topics/operating-systems-distributed-systems.jpg",
+      "alt": "Operating Systems and Distributed Systems topic guide by Tyler Crosse"
+    },
+    "ai-safety-mechanistic-interpretability": {
+      "eyebrow": "Ideas · Topic",
+      "title": "AI Safety & Mechanistic Interpretability",
+      "titleLines": ["AI Safety & Mechanistic", "Interpretability"],
+      "description": "Reading model internals and the shape of the alignment problem.",
+      "accent": "#dc322f",
+      "motif": "alignment",
+      "image": "/social/topics/ai-safety-mechanistic-interpretability.jpg",
+      "alt": "AI Safety and Mechanistic Interpretability topic guide by Tyler Crosse"
+    }
+  }
+}

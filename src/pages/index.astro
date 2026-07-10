@@ -7,6 +7,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 import PostCard from "../components/PostCard.astro";
 import SocialLinks from "../components/SocialLinks.astro";
 import CurrentlyList from "../components/CurrentlyList.astro";
+import socialCards from "../config/socialCards.json";
 
 const posts = (await getCollection("ideas"))
   .filter((post) => import.meta.env.DEV || !post.data.draft)
@@ -154,13 +155,20 @@ const recentWorkGroups: WorkGroup[] = [
 ];
 ---
 
-<BaseLayout title="Home">
+<BaseLayout
+  title="Home"
+  description={socialCards.home.description}
+  image={socialCards.home.image}
+  imageAlt={socialCards.home.alt}
+>
   <section class="profile slide-in-block">
     <div class="profile-main">
       <h1 class="profile-name">Tyler Crosse</h1>
       <p class="profile-bio">
-        Research engineer working on AI safety.
-        <br />Georgia Tech MSCS graduate. 7+ years as a senior SWE & team lead.
+        I work on machine learning and AI safety, from research experiments to
+        production systems.
+        <br />Georgia Tech MSCS. 7+ years building production software and
+        leading teams.
       </p>
       <SocialLinks showRss={false} />
     </div>

@@ -11,6 +11,11 @@ interface Props {
   title?: string;
   description?: string;
   image?: string | ImageMetadata;
+  imageAlt?: string;
+  imagePosition?: string;
+  pageType?: "website" | "article";
+  publishedTime?: Date;
+  modifiedTime?: Date;
   noindex?: boolean;
   structuredData?: StructuredDataInput;
 }
@@ -19,6 +24,11 @@ const {
   title = SITE_TITLE,
   description = SITE_DESCRIPTION,
   image,
+  imageAlt,
+  imagePosition,
+  pageType,
+  publishedTime,
+  modifiedTime,
   noindex = false,
   structuredData,
 } = Astro.props;
@@ -32,6 +42,11 @@ const {
       title={title}
       description={description}
       image={image}
+      imageAlt={imageAlt}
+      imagePosition={imagePosition}
+      pageType={pageType}
+      publishedTime={publishedTime}
+      modifiedTime={modifiedTime}
       structuredData={structuredData}
     />
     {noindex && <meta name="robots" content="noindex, nofollow" />}

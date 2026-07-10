@@ -1,11 +1,14 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { Image } from "astro:assets";
+import socialCards from "../config/socialCards.json";
 ---
 
 <BaseLayout
   title="About"
-  description="Tyler Crosse is a research engineer focused on AI control, agent evaluation, scalable oversight, and the systems that support this work."
+  description="Tyler Crosse works on machine learning and AI safety, from research experiments to production systems."
+  image={socialCards.about.image}
+  imageAlt={socialCards.about.alt}
 >
   <div class="headshot slide-in-block">
     <Image
@@ -19,11 +22,11 @@ import { Image } from "astro:assets";
   <section class="intro slide-in-block">
     <h1>Hi, I'm Tyler</h1>
     <p class="lead">
-      I'm a research engineer focused on <strong>AI safety</strong> and the
-      infrastructure behind it. I recently completed projects with Redwood
-      Research on attack selection for AI control and with SPAR on scalable
-      oversight. Before moving into research, I spent more than seven years in
-      production software engineering, most recently as a senior engineer and
+      I work on machine learning and <strong>AI safety</strong>, from research
+      experiments to production systems. I recently completed projects with
+      Redwood Research on attack selection for AI control and with SPAR on
+      scalable oversight. I also have more than seven years of production
+      software engineering experience, most recently as a senior engineer and
       team lead. I completed Georgia Tech's MSCS in May 2026, with a focus on
       machine learning and computing systems.
     </p>

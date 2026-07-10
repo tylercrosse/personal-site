@@ -13,6 +13,7 @@ import {
 } from "../../../config/topicLandingPages";
 import { getCollectionPageStructuredData } from "../../../utils/structuredData";
 import { getIconForType, getColorForType, capitalize } from "../../../utils/postIcons";
+import socialCards from "../../../config/socialCards.json";
 
 export async function getStaticPaths() {
   // Only build hubs that clear the post-count threshold, so we never ship a
@@ -30,6 +31,8 @@ type Props = {
 
 const { topic } = Astro.props;
 const topicTags = new Set(topic.tags);
+const topicSocialCard =
+  socialCards.topics[topic.slug as keyof typeof socialCards.topics];
 
 type TopicPost = {
   id: string;
@@ -210,6 +213,8 @@ const structuredData = getCollectionPageStructuredData({
 <BaseLayout
   title={topic.title}
   description={topic.description}
+  image={topicSocialCard.image}
+  imageAlt={topicSocialCard.alt}
   structuredData={structuredData}
 >
   <section class="topic-page">
@@ -400,11 +405,12 @@ const structuredData = getCollectionPageStructuredData({
               >
                 {renderBlock.blocks.map((block) => {
                   const PostIcon = getIconForType(block.post.type);
-                  const isPaper = block.post.type === "paper";
+                  const isCompactRow =
+                    block.post.type === "paper" || block.post.type === "note";
                   return (
-                    <article class={`loose-post-item${isPaper ? " loose-post-item--paper" : ""}`}>
+                    <article class="loose-post-item">
                       <a
-                        class={`loose-post-card${isPaper ? " loose-post-card--paper" : ""}`}
+                        class={`loose-post-card${isCompactRow ? " loose-post-card--compact" : ""}`}
                         href={`/ideas/${block.post.slug}/`}
                       >
                         <div class="loose-media">

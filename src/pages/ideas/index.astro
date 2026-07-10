@@ -7,6 +7,7 @@ import FormattedDate from "../../components/FormattedDate.astro";
 import readingTime from "reading-time";
 import { TAG_GROUPS } from "../../config/tagGroups";
 import { getIconForType, getColorForType, capitalize } from "../../utils/postIcons";
+import socialCards from "../../config/socialCards.json";
 
 const posts = (await getCollection("ideas"))
   .filter((post) => {
@@ -104,7 +105,12 @@ const hierarchicalPosts = allPostsData
   });
 ---
 
-<BaseLayout title="Ideas">
+<BaseLayout
+  title="Ideas"
+  description={socialCards.ideas.description}
+  image={socialCards.ideas.image}
+  imageAlt={socialCards.ideas.alt}
+>
   <style>
     .hero {
       padding: 2rem 0;

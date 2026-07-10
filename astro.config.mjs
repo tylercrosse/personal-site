@@ -28,10 +28,15 @@ const rehypePlugins = [
 const viteCacheDir = process.argv.includes("build")
   ? "node_modules/.vite-build"
   : "node_modules/.vite";
+const previewSite =
+  process.env.VERCEL_ENV === "preview" && process.env.VERCEL_URL
+    ? `https://${process.env.VERCEL_URL}`
+    : undefined;
+const site = process.env.SITE_URL || previewSite || "https://tylercrosse.com";
 
 // https://astro.build/config
 export default defineConfig({
-  site: "https://tylercrosse.com",
+  site,
   compressHTML: true,
   redirects: {
     // Redirect pages from old site to new ones
