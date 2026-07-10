@@ -11,6 +11,7 @@ draft: true
 audience: 'All'
 media_subpath: "/ideas/dl-a2/"
 parent: '2025/dl-retro'
+order: 2
 image:
   path: "hero-cnn4.png"
   alt: 'Layered mineral photograph'
@@ -54,7 +55,7 @@ The repo mirrored that split. One layer of work was dedicated to implementing an
 
 ## Convolution Is a Structured Prior
 
-The central idea behind CNNs is not "use a kernel." It is that the model should exploit the spatial structure already present in images. Convolution does that by enforcing two strong assumptions:
+CNNs aren't really about the kernel. The point is that a model can exploit the spatial structure already present in images, and convolution builds in two strong assumptions to do that:
 
 - nearby pixels matter together,
 - and the same local feature can appear in many places.
@@ -97,7 +98,7 @@ That idea is conceptually simple, but it explains a lot of design tradeoffs:
 
 CNN design feels more principled once you stop thinking of layers as arbitrary stacks and start thinking in terms of information retained, compressed, or discarded at each stage.
 
-## Training Protocols Matter Too
+## Training Protocols
 
 PyTorch makes experimentation faster, but it also makes it easier to confuse speed with rigor. With framework-scale training, the central question shifts toward whether the comparison is fair.
 
@@ -108,11 +109,11 @@ PyTorch makes experimentation faster, but it also makes it easier to confuse spe
   width={900}
 />
 
-Three ideas mattered most here:
+Three things mattered most here:
 
-- **normalization and optimization interact**,
-- **schedules change what counts as a fair baseline**,
-- **repeatable evaluation is more informative than a lucky run**.
+- normalization and optimization interact,
+- the learning-rate schedule changes what counts as a fair baseline,
+- a repeatable result is more informative than a lucky run.
 
 The CIFAR portion of the assignment made that plain. The framework removes derivative bookkeeping, but it does not remove the need for careful protocol design. If one model gets a different schedule, a more permissive augmentation policy, or a looser checkpoint rule, the comparison stops being informative.
 
@@ -199,16 +200,16 @@ This kind of metric check matters because a model can improve on accuracy while 
 
 ## Recap
 
-To recap, here are the main concepts this project focused on:
+The main points from this project:
 
-- **Convolution encodes a design prior that still shapes model design.**
-- **Framework speed increases the need for fair experimental controls.**
-- **Augmentation changes the task the model is effectively being trained on.**
-- **Accuracy alone is not enough once confidence and imbalance matter.**
+- Convolution encodes a design prior that still shapes how vision models are built.
+- The faster you can run experiments, the more you need fair controls around them.
+- Augmentation changes the task the model is effectively being trained on.
+- Accuracy alone isn't enough once confidence and class imbalance matter.
 
-The repo accumulated tuning scripts, saved trial configurations, and multiple checkpoints. The useful part of that machinery was not automation for its own sake; it was a way to make model comparisons reproducible enough to trust.
+The repo accumulated tuning scripts, saved trial configurations, and multiple checkpoints. The useful part of that machinery wasn't automation for its own sake. It made model comparisons reproducible enough to trust.
 
-It is a turning point in the course because it takes the mathematical foundations from the first project and pushes them into a setting where experimentation becomes a core engineering skill alongside derivation.
+This is where the course turns. The math from the first project stays, but running experiments carefully becomes its own engineering skill.
 
 ## Additional Resources
 

@@ -11,6 +11,7 @@ draft: true
 audience: 'All'
 media_subpath: "/ideas/dl-a4/"
 parent: '2025/dl-retro'
+order: 4
 image:
   path: "hero-vae3.png"
   alt: 'Layered mineral photograph'
@@ -71,8 +72,6 @@ The first term rewards faithful reconstructions. The KL term shapes the latent d
 - and a latent space that supports interpolation and downstream use.
 
 The cost is that pixel-level sharpness can suffer. In practice, VAEs often look blurrier than adversarial models because the objective rewards broad probabilistic coverage more than visual crispness.
-
-VAEs are structured probabilistic models with a different objective and failure profile from GANs.
 
 **Illustrative toy snippet, not assignment code:**
 
@@ -142,9 +141,7 @@ and training teaches a model to predict the noise or denoise each corrupted samp
   width={900}
 />
 
-Diffusion is attractive because the training problem is often smoother and more stable than adversarial training. The main drawback is inference cost: high-quality generation usually requires many denoising steps.
-
-Training stability and deployment efficiency are separate concerns.
+Diffusion is attractive because the training problem is often smoother and more stable than adversarial training. The main drawback is inference cost: high-quality generation usually requires many denoising steps, so easy training and cheap sampling don't come together here.
 
 **Illustrative toy snippet, not assignment code:**
 
@@ -188,13 +185,13 @@ The repo showed that directly: multiple config families, saved outputs across ep
 
 ## Recap
 
-To recap, here are the main tradeoffs this project focused on:
+The main tradeoffs from this project:
 
-- **Objective choice predicts failure mode.** The loss defines the model's contract with the data.
-- **Visual quality captures only one axis of model quality.** Diversity and coverage can still fail when samples look appealing.
-- **Compute belongs in model quality discussions.** A model that trains cleanly but samples slowly is still making a tradeoff.
+- Objective choice predicts failure mode. The loss is the model's contract with the data.
+- Visual quality is only one axis. Diversity and coverage can still fail when the samples look appealing.
+- Compute belongs in the conversation about model quality. A model that trains cleanly but samples slowly is still making a tradeoff.
 
-Generative modeling is useful course material because it forces comparison across objectives, failure modes, and deployment constraints.
+Generative modeling earns its place in the course by forcing all of this into the open: you can't pick a winner without saying which objective, failure mode, and compute budget you're willing to live with.
 
 ## Additional Resources
 

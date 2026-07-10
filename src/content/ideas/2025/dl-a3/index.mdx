@@ -11,6 +11,7 @@ draft: true
 audience: 'All'
 media_subpath: "/ideas/dl-a3/"
 parent: '2025/dl-retro'
+order: 3
 image:
   path: "hero-sequence2.png"
   alt: 'Green ripples abstract art'
@@ -63,7 +64,7 @@ That factorization immediately creates several difficulties:
 - each new token depends on earlier output choices,
 - and mistakes can compound over time.
 
-These are not implementation details. They are why sequence modeling needs different architectures and evaluation methods than standard image classification.
+Those constraints, not just a bigger dataset, are why sequence modeling needs its own architectures and evaluation methods.
 
 ## Seq2Seq Models Expose the Bottleneck Problem
 
@@ -85,7 +86,7 @@ The bottleneck framing predicts the failure modes you see:
 
 The seq2seq stage matters because it makes the architectural limitation feel like a direct consequence of the setup.
 
-## Attention Turns Retrieval Into Part of the Computation
+## Attention as Retrieval
 
 Attention lets each decode step retrieve the most relevant source-side information dynamically, with access to source states throughout decoding.
 
@@ -138,7 +139,7 @@ The main consequences are:
 - many dependencies can be modeled in parallel during training,
 - and positional information has to be injected explicitly because attention alone is permutation-invariant.
 
-Attention gets the spotlight, but positional encodings and residual structure are part of why transformer models can organize language at all.
+Attention gets the spotlight, but positional encodings and residual structure are a big part of why transformers work as well as they do.
 
 The assignment clarifies this by comparing recurrent and transformer-style models on roughly the same task. The newer family also gives a different answer to "where should relevant information come from at each step?"
 
@@ -197,14 +198,14 @@ The repo reflected that too. There were separate scripts for reporting perplexit
 
 ## Recap
 
-To recap, here are the main sequence-modeling ideas this project focused on:
+The main sequence-modeling ideas from this project:
 
-- **Bottlenecks originate in model structure and show up in training and evaluation.**
-- **Attention is a retrieval mechanism built into the computation.**
-- **Transformers solve more than one problem at once: dependency modeling, training parallelism, and representational flexibility.**
-- **Decoding and evaluation policies shape what "good performance" even means.**
+- Bottlenecks come from model structure, and they show up in both training and evaluation.
+- Attention is a retrieval mechanism built into the computation.
+- Transformers solve several problems at once: dependency modeling, training parallelism, and representational flexibility.
+- Decoding and evaluation policies shape what "good performance" even means.
 
-Working through the older bottlenecks makes the move from RNNs to attention to transformers easier to justify.
+Working through the older bottlenecks first is what makes the move from RNNs to attention to transformers feel earned rather than handed to you.
 
 ## Additional Resources
 

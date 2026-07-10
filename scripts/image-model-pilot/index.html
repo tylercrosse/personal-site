@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>GPU Diagram Image Model Pilot</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f7f7f4;
+        --panel: #ffffff;
+        --ink: #1f2428;
+        --muted: #65717b;
+        --line: #d8ddd8;
+        --accent: #2f7da1;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", sans-serif;
+        line-height: 1.45;
+      }
+
+      main {
+        width: min(1480px, calc(100vw - 32px));
+        margin: 0 auto;
+        padding: 32px 0 56px;
+      }
+
+      header {
+        margin-bottom: 28px;
+      }
+
+      h1 {
+        margin: 0 0 8px;
+        font-size: clamp(2rem, 4vw, 3.25rem);
+        line-height: 1.05;
+        letter-spacing: 0;
+      }
+
+      .lede {
+        max-width: 820px;
+        margin: 0;
+        color: var(--muted);
+        font-size: 1rem;
+      }
+
+      .comparison {
+        margin: 24px 0;
+        border: 1px solid var(--line);
+        background: var(--panel);
+        border-radius: 8px;
+        overflow: hidden;
+      }
+
+      .comparison h2 {
+        margin: 0;
+        padding: 16px 18px;
+        font-size: 1.25rem;
+        letter-spacing: 0;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .pair {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0;
+      }
+
+      figure {
+        margin: 0;
+        padding: 18px;
+      }
+
+      figure + figure {
+        border-left: 1px solid var(--line);
+      }
+
+      figcaption {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 12px;
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+
+      .tag {
+        color: var(--accent);
+        font-weight: 700;
+      }
+
+      img {
+        display: block;
+        width: 100%;
+        height: auto;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: #fff;
+      }
+
+      @media (max-width: 900px) {
+        .pair {
+          grid-template-columns: 1fr;
+        }
+
+        figure + figure {
+          border-left: 0;
+          border-top: 1px solid var(--line);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>GPU Diagram Image Model Pilot</h1>
+        <p class="lede">
+          Original article figures are on the left. Image-model pilot drafts are
+          on the right. This file is only a local review surface and is not wired
+          into the published article.
+        </p>
+      </header>
+
+      <section class="comparison">
+        <h2>CPU vs GPU Design Philosophy</h2>
+        <div class="pair">
+          <figure>
+            <figcaption>
+              <span class="tag">Original</span>
+              <span>m1l2_cpu_gpu.png</span>
+            </figcaption>
+            <img src="../m1l2_cpu_gpu.png" alt="Original CPU vs GPU figure" />
+          </figure>
+          <figure>
+            <figcaption>
+              <span class="tag">Pilot</span>
+              <span>cpu-vs-gpu.png</span>
+            </figcaption>
+            <img src="./cpu-vs-gpu.png" alt="Image model CPU vs GPU pilot" />
+          </figure>
+        </div>
+      </section>
+
+      <section class="comparison">
+        <h2>CUDA Thread Indexing</h2>
+        <div class="pair">
+          <figure>
+            <figcaption>
+              <span class="tag">Original</span>
+              <span>m3l1_threadidx.png</span>
+            </figcaption>
+            <img src="../m3l1_threadidx.png" alt="Original CUDA thread indexing figure" />
+          </figure>
+          <figure>
+            <figcaption>
+              <span class="tag">Pilot</span>
+              <span>cuda-thread-indexing.png</span>
+            </figcaption>
+            <img src="./cuda-thread-indexing.png" alt="Image model CUDA thread indexing pilot" />
+          </figure>
+        </div>
+      </section>
+
+      <section class="comparison">
+        <h2>CUDA Memory Hierarchy</h2>
+        <div class="pair">
+          <figure>
+            <figcaption>
+              <span class="tag">Original</span>
+              <span>m3l1_memory_space.png</span>
+            </figcaption>
+            <img src="../m3l1_memory_space.png" alt="Original CUDA memory hierarchy figure" />
+          </figure>
+          <figure>
+            <figcaption>
+              <span class="tag">Pilot</span>
+              <span>memory-hierarchy.png</span>
+            </figcaption>
+            <img src="./memory-hierarchy.png" alt="Image model memory hierarchy pilot" />
+          </figure>
+        </div>
+      </section>
+
+      <section class="comparison">
+        <h2>GPU Pipeline</h2>
+        <div class="pair">
+          <figure>
+            <figcaption>
+              <span class="tag">Original</span>
+              <span>m4l3_gpu_pipeline.png</span>
+            </figcaption>
+            <img src="../m4l3_gpu_pipeline.png" alt="Original GPU pipeline figure" />
+          </figure>
+          <figure>
+            <figcaption>
+              <span class="tag">Pilot</span>
+              <span>gpu-pipeline.png</span>
+            </figcaption>
+            <img src="./gpu-pipeline.png" alt="Image model GPU pipeline pilot" />
+          </figure>
+        </div>
+      </section>
+
+      <section class="comparison">
+        <h2>Shared Memory Bank Conflicts</h2>
+        <div class="pair">
+          <figure>
+            <figcaption>
+              <span class="tag">Original</span>
+              <span>m4l2_bank_conflict2.png</span>
+            </figcaption>
+            <img src="../m4l2_bank_conflict2.png" alt="Original shared memory bank conflict figure" />
+          </figure>
+          <figure>
+            <figcaption>
+              <span class="tag">Pilot</span>
+              <span>bank-conflicts.png</span>
+            </figcaption>
+            <img src="./bank-conflicts.png" alt="Image model bank conflicts pilot" />
+          </figure>
+        </div>
+      </section>
+
+      <section class="comparison">
+        <h2>Roofline Model</h2>
+        <div class="pair">
+          <figure>
+            <figcaption>
+              <span class="tag">Original</span>
+              <span>m8l3_roffline.png</span>
+            </figcaption>
+            <img src="../m8l3_roffline.png" alt="Original roofline model figure" />
+          </figure>
+          <figure>
+            <figcaption>
+              <span class="tag">Pilot</span>
+              <span>roofline-model.png</span>
+            </figcaption>
+            <img src="./roofline-model.png" alt="Image model roofline model pilot" />
+          </figure>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

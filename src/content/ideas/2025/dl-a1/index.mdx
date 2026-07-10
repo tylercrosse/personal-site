@@ -1,8 +1,8 @@
 ---
-title: 'Deep Learning Foundations from Scratch: Linear Models, Backprop, and Optimization'
-description: 'A concept-first guide to linear classifiers, softmax, backpropagation, optimization geometry, and regularization through a from-scratch MNIST project.'
+title: 'Deep Learning Foundations from Scratch: Gradients, Backprop, and Optimization'
+description: 'A math-heavy guide to matrix derivatives, softmax-cross-entropy, backpropagation, optimizer updates, and manual gradient checks through a from-scratch deep learning project.'
 date: '2026-02-27'
-updated: '2026-02-27'
+updated: '2026-07-09'
 status: 'in-progress'
 type: 'project'
 tags: ['deep-learning', 'machine-learning', 'optimization', 'python', 'MSCS']
@@ -11,6 +11,7 @@ draft: true
 audience: 'All'
 media_subpath: "/ideas/dl-a1/"
 parent: '2025/dl-retro'
+order: 1
 image:
   path: "hero-backprop4.png"
   alt: 'Green ripples abstract art'
@@ -19,97 +20,192 @@ hideCaption: true
 
 import BookCard from "../../../../components/BookCard.astro";
 import Figure from "../../../../components/Figure.astro";
+import OptimizerSurface from "../../../../components/ideas/dl-a1/OptimizerSurface.jsx";
+import BackpropGraph from "../../../../components/ideas/dl-a1/BackpropGraph.jsx";
 
 import deepLearningGoodfellow from "../../../books/dl-goodfellow.jpg";
 import deepLearningPrince from "../../../books/dl-prince.jpg";
-import p1Fig1 from "../figures/lowyx/dl-p1-fig-01-loss-functions.png";
 import p1Fig2 from "../figures/lowyx/dl-p1-fig-02-backprop-graph.png";
-import p1Fig3 from "../figures/lowyx/dl-p1-fig-04-loss-surface.png";
 import p1Fig4 from "../figures/lowyx/dl-p1-fig-05-train-valid-loss.png";
 import p1Fig5 from "../figures/lowyx/dl-p1-fig-05-dropout.png";
+import p1Fig6 from "../figures/lowyx/dl-p1-fig-06-differentiation.png";
+import p1Fig7 from "../figures/lowyx/dl-p1-fig-07-module-gradient.png";
+import p1Fig9 from "../figures/lowyx/dl-p1-fig-09-vectorized-jacobians.png";
 
-## The Training Stack in Plain Sight
+## Why do it by hand
 
-The first deep learning assignment exposes the mechanics directly. Instead of importing a framework and calling `fit()`, you have to make the pipeline explicit: how scores are computed, how losses become gradients, how gradients update parameters, and how hyperparameters affect learning.
+A framework will happily compute gradients for you, but it will not teach you which tensors should exist, which shapes should match, why softmax-cross-entropy has such a clean derivative, or why a learning rate that looks reasonable in one direction explodes in another. This post works through that machinery by hand, in a setting small enough that every piece is visible: linear classifiers and a small multilayer perceptron in NumPy.
 
-Assignment 1 centers on the small set of concepts that almost every later deep learning system still depends on:
+Training a classifier is one loop repeated many times, and the post follows that loop in order:
 
-- linear decision surfaces,
-- softmax and cross-entropy,
-- backpropagation,
-- optimization geometry,
-- regularization.
-
-The project context is intentionally simple: softmax regression and a small multilayer perceptron in NumPy on MNIST. That stripped-down setting makes each piece of the training stack easier to inspect directly.
+1. The model computes a **score** for each class, a raw vote for how well the input matches that class. In the simplest case this is an affine map: a matrix multiplication followed by adding a constant vector called the bias. "Affine" means linear plus a shift, and it is the "linear" in linear classifier.
+2. A **loss** compresses the scores into a single number that measures how wrong the prediction was. Everything funnels into one number because a single number is what calculus knows how to minimize.
+3. **Backpropagation** works out, for every parameter, how much the loss would change if that parameter moved a little. It is the ordinary chain rule, applied backward through the model's operations, reusing values that were saved while computing the loss.
+4. An **optimizer** uses those derivatives to move the parameters. Stochastic gradient descent (SGD), momentum, and Adam all read the same derivatives but take different steps.
+5. **Regularization** changes the loss itself, so the model is also penalized for weights we want to discourage, not only for wrong predictions.
 
 > [!note]
-> This article is intentionally integrity-safe. The assignment provides motivation and context, but this post does not publish restricted prompts, solution mechanics, or code.
+> This post grew out of a course assignment but is integrity-safe: it contains no restricted prompts, solution mechanics, or assignment code, just standard results and small public toy derivations.
 
-## The Assignment as a System
+Everything below comes down to one habit: track shapes, cache forward values, and move one upstream gradient backward through one local rule at a time.
 
-The assignment builds a supervised learning pipeline from the ground up: load the data, define a model, compute a loss, derive gradients, run optimization, and evaluate the result. The scale is small, but it is exactly where the important abstractions become visible.
+## Notation and shapes: a quick refresher
 
-Without framework conveniences, a model includes:
+Most backprop mistakes are shape mistakes. The post assumes basic linear algebra and calculus (vectors, matrices, derivatives, the chain rule), but each new piece of notation still gets a plain-English reminder when it first appears, so you should rarely have to leave the page to look something up. If this section looks familiar, skim to the two shape rules at the end; they are what the rest of the post leans on.
 
-- a representation of inputs,
-- a loss that defines what counts as a mistake,
-- a set of cached intermediate values for the backward pass,
-- an optimization policy,
-- and an evaluation protocol that tells you whether the run is actually healthy.
+**The objects.** The $\mathbb{R}$ notation names an object's shape: $\mathbb{R}$ is the set of real numbers, and the superscript says how many of them and how they are arranged.
 
-The repo work emphasizes verification as much as optimization: unit tests for core pieces, analytical gradients checked against numerical approximations, curve plots across small sweeps, and model selection based on validation behavior instead of trusting the final epoch or one lucky run.
+- A **scalar** is one number: $L \in \mathbb{R}$, read "$L$ is a real number." The loss is a scalar.
+- A **vector** is a list of $d$ numbers: $x \in \mathbb{R}^{d}$. An input with $d$ features is a vector.
+- A **matrix** is a grid with $K$ rows and $d$ columns: $W \in \mathbb{R}^{K \times d}$. A weight matrix mapping $d$ input features to $K$ class scores is a matrix.
 
-The assignment makes deep learning visible as a system of interacting parts.
+In code all three live in the same data structure: a NumPy array, or more generally a tensor.
 
-## Linear Classifiers Are the Right Place to Start
+**The operations.** Three operations do almost all of the work in this post:
 
-Linear models look limited, but they are the simplest place to build intuition. If the model computes class scores as
+- The **transpose** $W^T$ flips a matrix over its diagonal, turning rows into columns: if $W$ is $K \times d$, then $W^T$ is $d \times K$.
+- The **dot product** $w^T x = \sum_j w_j x_j$ multiplies matching entries and adds them up. The result is a single number measuring how strongly the two vectors point the same way.
+- The **matrix-vector product** $Wx$ is $K$ dot products at once: entry $i$ is row $i$ of $W$ dotted with $x$. The shapes must chain, so a $K \times d$ matrix times a $d$-vector gives a $K$-vector. This "inner dimensions must match" rule is the backbone of every shape check later.
+
+One more piece of notation: $f: \mathbb{R}^{d} \to \mathbb{R}^{K}$ describes a function's input and output shapes. It reads "$f$ takes a vector of $d$ numbers and returns a vector of $K$ numbers."
+
+**Derivatives at every shape.** A partial derivative $\frac{\partial L}{\partial x_j}$ is an ordinary slope with one caveat: it measures how $L$ changes as $x_j$ changes while every other input is held fixed. Because the objects above come in different shapes, "the derivative" does too:
+
+- a scalar with respect to a scalar is one slope: a scalar,
+- a scalar with respect to a vector is one slope per coordinate, collected into a vector: the **gradient**,
+- a vector with respect to a vector is one slope for every output-input pair, collected into a matrix: the **Jacobian**.
+
+For the scalar loss $L$, the gradient has the same shape as the thing it is taken with respect to:
 
 $$
-s = Wx + b,
+x \in \mathbb{R}^{d}
+\quad\Rightarrow\quad
+\frac{\partial L}{\partial x} \in \mathbb{R}^{d}
 $$
 
-then every prediction is built from a weighted projection of the input onto class-specific directions. The decision boundaries are hyperplanes, and confidence is tied to distance from those boundaries.
+$$
+W \in \mathbb{R}^{K \times d}
+\quad\Rightarrow\quad
+\frac{\partial L}{\partial W} \in \mathbb{R}^{K \times d}
+$$
+
+A bar is shorthand for "gradient of the loss with respect to":
+
+$$
+\bar{x} \equiv \frac{\partial L}{\partial x},
+$$
+
+so $\bar{x}$ always has the shape of $x$.
+
+For a vector-valued function $f: \mathbb{R}^{d} \to \mathbb{R}^{K}$, the Jacobian stacks the gradient of each output as a row:
+
+$$
+J_f(x) =
+\frac{\partial f}{\partial x}
+\in \mathbb{R}^{K \times d},
+\qquad
+[J_f]_{ij} = \frac{\partial f_i}{\partial x_j}.
+$$
+
+The bracket notation $[J_f]_{ij}$ means "the entry in row $i$, column $j$," and each entry answers one question: if input coordinate $x_j$ nudges up a little, how fast does output $f_i$ move? A small example makes the layout concrete. For $f(x_1, x_2) = (x_1 x_2,\; x_1 + x_2)$:
+
+$$
+J_f =
+\begin{bmatrix}
+x_2 & x_1 \\
+1 & 1
+\end{bmatrix}.
+$$
+
+Row 1 differentiates the first output $x_1 x_2$, row 2 differentiates the second output $x_1 + x_2$, and column $j$ holds the derivatives with respect to $x_j$. The whole matrix is a sensitivity table for the function.
+
+Two rules keep all of these shapes straight:
+
+1. The gradient of the scalar loss with respect to a tensor has the **same shape as that tensor**.
+2. Jacobians are laid out **output-by-input**: outputs index the rows, inputs index the columns.
+
+The figure below applies the same discipline to a scalar chain: each derivative is written next to the quantity it differentiates, which is what keeps a long chain rule legible.
 
 <Figure
-  src={p1Fig1}
-  alt="Loss and decision boundary intuition"
-  caption="The geometry of a classifier already tells you a lot about the shape of the optimization problem. Source: Lowyx GT DL Notes (CC BY 4.0), https://lowyx.com/posts/gt-dl-notes/."
+  src={p1Fig6}
+  alt="Differentiation notation and local derivatives"
+  caption="Derivative notation is easier to use when each term is tied to the quantity it differentiates. Source: Lowyx GT DL L1 Notes (CC BY 4.0), https://lowyx.com/posts/gt-dl-L1/."
   width={900}
 />
 
-This matters because optimization problems are easier to diagnose when the model class is simple. If a baseline linear model fails, the failure is often informative:
+## Scores and decision boundaries
 
-- the features may be poorly scaled,
-- the learning rate may be unstable,
-- the loss may not be aligned with the task,
-- or the data may require nonlinear structure the model cannot express.
-
-In this setting, linear models work as instrumentation. They make it easier to tell whether a problem comes from the training setup or from model capacity.
-
-## Softmax and Cross-Entropy Turn Scores into Learning Signal
-
-Scores alone are not enough. A classifier needs a loss that turns "the model is wrong" into a gradient with direction and magnitude. For multiclass classification, the standard move is to turn logits into probabilities with softmax:
+The simplest model that exercises all of this bookkeeping is a linear classifier. It computes class scores as
 
 $$
-p(y = k \mid x) = \frac{e^{s_k}}{\sum_j e^{s_j}},
+s = Wx + b,
+\qquad
+W \in \mathbb{R}^{K \times d},
+\quad
+x \in \mathbb{R}^{d},
+\quad
+b \in \mathbb{R}^{K},
+\quad
+s \in \mathbb{R}^{K}.
 $$
 
-and then penalize the probability assigned to the correct class with cross-entropy:
+This is the affine map from the introduction: $Wx$ is the linear part, and adding $b$ shifts each score by a constant. Each row of $W$ is a class-specific direction in input space, so a single class score is a dot product plus an offset. A decision boundary is where two class scores tie:
 
 $$
-\mathcal{L} = -\log p(y=t \mid x).
+w_i^T x + b_i = w_j^T x + b_j.
 $$
 
-The derivative is compact:
+That boundary is a hyperplane, the generalization of a line in 2D and a plane in 3D to any number of dimensions. The model is limited, but the derivative bookkeeping is exactly the same bookkeeping used inside larger networks.
+
+## Softmax-cross-entropy
+
+Scores are not probabilities. A logit is a raw score, and raw scores can be negative, positive, or on any scale. Softmax converts those scores into a probability vector by exponentiating them and normalizing by the total:
 
 $$
-\frac{\partial \mathcal{L}}{\partial s_k} = p_k - \mathbb{1}[k=t].
+p_k = \frac{\exp(s_k)}{\sum_j \exp(s_j)}.
 $$
 
-That equation explains a lot of training behavior in one line. If the model is confidently wrong, the update is large. If it is already confident and correct, the update shrinks. Softmax plus cross-entropy remains standard because it gives a clean and well-behaved learning signal for classification.
+The cross-entropy loss for target class $t$ is
 
-The project made the numerical discipline concrete. Once you compute these terms yourself, details like log stability, normalization, and shape consistency stop feeling like implementation trivia. They are part of the math.
+$$
+L = -\log p_t.
+$$
+
+This loss asks a simple question: how much probability did the model assign to the correct class? If $p_t$ is near $1$, the loss is small. If $p_t$ is near $0$, the loss is large.
+
+The full softmax Jacobian makes the class coupling explicit:
+
+$$
+\frac{\partial p_i}{\partial s_j}
+= p_i(\mathbb{1}[i=j] - p_j).
+$$
+
+Here $\mathbb{1}[i=j]$ is the indicator function: $1$ when the condition in brackets is true, $0$ otherwise. So the diagonal entries ($i = j$) are $p_i(1-p_i)$ and the off-diagonal entries are $-p_i p_j$. Softmax couples all classes: changing one logit changes every probability because the denominator changes.
+
+The useful shortcut comes from composing softmax with cross-entropy:
+
+$$
+\frac{\partial L}{\partial s_k}
+= p_k - \mathbb{1}[k=t].
+$$
+
+This is the line to remember, and it makes a familiar story precise:
+
+- the correct class gets pushed up by $1-p_t$,
+- every incorrect class gets pushed down by $p_k$,
+- the gradient has the same shape as the logits,
+- the full Jacobian exists, but composing the two steps collapses it to something simple.
+
+For a mini-batch of $B$ examples with logits $S \in \mathbb{R}^{B \times K}$ and one-hot labels $Y \in \mathbb{R}^{B \times K}$ (each row of $Y$ is all zeros except a single $1$ marking that example's correct class), the loss is averaged over examples, and
+
+$$
+\frac{\partial L}{\partial S}
+= \frac{1}{B}(P - Y),
+$$
+
+where $P \in \mathbb{R}^{B \times K}$ stacks each example's softmax probabilities as a row.
+
+The factor $\frac{1}{B}$ is not cosmetic. Without it, doubling the batch size doubles the gradient, so a learning rate tuned at one batch size misbehaves at another.
 
 **Illustrative toy snippet, not assignment code:**
 
@@ -119,7 +215,7 @@ import numpy as np
 def softmax_cross_entropy(logits, target_idx):
     shifted = logits - logits.max(axis=-1, keepdims=True)
     probs = np.exp(shifted)
-    probs = probs / probs.sum(axis=-1, keepdims=True)
+    probs /= probs.sum(axis=-1, keepdims=True)
 
     loss = -np.log(probs[np.arange(len(target_idx)), target_idx]).mean()
 
@@ -129,31 +225,239 @@ def softmax_cross_entropy(logits, target_idx):
     return loss, grad
 ```
 
-The point is not the syntax. Stability and gradient shape come from the same design decision: once the logits are normalized carefully, the loss and gradient become simple enough to reason about directly.
+The subtraction by the maximum does not change the probabilities ($\mathbf{1}$ is the all-ones vector, so $s - c\mathbf{1}$ subtracts the same constant $c$ from every score):
 
-## Backpropagation as Reverse Dataflow
+$$
+\operatorname{softmax}(s)
+= \operatorname{softmax}(s - c\mathbf{1}).
+$$
 
-Backpropagation is a reverse pass over a computation graph. The chain-rule framing is mathematically correct, but the graph view is more useful in code.
+It only keeps the exponentials in a numerically safe range.
+
+## Linear-layer gradients
+
+Once $\bar{s}$ is known, the next question is local: how did $W$, $x$, and $b$ contribute to those scores? The answer gives us gradients for the weights, the input, and the bias.
+
+The cleanest way to derive the affine layer is with differentials. A differential like $dW$ stands for a tiny perturbation to $W$, and the algebra tracks how each perturbation flows through to the loss. Differentials obey the ordinary derivative rules; the product rule is the only one needed here.
+
+Start with
+
+$$
+s = Wx + b.
+$$
+
+Perturbing everything at once, the product rule gives
+
+$$
+ds = dW\,x + W\,dx + db.
+$$
+
+Because $\bar{s}$ collects the slope of $L$ with respect to each score, a small change $ds$ moves the loss by the dot product $\bar{s}^T ds$:
+
+$$
+dL = \bar{s}^T ds
+= \bar{s}^T(dW\,x) + \bar{s}^T W\,dx + \bar{s}^T db.
+$$
+
+Now read off the gradients by matching shapes:
+
+$$
+\frac{\partial L}{\partial W}
+= \bar{s}x^T
+\in \mathbb{R}^{K \times d},
+$$
+
+$$
+\frac{\partial L}{\partial x}
+= W^T\bar{s}
+\in \mathbb{R}^{d},
+$$
+
+$$
+\frac{\partial L}{\partial b}
+= \bar{s}
+\in \mathbb{R}^{K}.
+$$
+
+In words:
+
+- $\bar{s}x^T$ is an outer product: a column vector times a row vector, giving a full $K \times d$ matrix. It says each class row of $W$ gets updated in proportion to the input features.
+- $W^T\bar{s}$ sends the score gradient backward into the previous layer.
+- $\bar{s}$ copies into the bias because adding the bias shifts each score directly.
+
+Batched code flips the convention once, here, and stays flipped: examples become rows, because that is how NumPy code is usually written. Let $X \in \mathbb{R}^{B \times d}$, $W \in \mathbb{R}^{d \times K}$, $b \in \mathbb{R}^{K}$, and $S = XW + b$ with $\bar{S} \in \mathbb{R}^{B \times K}$. Every single-example formula transposes accordingly:
+
+| single example | mini-batch |
+| --- | --- |
+| $s = Wx + b$ | $S = XW + b$ |
+| $\bar{W} = \bar{s}x^T$ | $\bar{W} = X^T\bar{S}$ |
+| $\bar{x} = W^T\bar{s}$ | $\bar{X} = \bar{S}W^T$ |
+| $\bar{b} = \bar{s}$ | $\bar{b} = \sum_{i=1}^{B} \bar{S}_{i,:}$ |
+
+A wrong transpose usually fails a shape check before anything runs:
+
+| quantity | shape |
+| --- | --- |
+| $X$ | $B \times d$ |
+| $W$ | $d \times K$ |
+| $S$ | $B \times K$ |
+| $\bar{S}$ | $B \times K$ |
+| $X^T \bar{S}$ | $d \times K$ |
+| $\bar{S}W^T$ | $B \times d$ |
+
+## Backpropagation as bookkeeping
+
+The central question in training is always the same: if the loss changes a little, which earlier quantity was responsible, and by how much? Backpropagation is the chain rule organized to answer that question without repeating work. A neural network is a computation graph: values flow forward to produce a loss, then gradients flow backward to say how each earlier value affected that loss. Each intermediate value is saved once on the way forward and reused on the way back.
+
+In the graph below, the forward pass runs left to right and the backward pass revisits the same nodes in reverse:
 
 <Figure
   src={p1Fig2}
   alt="Backpropagation graph"
-  caption="Backpropagation is easiest to understand as gradient flow through a graph of cached intermediate computations. Source: Lowyx GT DL Notes (CC BY 4.0), https://lowyx.com/posts/gt-dl-notes/."
+  caption="Backprop is easiest to understand as reverse-mode gradient flow through cached intermediate computations. Source: Lowyx GT DL Notes (CC BY 4.0), https://lowyx.com/posts/gt-dl-L2/."
   width={900}
 />
 
-Each node in that graph does two jobs:
+Each node in the graph needs three things:
 
-1. produce a forward output,
-2. contribute a local derivative during the backward pass.
+- the forward value,
+- the local derivative rule,
+- the upstream gradient arriving from the output.
 
-That viewpoint makes several practical facts clear:
+Zoomed in to a single module, the local rule turns one upstream gradient into gradients for the module's inputs and parameters:
 
-- intermediate values have to be cached somewhere,
-- gradients accumulate from multiple downstream paths,
-- and a silent shape error can corrupt the whole backward pass.
+<Figure
+  src={p1Fig7}
+  alt="Module gradient flow"
+  caption="A module-level view of backprop: local derivatives turn an upstream gradient into gradients for inputs and parameters. Source: Lowyx GT DL L2 Notes (CC BY 4.0), https://lowyx.com/posts/gt-dl-L2/."
+  width={1000}
+/>
 
-Implementing the assignment without autograd also makes a common point clear: many "deep learning bugs" are bookkeeping bugs, such as stale caches, wrong broadcast rules, transposed Jacobians, or mismatched tensor shapes.
+If a value feeds multiple later operations, the gradients add:
+
+$$
+\bar{x} = \sum_i \bar{z}_i \frac{\partial z_i}{\partial x}.
+$$
+
+A reused activation, shared parameter, or residual branch receives gradient from more than one path, and the backward pass has to add those contributions before it knows the total effect on that value.
+
+The interactive graph below runs this loop on three small circuits, each chosen for one lesson. Step through a circuit to watch each gradient flow right to left along the arrows, drag the parameters to see every value recompute, and click any node for its equation and local derivative rule.
+
+- **Logistic regression** — one score, one sigmoid, one loss. Push $u$ far from zero and watch the two intermediate factors go to extremes while their product $p - y$ stays tame.
+- **ReLU unit** — slide $b$ negative until $u$ drops below zero: the gate closes and every upstream gradient becomes exactly zero. This is a "dead" ReLU.
+- **Shared input** — one value feeds two operations, so its gradient is the sum of both paths: the accumulation rule from just above, in action.
+
+<div class="viz-shell">
+  <BackpropGraph client:visible />
+</div>
+
+The model is
+
+$$
+u = w^Tx + b,
+\qquad
+p = \sigma(u),
+\qquad
+L = -\log p.
+$$
+
+$\sigma$ is the sigmoid function, $\sigma(u) = \frac{1}{1+e^{-u}}$. It squashes any real number into $(0, 1)$ so the output can act as a probability, and its derivative has a convenient form: $\sigma'(u) = \sigma(u)(1-\sigma(u)) = p(1-p)$.
+
+Chaining the two local derivatives, $-\frac{1}{p}$ from the loss and $p(1-p)$ from the sigmoid:
+
+$$
+\frac{\partial L}{\partial u}
+=
+\frac{\partial L}{\partial p}
+\frac{\partial p}{\partial u}
+=
+-\frac{1}{p}p(1-p)
+=
+p - 1.
+$$
+
+For binary cross-entropy with target $y \in \{0,1\}$, the general shortcut is
+
+$$
+\bar{u} = \frac{\partial L}{\partial u} = p - y.
+$$
+
+Then the linear-layer gradients are the same pattern as before:
+
+$$
+\bar{w} = \bar{u}x,
+\qquad
+\bar{b} = \bar{u},
+\qquad
+\bar{x} = \bar{u}w.
+$$
+
+The pattern generalizes: reduce the network to primitive local rules, then move one upstream gradient backward at a time. The network may be large, but each backward step is small.
+
+## Jacobians are real, but usually implicit
+
+The chain rule for vectors is a product of Jacobians. Conceptually, every vector operation has a table of partial derivatives behind it. If
+
+$$
+z = f(y),
+\qquad
+y = g(x),
+$$
+
+then
+
+$$
+\frac{\partial z}{\partial x}
+=
+\frac{\partial z}{\partial y}
+\frac{\partial y}{\partial x}.
+$$
+
+But in backprop, the object you usually carry is not the whole Jacobian. It is the upstream gradient vector: "how much would the loss change if this output changed?" Each node computes a vector-Jacobian product:
+
+$$
+\bar{x}
+=
+J_f(x)^T \bar{y}.
+$$
+
+The distinction matters for cost. A layer with input dimension $d$ and output dimension $K$ has a $K \times d$ Jacobian for one example; a real network would make these matrices enormous. Reverse mode stays efficient because it asks each operation only for the product needed by the current upstream gradient, never for the full table.
+
+The figure below shows what those conceptual Jacobians look like for common vectorized layers, next to the much smaller products backprop actually computes:
+
+<Figure
+  src={p1Fig9}
+  alt="Vectorized Jacobians for simple layers"
+  caption="Vectorized layers have large Jacobians conceptually, but backprop usually needs only the product with the upstream gradient. Source: Lowyx GT DL L2 Notes (CC BY 4.0), https://lowyx.com/posts/gt-dl-L2/."
+  width={1000}
+/>
+
+The softmax-cross-entropy shortcut is a concrete example. The softmax Jacobian is dense, so the full table is expensive to materialize. But when it is immediately followed by cross-entropy, the product needed by backprop reduces to $p-y$.
+
+## The manual backprop toolkit
+
+A small set of local rules covers most basic neural network code. The table below is not a replacement for derivation; it is a checklist for the operations that appear often enough to recognize on sight. The rules are written per example (a batched loss adds the $\frac{1}{B}$ average from earlier). The first two rows are scalar rules; the elementwise tensor versions follow the same pattern.
+
+| forward op | local/backward rule | note |
+| --- | --- | --- |
+| $z = x + y$ | $\bar{x} {+}= \bar{z}$, $\bar{y} {+}= \bar{z}$ | gradients copy through addition |
+| $z = xy$ | $\bar{x} {+}= \bar{z}y$, $\bar{y} {+}= \bar{z}x$ | multiply by the other input |
+| $z = Wx + b$ | $\bar{W} {+}= \bar{z}x^T$, $\bar{x} {+}= W^T\bar{z}$, $\bar{b} {+}= \bar{z}$ | affine layer |
+| $a = \max(0,z)$ | $\bar{z} {+}= \bar{a}\mathbb{1}[z>0]$ | ReLU mask from forward pass |
+| $a = \sigma(z)$ | $\bar{z} {+}= \bar{a}a(1-a)$ | sigmoid derivative uses cached output |
+| $L = -\log \operatorname{softmax}(s)_t$ | $\bar{s} = p - \operatorname{onehot}(t)$ | softmax-CE shortcut |
+| $L_{\text{reg}} = \lambda \lVert W \rVert_2^2$ | $\bar{W}_{\text{reg}} = 2\lambda W$ | if using $\frac{\lambda}{2}\lVert W\rVert^2$, derivative is $\lambda W$ |
+
+The working habit is to annotate each intermediate with its value and its gradient. A tiny handwritten table is often enough:
+
+| node | forward value | upstream gradient | local rule |
+| --- | --- | --- | --- |
+| $L$ | scalar loss | $1$ | seed |
+| $p$ | probability | $\bar{p}$ | $-\frac{1}{p}$ |
+| $u$ | logit | $\bar{u}$ | $p(1-p)$ or $p-y$ |
+| $W$ | weights | $\bar{W}$ | $\bar{u}x^T$ |
+
+The same table drives implementation tests: if the analytical gradient disagrees with a numerical check, one row of the table is usually wrong.
 
 **Illustrative toy snippet, not assignment code:**
 
@@ -173,49 +477,133 @@ def numerical_grad(f, x, eps=1e-5):
     return grad
 ```
 
-A check like this is slow, but it is often enough to tell you whether a backward pass is conceptually correct before you trust a full training curve.
+Finite differences are far too slow for training, but they are ideal for catching a wrong sign, a missing batch average, or a transposed matrix in a hand-written backward pass.
 
-## Optimization Geometry
+## Optimizers: same gradient, different update
 
-Once gradients exist, the next question is how parameter updates move through the loss landscape. The simplest mental model is still the right one:
+Once gradients exist, the optimizer decides how to move. The notation for this section: $\theta$ (theta) collects every parameter of the model into one long vector, $\nabla_\theta L$ is standard notation for the gradient of the loss with respect to $\theta$ (the same object the bar notation calls $\bar{\theta}$), the subscript $t$ counts update steps, and $\eta$ (eta) is the learning rate, the step size.
 
-$$
-\theta_{t+1} = \theta_t - \eta \nabla_\theta \mathcal{L}(\theta_t).
-$$
-
-But that simple rule behaves very differently depending on curvature, scale, and gradient noise.
-
-<Figure
-  src={p1Fig3}
-  alt="Loss surface"
-  caption="Ill-conditioned loss surfaces explain why some learning rates oscillate while others barely move. Source: Lowyx GT DL Notes (CC BY 4.0), https://lowyx.com/posts/gt-dl-notes/."
-  width={900}
-/>
-
-Three optimization lessons stuck:
-
-- **Learning rate is not a detail.** It is often the training choice that matters most.
-- **Training curves matter.** End-of-run accuracy hides most of the information you need to debug instability.
-- **Capacity and optimization interact.** Making the model wider or deeper does not help if the optimization regime is already fragile.
-
-<Figure
-  src={p1Fig4}
-  alt="Training curve diagnostics"
-  caption="Train-vs-validation curves are often the fastest way to tell whether a run is diverging, underfitting, or overfitting. Source: Lowyx GT DL Notes (CC BY 4.0), https://lowyx.com/posts/gt-dl-notes/."
-  width={900}
-/>
-
-On a project like this, tuning can look small-scale. It is where you learn that a model can fail because the optimizer never reaches a basin that generalizes well, not because the architecture is fundamentally wrong.
-
-## Regularization Picks Among Solutions
-
-Many parameter settings can fit a training set. Regularization is the mechanism that tells the optimizer which kinds of solutions to prefer. In this assignment, the most important version was L2 weight decay:
+A gradient points in the direction of steepest increase, so training moves in the negative gradient direction. Plain gradient descent is
 
 $$
-\mathcal{L}_{\text{total}} = \mathcal{L}_{\text{data}} + \lambda \lVert W \rVert_2^2.
+\theta_{t+1}
+=
+\theta_t - \eta \nabla_\theta L(\theta_t).
 $$
 
-The interpretation is straightforward: the optimizer is penalized for relying on very large weights, which often improves generalization when the model could otherwise memorize brittle patterns.
+Mini-batch SGD replaces the full gradient with an average over a batch of $B$ examples:
+
+$$
+g_t
+=
+\frac{1}{B}\sum_{i=1}^{B}\nabla_\theta L_i(\theta_t),
+\qquad
+\theta_{t+1} = \theta_t - \eta g_t.
+$$
+
+Momentum smooths the update by accumulating a velocity, where the decay factor $\beta$ (typically around $0.9$) sets how much old velocity survives each step:
+
+$$
+v_{t+1} = \beta v_t - \eta g_t,
+\qquad
+\theta_{t+1} = \theta_t + v_{t+1}.
+$$
+
+Adam keeps running averages of the gradient and of its square (the first and second moments):
+
+$$
+m_t = \beta_1 m_{t-1} + (1-\beta_1)g_t,
+\qquad
+v_t = \beta_2 v_{t-1} + (1-\beta_2)g_t^2,
+$$
+
+$$
+\hat{m}_t = \frac{m_t}{1-\beta_1^t},
+\qquad
+\hat{v}_t = \frac{v_t}{1-\beta_2^t},
+\qquad
+\theta_{t+1}
+=
+\theta_t - \eta \frac{\hat{m}_t}{\sqrt{\hat{v}_t}+\epsilon}.
+$$
+
+Everything here is elementwise: $g_t^2$ squares each coordinate separately, so $v_t$ tracks a per-coordinate scale and each parameter effectively gets its own step size. The hats correct for $m$ and $v$ starting at zero, and $\epsilon$ is a tiny constant that prevents division by zero.
+
+The gradient is the input; the update rule changes how that gradient is scaled, smoothed, and normalized. That is why two optimizers can see the same loss surface and trace very different paths across it.
+
+Curvature explains the differences. For a scalar-valued loss $L(\theta)$, the Hessian is
+
+$$
+H =
+\nabla_\theta^2 L
+\in \mathbb{R}^{p \times p},
+\qquad
+H_{ij} = \frac{\partial^2 L}{\partial \theta_i \partial \theta_j}.
+$$
+
+It is the derivative one level up: it says how the gradient itself changes as you move. You almost never form it during ordinary training, but it explains the geometry: steep curvature in one direction and shallow curvature in another is why gradient descent can zig-zag, crawl, or diverge.
+
+The widget below makes that concrete. All three optimizers run on the same surface from the same start, reading the same gradients — the paths differ only because the update rules differ. Three surfaces, three lessons:
+
+- **Bowl** — the quadratic from this section. Raise the learning rate until SGD diverges, then watch the loss curve underneath tell the same story.
+- **Valley** — a curved narrow valley. The gradient points across the valley rather than along it, so SGD zig-zags between the walls while momentum accumulates speed along the floor.
+- **Two wells** — a shallow minimum sits on the way to a deeper one. Small steps settle into the first well; momentum coasts over the barrier, and the gradient-noise slider (simulating mini-batch sampling) can kick SGD out.
+
+One honest caveat: 2-D pictures of local minima are a cartoon. In high-dimensional training the dominant obstacles are saddle points and plateaus rather than neat little wells — but the mechanics of how each update rule responds to terrain are the same.
+
+<div class="viz-shell">
+  <OptimizerSurface client:visible />
+</div>
+
+The default surface is the quadratic bowl
+
+$$
+L(w) = \frac{1}{2}(w_1^2 + \kappa w_2^2),
+\qquad
+H =
+\begin{bmatrix}
+1 & 0 \\
+0 & \kappa
+\end{bmatrix},
+$$
+
+and $\kappa$ is the condition number: a measure of how uneven the bowl is. When $\kappa$ is large, the surface is steep in one direction and shallow in the other. Gradient descent has to pick one learning rate for both directions, so it can overshoot along the steep axis while barely progressing along the shallow one. Momentum and Adam are different responses to this problem.
+
+## Regularization changes the objective
+
+Regularization changes the loss whose gradient you compute. Instead of only penalizing prediction error, the objective also penalizes parameter values we want to discourage. With L2 weight decay:
+
+$$
+L_{\text{total}}
+=
+L_{\text{data}} + \lambda \lVert W \rVert_2^2.
+$$
+
+$\lVert W \rVert_2^2$ is the squared L2 norm: the sum of the squares of every entry of $W$. $\lambda$ (lambda) sets how much the penalty matters relative to the data loss.
+
+The gradient becomes
+
+$$
+\frac{\partial L_{\text{total}}}{\partial W}
+=
+\frac{\partial L_{\text{data}}}{\partial W}
++
+2\lambda W.
+$$
+
+If the convention is
+
+$$
+L_{\text{total}}
+=
+L_{\text{data}} + \frac{\lambda}{2}\lVert W \rVert_2^2,
+$$
+
+then the derivative is $\lambda W$. Both conventions appear in codebases, so the constant matters when comparing implementations.
+
+Weight decay pulls weights toward zero. In a linear model, that prefers smaller-norm decision boundaries. In a neural network, the interpretation is less clean, but the operational fact remains: the gradient update now includes a term that penalizes large weights. The optimizer is not optimizing the old loss anymore.
+
+The practical effect shows up in the gap between training and validation performance, not in the training loss alone:
 
 <Figure
   src={p1Fig5}
@@ -224,29 +612,50 @@ The interpretation is straightforward: the optimizer is penalized for relying on
   width={900}
 />
 
-Regularization is not a universal anti-overfitting switch; it changes the search problem. Too little regularization encourages brittle fits; too much regularization makes the run look stable while the model underfits.
+## Reading training curves
 
-That tradeoff showed up immediately in the project. The assignment was small enough that the effect of weight decay and hidden size was visible, but large enough that those choices genuinely changed validation behavior.
+Derivations say what should happen for one update. Training curves say what is actually happening over many updates, which makes them a sanity check on both the math and the implementation. The canonical diagnostic is the pair of train and validation curves:
 
-## Recap
+<Figure
+  src={p1Fig4}
+  alt="Training curve diagnostics"
+  caption="Train-vs-validation curves are often the fastest way to separate divergence, underfitting, and overfitting. Source: Lowyx GT DL Notes (CC BY 4.0), https://lowyx.com/posts/gt-dl-notes/."
+  width={900}
+/>
 
-To recap, here are the main concepts this project focused on:
+Each common failure pattern points back at specific math from above:
 
-- **PyTorch hides bookkeeping while leaving the underlying losses, gradients, and updates unchanged.**
-- **Baselines are worth taking seriously.** A simple model can tell you a lot about data quality and training stability.
-- **Optimization is interactive.** Learning rate, regularization, batch size, and model size do not tune independently.
-- **Numerical stability matters early.** Softmax and cross-entropy are easy to write down and easy to implement badly.
-- **Training curves carry more debugging signal than final accuracy alone.**
+- Training loss increases or becomes NaN: the step is too large or the arithmetic is unstable. Check the learning rate against the curvature picture from the optimizer section, and the max-shift in softmax.
+- Training loss falls but validation loss rises: the model is fitting noise. Capacity and the regularization weight $\lambda$ are the suspects.
+- Both losses stay high: the model cannot fit the data. Suspect optimizer settings, features, or capacity.
+- Behavior changes when only the batch size changes: a missing $\frac{1}{B}$ average is quietly rescaling the effective learning rate.
+- Accuracy moves but loss does not: confidence calibration or class imbalance may matter.
 
-The repo artifacts make those concepts visible: tests for activations, losses, optimizer updates, and network behavior; numerical checks for gradients; and saved plots across learning rate, regularization, batch size, and hidden size. None of that changes the theory, but it does change how quickly theory and implementation drift becomes visible.
+In a from-scratch implementation the causes are concrete: a stale cache, a ReLU mask taken from the wrong forward pass, or a transposed gradient that still broadcasts without error.
 
-It is a foundational assignment in the course because it gives a compact setting where many later deep learning ideas can be traced back to something visible and understandable.
+## Takeaways
 
-## Additional Resources
+The math says what should be true, and the implementation offers many ways to violate it by accident:
 
-- [GT Deep Learning Notes (Lowyx)](https://lowyx.com/posts/gt-dl-notes/)
+- Gradients should match the shape of the thing they differentiate.
+- Full Jacobians explain the math, but vector-Jacobian products are what make backprop practical.
+- Softmax-cross-entropy has the cleanest derivative in deep learning: $p-y$ shows up everywhere.
+- Linear-layer gradients are mostly outer products and transposes.
+- Curvature (the Hessian) explains why learning rates and conditioning dominate early training behavior.
+- Optimizers do not change the loss; they change how the gradient becomes motion.
+- Regularization does change the loss, which changes every gradient downstream of it.
+- Numerical gradient checks are slow, but they are one of the fastest ways to build trust in a handwritten backward pass.
+
+The models here are small, but the habits scale: cache carefully, track shapes, derive the local rule, verify the gradient, and only then trust the training curve.
+
+## Additional resources
+
+- [GT Deep Learning L1 Notes (Lowyx)](https://lowyx.com/posts/gt-dl-L1/)
+- [GT Deep Learning L2 Notes (Lowyx)](https://lowyx.com/posts/gt-dl-L2/)
+- [GT Deep Learning Notes Overview (Lowyx)](https://lowyx.com/posts/gt-dl-notes/)
 - [CS231n: Neural Networks Part 1](https://cs231n.github.io/neural-networks-1/)
 - [CS231n: Optimization and Backpropagation](https://cs231n.github.io/optimization-2/)
+- [The Matrix Calculus You Need For Deep Learning](https://explained.ai/matrix-calculus/)
 
 <BookCard
   title="Deep Learning"
@@ -255,7 +664,7 @@ It is a foundational assignment in the course because it gives a compact setting
   url="https://www.deeplearningbook.org/"
 >
   <p>
-    A strong reference for why linear models, losses, backpropagation, and regularization fit together within one optimization story.
+    A strong reference for the optimization and backpropagation foundations that modern deep learning still depends on.
   </p>
 </BookCard>
 
@@ -269,3 +678,25 @@ It is a foundational assignment in the course because it gives a compact setting
     A useful complement when the same concepts need more geometric intuition and fewer jumps in notation.
   </p>
 </BookCard>
+
+<style>
+  {`
+    .katex-display {
+      overflow-x: auto;
+      overflow-y: hidden;
+      padding-top: 0.5em;
+      padding-bottom: 0.5em;
+    }
+
+    .viz-shell {
+      grid-column: 1 / 4 !important;
+      position: relative;
+      z-index: 1;
+      isolation: isolate;
+      width: 100%;
+      max-width: 1600px;
+      margin: 1.25rem auto 2rem;
+      overflow-x: auto;
+    }
+  `}
+</style>

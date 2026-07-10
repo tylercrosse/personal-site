@@ -1,5 +1,5 @@
 ---
-title: 'Graduate Deep Learning: A Conceptual Guide to the Course'
+title: 'Deep Learning'
 description: 'A concept-first map of the main ideas in Graduate Deep Learning, from optimization and CNNs to transformers, generative models, and interpretability.'
 date: '2026-02-27'
 updated: '2026-02-27'
@@ -134,7 +134,7 @@ Generative modeling is where the course stops letting you pretend that one metri
 
 It also forces a broader definition of evaluation. Sample quality, diversity, controllability, and compute cost can move in different directions at the same time. A model can produce sharper samples while covering less of the distribution, or optimize cleanly while still missing the cases you care about.
 
-Generative-model choice is contextual. You are not choosing a universal winner; you are choosing the objective and failure-mode profile that matches your constraints.
+Generative-model choice is contextual. There's no universal winner; you pick the objective and failure-mode profile that fits your constraints.
 
 The repo reflected that pattern: separate configs for beta sweeps, mode-collapse stress tests, noise-schedule experiments, and saved sample grids across training. The debugging loop changed with the model family.
 
@@ -170,7 +170,7 @@ In practice, they cash out as three habits: validate the implementation before t
 
 The same questions apply to small MNIST models, CNNs on CIFAR, translation systems, generative models, and mechanistic-interpretability work. They are a better long-term memory of the course than any single benchmark result.
 
-What remains open is the gap between clean conceptual understanding and reliable empirical behavior. The course makes it clear that modern deep learning works because architecture, objective, data, optimization, and evaluation all push on the same system at once. That coupling makes modern deep learning work in practice and also makes it easy to confuse a successful run with a complete explanation.
+What remains open is the gap between clean conceptual understanding and reliable empirical behavior. Modern deep learning works because architecture, objective, data, optimization, and evaluation all push on the same system at once. That same coupling is what makes it easy to confuse a successful run with a complete explanation.
 
 ## Books
 
