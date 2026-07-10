@@ -565,3 +565,13 @@ hr {
   width: 18px;
   height: 18px;
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .slide-in-block {
+    animation: none !important;
+    opacity: 1 !important;
+    filter: none !important;
+    transform: none !important;
+    transition: none !important;
+  }
+}

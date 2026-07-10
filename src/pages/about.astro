@@ -3,7 +3,10 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 import { Image } from "astro:assets";
 ---
 
-<BaseLayout title="About">
+<BaseLayout
+  title="About"
+  description="Tyler Crosse is a research engineer focused on AI control, agent evaluation, scalable oversight, and the systems that support this work."
+>
   <div class="headshot slide-in-block">
     <Image
       src="/img/headshot.jpeg"
@@ -14,61 +17,100 @@ import { Image } from "astro:assets";
   </div>
 
   <section class="intro slide-in-block">
-    <h1>Hi, I'm Tyler 👋</h1>
+    <h1>Hi, I'm Tyler</h1>
     <p class="lead">
-      I'm a research engineer building infrastructure for <strong>AI safety</strong>. 
-      I'm a research engineer turned graduate student, currently an MSCS student
-      at Georgia Tech focusing on <strong>AI safety.</strong> I have 7+ years of industry experience as a Senior Software Engineer and Team Lead, and I'm currently finishing my MSCS at Georgia Tech specializing in machine learning and computing systems. My research focuses on evaluating how models can fail, understanding how neural networks work from the inside out, and building the engineering that makes that research possible at scale.
+      I'm a research engineer focused on <strong>AI safety</strong> and the
+      infrastructure behind it. I recently completed projects with Redwood
+      Research on attack selection for AI control and with SPAR on scalable
+      oversight. Before moving into research, I spent more than seven years in
+      production software engineering, most recently as a senior engineer and
+      team lead. I completed Georgia Tech's MSCS in May 2026, with a focus on
+      machine learning and computing systems.
     </p>
   </section>
 
   <section class="journey slide-in-block">
-    <h2>My Journey</h2>
+    <h2>My path</h2>
     <p>
-      My path to computer science has been anything but conventional. I started
-      with a degree in <strong>Biomedical Engineering</strong> (VCU), planning to
-      build medical devices. I was quickly drawn to software, shipping production
-      systems, leading engineering teams, and learning how to make complex systems robust and maintainable.
+      My undergraduate degree is in <strong>Biomedical Engineering</strong>. I
+      ended up in software, where I worked on consumer products, enterprise
+      search, data pipelines, developer tooling, and distributed services. That
+      work taught me how to turn prototypes into systems people can rely on and
+      how to make tradeoffs when correctness, performance, and delivery all
+      matter.
     </p>
     <p>
-      After nearly a decade in industry, breakthroughs like
+      Seeing the early results from
       <a
         href="https://en.wikipedia.org/wiki/AlphaFold"
         target="_blank"
         rel="noopener noreferrer">AlphaFold</a
-      > and the rapid scaling of language models crystallized something for me: machine
-      learning wasn't just another tool, it was going to revolutionize science in
-      ways I hadn't imagined. That pushed me to deepen my foundations and focus on
-      <strong>alignment</strong>: making powerful systems <em>understandable</em
-      >, <em>steerable</em>, and
-      <em>trustworthy</em>. That sent me back to school to pair strong systems
-      skills with rigorous ML.
+      > in 2018 pushed me to study machine learning more seriously. As language
+      models became more capable and agentic, I became interested in a narrower
+      set of questions: what safety evaluations actually measure, how models
+      behave under pressure, and how to build experiments that make those
+      failures visible. I returned to school to add deeper ML and systems
+      foundations to my production engineering background.
     </p>
   </section>
 
   <section class="research slide-in-block">
-    <h2>Research</h2>
-    <p>I'm currently a research fellow in two alignment programs:</p>
+    <h2>Recent research</h2>
     <ul>
       <li>
-        <strong>MARS (Redwood Research)</strong>: Developing adversarial attack
-        policies to stress-test AI control protocols and monitoring systems.
+        <strong>AI control with Redwood Research:</strong> I studied how an
+        attacking agent's decision to start or abandon an attack changes the
+        apparent safety of control protocols. Selective start/stop policies
+        reduced measured safety by roughly 20–28 points at a 1% audit budget
+        across BashArena and LinuxArena. The project began through MARS 4.0 and
+        continued as a collaboration with Redwood.
       </li>
       <li>
-        <strong>SPAR</strong>: Building evaluation infrastructure to measure
-        goal drift in frontier language model agents, with two papers submitted
-        to ICLR workshops.
+        <strong>Agent evaluation and scalable oversight with SPAR:</strong> In
+        Fall 2025, I built evaluation infrastructure for measuring goal drift
+        in long-horizon coding agents. In Spring 2026, I worked on human-AI
+        oversight and built the FastAPI backend for a participant study run
+        through Prolific.
       </li>
     </ul>
     <p>
-      I completed ARENA (Alignment Research Engineer Accelerator) in London,
-      where my capstone applied mechanistic interpretability methods
-      (activation patching, steering vectors, path patching) to investigate how
-      moral fine-tuning rewires attention circuits in Gemma-2-2b.
+      I also completed ARENA 7.0 in London. For the capstone, I used activation
+      patching, steering vectors, and path patching to study how moral
+      fine-tuning changes attention pathways in Gemma-2-2b.
     </p>
+
+    <h3>Selected publications</h3>
+    <ul>
+      <li>
+        <a
+          href="https://arxiv.org/abs/2606.06529"
+          target="_blank"
+          rel="noopener noreferrer"
+          ><em
+            >Attack Selection in Agentic AI Control Evaluations Meaningfully
+            Decreases Safety</em
+          ></a
+        >, co-first author. Accepted to the ICML 2026 AI4GOOD and AI-WILD
+        workshops and as a FAGEN poster; under review at NeurIPS 2026.
+      </li>
+      <li>
+        <a
+          href="https://arxiv.org/abs/2606.04161"
+          target="_blank"
+          rel="noopener noreferrer"
+          ><em
+            >When Offline Selectors Cannot Beat the Best Single Model</em
+          ></a
+        >, first author. Accepted to the ICML 2026 DEMO Workshop.
+      </li>
+      <li>
+        Three co-authored papers from SPAR, including work on inherited and
+        asymmetric goal drift in coding agents and inference effects in medical
+        allocation.
+      </li>
+    </ul>
     <p>
-      I recently had two papers published. You can find my publications and
-      citation profile on <a
+      My full publication list is on <a
         href="https://scholar.google.com/citations?user=RfFEQLMAAAAJ&hl=en&oi=ao"
         target="_blank"
         rel="noopener noreferrer">Google Scholar</a
@@ -77,41 +119,24 @@ import { Image } from "astro:assets";
   </section>
 
   <section class="experience slide-in-block">
-    <h2>Experience</h2>
+    <h2>Industry experience</h2>
     <div class="timeline">
-      <div class="timeline-item current">
-        <div class="timeline-marker"></div>
-        <div class="timeline-content">
-          <h3>Georgia Institute of Technology</h3>
-          <p class="company">
-            MS Computer Science <span class="period">| 2024 - Present</span>
-          </p>
-
-          <p class="description">
-            Specializing in Machine Learning and Computing Systems. Coursework
-            includes Deep Learning, Reinforcement Learning, GPU Hardware and
-            Software, Distributed Computing, and Operating Systems. Built
-            FlashAttention kernels, warp scheduling simulators, and branch
-            divergence analysis tools. Current focus: mechanistic
-            interpretability and ML infrastructure.
-          </p>
-        </div>
-      </div>
-
       <div class="timeline-item">
         <div class="timeline-marker"></div>
         <div class="timeline-content">
           <h3>Knowable</h3>
           <p class="company">
-            Lead Software Engineer <span class="period">| 5 years</span>
+            Senior Software Engineer &amp; Team Lead
+            <span class="period">| Jun 2019 – Jun 2024</span>
           </p>
 
           <p class="description">
-            Led the core engineering team for a legal knowledge platform using
-            search, LLMs, and structured data. Built event-driven microservices
-            on AWS (Lambda/SQS/SNS), OpenSearch, and PostgreSQL; improved CI/CD
-            to cut deployment time by 40%; mentored engineers and balanced
-            architecture with delivery.
+            Directed the technical roadmap for a five-engineer team building a
+            legal knowledge platform. I took RAG-style LLM and OpenSearch
+            systems from data-science prototypes to production over several
+            million contracts, built event-driven services on AWS, and cut the
+            average CI pipeline from roughly 55 minutes to 15. I also maintained
+            a React component library used across three product teams.
           </p>
         </div>
       </div>
@@ -121,14 +146,41 @@ import { Image } from "astro:assets";
         <div class="timeline-content">
           <h3>Rosetta Stone</h3>
           <p class="company">
-            Senior Software Engineer <span class="period">| 2 years</span>
+            Software Engineer
+            <span class="period">| Aug 2017 – Jun 2019</span>
           </p>
 
           <p class="description">
-            Contributed to the language learning platform that's helped millions
-            of people learn new languages. Focused on backend systems and API
-            development, working with international teams across multiple time
-            zones.
+            Rebuilt a React and Node marketing platform with page loads about
+            2.25 times faster. I also built an internal A/B testing system used
+            by roughly 20 non-engineering stakeholders to run hundreds of
+            experiments and maintained backend services for a platform serving
+            millions of learners.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="education slide-in-block">
+    <h2>Education</h2>
+    <div class="timeline">
+      <div class="timeline-item">
+        <div class="timeline-marker"></div>
+        <div class="timeline-content">
+          <h3>Georgia Institute of Technology</h3>
+          <p class="company">
+            MS Computer Science <span class="period">| May 2026</span>
+          </p>
+
+          <p class="description">
+            Focused on machine learning and computing systems. Coursework
+            included deep learning, reinforcement learning, GPU hardware and
+            software, high-performance computer architecture, Advanced
+            Operating Systems, and Graduate Algorithms. Projects included
+            FlashAttention and KV-cache CUDA kernels, GPU simulators, static
+            branch-divergence analysis, and reproducible ML evaluation
+            pipelines.
           </p>
         </div>
       </div>
@@ -137,12 +189,13 @@ import { Image } from "astro:assets";
         <div class="timeline-marker"></div>
         <div class="timeline-content">
           <h3>Virginia Commonwealth University</h3>
-          <p class="company">BS Biomedical Engineering</p>
+          <p class="company">
+            BS Biomedical Engineering <span class="period">| Dec 2023</span>
+          </p>
 
           <p class="description">
-            Where it all started. Studied the intersection of engineering and
-            medicine, but discovered my true passion lay in the computational
-            side of solving complex problems.
+            Studied engineering, physiology, and the design of systems for
+            medical and biological problems.
           </p>
         </div>
       </div>
@@ -150,7 +203,7 @@ import { Image } from "astro:assets";
   </section>
 
   <section class="interests slide-in-block">
-    <h2>What I'm Into</h2>
+    <h2>What I'm interested in</h2>
     <div class="interests-grid">
       <div class="interest-card">
         <h3>🧩 Mechanistic Interpretability</h3>
@@ -183,8 +236,8 @@ import { Image } from "astro:assets";
       <div class="interest-card">
         <h3>⚡ High-Performance Computing</h3>
         <p>
-          Squeezing performance from hardware: parallelism, GPU workloads,
-          memory systems.
+          GPU programming, parallelism, computer architecture, and the memory
+          systems underneath modern models.
         </p>
       </div>
       <div class="interest-card">
@@ -209,75 +262,17 @@ import { Image } from "astro:assets";
     </div>
   </section>
 
-  <!-- <section class="focus slide-in-block">
-    <h2>Focus: AI Safety & Interpretability</h2>
-    <p>
-      I'm interested in methods that make models more understandable and
-      controllable, and in the systems that support trustworthy deployment:
-    </p>
-    <ul>
-      <li>
-        <strong>Mechanistic Interpretability</strong>: sparse autoencoders,
-        circuits, representation shift
-      </li>
-      <li>
-        <strong>Robustness & Evaluation</strong>: honesty/helpfulness under
-        distribution shift; reproducible pipelines
-      </li>
-      <li>
-        <strong>Systems & Tooling</strong>: scalable data/experiment pipelines,
-        evaluation harnesses, and infra
-      </li>
-    </ul>
-  </section> -->
-
-  <!-- <section class="work slide-in-block">
-    <h2>Selected Writing & Projects</h2>
-    <ul>
-      <li>
-        <a href="/ideas/2025/ml-retro/">ML notes & interpretability readings</a>
-        — a growing index of methods, papers, and experiments
-      </li>
-      <li>
-        <a href="/ideas/2025/ml-a1/">Supervised learning study</a> — pipelines comparing
-        models across high/low dimensional regimes
-      </li>
-      <li>
-        <a href="/ideas/2021/nand2tetris-part1/">Nand-to-Tetris computer</a> — building
-        a computer and toy OS from first principles
-      </li>
-      <li>
-        Fine-tuning & representation shift (in progress) — exploring how
-        fine-tuning for reasoning/tool-use changes internal structure
-      </li>
-    </ul>
-  </section>
-
-  <section class="now slide-in-block">
-    <h2>Now</h2>
-    <ul>
-      <li>MSCS @ Georgia Tech (2024-2026): ML + systems</li>
-      <li>Building reproducible eval + interpretability tooling</li>
-      <li>
-        Availability: Oct 2025 - Apr 2026 for ML Alignment Fellowship
-        (extendable)
-      </li>
-    </ul>
-  </section> -->
-
   <section class="about-this-site slide-in-block">
     <h2>About This Digital Garden</h2>
     <p>
-      This site is my <strong>digital garden</strong>—a place where ideas can
-      grow and evolve over time. Unlike a traditional blog, content here isn't
-      organized chronologically but by connections and themes. Some pieces are
-      polished articles, others are rough notes or works in progress.
+      This is where I keep technical write-ups, research notes, course
+      retrospectives, and project logs. Some pieces are finished articles;
+      others are notes that I update as my understanding changes.
     </p>
     <p>
-      I believe in <strong>learning in public</strong>, sharing not just the
-      final results but the messy process of figuring things out. If you see
-      something interesting, wrong, or want to discuss an idea,
-      <a href="mailto:hello@tylercrosse.com">drop me a line</a>!
+      I try to include the method, mistakes, and intermediate reasoning instead
+      of only the final result. If you notice an error or want to discuss
+      something, <a href="mailto:hello@tylercrosse.com">send me a note</a>.
     </p>
 
     <p>
@@ -289,7 +284,7 @@ import { Image } from "astro:assets";
         href="https://github.com/tylercrosse/personal-site"
         target="_blank"
         rel="noopener noreferrer">source code</a
-      >. It would be a little weird to just copy it wholesale.
+      >.
     </p>
 
     <details class="inspiration-details">

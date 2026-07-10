@@ -10,7 +10,10 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed",
+    "playwright:install": "playwright install chromium"
   },
   "dependencies": {
     "@astrojs/markdown-remark": "^7.2.0",
@@ -41,6 +44,7 @@
     "@rollup/rollup-linux-x64-gnu": "4.62.2"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.1",
     "@typescript-eslint/eslint-plugin": "^8.38.0",
     "@typescript-eslint/parser": "^8.38.0",
     "eslint": "^9.31.0",

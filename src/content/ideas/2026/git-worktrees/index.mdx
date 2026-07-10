@@ -1,5 +1,5 @@
 ---
-title: 'Git Worktrees, branches without the context switch'
+title: 'Git worktrees: branches without the context switch'
 description: 'Work on multiple branches at once without ever touching git stash.'
 date: '2026-03-30'
 status: 'complete'
@@ -11,12 +11,12 @@ media_subpath: "/ideas/git-worktrees/"
 image:
   path: 'japanese-tree.jpg'
   # path: 'squirrel-worker3.png'
-  alt: 'Squirrel Working away'
+  alt: 'Squirrel working away'
 hideCaption: true
 audience: 'Developers'
 ---
 
-Pretend you're deep in a feature branch, half-finished changes everywhere, and a prod bug lands in your lap. Or a teammate asks you to review their PR while it's fresh. The old answer is `git stash`, context switch, do the thing, come back, `git stash pop`, and hope nothing exploded. There's a better answer: `git worktree`.
+Say you're deep in a feature branch, half-finished changes everywhere, and a prod bug lands in your lap. Or a teammate asks you to review their PR while it's fresh. The old answer is `git stash`, switch branches, do the thing, come back, `git stash pop`, and hope nothing exploded. There's a better answer: `git worktree`.
 
 ### The same scenario, two ways
 
@@ -61,7 +61,7 @@ Terminal 2:              ░░░░ review PR ░░░░
 
 If you've read my [earlier post on git stash](/ideas/2020/git-stash), you know `git stash` is great for short interruptions, a quick "hold my coffee" before you switch branches and come right back. It's lightweight and fast, and for a lot of situations it's exactly the right tool.
 
-Worktrees solve a different shape of problem. Stash serializes your context: you set it aside, do something else, then restore it. Worktrees parallelize it: both things exist on disk simultaneously, and you move between them the same way you'd switch between terminal tabs. The longer the interruption, or the more parallel threads you're juggling, the more worktrees start to win. A hotfix you'll knock out in five minutes? Stash is fine. A PR review that'll take an hour while your feature branch keeps evolving? Reach for a worktree.
+Worktrees solve a different shape of problem. Stash serializes your context: you set it aside, do something else, then restore it. Worktrees let both branches exist on disk at the same time, and you move between them the same way you'd switch between terminal tabs. The longer the interruption, or the more parallel threads you're juggling, the more worktrees start to win. A hotfix you'll knock out in five minutes? Stash is fine. A PR review that'll take an hour while your feature branch keeps evolving? Reach for a worktree.
 
 They also compose well. Nothing stops you from stashing inside a worktree, and sometimes you want both.
 
@@ -129,11 +129,11 @@ No stashing, no branch switching, no losing your place.
 
 ### Worktrees and coding agents
 
-Worktrees have also become the go-to isolation mechanism for AI coding agents. Tools like [Claude Code](https://code.claude.com/docs/en/common-workflows) and [OpenAI's Codex](https://developers.openai.com/codex/app/features) run agents that work autonomously on your codebase, and they use worktrees to do it safely.
+Worktrees have also become a common isolation mechanism for AI coding agents. Tools like [Claude Code](https://code.claude.com/docs/en/common-workflows) and [OpenAI's Codex](https://developers.openai.com/codex/app/features) can run agents on your codebase without putting every change directly into your main working directory.
 
 An agent working on a task needs its own environment where it can read, write, and run code without trampling your working directory or another agent's changes. Each agent gets its own worktree on its own branch, does its thing, and you review and merge the result.
 
-Without worktrees, you'd need to either let the agent edit your working directory (risky if you're also working) or clone the whole repo (slow, wasteful). Worktrees give you the isolation of a clone with the speed of a checkout.
+Without worktrees, you'd need to either let the agent edit your working directory (risky if you're also working) or clone the whole repo. Worktrees give you most of the isolation of a clone with the speed of a checkout.
 
 #### Parallel agents with Claude Code
 
@@ -161,11 +161,11 @@ Codex-managed worktrees auto-delete after a configurable period (default 15 days
 
 Note: this is the Codex app (web GUI), not the Codex CLI. The CLI doesn't have worktree support as of this writing. If you're using the CLI and want isolation, you can always create worktrees yourself with `git worktree add` and run `codex` from that directory.
 
-The pattern itself isn't limited to specific tools. Any agent framework that needs filesystem isolation can use worktrees the same way: create a worktree per task, let the agent work, merge the result.
+The pattern itself isn't tied to specific tools. Any agent framework that needs filesystem isolation can use worktrees the same way: create a worktree per task, let the agent work, merge the result.
 
 #### Structuring work for parallel agents
 
-The main thing that makes parallel agents effective is decomposing work into independent pieces. Tasks that touch different files or modules parallelize cleanly. Tasks with heavy overlap in the same files will produce merge conflicts, same as if two people edited the same code at once.
+Parallel agents work best when the tasks are actually independent. Tasks that touch different files or modules parallelize cleanly. Tasks with heavy overlap in the same files will produce merge conflicts, same as if two people edited the same code at once.
 
 A few patterns that work well:
 - **Backend + frontend** for the same feature (different directories, merge cleanly)
@@ -193,7 +193,7 @@ git worktree remove <path>                     # remove a worktree when done
 git worktree prune                             # clean up stale worktree metadata
 ```
 
-#### Additional resources
+#### Further reading
 
 - The [official git worktree documentation](https://git-scm.com/docs/git-worktree) covers all flags and edge cases.
 - [Claude Code worktree docs](https://code.claude.com/docs/en/common-workflows) for running parallel agent sessions with `--worktree`.

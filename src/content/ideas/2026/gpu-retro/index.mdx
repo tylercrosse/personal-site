@@ -1,6 +1,6 @@
 ---
 title: 'GPU Hardware and Software'
-description: 'What I Learned in GPU Hardware and Software (CS 8803) - A Retrospective'
+description: 'What I learned in GPU Hardware and Software (CS 8803).'
 date: '2026-02-25'
 status: 'complete'
 type: 'retro'
@@ -44,11 +44,11 @@ import tensorImg from "./m12l1_tensor.png";
 
 ## Introduction
 
-This article is part personal reflection, part technical summary. I recently completed Georgia Tech's [CS 8803: GPU Hardware and Software](https://omscs.gatech.edu/cs-8803-o11-gpu-hardware-and-software), and I want to take the time to solidify what I've learned, both for myself, in the spirit of the Feynman technique, and for anyone else curious about the course or what I know.
+This is part personal reflection, part technical summary. I recently completed Georgia Tech's [CS 8803: GPU Hardware and Software](https://omscs.gatech.edu/cs-8803-o11-gpu-hardware-and-software), and I wanted to write up what I learned while it was still fresh.
 
-I came into this course after several OMSCS classes that helped frame it: High-Performance Computer Architecture (HPCA), Graduate Intro to Operating Systems (GIOS), and Advanced Operating Systems (AOS) on the systems side, plus Machine Learning (ML), Deep Learning (DL), and High-Dimensional Data Analytics (HDDA) on the machine learning side, while taking Reinforcement Learning concurrently. That mix made GPU Architecture feel like a reasonable next step, the hardware layer connecting systems and modern ML, and given how central GPUs are to deep learning, high-performance computing, and real-time graphics, it felt like time well spent. While those courses were great context none are strict prerequisites. Although GIOS, HPCA, and DL were particularly useful.
+I came into the course after several classes in my Masters that helped frame it: High-Performance Computer Architecture (HPCA), Graduate Intro to Operating Systems (GIOS), and Advanced Operating Systems (AOS) on the systems side; Machine Learning (ML), Deep Learning (DL), and High-Dimensional Data Analytics (HDDA) on the machine learning side; and Reinforcement Learning concurrently. That mix made GPU Architecture feel like the hardware layer connecting systems and modern ML. None of those courses are strict prerequisites, but GIOS, HPCA, and DL were especially useful.
 
-There's always a tension when writing a post like this. I want to be accurate about what I've learned while acknowledging that I'm still building intuition in many of these areas. I'm sharing this in the spirit of learning in public.
+There's a bit of a tension when writing a post like this. I want to be accurate about what I've learned while acknowledging that I'm still building intuition in many of these areas. I'm sharing this in the spirit of learning in public.
 
 I wrote deeper dives on each of the projects:
 
@@ -57,9 +57,9 @@ I wrote deeper dives on each of the projects:
 - **Project 5:** [Static Analysis: Detecting Branch Divergence](/ideas/2026/gpu-p5/)
 - **Extra Project:** [FlashAttention & LLM Inference on GPUs](/ideas/2026/gpu-p6/)
 
-## GPU Fundamentals
+## GPU fundamentals
 
-### Why GPUs? The CPU vs. GPU Philosophy
+### Why GPUs? The CPU vs. GPU philosophy
 
 The central question behind GPU design is: what do you optimize for? CPUs are designed for **latency**, getting a single task done as fast as possible. They have large caches, sophisticated branch predictors, and out-of-order execution units all in service of minimizing the time any one instruction takes to complete. GPUs take the opposite philosophy: optimize for **throughput**. Instead of one powerful core, pack in thousands of simpler ones and run them all simultaneously.
 
@@ -72,7 +72,7 @@ The central question behind GPU design is: what do you optimize for? CPUs are de
 
 This difference is rooted in the kinds of problems each is solving. A CPU excels at tasks with complex branching, irregular memory access, and sequential dependencies, which make up much of general-purpose software. GPUs excel at tasks that are embarrassingly parallel: the same operation applied to millions of independent data elements. Matrix multiplication, image filtering, physics simulation, and neural network training all decompose beautifully into thousands of independent sub-problems.
 
-The historical path is interesting too. GPUs emerged from the graphics pipeline, where they needed to shade millions of pixels per frame. The realization that this "shade every pixel" model was essentially a massively parallel compute primitive is what gave rise to GPGPU (General Purpose GPU) computing, culminating in CUDA and the modern HPC/ML GPU ecosystem.
+The history matters too. GPUs came out of the graphics pipeline, where they needed to shade millions of pixels per frame. That "shade every pixel" model turned out to be a massively parallel compute primitive, which led to GPGPU (General Purpose GPU) computing, CUDA, and the current HPC/ML GPU ecosystem.
 
 Flynn's taxonomy gives us a useful vocabulary here:
 
@@ -89,7 +89,7 @@ Flynn's taxonomy gives us a useful vocabulary here:
 
 GPUs implement SPMD through the **SIMT** (Single Instruction, Multiple Threads) execution model. A group of 32 threads called a **warp** executes together in lockstep. As long as all 32 threads follow the same code path, the hardware is fully utilized. When they diverge (some take the `if` branch and some take the `else`), the hardware has to serialize execution by running the `if` threads while masking the `else` threads, then vice versa. This **branch divergence** is one of the central costs to manage when writing GPU code.
 
-### Parallel Decomposition Patterns
+### Parallel decomposition patterns
 
 Before CUDA details, one question helps: **what exactly are we parallelizing?** In practice, GPU workloads usually fall into a few recurring patterns:
 
@@ -101,7 +101,7 @@ Most high-performance kernels in this article are data decomposition in an SPMD 
 
 A useful coordination mental model is local vs global communication. Inside a block, threads cooperate through shared memory and barriers (fast, local coordination). Across blocks, coordination is usually explicit via global memory and kernel boundaries (slower, but scalable). This distinction is why some algorithms fit cleanly into one kernel while others naturally become multi-kernel pipelines.
 
-### The CUDA Programming Model
+### The CUDA programming model
 
 CUDA (Compute Unified Device Architecture) is NVIDIA's programming model for GPUs. It extends C/C++ with a set of abstractions that map directly onto the GPU hardware.
 
@@ -141,9 +141,9 @@ int main() {
 
 The `<<<blocksPerGrid, threadsPerBlock>>>` syntax is the kernel launch configuration. Each call to `vectorAdd` spins up millions of threads, each computing one addition. The `if (i < N)` guard handles the case where N isn't a multiple of the block size.
 
-### The GPU Memory Hierarchy
+### The GPU memory hierarchy
 
-Understanding memory is the key to writing fast GPU code. GPUs have a rich memory hierarchy, and knowing which tier to use for a given access pattern is often the difference between a fast kernel and a slow one.
+Memory is the main thing to understand if you want to write fast GPU code. GPUs have a rich memory hierarchy, and knowing which tier to use for a given access pattern is often the difference between a fast kernel and a slow one.
 
 <Figure
   src={memorySpaceImg}
@@ -165,9 +165,9 @@ Related CUDA Programming Guide sections (1-3) also cover:
 - Memory model semantics and synchronization (`__syncthreads()`).
 - How to choose block dimensions and grid dimensions for a given problem.
 
-## GPU Architecture
+## GPU architecture
 
-### The Streaming Multiprocessor
+### The streaming multiprocessor
 
 The fundamental compute unit of an NVIDIA GPU is the **Streaming Multiprocessor (SM)**. Each SM contains:
 - A set of **CUDA cores** (ALUs) for integer and floating-point arithmetic
@@ -185,13 +185,13 @@ A GPU might have dozens to hundreds of SMs, each capable of running many warps s
   width={720}
 />
 
-### Warp Scheduling and Latency Hiding
+### Warp scheduling and latency hiding
 
 GPUs hide memory latency here. When a warp issues a global memory load, it will stall for hundreds of cycles waiting for the data to arrive. Instead of sitting idle, the SM's warp scheduler switches to a different ready warp and starts executing its instructions. By the time the scheduler cycles back to the first warp, the memory access has (hopefully) completed.
 
 This technique is called **latency hiding through multithreading**, and it's the core reason why GPUs can keep their arithmetic units busy despite having slow memory. It works because the GPU maintains a large pool of warps in flight simultaneously, far more than on a CPU. The occupancy (ratio of active warps to the maximum possible) is a key metric for whether latency hiding is working well.
 
-### Scoreboarding and Register Dependencies
+### Scoreboarding and register dependencies
 
 GPUs use a **scoreboard** to track register dependencies between instructions in a warp. Before an instruction is issued, the scoreboard checks whether its source registers are ready (i.e., the previous instruction writing those registers has completed). If not, the warp stalls at the issue stage. The warp scheduler then moves on to another ready warp.
 
@@ -204,7 +204,7 @@ GPUs use a **scoreboard** to track register dependencies between instructions in
 
 This is directly analogous to the scoreboarding in CPUs, but simpler in some ways because GPUs don't do out-of-order execution within a warp. Instructions in a single warp always issue in program order.
 
-### Shared Memory and Bank Conflicts
+### Shared memory and bank conflicts
 
 Shared memory is organized into **banks**, parallel memory modules that can each serve one request per cycle. On current NVIDIA hardware, there are 32 banks, each 4 bytes wide, and consecutive 4-byte words map to consecutive banks.
 
@@ -219,9 +219,9 @@ A useful property is this: if all 32 threads in a warp access 32 different banks
 
 The special case is a **broadcast**: if all threads access the exact same address, the hardware broadcasts the value for free, no conflict. The only problematic case is when multiple (but not all) threads access different addresses in the same bank.
 
-### Memory Coalescing
+### Memory coalescing
 
-For global memory, the key performance concern is **coalescing**. When threads in a warp issue memory requests, the hardware tries to combine them into as few DRAM transactions as possible. If 32 threads each access consecutive 4-byte words (addresses 0, 4, 8, ..., 124), that's one 128-byte cache line transaction. If they access random addresses scattered across memory, that's 32 separate transactions, a 32x slowdown.
+For global memory, the main performance concern is **coalescing**. When threads in a warp issue memory requests, the hardware tries to combine them into as few DRAM transactions as possible. If 32 threads each access consecutive 4-byte words (addresses 0, 4, 8, ..., 124), that's one 128-byte cache line transaction. If they access random addresses scattered across memory, that's 32 separate transactions, a 32x slowdown.
 
 In practice, adjacent threads should access adjacent memory locations. This is why the "row-major thread indexing" pattern is the default in most CUDA kernels.
 
@@ -231,9 +231,9 @@ Module 4 of the course also covered:
 - Occupancy analysis and the limits imposed by register count, shared memory usage, and block size.
 - DRAM architecture (GDDR, HBM) and its impact on memory bandwidth.
 
-## Architecture Optimizations
+## Architecture optimizations
 
-### Branch Divergence and Reconvergence
+### Branch divergence and reconvergence
 
 Branch divergence is the performance cliff for GPU code. When threads within a warp take different paths through an `if/else`, the hardware must execute both paths sequentially with masking. The worst case is a 2x slowdown for a balanced `if/else`. For deeply nested branches or large switch statements, it gets much worse.
 
@@ -253,20 +253,20 @@ Module 6 of the course also covered:
 - Register file virtualization for handling the case where the logical register file exceeds the physical one.
 - More advanced reconvergence schemes and their interaction with the thread scheduler.
 
-### Virtual Memory and TLBs at GPU Scale
+### Virtual memory and TLBs at GPU scale
 
 GPUs need virtual memory for the same reasons CPUs do: process isolation, demand paging, and unified virtual addressing. But the scale is dramatically different. Where a CPU has a handful of threads, a GPU has thousands. A TLB miss for one warp blocks that warp's memory access, but since the GPU is constantly switching between warps anyway, the latency is easier to hide.
 
 The challenge is **TLB reach**. With thousands of concurrent threads accessing large data sets, the GPU's TLB needs to cover more address space than a CPU's. Modern GPU architectures address this through multi-level TLBs, large page support, and careful page table design.
 
-**Unified Virtual Addressing (UVA)** and **cudaMallocManaged** take this further by giving the CPU and GPU a shared virtual address space. Pointers are valid on both sides, and the driver and hardware manage migrating pages to where they're needed. This is enormously convenient for programmers but requires careful thought about access patterns to avoid excessive page migration overhead.
+**Unified Virtual Addressing (UVA)** and **cudaMallocManaged** take this further by giving the CPU and GPU a shared virtual address space. Pointers are valid on both sides, and the driver and hardware manage migrating pages to where they're needed. This is convenient for programmers, but access patterns still matter. Otherwise page migration overhead can dominate.
 
 Module 7 of the course also covered:
 - The four-level TLB hierarchy in modern NVIDIA GPUs and the cost of TLB misses at scale.
 - How page faults are handled on the GPU (the hardware must halt the faulting warp, issue a page fault exception, and wait for the OS to resolve it).
 - Prefetching strategies for Unified Memory to reduce page fault overhead.
 
-### Warp Scheduling Policies
+### Warp scheduling policies
 
 With dozens of warps competing for issue slots each cycle, the warp scheduler's policy has a significant effect on performance. Three policies covered in this course:
 
@@ -279,7 +279,7 @@ With dozens of warps competing for issue slots each cycle, the warp scheduler's 
 
 - **Round Robin (RR)**: The simplest policy, cycle through all ready warps in order. Fair, predictable, but doesn't take advantage of data that's already in cache.
 - **Greedy-Then-Oldest (GTO)**: Stay with the currently executing warp until it stalls, then switch to the oldest ready warp. In many simulator studies this improves locality and stall behavior, though production scheduler policies are vendor- and architecture-specific.
-- **Cache-Conscious Wavefront Scheduling (CCWS)**: A smarter policy that dynamically throttles the number of active warps based on L1 cache pressure. When the cache is being thrashed, many warps evicting each other's lines, CCWS reduces the number of active warps to improve reuse. When there's spare cache capacity, it lets more warps run.
+- **Cache-Conscious Wavefront Scheduling (CCWS)**: A policy that dynamically throttles the number of active warps based on L1 cache pressure. When many warps are evicting each other's cache lines, CCWS reduces the number of active warps to improve reuse. When there's spare cache capacity, it lets more warps run.
 
 <Figure
   src={cacheConsciousImg}
@@ -290,9 +290,9 @@ With dozens of warps competing for issue slots each cycle, the warp scheduler's 
 
 The CCWS insight is that latency hiding (which benefits from more concurrent warps) and cache locality (which benefits from fewer) are in fundamental tension. The right balance is workload-dependent. [Project 3](/ideas/2026/gpu-p3p4/) involved implementing all three of these policies in a cycle-level GPU simulator.
 
-## GPU Simulation
+## GPU simulation
 
-### Why Simulate?
+### Why simulate?
 
 Real GPU hardware gives you performance counters and profilers, but they only tell you what happened, not why, and not what would have happened with a different microarchitectural decision. GPU simulators let you ask counterfactual questions: what if the cache were twice as large? What if the warp scheduler used a different policy? What if tensor cores had half the latency?
 
@@ -315,7 +315,7 @@ Macsim sits in the first bucket. The queue-based view is still central: requests
   width={640}
 />
 
-### The Roofline Model
+### The Roofline model
 
 Before diving into simulation, it's worth having a mental model for where a GPU workload can be optimized. The **Roofline Model** plots workload performance (FLOPS) against arithmetic intensity (FLOPS per byte of memory traffic). The two bounding constraints are:
 
@@ -337,7 +337,7 @@ Module 8 of the course also covered:
 - Event-driven simulation and queue-based modeling.
 - How to validate a simulator against real hardware results.
 
-## Multi-GPU Computing
+## Multi-GPU computing
 
 At some point, a single GPU isn't enough. Modern ML training runs span hundreds or thousands of GPUs. The hardware and software infrastructure to make this work is its own deep topic.
 
@@ -360,9 +360,9 @@ Module 9 of the course also covered:
 - Multi-Process Service (MPS) for sharing a GPU across multiple processes.
 - Thread block scheduling across multiple GPUs.
 
-## Compiler Analysis for GPUs
+## Compiler analysis for GPUs
 
-### The GPU Compilation Pipeline
+### The GPU compilation pipeline
 
 CUDA code goes through a multi-stage compilation process before running on hardware:
 
@@ -374,14 +374,14 @@ CUDA code goes through a multi-stage compilation process before running on hardw
 />
 
 1. **NVCC** splits the CUDA source into host (CPU) and device (GPU) portions.
-2. The device code is compiled to **PTX** (Parallel Thread eXecution), NVIDIA's virtual ISA. PTX is stable across GPU generations, it's architecture-independent.
+2. The device code is compiled to **PTX** (Parallel Thread eXecution), NVIDIA's virtual ISA. PTX is stable across GPU generations because it is architecture-independent.
 3. The PTX assembler (**ptxas**) or driver compiles PTX to **SASS** (Streaming ASSembler), the actual hardware instructions for a specific GPU architecture.
 
 This two-stage design is what lets CUDA programs run on future GPU architectures without recompilation: the PTX can be recompiled by the driver at runtime.
 
 This post is CUDA-centric because that's what the projects used, but the course framing also compares CUDA with OpenCL as a portability baseline. CUDA optimizes for NVIDIA-specific toolchains and libraries, while OpenCL emphasizes cross-vendor portability with a more generic runtime model. The tradeoff is usually convenience and peak-performance ecosystem depth (CUDA) versus portability and vendor neutrality (OpenCL).
 
-### Dataflow Analysis and Divergence Detection
+### Dataflow analysis and divergence detection
 
 The compiler needs to understand which branches will be divergent (executed differently by different threads in a warp) and which won't. A branch that depends on thread ID is almost certainly divergent. A branch that depends only on uniform values (the same across all threads) is safe.
 
@@ -402,9 +402,9 @@ Modules 10 and 11 of the course also covered:
 - Reaching definitions, liveness analysis, and their applications to register allocation.
 - The connection between GPU divergence analysis and classic compiler dataflow techniques.
 
-## ML Acceleration on GPUs
+## ML acceleration on GPUs
 
-### Why GPUs Dominate Machine Learning
+### Why GPUs dominate machine learning
 
 The operations at the core of deep neural networks, including linear layers, convolutions, and attention, are all forms of **General Matrix Multiply (GEMM)**. A GEMM takes two matrices and produces their product, and the structure is completely regular, perfectly parallel, and requires many floating-point operations per byte of data loaded. This is almost exactly the kind of workload GPUs were built for.
 
@@ -417,7 +417,7 @@ The operations at the core of deep neural networks, including linear layers, con
 
 For a matrix multiply of two N×N matrices, there are O(N³) multiply-add operations and O(N²) bytes of data. As N grows, arithmetic intensity grows as O(N), so computation scales faster than memory traffic. This is why large batch sizes and large model dimensions are more GPU-efficient: they push arithmetic intensity higher, keeping the GPU's ALUs busy relative to memory bandwidth.
 
-### Tensor Cores and Mixed Precision
+### Tensor cores and mixed precision
 
 Tensor cores are a specialized execution unit introduced in Volta (2017) and significantly expanded in each subsequent architecture. They perform small dense matrix multiply-accumulate operations (e.g., 4×8 × 8×4 = 4×4 at the hardware micro-tile level) in a single instruction. This is different from regular CUDA cores, which do one multiply-add at a time. At the programmer level, WMMA exposes larger tile shapes such as 16×16×16.
 
@@ -442,14 +442,14 @@ Module 12 of the course also covered:
 - Quantization: going below FP16 to INT8 or even INT4 for inference.
 - Sparse matrix operations and their (limited) effectiveness on current hardware.
 
-## Course Overview
+## Course overview
 
 ### Projects
 
-The projects were the heart of the course, and each one reinforced a different layer of the GPU stack.
+The projects were the heart of the course. Each one reinforced a different layer of the GPU stack.
 
 - **P1 (Tiled Matrix Multiply)** and **P2 (Bitonic Sort)**: Writing real CUDA kernels, managing shared memory, optimizing for memory coalescing and occupancy. A hands-on introduction to the hardware concepts from the first half of the course. [Full write-up.](/ideas/2026/gpu-p1p2/)
-- **P3 (Warp Scheduling Simulator)** and **P4 (Compute/Tensor Core Simulation)**: Implementing warp scheduling policies and execution modeling inside a cycle-level simulator. Made the microarchitectural concepts concrete in a way that reading never fully does. [Full write-up.](/ideas/2026/gpu-p3p4/)
+- **P3 (Warp Scheduling Simulator)** and **P4 (Compute/Tensor Core Simulation)**: Implementing warp scheduling policies and execution modeling inside a cycle-level simulator. These made the microarchitectural concepts concrete in a way that reading never fully does. [Full write-up.](/ideas/2026/gpu-p3p4/)
 - **P5 (Branch Divergence Detection)**: A static analysis pass that detects divergent branches by propagating thread-ID taint through a SASS control flow graph. Tied together the compiler and architecture topics from the second half of the course. [Full write-up.](/ideas/2026/gpu-p5/)
 - **Extra Project (FlashAttention)**: A progressive implementation of self-attention, FlashAttention-2, and a KV-cached decode kernel inside a real GPT-2 inference pipeline. The capstone. [Full write-up.](/ideas/2026/gpu-p6/)
 
@@ -508,23 +508,21 @@ The required textbook for the course is *Programming Massively Parallel Processo
   </p>
 </BookCard>
 
-### Other Resources
+### Other resources
 
 - [CUDA Programming Guide](https://docs.nvidia.com/cuda/cuda-c-programming-guide/) - the authoritative reference, surprisingly readable
-- [Horace He's Making Deep Learning Go Brrrr](https://horace.io/brrr_intro.html) - a great intuitive explanation of compute/memory boundedness and arithmetic intensity
+- [Horace He's Making Deep Learning Go Brrrr](https://horace.io/brrr_intro.html) - a clear explanation of compute/memory boundedness and arithmetic intensity
 - [FlashAttention paper (Dao et al., 2022)](https://arxiv.org/abs/2205.14135) - required reading for the Extra Project
 - [FlashAttention-2 paper (Dao, 2023)](https://arxiv.org/abs/2307.08691) - the improved version used in the project
 - [OMSCS Central reviews](https://www.omscentral.com/) - useful for workload estimates before starting
 
-## My Experience
+## My experience
 
-I loved the broad set of topics this course covered and how it united the systems foundations of courses like HPCA, HPC, GIOS, with ML courses like DL. It changed how I think about performance at the hardware level, not just "is this fast?" but "why is this fast, and what's the limiting factor?"
+I liked the breadth of the course and how it connected systems courses like HPCA, HPC, and GIOS with ML courses like DL. It changed how I think about performance at the hardware level. The question is no longer only "is this fast?" but "why is this fast, and what's the limiting factor?"
 
-The course has a clear arc: start with programming (what can GPUs do?), move to architecture (how do they do it?), then simulation (how do we model and study them?), then compilers (how do we analyze code for GPUs?), and finally ML acceleration (what are they doing in production?). Each section builds on the last. By the time you hit the Extra Project and are writing FlashAttention kernels, you understand not just *what* FlashAttention does but *why* the specific tiling and online-softmax choices map well onto GPU memory hierarchy.
+The course has a clear arc: start with programming (what can GPUs do?), move to architecture (how do they do it?), then simulation (how do we model and study them?), then compilers (how do we analyze code for GPUs?), and finally ML acceleration (what are they doing in production?). Each section builds on the last. By the time you hit the Extra Project and are writing FlashAttention kernels, you understand what FlashAttention does and why its tiling and online-softmax choices map well onto the GPU memory hierarchy.
 
-If you're interested in ML systems, GPU programming, or computer architecture, I'd strongly recommend this course. It fills in a layer that most ML practitioners never see, and that ignorance shows up as real performance gaps when you try to optimize serious workloads.
-
-Thanks for reading.
+If you're interested in ML systems, GPU programming, or computer architecture, I'd recommend the course. It fills in a layer that many ML practitioners never see, and that gap shows up when you try to optimize serious workloads.
 
 ## References
 

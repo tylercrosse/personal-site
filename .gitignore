@@ -12,6 +12,11 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
+# playwright
+playwright-report/
+test-results/
+.playwright/
+
 # private notes
 notes/
 

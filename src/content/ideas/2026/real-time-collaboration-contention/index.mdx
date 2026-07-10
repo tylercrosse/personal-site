@@ -1,0 +1,205 @@
+---
+title: 'How collaborative apps handle conflicting edits'
+description: 'A survey of last-writer-wins, operational transformation, CRDTs, optimistic concurrency, and locks, and what each one does when two people edit the same thing at once.'
+date: '2026-07-08'
+status: 'complete'
+type: 'article'
+tags: ['distributed-systems', 'software-engineering', 'parallel-algorithms']
+category: ['evergreen']
+draft: false
+media_subpath: "/ideas/real-time-collaboration-contention/"
+image:
+  path: './hero1.png'
+  alt: 'Abstract contention'
+hideCaption: true
+audience: 'Developers'
+---
+
+import Figure from "../../../../components/Figure.astro";
+import serverSequencedImg from "./server-sequenced-collaboration.png";
+import patchGranularityImg from "./patch-granularity.png";
+import operationalTransformationImg from "./operational-transformation.png";
+import crdtPeerMergeImg from "./crdt-peer-merge.png";
+import optimisticConcurrencyControlImg from "./optimistic-concurrency-control.png";
+import deleteWinsImg from "./delete-wins-tombstones.png";
+
+Alice drags a rectangle across a shared whiteboard at the same moment Bob changes its fill color. A beat later, they both grab it and pull it in opposite directions. What should the document show once things settle?
+
+Every real-time collaborative app has to answer this, and the answers differ more than you might expect. Figma, Google Docs, a spreadsheet, and a REST API backed by a database all handle the same race differently, because what users should experience differs. The choice of conflict-handling strategy is a product decision with distributed-systems consequences, and each of the standard approaches trades away something different.
+
+This post walks through the main options: last-writer-wins and its variants, operational transformation, CRDTs, optimistic concurrency control, and locks. For each one, I'll run the same Alice-and-Bob scenario through it and note which real systems use it.
+
+## Two kinds of collision
+
+The scenario above actually contains two different problems, and keeping them separate makes every approach easier to evaluate.
+
+The first is the independent case: Alice moves the rectangle while Bob recolors it. These edits touch the same object but don't contradict each other. Almost everyone would agree the rectangle should end up moved *and* recolored. Whether a system can deliver that outcome is mostly a question of bookkeeping, not philosophy.
+
+The second is the true collision: Alice and Bob both drag the same rectangle. Now the edits genuinely contradict each other, the rectangle can only be in one place, and something has to give. Merging is off the table; the system has to pick a winner, reject someone, combine the edits somehow, or prevent the situation from arising.
+
+A lot of what distinguishes the approaches below is how well they avoid manufacturing false conflicts in the first case, and what the losing user experiences in the second.
+
+## What separates the designs
+
+Each approach below is really a bundle of answers to a few recurring questions. Where does authority live: with one server that orders every write, or spread across replicas that merge later? What is the unit of conflict: a document, an object, a field, a character? Does a write carry new state, like `{"x": 120}`, or intent, like `{"moveBy": {"dx": 10}}`? Intent composes better but is less forgiving: a duplicated `moveBy` corrupts state in a way a duplicated `set x=120` never will. Do users need to edit offline? And when someone loses a race, do they see their edit silently overwritten, explicitly rejected, or prevented from happening at all?
+
+None of the approaches wins on every question. The differences come to a head in the table near the end, but they're easier to see one at a time.
+
+## Last-writer-wins over a central server
+
+The simplest family of designs routes every durable write through one server, which stamps each write with a monotonic sequence number and applies them in order. When two writes touch the same thing, the later one wins.
+
+<Figure
+  src={serverSequencedImg}
+  alt="A sequence diagram where Alice and Bob send edits to a central server, which orders them and broadcasts the same final sequence to both clients."
+  caption="A single authoritative server turns many apparent races into one ordered stream. Clients may render optimistically, but durable convergence comes from the server's accepted order."
+  width={720}
+/>
+
+One detail matters more than it looks: what "later" means. If it means the writer's wall clock, whoever's laptop runs a few seconds fast wins every race, and nobody can see why. Cassandra, a distributed database with no central sequencer to ask, resolves concurrent writes with per-column wall-clock timestamps, and [Jepsen's analysis](https://aphyr.com/posts/294-jepsen-cassandra) documents the anomalies that follow. If "later" means the server's sequence number, the outcome is deterministic and explainable: operation 42 arrived after operation 41.
+
+Run the scenario through the bluntest version, where each client writes the whole object. Bob's recolor arrives second, carrying the rectangle's old position along with the new color, and Alice's move is silently erased. The true collision resolves cleanly (later drag wins), but the independent case, the one that should have been easy, loses data. Any REST endpoint where clients PUT a whole resource has this behavior.
+
+Two caveats apply to everything in this family. First, a client that feels live draws the user's own edit before the server confirms it, so when the server's order disagrees with what the client already showed, the client has to roll back and re-apply. That reconciliation code is where much of the real work lives, and it has lately become a product category of its own: sync engines like [Replicache](https://doc.replicache.dev/concepts/how-it-works) and Linear's pair exactly this server-ordered log with git-style rebasing of unconfirmed local edits. Second, a central server rules out offline editing and multi-region active-active writes by construction.
+
+## Per-field last-writer-wins
+
+The whole-object problem has a hardware analogue. CPUs don't fight over individual variables; they fight over cache lines, and two cores updating unrelated variables that share a line will stall each other anyway as the [coherence protocol](/ideas/2025/gios-retro/) bounces the line between them. That's false sharing, and whole-object writes recreate it at the product layer: the move and the recolor are independent, but because each write carries the entire shape, they collide.
+
+The fix is the same in both worlds: shrink the unit of conflict. Clients send patches containing only the fields they changed:
+
+```json
+{ "id": "shape-1", "patch": { "x": 120, "y": 80 } }
+```
+
+```json
+{ "id": "shape-1", "patch": { "color": "#2563eb" } }
+```
+
+Now the independent case just works: the patches touch different fields, so both survive, and the rectangle ends up moved and recolored. The true collision still resolves by server order, since both patches write position fields, but that's a real conflict rather than a manufactured one.
+
+<Figure
+  src={patchGranularityImg}
+  alt="A comparison of whole-object updates and per-field patches. Whole-object updates create stale overwrite risk; per-field patches let a move and color change both survive."
+  caption="Granularity determines whether independent work survives. Whole-object writes can create false conflicts; per-field patches let unrelated edits merge."
+  width={720}
+/>
+
+This is roughly what Figma runs. Their multiplayer system is [server-authoritative last-writer-wins per property](https://www.figma.com/blog/how-figmas-multiplayer-technology-works/), an approach they describe as CRDT-inspired but deliberately simpler, since the central server removes the need for true multi-master merging.
+
+The right field size depends on the domain: a spreadsheet cell is a natural unit, a design tool splits along geometry, style, and text, and for a text document "field" is far too coarse, which is why text needs the heavier machinery below. One caveat the clean version hides: fields aren't always independent. If width and height are locked to an aspect ratio, merging two "unrelated" field edits can produce a state neither user created. Per-field merging assumes fields don't constrain each other, and sometimes they do.
+
+## Operational transformation
+
+Move the scenario into a text document and both kinds of collision come along. The independent case is Alice rewording a sentence at the end of a paragraph while Bob deletes one at the start; the true collision is both of them retyping the same word. What's new is the unit of conflict. A position in a sequence has a problem an object's fields don't: it shifts. If Bob's deletion removes fifteen characters, Alice's "insert at offset 40" now points at the wrong place, fifteen characters too far in.
+
+Operational transformation deals with this by sitting at the intent end of the state-versus-intent axis from earlier. Writes are operations like `insert("collaborative", 40)`, and each operation is rewritten against the concurrent ones before it applies, so Alice's insert reaches Bob as an insert at offset 25 and every replica converges on the same document.
+
+<Figure
+  src={operationalTransformationImg}
+  alt="A two-panel operational transformation diagram showing Alice's insert at offset 40 landing in the wrong place after Bob deletes 15 characters, then being transformed to offset 25 so both replicas converge."
+  caption="Operational transformation keeps intent stable when sequence positions shift. Bob's delete moves Alice's insertion point from offset 40 to offset 25 before the operation applies."
+  width={720}
+/>
+
+Independent edits transform past each other and both survive. The true collision resolves by whatever the operation semantics say, which for two rewrites of the same word still comes down to ordering: later wins, after transform. This is the approach behind Google Docs, [Google Wave](https://svn.apache.org/repos/asf/incubator/wave/whitepapers/operational-transform/operational-transform.html), and [Etherpad](https://docs.etherpad.org/easysync/easysync-full-description.pdf), and it's why two people can type in the same paragraph without corrupting it.
+
+The cost is correctness risk concentrated in the transform functions. Every pair of operation types needs a transform rule, the rules have to satisfy consistency properties that are notoriously easy to get subtly wrong, and a wrong transform makes replicas silently diverge, which is worse than an honest overwrite. Partly for that reason, nearly every production OT system, Google Docs included, keeps a central server in the loop to serialize operations rather than solving the fully distributed problem.
+
+## CRDTs
+
+Conflict-free replicated data types come at the problem from the other direction: instead of a server imposing order, the data structure itself is designed so that replicas can accept writes independently and merging always converges. Updates can arrive in any order, more than once, and every replica still ends up in the same state.
+
+For the rectangle, a CRDT map with a register per field behaves like per-field LWW: the move and the recolor land on different keys and both survive. The true collision still needs a winner, and with no server to hand out sequence numbers, the tiebreak comes from logical clocks and replica IDs carried inside the data. That points at something easy to miss: many CRDT maps are last-writer-wins at the leaves. The real difference from Figma's design is who supplies the ordering, not whether ordering exists. Some libraries, like [Automerge](https://automerge.org/), also keep the losing value around so the application can surface the conflict instead of discarding it.
+
+<Figure
+  src={crdtPeerMergeImg}
+  alt="A CRDT diagram where Alice and Bob exchange edits directly without a server, merge logical-clock-tagged updates, and both reach the same final state."
+  caption="CRDT replicas can accept writes locally and merge later. The ordering still exists, but it travels with the data instead of being assigned by a central server."
+  width={720}
+/>
+
+Text needs a different construction. Sequence CRDTs give every character a permanent identity, so an edit means "insert after character X" rather than "insert at offset 40," and it stays meaningful no matter what happens elsewhere in the document. It's the same problem OT solves by rewriting offsets, solved by never using offsets in the first place.
+
+What CRDTs buy is offline and local-first editing: a device can pile up hours of edits and merge them later with a guaranteed-consistent result, which is why the [local-first movement](https://www.inkandswitch.com/essay/local-first/) is built on them. [Yjs](https://yjs.dev/) and Automerge are the widely used libraries, Apple Notes [syncs notes with a CRDT](https://crdt.tech/implementations), and the Zed editor [builds its multiplayer editing on sequence CRDTs](https://zed.dev/blog/crdts). What they cost is metadata and semantics: causal ordering needs version vectors, deletes need tombstones, history accumulates until it's compacted, and "guaranteed to converge" only means every replica reaches the *same* state, not a sensible one. Whether a merged result respects your domain's invariants is still your problem. Kleppmann's ["CRDTs: The Hard Parts"](https://martin.kleppmann.com/2020/07/06/crdt-hard-parts-hydra.html) is an honest tour of exactly these costs.
+
+## Optimistic concurrency control
+
+Databases and APIs have their own standard answer. Each record carries a version. A write says "I read version 7, here's my change," and if the record has moved on to version 8, the write is rejected and the client re-reads and retries. HTTP bakes this in as [ETags with `If-Match`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/If-Match), and most databases support it as compare-and-swap or a version column.
+
+<Figure
+  src={optimisticConcurrencyControlImg}
+  alt="A three-lane optimistic concurrency control timeline where Alice and Bob both read version 7, Alice's write advances the record to version 8, Bob's stale write is rejected, then Bob rereads and succeeds at version 9."
+  caption="Optimistic concurrency makes the race explicit. A stale write is rejected, the client rereads the current version, and the retry succeeds only if its version still matches."
+  width={720}
+/>
+
+In the scenario, Bob's recolor arrives second and is rejected, because Alice's move already bumped the version. His client re-fetches the moved rectangle, reapplies the color, and the second attempt succeeds. Both edits survive, at the cost of a retry loop. In the true collision, the second drag is rejected outright, and the honest thing to do is tell the user.
+
+That rejection is exactly the point, and exactly the problem, depending on the product. For discrete business records it's often right: if two admins edit the same billing setting, refusing the second save and showing a conflict beats silently discarding either one. In a live canvas the same behavior feels broken; your shape jumps back because someone else's write got there first. Rejection also assumes the client is connected and can retry now, so this approach has little to offer offline editing.
+
+## Locks and prevention
+
+The oldest answer is to stop concurrent edits from happening. Hard locks make editing exclusive: check the file out, work, check it in. SharePoint's [check-out model](https://support.microsoft.com/en-us/office/check-out-or-check-in-files-in-a-document-library-acce24cd-ab39-4fcf-9c4d-1ce3050dc602) and `svn lock` work this way, and within their workflow the scenario simply cannot occur; Bob waits until Alice is done. The failure mode is availability rather than consistency: locks held by crashed clients or forgetful users wedge the document, and exclusivity kills the "we're editing together" experience entirely.
+
+The softer variant treats the lock as a signal rather than a guarantee. When Alice starts editing, everyone else sees the object as held, and the UI discourages or blocks grabbing it until she releases it or disconnects. WordPress does this with post locking ("Alice is currently editing this post"), and design tools do a lightweight version by showing selections: you can see Alice has the rectangle before you reach for it.
+
+Soft locks don't resolve conflicts, and they can't be load-bearing for correctness, since lock messages get dropped and clients can ignore them. Whatever write path exists underneath still has to converge on its own. What they do is prevent the collisions users find most annoying, which is why they usually appear layered on top of one of the other approaches rather than instead of one.
+
+## Side by side
+
+| Approach | Move + recolor | Both drag | Offline | Complexity | Seen in |
+|---|---|---|---|---|---|
+| Whole-object LWW | One edit lost | Later wins | No | Lowest | PUT-the-resource APIs |
+| Per-field LWW | Both survive | Later wins | No | Low | Figma |
+| Operational transformation | Both survive | Later wins, after transform | Limited | High | Google Docs, Etherpad |
+| CRDTs | Both survive | Deterministic tiebreak | Yes | High | Yjs, Automerge, Apple Notes, Zed |
+| Optimistic concurrency | Rejected, then retried | Rejected, surfaced | No | Low | HTTP ETags, databases |
+| Locks (hard/soft) | Prevented | Prevented | No | Low | SharePoint check-out, WordPress |
+
+The pattern in the first column is worth noticing: most of the engineering effort across all six approaches goes into making the *independent* case merge cleanly. The true collision almost always ends in some form of "one edit wins or is refused"; the approaches mostly differ in how predictably and explainably they get there.
+
+## Deletes and undo cut across all of them
+
+Two problems show up regardless of which merge strategy you pick.
+
+Delete is the first. Alice deletes the rectangle while Bob is mid-drag, and Bob's client sends one last position update a beat after the delete lands. If delete is just another write, that late update resurrects the object, which is almost never what anyone wanted. The common fix is a tombstone: the object's ID stays, marked deleted, later updates to it are dropped, and only an explicit restore brings it back. CRDTs need tombstones internally for the same reason. The recurring cost is that tombstones accumulate and eventually need garbage collection.
+
+<Figure
+  src={deleteWinsImg}
+  alt="A timeline where delete sets deleted=true, a late update is dropped, and an explicit restore returns the object to active state."
+  caption="Tombstones separate delete from update. Late updates cannot accidentally resurrect an object; only an explicit restore can bring it back."
+  width={720}
+/>
+
+Undo is the second, and it's really three features that share a keyboard shortcut: undo *my* last action, undo the last action in the document whoever made it, or rewind the whole document to an earlier state. Multiplayer products have to pick. The most common baseline is local undo, where each client keeps a stack of its own actions and each action knows its inverse:
+
+| Action | Inverse |
+|---|---|
+| Create object | Delete that object |
+| Update fields | Restore the previous values |
+| Delete object | Restore that object |
+
+The inverse is sent through the same pipeline as any other edit, so everyone converges the usual way, and the edge cases inherit the system's normal conflict rules: undoing a color change after someone else recolored the object is just another same-field race, and undoing an edit to a deleted object should quietly do nothing. Anything fancier, like undoing other people's work or preserving later edits across an undo, needs an explicit product model far more than it needs an algorithm.
+
+## Which approach fits which product
+
+The mapping that falls out of all this is fairly stable across the industry:
+
+- **Rich text and code**, where the unit of conflict is a position in a sequence, push you to OT or a sequence CRDT. That's Google Docs, Etherpad, and Zed.
+- **Object-based canvases**, where edits decompose naturally into fields, get a long way on server-authoritative per-field LWW plus presence. That's Figma.
+- **Offline-first and local-first apps** need merges without a coordinator, which is the case CRDTs were built for.
+- **Discrete business records** lean toward optimistic concurrency, because "your copy is stale, here's the conflict" is the right experience for a billing setting even though it's the wrong one for a canvas.
+- **Workflows where simultaneous editing has no value** still use locks, which are much easier to defend when the lock is visible up front rather than discovered at save time.
+
+Two things hold across all of these. Whatever the durable strategy, the products that feel good layer prevention on top, with presence, selections, and soft locks reducing how often the conflict path runs at all. And the strategies that survive contact with users are the ones whose outcomes can be explained after the fact. "Your edit was overwritten because his arrived later" and "your save was rejected because the record changed" are both explanations a user can absorb. A merge that produces a state nobody can account for is where trust in a collaborative tool goes to die, and that's true no matter which machinery produced it.
+
+## Further reading
+
+- [How Figma's multiplayer technology works](https://www.figma.com/blog/how-figmas-multiplayer-technology-works/), Evan Wallace's writeup of the per-property LWW design this post sketches.
+- [Local-first software](https://www.inkandswitch.com/essay/local-first/), the Ink & Switch essay making the case for CRDT-backed apps where the primary copy of your data lives on your device.
+- [CRDTs: The Hard Parts](https://martin.kleppmann.com/2020/07/06/crdt-hard-parts-hydra.html), Martin Kleppmann on where CRDTs get genuinely difficult in practice.
+- [Jepsen: Cassandra](https://aphyr.com/posts/294-jepsen-cassandra), what timestamp-based last-writer-wins does to acknowledged writes under test.
+- [Google Wave's operational transform whitepaper](https://svn.apache.org/repos/asf/incubator/wave/whitepapers/operational-transform/operational-transform.html), a readable description of production OT.
+- [How Replicache works](https://doc.replicache.dev/concepts/how-it-works), the sync-engine rebase model in detail.
+- My [GIOS retro](/ideas/2025/gios-retro/) covers the single-machine versions of these problems: atomic instructions, cache coherence, and locks.

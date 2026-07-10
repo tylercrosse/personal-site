@@ -92,7 +92,7 @@ export function getPersonStructuredData(site: SiteReference): StructuredData {
     url: root,
     image: absoluteUrl("/img/headshot.jpeg", site),
     description:
-      "Research engineer working on AI safety. MSCS Georgia Tech. Senior software engineer and team lead.",
+      "AI safety research engineer with an MS in Computer Science from Georgia Tech and more than seven years of production software engineering experience.",
     sameAs: [
       "https://github.com/tylercrosse",
       "https://linkedin.com/in/tylercrosse",
@@ -100,16 +100,25 @@ export function getPersonStructuredData(site: SiteReference): StructuredData {
     ],
     knowsAbout: [
       "AI safety",
+      "AI control",
+      "Agent evaluation",
+      "Scalable oversight",
       "Machine learning",
       "Mechanistic interpretability",
       "Software engineering",
       "Computer systems",
       "GPU architecture",
     ],
-    affiliation: {
-      "@type": "CollegeOrUniversity",
-      name: "Georgia Institute of Technology",
-    },
+    alumniOf: [
+      {
+        "@type": "CollegeOrUniversity",
+        name: "Georgia Institute of Technology",
+      },
+      {
+        "@type": "CollegeOrUniversity",
+        name: "Virginia Commonwealth University",
+      },
+    ],
   };
 }
 
