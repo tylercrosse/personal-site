@@ -64,6 +64,14 @@ function motif(name, accent) {
         <path d="M83 116h216M83 174h216M83 232h170M83 290h216" stroke-width="5" opacity="0.55"/>
         <path d="M242 340l91-91 28 28-91 91-43 15z" stroke-width="6" fill="#fdf6e3"/>
       </g>`,
+    calendar: `
+      <g transform="translate(790 135)" ${shared} stroke-width="5" opacity="0.9">
+        <rect x="0" y="34" width="330" height="330" rx="22" fill="#eee8d5"/>
+        <path d="M0 116h330"/>
+        <path d="M76 0v68M254 0v68" stroke-width="12"/>
+        <path d="M58 166h52M139 166h52M220 166h52M58 237h52M139 237h52M220 237h52M58 308h52M139 308h52M220 308h52" opacity="0.65"/>
+        <circle cx="165" cy="237" r="31" fill="#fdf6e3" stroke-width="6"/>
+      </g>`,
     scatter: `
       <g ${shared} opacity="0.9">
         <path d="M748 455V160M748 455h370" stroke-width="3" opacity="0.45"/>
@@ -116,10 +124,16 @@ function motif(name, accent) {
 function standardCard(card) {
   const titleMax = card.title.length > 36 ? 24 : 28;
   const titleLines = (card.titleLines ?? wrapText(card.title, titleMax)).slice(0, 3);
-  const titleSize = titleLines.length === 1 ? 76 : titleLines.length === 2 ? 66 : 56;
+  const longestTitleLine = Math.max(...titleLines.map((line) => line.length));
+  const titleSize = titleLines.length === 1
+    ? longestTitleLine > 14 ? 74 : 84
+    : titleLines.length === 2
+      ? longestTitleLine > 20 ? 64 : longestTitleLine > 16 ? 68 : 74
+      : 62;
   const titleLineHeight = Math.round(titleSize * 1.05);
   const titleY = titleLines.length === 1 ? 292 : titleLines.length === 2 ? 255 : 220;
-  const descriptionLines = wrapText(card.description, 47).slice(0, 2);
+  const descriptionMax = card.description.length > 78 ? 43 : 42;
+  const descriptionLines = wrapText(card.description, descriptionMax).slice(0, 2);
   const descriptionY = titleY + titleLines.length * titleLineHeight + 38;
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
@@ -137,13 +151,13 @@ function standardCard(card) {
     <rect width="1200" height="630" fill="url(#wash)"/>
     <rect width="1200" height="630" fill="url(#grain)"/>
     <rect x="72" y="74" width="52" height="8" rx="4" fill="${card.accent}"/>
-    <text x="141" y="87" font-family="IBM Plex Sans, Arial, sans-serif" font-size="23" font-weight="600" letter-spacing="2.2" fill="#586e75">${escapeXml(card.eyebrow.toUpperCase())}</text>
+    <text x="141" y="87" font-family="IBM Plex Sans, Arial, sans-serif" font-size="30" font-weight="600" letter-spacing="2.2" fill="#586e75">${escapeXml(card.eyebrow.toUpperCase())}</text>
     ${textLines(titleLines, { x: 72, y: titleY, size: titleSize, lineHeight: titleLineHeight, weight: 600, fill: "#002b36" })}
-    ${textLines(descriptionLines, { x: 76, y: descriptionY, size: 26, lineHeight: 35, weight: 400, fill: "#586e75" })}
+    ${textLines(descriptionLines, { x: 76, y: descriptionY, size: 35, lineHeight: 45, weight: 500, fill: "#586e75" })}
     ${motif(card.motif, card.accent)}
     <line x1="72" y1="557" x2="1128" y2="557" stroke="#93a1a1" stroke-opacity="0.45"/>
-    <text x="72" y="595" font-family="IBM Plex Sans, Arial, sans-serif" font-size="20" font-weight="500" letter-spacing="1" fill="#586e75">tylercrosse.com</text>
-    <text x="1128" y="595" text-anchor="end" font-family="IBM Plex Sans, Arial, sans-serif" font-size="24" font-weight="600" fill="${card.accent}">TC</text>
+    <text x="72" y="595" font-family="IBM Plex Sans, Arial, sans-serif" font-size="26" font-weight="500" letter-spacing="1" fill="#586e75">tylercrosse.com</text>
+    <text x="1128" y="595" text-anchor="end" font-family="IBM Plex Sans, Arial, sans-serif" font-size="30" font-weight="600" fill="${card.accent}">TC</text>
   </svg>`;
 }
 
@@ -171,11 +185,11 @@ async function aboutCard(card) {
     <rect x="560" width="640" height="630" fill="url(#photoFade)"/>
     <rect width="1200" height="630" fill="url(#aboutGrain)"/>
     <rect x="72" y="74" width="52" height="8" rx="4" fill="${card.accent}"/>
-    <text x="141" y="87" font-family="IBM Plex Sans, Arial, sans-serif" font-size="23" font-weight="600" letter-spacing="2.2" fill="#93a1a1">ABOUT</text>
-    <text x="72" y="274" font-family="IBM Plex Sans, Arial, sans-serif" font-size="72" font-weight="600" fill="#fdf6e3">${escapeXml(card.title)}</text>
-    ${textLines(wrapText(card.description, 38).slice(0, 3), { x: 76, y: 337, size: 25, lineHeight: 35, weight: 400, fill: "#93a1a1" })}
+    <text x="141" y="87" font-family="IBM Plex Sans, Arial, sans-serif" font-size="30" font-weight="600" letter-spacing="2.2" fill="#93a1a1">ABOUT</text>
+    <text x="72" y="274" font-family="IBM Plex Sans, Arial, sans-serif" font-size="82" font-weight="600" fill="#fdf6e3">${escapeXml(card.title)}</text>
+    ${textLines(wrapText(card.description, 38).slice(0, 3), { x: 76, y: 337, size: 34, lineHeight: 45, weight: 500, fill: "#93a1a1" })}
     <line x1="72" y1="557" x2="632" y2="557" stroke="#93a1a1" stroke-opacity="0.35"/>
-    <text x="72" y="595" font-family="IBM Plex Sans, Arial, sans-serif" font-size="20" font-weight="500" letter-spacing="1" fill="#93a1a1">tylercrosse.com</text>
+    <text x="72" y="595" font-family="IBM Plex Sans, Arial, sans-serif" font-size="26" font-weight="500" letter-spacing="1" fill="#93a1a1">tylercrosse.com</text>
   </svg>`;
 }
 
@@ -192,6 +206,7 @@ async function renderCard(card, outputPath) {
 await renderCard(cardData.home, path.join(outputRoot, "home.jpg"));
 await renderCard(cardData.about, path.join(outputRoot, "about.jpg"));
 await renderCard(cardData.ideas, path.join(outputRoot, "ideas.jpg"));
+await renderCard(cardData.booking, path.join(outputRoot, "booking.jpg"));
 
 for (const [slug, card] of Object.entries(cardData.topics)) {
   await renderCard(card, path.join(outputRoot, "topics", `${slug}.jpg`));

@@ -1,5 +1,6 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
+import socialCards from "../config/socialCards.json";
 
 const appointmentUrl =
   "https://calendar.google.com/calendar/appointments/schedules/AcZssZ0_w8Gr0iQPetqyZeaFlCbq_lGH-Vw4DaopoYqxmfvF1fDyQM96c5cHqDEHsCVDJSBGvTNK5rCO?gv=true";
@@ -8,6 +9,8 @@ const appointmentUrl =
 <BaseLayout
   title="Booking"
   description="Book time with Tyler Crosse."
+  image={socialCards.booking.image}
+  imageAlt={socialCards.booking.alt}
   noindex={true}
 >
   <section class="booking-page slide-in-block" aria-labelledby="booking-title">

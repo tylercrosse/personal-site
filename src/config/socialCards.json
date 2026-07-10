@@ -26,6 +26,15 @@
     "image": "/social/ideas.jpg",
     "alt": "Ideas by Tyler Crosse: research notes, technical projects, and work in progress"
   },
+  "booking": {
+    "eyebrow": "Tyler Crosse",
+    "title": "Book time with me",
+    "description": "Pick a time from the calendar and Google Calendar will handle the invite.",
+    "accent": "#2aa198",
+    "motif": "calendar",
+    "image": "/social/booking.jpg",
+    "alt": "Book time with Tyler Crosse using the appointment calendar"
+  },
   "topics": {
     "machine-learning": {
       "eyebrow": "Ideas · Topic",

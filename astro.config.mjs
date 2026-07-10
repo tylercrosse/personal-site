@@ -1,4 +1,6 @@
 // @ts-check
+import { rm } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
 import { defineConfig } from "astro/config";
 import mdx from "@astrojs/mdx";
 import sitemap from "@astrojs/sitemap";
@@ -34,6 +36,18 @@ const previewSite =
     : undefined;
 const site = process.env.SITE_URL || previewSite || "https://tylercrosse.com";
 
+const devOnlySocialPreview = {
+  name: "dev-only-social-preview",
+  hooks: {
+    "astro:build:done": async ({ dir }) => {
+      await rm(fileURLToPath(new URL("./social-preview/", dir)), {
+        recursive: true,
+        force: true,
+      });
+    },
+  },
+};
+
 // https://astro.build/config
 export default defineConfig({
   site,
@@ -55,11 +69,16 @@ export default defineConfig({
     "/booking-page": "/booking",
   },
   integrations: [
+    devOnlySocialPreview,
     mdx(),
     sitemap({
       filter: (page) => {
         const { pathname } = new URL(page);
-        return pathname !== "/booking/" && pathname !== "/booking-page/";
+        return (
+          pathname !== "/booking/" &&
+          pathname !== "/booking-page/" &&
+          pathname !== "/social-preview/"
+        );
       },
     }),
     react(),

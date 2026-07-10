@@ -5,6 +5,7 @@ const coreRoutes = [
   { path: "/", image: "/social/home.jpg", type: "website" },
   { path: "/about/", image: "/social/about.jpg", type: "website" },
   { path: "/ideas/", image: "/social/ideas.jpg", type: "website" },
+  { path: "/booking/", image: "/social/booking.jpg", type: "website" },
   {
     path: "/ideas/topics/machine-learning/",
     image: "/social/topics/machine-learning.jpg",
@@ -113,6 +114,6 @@ test("the local preview gallery shows core and post cards", async ({ page }) => 
   ).toBeVisible();
   await expect(
     page.getByTestId("core-social-cards").locator("figure"),
-  ).toHaveCount(8);
+  ).toHaveCount(9);
   expect(await page.getByTestId("post-social-cards").locator("figure").count()).toBeGreaterThan(20);
 });
