@@ -1,4 +1,4 @@
-import { PenTool, RotateCcw, Code, Lightbulb, Notebook, Youtube } from "lucide-astro";
+import { PenTool, RotateCcw, Code, Lightbulb, Notebook, Youtube, FileText } from "lucide-astro";
 
 const ICONS_BY_TYPE = {
   article: PenTool,
@@ -7,6 +7,7 @@ const ICONS_BY_TYPE = {
   idea: Lightbulb,
   note: Notebook,
   talk: Youtube,
+  paper: FileText,
 } as const;
 
 export type PostType = keyof typeof ICONS_BY_TYPE;

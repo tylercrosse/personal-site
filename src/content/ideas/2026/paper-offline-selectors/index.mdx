@@ -1,0 +1,24 @@
+---
+title: 'When Offline Selectors Cannot Beat the Best Single Model'
+description: 'A diagnostic study of why learned model selectors fail to recover a large per-instance oracle gap on edX dropout prediction.'
+date: '2026-06-25'
+status: 'draft'
+type: 'paper'
+tags: ['reinforcement-learning', 'machine-learning', 'research', 'data-science', 'short']
+category: ['projects']
+draft: false
+audience: 'All'
+image:
+  path: './fields.png'
+  alt: 'Summer fields'
+hideCaption: true
+media_subpath: "/ideas/paper-offline-selectors/"
+---
+
+We had five pre-trained dropout predictors, and an oracle that picked the best one for each student would gain 9.7 accuracy points. Learned selectors ought to recover some of that gap. On 84.5M edX clickstream events, none did: behavior cloning, offline DQN, and CQL all failed to beat the best single model. The paper's contribution is a three-stage diagnostic protocol (k-NN consistency, paired algorithm comparisons, and state ablation with TV-shift analysis) that explains why. The bottleneck is representational ambiguity: the state features don't carry enough signal to tell which model will be right, so no selection algorithm can fix it.
+
+I was first author and led the experimental design, evaluation infrastructure, and analysis. The work came out of graduate research at Georgia Tech, with Alan Nadelsticher Ruvalcaba, Dustin Khang LeDuc, Thomas Trask, Nicholas Lytle, and David Joyner.
+
+Accepted at the ICML 2026 DEMO Workshop.
+
+- [arXiv](https://arxiv.org/abs/2606.04161)

@@ -1,0 +1,35 @@
+---
+title: 'Asymmetric Goal Drift in Coding Agents Under Value Conflict'
+description: 'Coding agents violate system-prompt constraints more readily when the constraint opposes strongly held trained-in values like security and privacy.'
+date: '2026-04-16'
+status: 'draft'
+type: 'paper'
+tags: ['AI-safety', 'research', 'machine-learning', 'short']
+category: ['projects']
+draft: false
+audience: 'All'
+image:
+  path: './seascape.png'
+  alt: 'Seascape painting'
+hideCaption: true
+media_subpath: "/ideas/paper-asymmetric-goal-drift/"
+---
+
+import Figure from "../../../../components/Figure.astro";
+import posterImg from "./asymetric_goal_drift_poster_iclr.png";
+
+We gave coding agents system prompts that take one side of a value trade-off, applied pressure toward the other side, and measured when they violated their instructions. The drift is asymmetric: agents break constraints much more readily when the constraint opposes values they hold strongly from training, like security and privacy. The effect grows with adversarial pressure and with accumulated context over long tasks. It also looks exploitable, since environmental signals can override explicit constraints.
+
+I was one of the main contributors, though not the lead. I co-developed the research direction and experimental design, ran experiments, made the figures, helped write and revise the paper, and presented it at the workshops.
+
+Accepted at the ICLR 2026 Lifelong Agents and AI-WILD workshops, and selected as a spotlight at AI-WILD.
+
+- [arXiv](https://arxiv.org/abs/2603.03456)
+
+<Figure
+  src={posterImg}
+  alt="Poster for Asymmetric Goal Drift in Coding Agents Under Value Conflict"
+  caption="The poster presented at ICLR 2026."
+  width={1200}
+  fullWidth
+/>
