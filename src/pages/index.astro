@@ -37,7 +37,10 @@ const allPostsData = posts.map((post) => {
 
 const featured = allPostsData.filter((p) => p.featured).slice(0, 3);
 const featuredIds = new Set(featured.map((p) => p.id));
-const recentCandidates = allPostsData.filter((p) => !featuredIds.has(p.id));
+// Papers are already listed under Recent Work, so keep them out of Selected Posts
+const recentCandidates = allPostsData.filter(
+  (p) => !featuredIds.has(p.id) && p.type !== "paper",
+);
 const notebookTargetCount = 8;
 
 const diverseNotebook = recentCandidates.reduce<typeof allPostsData>((selected, post) => {
@@ -64,28 +67,49 @@ const themeItems = [
   { label: "How do humans have oversight?" },
 ];
 
-const recentWorkGroups = [
+type WorkItem = {
+  title: string;
+  href: string;
+  meta: string;
+  external: boolean;
+  // Direct link to the paper itself when the title links to the on-site post
+  source?: { label: string; href: string };
+};
+
+type WorkGroup = {
+  heading: string;
+  icon: typeof PenTool;
+  items: WorkItem[];
+};
+
+const recentWorkGroups: WorkGroup[] = [
   {
     heading: "Writing & Papers",
     icon: PenTool,
     items: [
       {
         title: "Attack Selection in Agentic AI Control Evaluations Meaningfully Decreases Safety",
-        href: "https://arxiv.org/abs/2606.06529",
+        href: "/ideas/2026/paper-attack-selection/",
         meta: "Paper, ICML 2026 AI4GOOD, AI-WILD, and FAGEN, Jun 2026",
-        external: true,
+        external: false,
+        source: { label: "arXiv", href: "https://arxiv.org/abs/2606.06529" },
       },
       {
         title: "When Offline Selectors Cannot Beat the Best Single Model: A Diagnostic Study on edX Dropout Prediction",
-        href: "https://arxiv.org/abs/2606.04161",
+        href: "/ideas/2026/paper-offline-selectors/",
         meta: "Paper, ICML 2026 DEMO Workshop, Jun 2026",
-        external: true,
+        external: false,
+        source: { label: "arXiv", href: "https://arxiv.org/abs/2606.04161" },
       },
       {
         title: "Same Facts, Different Updates: Inference Setup Shapes LLM Behavior in Medical Allocation",
-        href: "https://openreview.net/forum?id=z06of44TcG",
+        href: "/ideas/2026/paper-same-facts-different-updates/",
         meta: "Paper, ICML 2026 AI4GOOD + Pluralistic Alignment Workshops, May 2026",
-        external: true,
+        external: false,
+        source: {
+          label: "OpenReview",
+          href: "https://openreview.net/forum?id=z06of44TcG",
+        },
       },
       {
         title: "Attack Selection in Agentic AI Control Evals Can Decrease Safety",
@@ -95,15 +119,17 @@ const recentWorkGroups = [
       },
       {
         title: "Asymmetric Goal Drift in Coding Agents Under Value Conflict",
-        href: "https://arxiv.org/abs/2603.03456",
+        href: "/ideas/2026/paper-asymmetric-goal-drift/",
         meta: "Paper, AI-WILD Workshop at ICLR 2026, Mar 2026",
-        external: true,
+        external: false,
+        source: { label: "arXiv", href: "https://arxiv.org/abs/2603.03456" },
       },
       {
         title: "Inherited Goal Drift: Contextual Pressure Can Undermine Agentic Goals",
-        href: "https://arxiv.org/abs/2603.03258",
+        href: "/ideas/2026/paper-inherited-goal-drift/",
         meta: "Paper, AI-WILD Workshop at ICLR 2026, Mar 2026",
-        external: true,
+        external: false,
+        source: { label: "arXiv", href: "https://arxiv.org/abs/2603.03258" },
       },
     ],
   },
@@ -125,7 +151,7 @@ const recentWorkGroups = [
       },
     ],
   },
-] as const;
+];
 ---
 
 <BaseLayout title="Home">
@@ -192,7 +218,28 @@ const recentWorkGroups = [
                       )}
                     </span>
                   </a>
-                  <p class="work-meta">{item.meta}</p>
+                  <p class="work-meta">
+                    {item.meta}
+                    {item.source && (
+                      <>
+                        {" · "}
+                        <a
+                          class="work-source-link"
+                          href={item.source.href}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          {item.source.label}
+                          <ExternalLink
+                            class="work-link-icon"
+                            size={11}
+                            aria-hidden="true"
+                          />
+                          <span class="sr-only">opens in a new tab</span>
+                        </a>
+                      </>
+                    )}
+                  </p>
                 </li>
               ))}
             </ul>
@@ -409,6 +456,20 @@ const recentWorkGroups = [
     font-size: 0.88rem;
     line-height: 1.1;
     transition: color 0.2s ease;
+  }
+
+  .work-source-link {
+    color: inherit;
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.14em;
+    white-space: nowrap;
+    transition: color 0.2s ease;
+  }
+
+  .work-source-link:hover,
+  .work-source-link:focus-visible {
+    color: var(--sol-9);
   }
 
   .work-link:hover .work-title,

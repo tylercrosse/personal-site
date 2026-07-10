@@ -1,0 +1,27 @@
+---
+title: 'Same Facts, Different Updates: Inference Setup Shapes LLM Behavior in Medical Allocation'
+description: 'Whether an LLM sees its own prior response changes how it updates on identical new information in medical allocation scenarios.'
+date: '2026-06-25'
+status: 'complete'
+type: 'paper'
+venue: 'ICML 2026'
+tags: ['AI-safety', 'research', 'machine-learning', 'short']
+category: ['projects']
+draft: false
+audience: 'All'
+image:
+  path: './birds_adrift.png'
+  alt: 'Flying birds'
+hideCaption: true
+media_subpath: "/ideas/paper-same-facts-different-updates/"
+---
+
+Give an LLM the same new fact two ways: once inside a conversation where it can see its own earlier answer, and once fresh, with no history. It should update the same amount either way, but it doesn't. In a medical resource-allocation scenario, we compared paired inference against independent inference. For three of four tested models, the same contrastive social attribute produced systematically different probability shifts depending on whether the model saw its prior response, sometimes with opposite signs. The drift concentrated in caregiving and socioeconomic attributes and shrank when the expected-QALY gap between patients was larger.
+
+I was second author. I worked on the experimental design, implementation, and analysis, and helped interpret the results and write the paper. The project came out of SPAR Fall 2025, mentored by Diogo Cruz.
+
+Accepted at the ICML 2026 AI4GOOD and Pluralistic Alignment workshops.
+
+- OpenReview: [AI4GOOD](https://openreview.net/forum?id=z06of44TcG), [Pluralistic Alignment](https://openreview.net/forum?id=sH3frj6zyK)
+
+{/* TODO: add arXiv link once posted; verify author order before publishing (likely Spencer Gibson, Tyler Crosse, Magnus Saebo, Achyutha Menon, Eyon Jang, Diogo Cruz, based on the sibling goal-drift papers). OpenReview is behind a bot check, so the summary above is from project notes rather than checked against the paper. */}

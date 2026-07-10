@@ -1,0 +1,36 @@
+---
+title: 'Inherited Goal Drift: Contextual Pressure Can Undermine Agentic Goals'
+description: 'Frontier agents resist direct pressure to abandon their goals, but drift when conditioned on flawed trajectories inherited from weaker agents.'
+date: '2026-04-16'
+status: 'complete'
+type: 'paper'
+venue: 'ICLR 2026'
+tags: ['AI-safety', 'research', 'machine-learning', 'short']
+category: ['projects']
+draft: false
+audience: 'All'
+image:
+  path: './drifting_image.png'
+  alt: 'Drifting boat'
+hideCaption: true
+media_subpath: "/ideas/paper-inherited-goal-drift/"
+---
+
+import Figure from "../../../../components/Figure.astro";
+import posterImg from "./inhereted_goal_drift_poster_iclr.png";
+
+Push a frontier model directly to abandon its goal and it usually holds firm. This paper finds a subtler failure: when an agent picks up work that a weaker agent started, the flaws in that inherited context pull it away from its assigned goal. In stock-trading and emergency-room triage simulations, susceptibility varied widely across model families, and only GPT-5.1 was consistently resilient. Drift also correlated poorly with instruction-hierarchy following, so standard robustness measures don't predict it.
+
+I was one of the main contributors, though not the lead. I co-developed the experiments on contextual influences, implemented and analyzed the evaluations, helped write and revise the paper, and presented it at the workshops.
+
+Accepted at the ICLR 2026 Lifelong Agents and AI-WILD workshops.
+
+- [arXiv](https://arxiv.org/abs/2603.03258)
+
+<Figure
+  src={posterImg}
+  alt="Poster for Inherited Goal Drift: Contextual Pressure Can Undermine Agentic Goals"
+  caption="The poster presented at ICLR 2026."
+  width={1200}
+	fullWidth
+/>

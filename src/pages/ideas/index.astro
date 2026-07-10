@@ -6,7 +6,7 @@ import { SITE_TITLE, SITE_DESCRIPTION } from "../../consts";
 import FormattedDate from "../../components/FormattedDate.astro";
 import readingTime from "reading-time";
 import { TAG_GROUPS } from "../../config/tagGroups";
-import { getIconForType, capitalize } from "../../utils/postIcons";
+import { getIconForType, getColorForType, capitalize } from "../../utils/postIcons";
 
 const posts = (await getCollection("ideas"))
   .filter((post) => {
@@ -60,6 +60,7 @@ const allPostsData = posts.map((post) => {
     updated: post.data.updated,
     type: post.data.type,
     status: post.data.status,
+    venue: post.data.venue,
     tags: post.data.tags || [],
     image: post.data.image,
     draft: post.data.draft,
@@ -453,8 +454,14 @@ const hierarchicalPosts = allPostsData
       font-size: 1rem;
     }
 
+    .post-card-content-header {
+      flex-wrap: wrap;
+      gap: 0.25rem 1em;
+    }
+
+    /* Chunks wrap as whole units ("17 Min Read" never breaks mid-text) */
     .post-card-content-header span {
-      padding-right: 1em;
+      white-space: nowrap;
     }
 
     .post-meta,
@@ -553,6 +560,32 @@ const hierarchicalPosts = allPostsData
       /* Uses default post-card styles with subtle border accent */
       /* border-left-width: 3px; */
       /* border-left-color: var(--sol-magenta); */
+    }
+
+    /* Paper posts - compact horizontal reference rows */
+    .post-card--paper .post-card-link {
+      flex-direction: row;
+      align-items: stretch;
+    }
+
+    .post-card--paper .post-card-link > img {
+      width: 120px;
+      height: auto;
+      flex: 0 0 120px;
+      min-height: 120px;
+    }
+
+    .post-card--paper .post-card-content {
+      padding: 0.75rem;
+    }
+
+    .post-card--paper .post-card-content h3 {
+      font-size: 1.05rem;
+    }
+
+    .post-card--paper .post-card-content p {
+      font-size: 0.85rem;
+      margin-bottom: 0.5rem;
     }
 
     .draft-indicator {
@@ -683,7 +716,10 @@ const hierarchicalPosts = allPostsData
                 <div class="post-card-content-header">
                   {post.draft && <span class="draft-indicator">DRAFT</span>}
                   {post.type && (
-                    <span class="type-with-icon">
+                    <span
+                      class="type-with-icon"
+                      style={getColorForType(post.type) && `color: ${getColorForType(post.type)}`}
+                    >
                       {(() => {
                         const Icon = getIconForType(post.type);
                         return Icon ? <Icon size={14} /> : null;
@@ -691,6 +727,7 @@ const hierarchicalPosts = allPostsData
                       {capitalize(post.type)}
                     </span>
                   )}
+                  {post.venue && <span class="venue-chunk">{post.venue}</span>}
                   {post.status && <span>{capitalize(post.status)}</span>}
                   <span>{post.readingTimeText}</span>
                 </div>
@@ -740,7 +777,10 @@ const hierarchicalPosts = allPostsData
                         <div class="post-card-content-header">
                           {child.draft && <span class="draft-indicator">DRAFT</span>}
                           {child.type && (
-                            <span class="type-with-icon">
+                            <span
+                              class="type-with-icon"
+                              style={getColorForType(child.type) && `color: ${getColorForType(child.type)}`}
+                            >
                               {(() => {
                                 const Icon = getIconForType(child.type);
                                 return Icon ? <Icon size={14} /> : null;
