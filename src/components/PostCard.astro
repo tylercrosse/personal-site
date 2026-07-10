@@ -1,7 +1,7 @@
 ---
 import { Image } from "astro:assets";
 import GradientThumb from "./GradientThumb.astro";
-import { getIconForType, capitalize } from "../utils/postIcons";
+import { getIconForType, getColorForType, capitalize } from "../utils/postIcons";
 
 interface PostData {
   slug: string;
@@ -25,6 +25,7 @@ interface Props {
 const { post, variant = "compact", showDescription } = Astro.props;
 
 const Icon = getIconForType(post.type);
+const typeColor = getColorForType(post.type);
 
 const shouldShowDescription = showDescription ?? true;
 
@@ -63,7 +64,7 @@ const gradientAspect =
     <div class="post-card-meta">
       {post.draft && <span class="draft-indicator">DRAFT</span>}
       {post.type && (
-        <span class="meta-chunk type-chunk">
+        <span class="meta-chunk type-chunk" style={typeColor && `color: ${typeColor}`}>
           {Icon && <Icon size={14} />}
           {capitalize(post.type)}
         </span>

@@ -12,7 +12,7 @@ import {
   type TopicLandingPage,
 } from "../../../config/topicLandingPages";
 import { getCollectionPageStructuredData } from "../../../utils/structuredData";
-import { getIconForType, capitalize } from "../../../utils/postIcons";
+import { getIconForType, getColorForType, capitalize } from "../../../utils/postIcons";
 
 export async function getStaticPaths() {
   // Only build hubs that clear the post-count threshold, so we never ship a
@@ -40,6 +40,7 @@ type TopicPost = {
   updated?: Date;
   type?: string;
   status?: string;
+  venue?: string;
   tags: string[];
   image?: {
     path?: any;
@@ -96,6 +97,7 @@ const allPostCards: TopicPost[] = allPosts.map((post) => {
     date: post.data.pubDate || post.data.date,
     type: post.data.type,
     status: post.data.status,
+    venue: post.data.venue,
     tags: post.data.tags || [],
     image: post.data.image,
     draft: post.data.draft,
@@ -296,7 +298,10 @@ const structuredData = getCollectionPageStructuredData({
                           <span class="draft-indicator">DRAFT</span>
                         )}
                         {block.parent.type && (
-                          <span class="meta-chunk type-chunk">
+                          <span
+                            class="meta-chunk type-chunk"
+                            style={getColorForType(block.parent.type) && `color: ${getColorForType(block.parent.type)}`}
+                          >
                             {ParentIcon && <ParentIcon size={14} />}
                             {capitalize(block.parent.type)}
                           </span>
@@ -353,7 +358,10 @@ const structuredData = getCollectionPageStructuredData({
                                 <span class="draft-indicator">DRAFT</span>
                               )}
                               {child.type && (
-                                <span class="meta-chunk type-chunk">
+                                <span
+                                  class="meta-chunk type-chunk"
+                                  style={getColorForType(child.type) && `color: ${getColorForType(child.type)}`}
+                                >
                                   {ChildIcon && <ChildIcon size={13} />}
                                   {capitalize(child.type)}
                                 </span>
@@ -392,10 +400,11 @@ const structuredData = getCollectionPageStructuredData({
               >
                 {renderBlock.blocks.map((block) => {
                   const PostIcon = getIconForType(block.post.type);
+                  const isPaper = block.post.type === "paper";
                   return (
-                    <article class="loose-post-item">
+                    <article class={`loose-post-item${isPaper ? " loose-post-item--paper" : ""}`}>
                       <a
-                        class="loose-post-card"
+                        class={`loose-post-card${isPaper ? " loose-post-card--paper" : ""}`}
                         href={`/ideas/${block.post.slug}/`}
                       >
                         <div class="loose-media">
@@ -418,10 +427,16 @@ const structuredData = getCollectionPageStructuredData({
                               <span class="draft-indicator">DRAFT</span>
                             )}
                             {block.post.type && (
-                              <span class="meta-chunk type-chunk">
+                              <span
+                                class="meta-chunk type-chunk"
+                                style={getColorForType(block.post.type) && `color: ${getColorForType(block.post.type)}`}
+                              >
                                 {PostIcon && <PostIcon size={14} />}
                                 {capitalize(block.post.type)}
                               </span>
+                            )}
+                            {block.post.venue && (
+                              <span class="meta-chunk">{block.post.venue}</span>
                             )}
                             {block.post.status && (
                               <span class="meta-chunk">
@@ -839,17 +854,21 @@ const structuredData = getCollectionPageStructuredData({
     background: var(--base02);
   }
 
+  /* Same recipe as .loose-post-card--paper: hero as a full-height strip
+     flush with the card's left edge */
   .thread-child-card {
     display: grid;
-    grid-template-columns: 104px minmax(0, 1fr);
-    gap: 0.85rem;
-    min-height: 132px;
-    padding: 0.75rem;
+    grid-template-columns: 120px minmax(0, 1fr);
+    overflow: hidden;
   }
 
   .child-media {
-    aspect-ratio: 1 / 1;
-    border-radius: 7px;
+    height: 100%;
+    min-height: 120px;
+  }
+
+  .thread-child-card .child-body {
+    padding: 0.75rem;
   }
 
   .loose-post-card {
@@ -862,6 +881,36 @@ const structuredData = getCollectionPageStructuredData({
   .loose-media {
     height: 200px;
     border-radius: 0;
+  }
+
+  /* Paper posts - compact horizontal rows matching /ideas: the hero is a
+     full-height strip flush with the card's left edge */
+  .loose-post-item--paper {
+    align-self: start;
+  }
+
+  .loose-post-card--paper {
+    display: grid;
+    grid-template-columns: 120px minmax(0, 1fr);
+    height: auto;
+  }
+
+  .loose-post-card--paper .loose-media {
+    height: 100%;
+    min-height: 120px;
+  }
+
+  .loose-post-card--paper .loose-body {
+    padding: 0.75rem;
+  }
+
+  .loose-post-card--paper .loose-body h3 {
+    font-size: 1.05rem;
+  }
+
+  .loose-post-card--paper .loose-body p {
+    font-size: 0.85rem;
+    line-height: 1.45;
   }
 
   .loose-footer {
@@ -967,12 +1016,5 @@ const structuredData = getCollectionPageStructuredData({
       width: 100%;
     }
 
-    .thread-child-card {
-      grid-template-columns: 1fr;
-    }
-
-    .child-media {
-      width: 96px;
-    }
   }
 </style>

@@ -21,6 +21,8 @@ const ideas = defineCollection({
         updated: z.coerce.date().optional(),
         status: z.string().optional(),
         type: z.string().optional(),
+        // Publication venue for paper posts (e.g. 'ICML 2026')
+        venue: z.string().optional(),
         heroImage: z.string().optional(),
         // Additional Gatsby fields that might be present
         tags: z.array(z.string()).optional(),
