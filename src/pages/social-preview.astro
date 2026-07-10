@@ -1,0 +1,190 @@
+---
+import { getCollection } from "astro:content";
+import BaseLayout from "../layouts/BaseLayout.astro";
+import socialCards from "../config/socialCards.json";
+import { resolveSocialImage } from "../utils/socialImage";
+
+const coreCards = [
+  { label: "Home", ...socialCards.home },
+  { label: "About", ...socialCards.about },
+  { label: "Ideas", ...socialCards.ideas },
+  { label: "Booking", ...socialCards.booking },
+  ...Object.values(socialCards.topics).map((card) => ({
+    label: card.title,
+    ...card,
+  })),
+];
+
+const posts = (await getCollection("ideas"))
+  .filter((post) => {
+    const image = post.data.socialImage?.path || post.data.image?.path;
+    return (import.meta.env.DEV || !post.data.draft) && Boolean(image);
+  })
+  .sort((a, b) => {
+    const aDate = a.data.pubDate || a.data.date;
+    const bDate = b.data.pubDate || b.data.date;
+    return new Date(bDate || 0).valueOf() - new Date(aDate || 0).valueOf();
+  });
+
+const postCards = await Promise.all(
+  posts.map(async (post) => {
+    const source = post.data.socialImage?.path || post.data.image?.path;
+    const alt =
+      post.data.socialImage?.alt ||
+      post.data.image?.alt ||
+      `${post.data.title} by Tyler Crosse`;
+    const resolved = await resolveSocialImage(
+      {
+        src: source,
+        alt,
+        position: post.data.socialImage?.position,
+      },
+      new URL(Astro.url.origin),
+    );
+    const slug = post.id.replace(/(\/index)?\.(md|mdx)$/, "");
+    return {
+      title: post.data.title,
+      href: `/ideas/${slug}/`,
+      image: resolved.url,
+      alt: resolved.alt,
+    };
+  }),
+);
+---
+
+<BaseLayout
+  title="Social Card Preview"
+  description="Local preview gallery for Tyler Crosse social cards."
+  noindex
+>
+  <div class="preview-shell">
+    <header>
+      <p class="eyebrow">Development utility</p>
+      <h1>Social card preview</h1>
+      <p>
+        These are the exact 1200 × 630 images supplied to link-preview
+        crawlers. Core pages use designed cards; posts reuse their artwork as
+        wide JPEG crops.
+      </p>
+    </header>
+
+    <section aria-labelledby="core-heading">
+      <h2 id="core-heading">Core pages</h2>
+      <div class="card-grid" data-testid="core-social-cards">
+        {
+          coreCards.map((card) => (
+            <figure>
+              <img src={card.image} alt={card.alt} width="1200" height="630" />
+              <figcaption>{card.label}</figcaption>
+            </figure>
+          ))
+        }
+      </div>
+    </section>
+
+    <section aria-labelledby="posts-heading">
+      <h2 id="posts-heading">Posts</h2>
+      <p class="section-note">
+        Review crops here. A post can supply a social-only image or focal
+        position when the automatic center crop is not right.
+      </p>
+      <div class="card-grid" data-testid="post-social-cards">
+        {
+          postCards.map((card) => (
+            <figure>
+              <a href={card.href}>
+                <img
+                  src={card.image}
+                  alt={card.alt}
+                  width="1200"
+                  height="630"
+                  loading="lazy"
+                />
+              </a>
+              <figcaption>{card.title}</figcaption>
+            </figure>
+          ))
+        }
+      </div>
+    </section>
+  </div>
+</BaseLayout>
+
+<style>
+  .preview-shell {
+    width: min(1180px, calc(100% - 2rem));
+    margin: 0 auto;
+    padding: 4rem 0 6rem;
+  }
+
+  header {
+    max-width: 720px;
+    margin-bottom: 3.5rem;
+  }
+
+  .eyebrow {
+    margin: 0 0 0.5rem;
+    color: var(--accent);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  header h1 {
+    margin: 0 0 1rem;
+  }
+
+  section + section {
+    margin-top: 4rem;
+  }
+
+  section h2 {
+    margin-bottom: 0.5rem;
+  }
+
+  .section-note {
+    max-width: 760px;
+    margin-top: 0;
+    color: var(--sol-0);
+  }
+
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+  }
+
+  figure {
+    min-width: 0;
+    margin: 0;
+  }
+
+  figure img {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1200 / 630;
+    border: 1px solid var(--main-border-color);
+    border-radius: 10px;
+    box-shadow: var(--box-shadow);
+    object-fit: cover;
+  }
+
+  figcaption {
+    margin-top: 0.6rem;
+    color: var(--sol-0);
+    font-size: 0.85rem;
+  }
+
+  @media (max-width: 760px) {
+    .preview-shell {
+      padding-top: 2.5rem;
+    }
+
+    .card-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

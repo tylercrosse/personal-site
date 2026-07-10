@@ -10,6 +10,7 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
+    "social:generate": "node scripts/generate-social-cards.mjs",
     "astro": "astro",
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",

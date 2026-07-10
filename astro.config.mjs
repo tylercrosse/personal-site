@@ -1,4 +1,6 @@
 // @ts-check
+import { rm } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
 import { defineConfig } from "astro/config";
 import mdx from "@astrojs/mdx";
 import sitemap from "@astrojs/sitemap";
@@ -28,10 +30,27 @@ const rehypePlugins = [
 const viteCacheDir = process.argv.includes("build")
   ? "node_modules/.vite-build"
   : "node_modules/.vite";
+const previewSite =
+  process.env.VERCEL_ENV === "preview" && process.env.VERCEL_URL
+    ? `https://${process.env.VERCEL_URL}`
+    : undefined;
+const site = process.env.SITE_URL || previewSite || "https://tylercrosse.com";
+
+const devOnlySocialPreview = {
+  name: "dev-only-social-preview",
+  hooks: {
+    "astro:build:done": async ({ dir }) => {
+      await rm(fileURLToPath(new URL("./social-preview/", dir)), {
+        recursive: true,
+        force: true,
+      });
+    },
+  },
+};
 
 // https://astro.build/config
 export default defineConfig({
-  site: "https://tylercrosse.com",
+  site,
   compressHTML: true,
   redirects: {
     // Redirect pages from old site to new ones
@@ -50,11 +69,16 @@ export default defineConfig({
     "/booking-page": "/booking",
   },
   integrations: [
+    devOnlySocialPreview,
     mdx(),
     sitemap({
       filter: (page) => {
         const { pathname } = new URL(page);
-        return pathname !== "/booking/" && pathname !== "/booking-page/";
+        return (
+          pathname !== "/booking/" &&
+          pathname !== "/booking-page/" &&
+          pathname !== "/social-preview/"
+        );
       },
     }),
     react(),

@@ -43,6 +43,16 @@ const ideas = defineCollection({
             maxWidth: z.string().optional(),
           })
           .optional(),
+        // Optional social-only override. Most posts reuse `image`; this exists
+        // for a deliberate crop or alternate image when a hero does not fit a
+        // wide link-preview card cleanly.
+        socialImage: z
+          .object({
+            path: image().optional(),
+            alt: z.string(),
+            position: z.string().optional(),
+          })
+          .optional(),
         hideCaption: z.boolean().optional(),
         media_subpath: z.string().optional(),
         // Parent post relationship (for grouping project posts under retro posts)

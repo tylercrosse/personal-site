@@ -13,6 +13,7 @@ import {
 } from "../../../config/topicLandingPages";
 import { getCollectionPageStructuredData } from "../../../utils/structuredData";
 import { getIconForType, getColorForType, capitalize } from "../../../utils/postIcons";
+import socialCards from "../../../config/socialCards.json";
 
 export async function getStaticPaths() {
   // Only build hubs that clear the post-count threshold, so we never ship a
@@ -30,6 +31,8 @@ type Props = {
 
 const { topic } = Astro.props;
 const topicTags = new Set(topic.tags);
+const topicSocialCard =
+  socialCards.topics[topic.slug as keyof typeof socialCards.topics];
 
 type TopicPost = {
   id: string;
@@ -210,6 +213,8 @@ const structuredData = getCollectionPageStructuredData({
 <BaseLayout
   title={topic.title}
   description={topic.description}
+  image={topicSocialCard.image}
+  imageAlt={topicSocialCard.alt}
   structuredData={structuredData}
 >
   <section class="topic-page">
@@ -400,11 +405,12 @@ const structuredData = getCollectionPageStructuredData({
               >
                 {renderBlock.blocks.map((block) => {
                   const PostIcon = getIconForType(block.post.type);
-                  const isPaper = block.post.type === "paper";
+                  const isCompactRow =
+                    block.post.type === "paper" || block.post.type === "note";
                   return (
-                    <article class={`loose-post-item${isPaper ? " loose-post-item--paper" : ""}`}>
+                    <article class="loose-post-item">
                       <a
-                        class={`loose-post-card${isPaper ? " loose-post-card--paper" : ""}`}
+                        class={`loose-post-card${isCompactRow ? " loose-post-card--compact" : ""}`}
                         href={`/ideas/${block.post.slug}/`}
                       >
                         <div class="loose-media">
@@ -827,18 +833,22 @@ const structuredData = getCollectionPageStructuredData({
     grid-template-columns: minmax(0, 580px);
   }
 
+  /* Multi-column masonry: mixed-height cards (full posts next to compact
+     paper/note rows) pack without the row-height gaps a grid would leave */
   .loose-post-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.9rem;
+    columns: 2;
+    column-gap: 0.9rem;
   }
 
   .loose-post-grid[data-count="1"] {
-    grid-template-columns: minmax(0, 720px);
+    columns: 1;
+    max-width: 720px;
   }
 
   .loose-post-item {
     min-width: 0;
+    break-inside: avoid;
+    margin-bottom: 0.9rem;
   }
 
   .thread-child-card,
@@ -854,7 +864,7 @@ const structuredData = getCollectionPageStructuredData({
     background: var(--base02);
   }
 
-  /* Same recipe as .loose-post-card--paper: hero as a full-height strip
+  /* Same recipe as .loose-post-card--compact: hero as a full-height strip
      flush with the card's left edge */
   .thread-child-card {
     display: grid;
@@ -883,32 +893,28 @@ const structuredData = getCollectionPageStructuredData({
     border-radius: 0;
   }
 
-  /* Paper posts - compact horizontal rows matching /ideas: the hero is a
-     full-height strip flush with the card's left edge */
-  .loose-post-item--paper {
-    align-self: start;
-  }
-
-  .loose-post-card--paper {
+  /* Papers and notes - compact horizontal rows matching /ideas: the hero is
+     a full-height strip flush with the card's left edge */
+  .loose-post-card--compact {
     display: grid;
     grid-template-columns: 120px minmax(0, 1fr);
     height: auto;
   }
 
-  .loose-post-card--paper .loose-media {
+  .loose-post-card--compact .loose-media {
     height: 100%;
     min-height: 120px;
   }
 
-  .loose-post-card--paper .loose-body {
+  .loose-post-card--compact .loose-body {
     padding: 0.75rem;
   }
 
-  .loose-post-card--paper .loose-body h3 {
+  .loose-post-card--compact .loose-body h3 {
     font-size: 1.05rem;
   }
 
-  .loose-post-card--paper .loose-body p {
+  .loose-post-card--compact .loose-body p {
     font-size: 0.85rem;
     line-height: 1.45;
   }
@@ -981,7 +987,10 @@ const structuredData = getCollectionPageStructuredData({
     }
 
     .loose-post-grid,
-    .loose-post-grid[data-count="1"],
+    .loose-post-grid[data-count="1"] {
+      columns: 1;
+    }
+
     .thread-children,
     .thread-children[data-count="1"] {
       grid-template-columns: 1fr;

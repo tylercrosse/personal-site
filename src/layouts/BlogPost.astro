@@ -29,6 +29,7 @@ const {
   updated,
   heroImage,
   image,
+  socialImage,
   headings,
   status,
   type,
@@ -58,8 +59,12 @@ const getImageData = (): HeroImageData | null => {
 
 const imageData = getImageData();
 
-// For Open Graph, pass the processed ImageMetadata if available, otherwise the string path
-const ogImage = image?.path || heroImage;
+// Social cards can override the hero when a crop needs special handling. The
+// default path reuses the article artwork and converts it to a wide JPEG.
+const ogImage = socialImage?.path || image?.path || heroImage;
+const ogImageAlt =
+  socialImage?.alt || image?.alt || `${title} by Tyler Crosse`;
+const ogImagePosition = socialImage?.position;
 const postUrl = new URL(Astro.url.pathname, Astro.site);
 const blogPostingStructuredData = getBlogPostingStructuredData({
   site: Astro.site,
@@ -113,6 +118,11 @@ const postTopics = [...topicsForPost.values()];
   title={title}
   description={description}
   image={ogImage}
+  imageAlt={ogImageAlt}
+  imagePosition={ogImagePosition}
+  pageType="article"
+  publishedTime={pubDate}
+  modifiedTime={updated || pubDate}
   structuredData={blogPostingStructuredData}
 >
   <style>
