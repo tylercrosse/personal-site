@@ -1,0 +1,164 @@
+---
+title: 'Notes on Towards Monosemanticity and Scaling Monosemanticity'
+description: 'Notes on decomposing MLP activations into interpretable features with sparse autoencoders, from a one-layer transformer to Claude 3 Sonnet.'
+date: '2026-07-12'
+status: 'in-progress'
+type: 'note'
+tags: ['mechanistic-interpretability', 'deep-learning', 'research', 'AI-safety']
+category: ['ideas']
+draft: true
+audience: 'All'
+media_subpath: "/ideas/circuits-monosemanticity/"
+parent: '2026/transformer-circuits'
+order: 4
+image:
+  path: 'scaling.png'
+  alt: 'Abstract shapes'
+hideCaption: true
+# TODO: hero image before publishing
+---
+
+import Figure from "../../../../components/Figure.astro";
+import problemSetup from "./mono-problem-setup.png";
+import featureInterface from "./mono-feature-interface.png";
+import featureSearch from "./mono-feature-search.png";
+import exampleInterface from "./mono-example-interface.png";
+import proxySpecificity from "./mono-proxy-specificity.png";
+import arabicActivation from "./mono-arabic-activation.png";
+import umap from "./mono-umap.png";
+import featureSplitting from "./mono-feature-splitting.png";
+
+Notes on [Towards Monosemanticity: Decomposing Language Models With Dictionary Learning](https://transformer-circuits.pub/2023/monosemantic-features/index.html) (Bricken et al., October 2023) and [Scaling Monosemanticity: Extracting Interpretable Features from Claude 3 Sonnet](https://transformer-circuits.pub/2024/scaling-monosemanticity/index.html) (Templeton et al., May 2024), from Anthropic's [Transformer Circuits thread](/ideas/2026/transformer-circuits/).
+
+The two papers are one arc: the first shows that sparse autoencoders (SAEs) can pull interpretable features out of a one-layer transformer's MLP; the second scales the same recipe to a frontier model.
+
+## Towards Monosemanticity (2023)
+
+### Core claim
+
+If [superposition](/ideas/2026/circuits-superposition/) is why neurons are polysemantic, then the features should be recoverable as sparse linear combinations of neurons. The paper trains a sparse, overcomplete autoencoder on the 512 MLP activations of a one-layer transformer and extracts thousands of features that are substantially more monosemantic than the neurons, supported by four different lines of interpretability evidence.
+
+<Figure
+  src={problemSetup}
+  alt={"Problem setup: decompose the 512 MLP activations of a one-layer transformer into up to 131,072 features with a sparse, overcomplete autoencoder"}
+  caption={"The setup: decompose the MLP activations (512 dimensions) with a sparse, overcomplete autoencoder into a dictionary of 512–131,072 'features'. Figure from the paper."}
+/>
+
+{/* FIGURE IDEA: a small site-style diagram of the SAE itself — MLP activations (512-d) → encoder → sparse feature
+   vector (up to 131k entries, almost all zero) → decoder → reconstruction, with the sparsity penalty annotated on the
+   feature vector. Would replace the problem-setup screenshot above and get reused by the crosscoders post. */}
+
+### Summary of results
+
+My compression of the paper's summary:
+
+- SAEs extract features that are substantially more monosemantic than neurons, and the case rests on four kinds of evidence: deep-dive case studies validated against computational proxies, human ratings of a random feature sample, and automated interpretability analysis of both activations and logit weights across all features. By these measures, most learned features are interpretable.
+- The features are effectively invisible in the neuron basis; some never appear in the top dataset examples of any neuron.
+- Features are causally usable. Activating the base64 feature makes the model generate base64; activating the Arabic-script feature produces Arabic text.
+- Features are fairly universal. SAEs trained on two different models find mostly similar features, more similar than the two models' neurons are to each other.
+- Features "split" as dictionaries grow: one base64 feature at width 512 becomes three subtler base64 features at width 131k. Dictionary size acts like a resolution knob on the same underlying object.
+- A 512-neuron MLP keeps yielding new features as the dictionary grows — tens of thousands of them — and features chain together into automata-like systems that implement behaviors such as emitting valid HTML.
+
+### Detailed investigation of individual features
+
+The paper's most important claim is that dictionary learning extracts features significantly more monosemantic than neurons, demonstrated in depth for a handful of features that activate in highly specific contexts: an Arabic script feature, a DNA feature, a base64 feature, and a Hebrew feature. The paper is upfront that these were cherry-picked for being easy to analyze.
+
+For each feature, it tries to establish five claims: that the feature fires with high **specificity** (when it's on, the context is present) and high **sensitivity** (when the context is present, it's on); that it **causes appropriate downstream behavior**; that it **doesn't correspond to any single neuron**; and that it's **universal**, meaning dictionary learning on a different model finds a similar feature.
+
+<Figure
+  src={proxySpecificity}
+  alt={"Diagram showing how a computational proxy rules out typical polysemanticity: a feature that activates only when a proxy is active, and complementary features filling out the proxy's space"}
+  caption={"The role of computational proxies: typical polysemanticity means firing in many unrelated cases; showing a feature activates only when a proxy is active rules that out. When features are more specific than the proxy, several features work together to fill out its space. Figure from the paper."}
+/>
+
+As an example of the evidence standard, the Arabic script feature:
+
+> [!quote]
+> Our first step is to show that this feature fires almost exclusively on text in Arabic script. We give each token an "Arabic script" score using an estimated likelihood ratio $\log (P(s \mid \text{Arabic Script}) / P(s))$, and break down the histogram of feature activations by that score. Arabic text is quite rare in our overall data distribution — just $0.13\%$ of training tokens — but it makes up $81\%$ of the tokens on which our feature is active. That percentage varies significantly by feature activity level, from $25\%$ when the feature is barely active to $98\%$ when the feature activation is above 5.
+
+<Figure
+  src={arabicActivation}
+  alt={"Activation distribution of the Arabic script feature broken down by the log-likelihood that each example is Arabic, showing high activations dominated by Arabic text"}
+  caption={"Activation distribution of the Arabic script feature, colored by the proxy's log-likelihood ratio that the example is Arabic: low activations are mixed, high activations are almost entirely Arabic script. Figure from the paper."}
+/>
+
+### Global analysis
+
+- **How interpretable is the typical feature?** Pretty interpretable: both human and automated labeling found the sparse features more interpretable than neurons.
+- **How much of the model does the interpretation explain?** Some. Detailed feature studies show the model using interpretable features in interpretable ways, but the paper calls the general question hard to answer: "We don't believe our features are completely monosemantic (some polysemanticity may be hiding in low activations), nor are all of them necessarily cleanly interpretable."
+- **Do features tell us about the model or the data?** "A model's activations reflect two things: the distribution of the dataset and the way that distribution is transformed by the model."
+
+### Phenomenology: feature splitting
+
+<Figure
+  src={umap}
+  alt={"UMAP projection of feature directions from three autoencoder runs of increasing size, showing clusters like Arabic script and base64 features plus an ultralow-density cluster"}
+  caption={"2-D UMAP over the combined feature directions of three dictionary sizes (512, 4,096, 16,384). Qualitative clusters (Arabic script, base64) are reflected in the dictionary's geometry — similar features have small angles between their vectors. A separate cluster holds ultralow-density and dead features. Figure from the paper."}
+/>
+
+> [!quote]
+> We conjecture that there is some idealized set of features that dictionary learning would return if we provided it with an unlimited dictionary size. Often, these "true features" are clustered into sets of similar features, which the model puts in very tight superposition. Because the number of features is restricted, dictionary learning instead returns features which cover approximately the same territory as the idealized features, at the cost of being somewhat less specific.
+
+<Figure
+  src={featureSplitting}
+  alt={"Sketch of feature splitting: as the number of learned sparse features increases, single feature directions split into several more specific ones"}
+  caption={"Feature splitting: as dictionary size grows, one feature direction splits into several more specific ones covering the same territory. Figure from the paper."}
+/>
+
+This picture suggests the "correct number of features" matters less than it might seem: smaller dictionaries give a coarser summary of the same underlying object, and some strange features are explained as "collapsed" or highly specific "split" features.
+
+### The feature interface
+
+Much of the paper's evidence is delivered through a purpose-built visualization interface. Worth noting because building interfaces for feature evidence becomes a recurring cost of this research program.
+
+<Figure
+  src={featureInterface}
+  alt={"Annotated anatomy of the feature visualization interface: autointerp label, activation histogram, logit weights, top activating examples, and ablation-colored subsamples"}
+  caption={"The per-feature interface: automated interpretation with a prediction score, activation histogram, top positive/negative output logits, and activating examples across the activation range, with ablation effects marked per token. Figure from the paper."}
+/>
+
+{/* TODO: decide whether to keep the other two UI screenshots (feature search, per-example interface) — likely cut.
+   If a visual is still wanted here, a better replacement is a small site-style sketch of what evidence the interface
+   surfaces (label, histogram, logits, examples) rather than the actual UI chrome. */}
+{/* <Figure src={featureSearch} ... /> <Figure src={exampleInterface} ... /> */}
+
+## Scaling Monosemanticity (2024)
+
+Scales the 2023 recipe from a one-layer research model to Claude 3 Sonnet, a production frontier model. Mostly a results paper.
+
+Key results:
+
+- Sparse autoencoders produce interpretable features for large models.
+- Scaling laws can guide SAE training.
+- The resulting features are highly abstract: multilingual, multimodal, and generalizing between concrete and abstract references.
+- There is a systematic relationship between the frequency of a concept and the dictionary size needed to resolve a feature for it.
+- Features can be used to steer large models, extending earlier steering work.
+- Features exist for a broad range of safety-relevant concerns: deception, sycophancy, bias, dangerous content.
+
+On the safety-relevant features, the paper's own caution:
+
+> [!quote]
+> However, we caution not to read too much into the mere existence of such features: there's a difference (for example) between knowing about lies, being capable of lying, and actually lying in the real world. This research is also very preliminary. Further work will be needed to understand the implications of these potentially safety-relevant features.
+
+{/* TODO: notes on Section 2 (scaling dictionary learning — training details, scaling laws) were never taken; needs a read pass */}
+
+## What the evidence shows
+
+{/* NOTE: seeded evaluative draft — check it against your own read and rewrite in your voice before publishing */}
+
+- The one-layer results are the methodologically careful part: specificity and sensitivity measured against computational proxies, steering interventions, and universality checks across models. The cherry-picking of the detailed features is acknowledged, and the global claims rest on labeling studies rather than causal tests.
+- The papers' own caveats are the right ones to remember: features are not completely monosemantic (polysemanticity can hide in low activations), and "how much of the model do the features explain" remains, in their words, hard to answer.
+- Feature splitting cuts both ways. It is evidence the dictionaries track real geometry, but it also means there is no canonical feature set. The unit of analysis depends on dictionary size, which complicates any claim that a specific feature "exists in the model."
+- Scaling Monosemanticity shows the method survives scale, but the evidence standard is necessarily thinner than in the one-layer paper: no ground truth, heavier reliance on automated interpretation.
+
+## Since the papers
+
+The SAE story got more complicated after 2024. On the tooling side it matured fast: DeepMind released [Gemma Scope](https://www.neuronpedia.org/gemma-scope), an open suite of SAEs across the layers of Gemma 2, and [SAEBench](https://www.neuronpedia.org/sae-bench/info) ([Karvonen et al., 2025](https://arxiv.org/abs/2503.09532)) standardized evaluation across eight metrics. SAEBench also surfaced an uncomfortable result: architectures adopted for winning the sparsity-fidelity tradeoff (TopK, JumpReLU) score worse on **feature absorption**, a failure mode where a general feature's examples get silently absorbed into more specific ones — gains on the proxy metric didn't translate to more usable features.
+
+The sharper correction came in March 2025, when DeepMind's mechanistic interpretability team published [negative results for SAEs on downstream tasks](https://deepmindsafetyresearch.medium.com/negative-results-for-sparse-autoencoders-on-downstream-tasks-and-deprioritising-sae-research-6cadcfc125b9) — SAE features underperformed simple linear probes for concept detection and related tasks — and announced they were deprioritizing SAE research. A follow-up position paper argues the right division of labor is to [use SAEs to discover unknown concepts, not to act on known ones](https://arxiv.org/abs/2506.23845). That reading fits the original papers' own caveats reasonably well: dictionaries as hypothesis generators about what a model represents, not as reliable handles for detection or steering.
+
+## Further material
+
+- [Neuronpedia](https://www.neuronpedia.org/) — browse features of open models through interfaces directly descended from this paper's.
+- [SAELens](https://github.com/jbloomAus/SAELens) — the standard library for training and analyzing SAEs.
+- [ARENA's SAE exercises](https://learn.arena.education/chapter1_transformer_interp/02_intro_mech_interp/) — train a small SAE and reproduce the core results.

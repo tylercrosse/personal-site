@@ -1,0 +1,121 @@
+---
+title: 'Notes on Toy Models of Superposition'
+description: 'Notes on Toy Models of Superposition and its double-descent follow-up: when models pack more features than they have dimensions, and the geometry that results.'
+date: '2026-07-12'
+status: 'in-progress'
+type: 'note'
+tags: ['mechanistic-interpretability', 'deep-learning', 'research', 'AI-safety']
+category: ['ideas']
+draft: true
+audience: 'All'
+media_subpath: "/ideas/circuits-superposition/"
+parent: '2026/transformer-circuits'
+order: 3
+image:
+  path: 'toy-models.png'
+  alt: 'Abstract shapes'
+hideCaption: true
+# TODO: hero image before publishing
+---
+
+import Figure from "../../../../components/Figure.astro";
+import sparsityGeometry from "./toy-sparsity-geometry.png";
+import privilegedBasis from "./toy-privileged-basis.png";
+import polysemanticity from "./toy-polysemanticity.png";
+import interference from "./toy-interference.png";
+import projection from "./toy-projection.png";
+import phaseRegimes from "./toy-phase-regimes.png";
+import ddRegimes from "./dd-regimes.png";
+import ddParamNorms from "./dd-param-norms.png";
+
+Notes on [Toy Models of Superposition](https://transformer-circuits.pub/2022/toy_model/index.html) (Elhage et al., September 2022) and its follow-up [Superposition, Memorization, and Double Descent](https://transformer-circuits.pub/2023/toy-double-descent/index.html) (January 2023), from Anthropic's [Transformer Circuits thread](/ideas/2026/transformer-circuits/).
+
+## Toy Models of Superposition
+
+### Core claim
+
+Small ReLU networks trained to reconstruct synthetic features demonstrate that a model can represent more features than it has dimensions, provided the features are sparse enough — a phenomenon the paper calls **superposition**. Because the toy setup has known ground-truth features, the origins and dynamics of polysemanticity can be fully understood in it: polysemantic neurons are what superposition looks like from the perspective of a single neuron.
+
+<Figure
+  src={projection}
+  alt={"A hypothetical disentangled network with one neuron per feature projected down into a smaller observed network whose neurons are polysemantic"}
+  caption={"The superposition hypothesis: the network we observe is a low-dimensional projection of a larger network in which every neuron is a disentangled feature. From the perspective of individual neurons in the observed model, this presents as polysemanticity. Figure from the paper."}
+/>
+
+### Key results
+
+In the toy setting the paper demonstrates superposition directly: models really do store more features than they have dimensions, and both monosemantic and polysemantic neurons form along the way. Some computation can happen entirely in superposition (the toy models compute absolute value on superposed features, not just store them). Whether a given feature gets a dedicated dimension, shares capacity in superposition, or is dropped entirely is governed by a phase change in feature sparsity and importance. And superposed features arrange themselves into regular geometric structures — antipodal pairs, triangles, pentagons, tetrahedra.
+
+<Figure
+  src={sparsityGeometry}
+  alt={"Feature embeddings in a 2D toy model at 0%, 80%, and 90% sparsity: dedicated orthogonal dimensions, antipodal pairs, then a pentagon with interference"}
+  caption={"As feature sparsity increases, a 2-dimensional model goes from representing only the two most important features orthogonally, to packing four features as antipodal pairs, to embedding all five as a pentagon — at the cost of interference between them. Figure from the paper."}
+/>
+
+### Why neurons, and when
+
+Two framing ideas from the paper that later papers in the thread rely on:
+
+<Figure
+  src={privilegedBasis}
+  alt={"Non-privileged basis where features can point in any direction versus a privileged basis where a nonlinearity gives features an incentive to align with basis dimensions"}
+  caption={"In a non-privileged basis (word embeddings, the residual stream) there is no reason for features to align with basis dimensions. A privileged basis (conv net neurons, transformer MLPs) gives features an incentive to align, but no guarantee. Figure from the paper."}
+/>
+
+<Figure
+  src={polysemanticity}
+  alt={"Polysemanticity as features failing to align with neurons; under the superposition hypothesis this is inevitable when there are more features than neurons"}
+  caption={"Polysemanticity is what we'd observe if features don't align with neurons despite the privileged basis. Under the superposition hypothesis it is inevitable: the model embeds more features than it has neurons. Figure from the paper."}
+/>
+
+<Figure
+  src={interference}
+  alt={"Interference between features in superposition: even one active sparse feature causes interference under linear projection, and multiple active features can make reconstruction ambiguous"}
+  caption={"The cost of superposition is interference: even a single active feature leaks into other features' directions under linear readout, and when multiple features are active at once there can be several possible nonlinear reconstructions of the same activation vector. Figure from the paper."}
+/>
+
+<Figure
+  src={phaseRegimes}
+  alt={"Weight matrices and per-feature norms across sparsity levels, from a dense regime learning the top-m features to full superposition with positive interference"}
+  caption={"From dense to sparse: linear models and dense ReLU models learn only the top-m features; as sparsity increases, superposition first appears as antipodal pairs, then packs in ever more features, eventually with positive interference and negative biases. Figure from the paper."}
+/>
+
+{/* FIGURE IDEA (interactive): replicate the sparsity phase diagram as a small React island, like OptimizerSurface in
+   the dl-a1 post. Precompute (or train in-browser — the models are tiny) a grid over x = feature sparsity and
+   y = relative feature importance, coloring each cell by outcome: not learned / dedicated dimension / superposed.
+   Clicking a cell shows the learned W^T W heatmap and the 2D feature geometry for that setting. The paper's own
+   n=20 features, m=5 dims setup reproduces all the regimes and is a contained, satisfying replication. */}
+
+## Superposition, Memorization, and Double Descent
+
+The follow-up extends the same toy models to ask what overfitting looks like mechanically. In these models, memorization turns out to be superposition of a different thing: trained on small datasets, the model stores individual training examples in superposition; trained on large datasets, it stores features. The two regimes are visibly different in the learned geometry, and the test-loss peak of double descent lands exactly in the transition between them.
+
+<Figure
+  src={ddRegimes}
+  alt={"Test loss peaking in the middle regime between small and large datasets, with the fractional dimension of features and training examples and their geometry across dataset size"}
+  caption={"Test loss peaks in the middle regime between memorization and generalization. Below: with few examples, per-example hidden vectors form clean geometric structures (the model stores data points); with many examples, the feature directions take over (the model stores features). Figure from the paper."}
+/>
+
+<Figure
+  src={ddParamNorms}
+  alt={"Parameter norms across dataset size, dropping sharply as the model transitions from the memorizing regime to the generalizing regime"}
+  caption={"Parameter norms across dataset size: large in the memorizing regime, falling sharply through the transition into the generalizing regime. Figure from the paper."}
+/>
+
+## What the evidence shows
+
+{/* NOTE: seeded evaluative draft — check it against your own read and rewrite in your voice before publishing */}
+
+- Everything here is demonstrated in toy models where the ground-truth features are known by construction. That is the point (full understanding is available), but it means the transfer to real language models is, at this stage of the thread, a hypothesis.
+- The practical consequence motivates the rest of the thread: if real models use superposition, then analyzing individual neurons cannot recover the features, no matter how careful the analysis. Something like dictionary learning is required, which is exactly where [Towards Monosemanticity](/ideas/2026/circuits-monosemanticity/) picks up.
+- The double-descent result connects superposition to generalization, but in an even more restricted setting; it is suggestive rather than central to the superposition story.
+
+{/* TODO: expand from a full re-read — the source notes were thin for both papers (the geometry/feature-dimensionality and learning-dynamics sections of Toy Models aren't covered yet) */}
+
+## Since the paper
+
+The toy-model program keeps running inside the thread: a 2025 note unpacks the ["interference weights"](https://transformer-circuits.pub/2025/interference-weights/index.html) that superposition forces on a model, and the [July 2025 circuits update](https://transformer-circuits.pub/2025/july-update/index.html) reworks the original framework paper's ideas around extracting features from superposition. The larger legacy is indirect: superposition is the argument for the entire dictionary-learning line — sparse autoencoders exist because this paper argued neurons can't be the unit of analysis. How well real-model features match the toy picture is still being tested; the [monosemanticity notes](/ideas/2026/circuits-monosemanticity/) cover how that has gone.
+
+## Further material
+
+- [ARENA's superposition and SAE exercises](https://learn.arena.education/chapter1_transformer_interp/02_intro_mech_interp/) — includes implementing these exact toy models and reproducing the geometry results.

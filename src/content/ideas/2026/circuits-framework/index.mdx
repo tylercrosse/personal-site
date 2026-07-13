@@ -1,0 +1,105 @@
+---
+title: 'Notes on A Mathematical Framework for Transformer Circuits'
+description: 'Notes on the 2021 paper that reframes transformers as operations on a shared residual stream: QK/OV circuits, virtual weights, and path decompositions of attention-only models.'
+date: '2026-07-12'
+status: 'in-progress'
+type: 'note'
+tags: ['mechanistic-interpretability', 'deep-learning', 'research', 'AI-safety']
+category: ['ideas']
+draft: true
+audience: 'All'
+media_subpath: "/ideas/circuits-framework/"
+parent: '2026/transformer-circuits'
+order: 1
+image:
+  path: 'mathematical-framework.png'
+  alt: 'Abstract shapes'
+hideCaption: true
+# TODO: hero image before publishing
+---
+
+import Figure from "../../../../components/Figure.astro";
+import residualStream from "./framework-residual-stream.png";
+import virtualWeights from "./framework-virtual-weights.png";
+import subspaces from "./framework-subspaces.png";
+import qkOv from "./framework-qk-ov.png";
+
+Notes on [A Mathematical Framework for Transformer Circuits](https://transformer-circuits.pub/2021/framework/index.html) (Elhage, Nanda, Olsson, et al., December 2021), the first paper in Anthropic's [Transformer Circuits thread](/ideas/2026/transformer-circuits/).
+
+## Core claim
+
+The paper develops a way to rewrite small, attention-only transformers as sums of interpretable end-to-end functions, and uses it to fully reverse engineer zero-, one-, and two-layer models. The central move is a change of perspective: instead of a stack of blocks transforming a hidden state, the transformer is a **residual stream** that every component — token embedding, attention heads, MLP layers, unembedding — reads from and additively writes to.
+
+<Figure
+  src={residualStream}
+  alt={"A transformer drawn as a residual stream: tokens are embedded, each attention head and MLP layer adds its output back into the stream, and the unembedding produces logits"}
+  caption={"The transformer as a residual stream. Each component reads the current stream state and adds its result back in; the final logits are the unembedding of the accumulated stream. Figure from the paper."}
+/>
+
+{/* FIGURE IDEA: this residual-stream diagram is the one most worth redrawing in site style (simple boxes and arrows,
+   site palette, no equations in the margin) since it's the mental model every later post depends on. The paper's
+   version works fine as a placeholder; a redraw also removes one screenshot from the reuse pile. */}
+
+## The framework in five ideas
+
+The paper's own summary runs longer; this is my compression of it.
+
+1. **Each attention head is an independent operation that adds its result into the stream.** The usual "concatenate the heads and multiply" description is mathematically equivalent, but the additive view is the one that makes analysis tractable.
+2. **A head factors into two nearly independent circuits.** The QK circuit decides which tokens get attended to; the OV circuit decides what an attended token contributes to the output. Queries, keys, and values are just intermediate products of two low-rank matrices, $W_Q^TW_K$ and $W_OW_V$, and the analysis mostly works with those products directly.
+3. **Freeze the attention patterns and an attention-only model becomes linear.** It decomposes into a sum of end-to-end "paths" from input tokens to logit changes, and each path can be studied on its own. Much of the paper is multiplying out chains of matrices and reading off what the products do.
+4. **Heads in different layers compose in three ways** — through queries, keys, or values. Q- and K-composition change *where* a later head attends; V-composition changes *what* it moves. Composition is what makes two-layer models qualitatively more capable than one-layer ones.
+5. **Components communicate through subspaces of the residual stream.** The stream acts like a shared bus: two components interact only where their read and write subspaces overlap, and a component can delete information by reading a subspace and writing back its negation.
+
+<Figure
+  src={virtualWeights}
+  alt={"Layers reading from and writing to the residual stream with linear projections; multiplying the weights through reveals virtual weights connecting each pair of layers"}
+  caption={"Because every read and write is linear, the weights of any two layers can be multiplied through the residual stream, revealing 'virtual weights' that implicitly connect each pair of layers. Figure from the paper."}
+/>
+
+<Figure
+  src={subspaces}
+  alt={"The residual stream divided into subspaces; layers interact where their read and write subspaces overlap, and a layer can delete information by writing the negative of what it read"}
+  caption={"Layers typically use only subspaces of the high-dimensional stream: disjoint read/write subspaces mean no interaction at all. Figure from the paper."}
+/>
+
+<Figure
+  src={qkOv}
+  alt={"Diagram tracing the QK circuit and OV circuit of an attention head as separate weight paths from source and destination tokens"}
+  caption={"An attention head as two separable circuits: the QK circuit (which tokens to attend to) and the OV circuit (how an attended token affects the output). Figure from the paper."}
+/>
+
+## Background: scaled dot-product attention
+
+"Scaled dot product attention":
+
+$$
+\text{attention}(Q,K,V) = \text{softmax}\big(\frac{QK^T}{\sqrt{d_K}}\big)V
+$$
+
+with attention pattern
+
+$$
+A = \text{softmax}\big(\frac{QK^T}{\sqrt{d_K}}\big)
+$$
+
+The scaling term $\sqrt{d_K}$ keeps the attention scores in a range where the softmax has usable gradients.
+
+## What the evidence shows
+
+{/* NOTE: seeded evaluative draft — check it against your own read and rewrite in your voice before publishing */}
+
+- The decomposition is exact for attention-only models, and paths are linear only once attention patterns are frozen. The framework's guarantees are strongest exactly where the models are least realistic.
+- The two-layer analysis is the main result: it distinguishes Q-, K-, and V-composition between heads and identifies the induction-head circuit that the [next paper in the thread](/ideas/2026/circuits-induction-heads/) studies at scale.
+- MLP layers are out of scope. The paper says directly that it does not yet have a good way to handle them, which matters because most transformer parameters are in MLPs. That gap is what the later dictionary-learning papers work on.
+
+{/* TODO: expand — what from this framework held up in later work, what needed revision (e.g., how much real-model analysis still freezes attention) */}
+
+## Since the paper
+
+Much of the field's standard vocabulary comes from this paper: residual stream, QK and OV circuits, heads as independent additive operations. [TransformerLens](https://github.com/TransformerLensOrg/TransformerLens) exposes models in exactly this decomposition, and the [ARENA curriculum](https://learn.arena.education/chapter1_transformer_interp/02_intro_mech_interp/) teaches it as the entry point to the field. Within the thread, the [July 2025 circuits update](https://transformer-circuits.pub/2025/july-update/index.html) revisits the paper's ideas in the language of features rather than matrix eigenvalues, connecting this framing to the dictionary-learning line of work that followed.
+
+## Further material
+
+- [The paper itself](https://transformer-circuits.pub/2021/framework/index.html) — the exercises and videos linked in its appendix are good, and the two-layer section rewards a slow read.
+- [Neel Nanda's mechanistic interpretability quickstart](https://www.neelnanda.io/mechanistic-interpretability/quickstart) — orientation for the field this paper started.
+- [TransformerLens](https://github.com/TransformerLensOrg/TransformerLens) — the standard library for poking at models in this framework.
