@@ -13,6 +13,27 @@ export type TopicLandingPage = {
 
 export const TOPIC_LANDING_PAGES: TopicLandingPage[] = [
   {
+    slug: "ai-safety-mechanistic-interpretability",
+    title: "AI Safety & Mechanistic Interpretability",
+    description:
+      "Research notes and projects on AI safety, evaluations, goal drift, and mechanistic interpretability of model behavior.",
+    menuBlurb:
+      "Reading model internals and the shape of the alignment problem.",
+    tags: ["AI-safety", "mechanistic-interpretability"],
+  },
+  {
+    slug: "deep-learning",
+    title: "Deep Learning",
+    description:
+      "Deep learning notes and projects covering neural networks, sequence models, language models, generative modeling, and interpretability.",
+    menuBlurb: "Architectures, training, and the messy practice of it.",
+    tags: ["deep-learning", "NLP", "generative-models"],
+    intro: [
+      "Neural networks, mostly the language side of them. There's writing on search and semantic search, how language models work, a survey of text diffusion, and some interpretability work that looks at what a model has actually learned.",
+      "It overlaps a lot with the machine learning page. This is the part that's specifically about deep learning and language models.",
+    ],
+  },
+  {
     slug: "machine-learning",
     title: "Machine Learning",
     description:
@@ -25,28 +46,12 @@ export const TOPIC_LANDING_PAGES: TopicLandingPage[] = [
     ],
   },
   {
-    slug: "deep-learning",
-    title: "Deep Learning",
-    description:
-      "Deep learning notes and projects covering neural networks, sequence models, language models, generative modeling, and interpretability.",
-    menuBlurb: "Architectures, training, and the messy practice of it.",
-    tags: [
-      "deep-learning",
-      "NLP",
-      "large-language-models",
-      "generative-models",
-    ],
-    intro: [
-      "Neural networks, mostly the language side of them. There's writing on search and semantic search, how language models work, a survey of text diffusion, and some interpretability work that looks at what a model has actually learned.",
-      "It overlaps a lot with the machine learning page. This is the part that's specifically about deep learning and language models.",
-    ],
-  },
-  {
     slug: "gpu-computer-architecture",
     title: "GPU & Computer Architecture",
     description:
       "Notes and projects on GPU programming and computer architecture: CUDA kernels, memory hierarchy, warp scheduling and simulation, and building a CPU from logic gates up.",
-    menuBlurb: "CUDA kernels, memory hierarchies, and what the hardware really does.",
+    menuBlurb:
+      "CUDA kernels, memory hierarchies, and what the hardware really does.",
     tags: ["GPU", "CUDA", "computer-architecture"],
     intro: [
       "Low-level work, starting from logic gates. The nand2tetris projects build a working computer up from NAND gates and a VM translator. The GPU course goes the other direction into CUDA: tiled kernels, a warp scheduler simulated cycle by cycle, and reading compiled SASS to find branch divergence.",
@@ -66,14 +71,6 @@ export const TOPIC_LANDING_PAGES: TopicLandingPage[] = [
       "IPC",
       "socket-programming",
     ],
-  },
-  {
-    slug: "ai-safety-mechanistic-interpretability",
-    title: "AI Safety & Mechanistic Interpretability",
-    description:
-      "Research notes and projects on AI safety, evaluations, goal drift, and mechanistic interpretability of model behavior.",
-    menuBlurb: "Reading model internals and the shape of the alignment problem.",
-    tags: ["AI-safety", "mechanistic-interpretability"],
   },
 ];
 
