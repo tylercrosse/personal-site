@@ -7,6 +7,9 @@ import type { MarkdownHeading } from "astro";
 import FormattedDate from "../components/FormattedDate.astro";
 import TableOfContents from "../components/TableOfContents.astro";
 import Comments from "../components/Comments.astro";
+import SeriesNav from "../components/SeriesNav.astro";
+import SeriesPill from "../components/SeriesPill.astro";
+import type { SeriesInfo } from "../utils/series";
 import BaseLayout from "./BaseLayout.astro";
 import { PenTool, RotateCcw, Code, Lightbulb, Notebook, Youtube } from "lucide-astro";
 import { getBlogPostingStructuredData } from "../utils/structuredData";
@@ -20,6 +23,7 @@ import {
 type Props = CollectionEntry<"ideas">["data"] & {
   headings?: MarkdownHeading[];
   readingTimeText: string;
+  series?: SeriesInfo | null;
 };
 
 const {
@@ -37,6 +41,7 @@ const {
   draft,
   readingTimeText,
   hideCaption,
+  series,
 } = Astro.props;
 
 // Helper function to get image source and alt text from either format
@@ -229,6 +234,10 @@ const postTopics = [...topicsForPost.values()];
       font-size: 0.7em;
     }
 
+    .post-topics + .post-topics {
+      margin-top: 0.5em;
+    }
+
     .post-topics-label {
       text-transform: uppercase;
       letter-spacing: 0.08em;
@@ -388,6 +397,14 @@ const postTopics = [...topicsForPost.values()];
             </div>
           )
         }
+        {
+          series?.role === "child" && (series.parent || series.total > 1) && (
+            <div class="post-topics">
+              <span class="post-topics-label">Series</span>
+              <SeriesPill series={series} />
+            </div>
+          )
+        }
         <div class="meta">
           {
             tags && tags.length > 0 && (
@@ -432,6 +449,7 @@ const postTopics = [...topicsForPost.values()];
     </header>
     <div class="prose">
       <slot />
+      {series && <SeriesNav series={series} />}
       <TableOfContents headings={headings || []} />
       <Comments />
     </div>

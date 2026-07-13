@@ -1,0 +1,154 @@
+---
+import SeriesPill from "./SeriesPill.astro";
+import type { SeriesInfo } from "../utils/series";
+
+type Props = {
+  series: SeriesInfo;
+};
+
+const { series } = Astro.props;
+---
+
+{
+  series.role === "child" && (series.prev || series.next) && (
+    <nav class="series-nav" aria-label="Series navigation">
+      <div class="series-up">
+        <span class="series-up-label">Part of</span>
+        <SeriesPill series={series} openUp />
+      </div>
+      <div class="series-pager">
+        {series.prev ? (
+          <a class="series-card" href={series.prev.href} rel="prev">
+            <span class="series-dir">← Previous</span>
+            <span class="series-card-title">{series.prev.title}</span>
+          </a>
+        ) : (
+          <span class="series-spacer" />
+        )}
+        {series.next ? (
+          <a class="series-card series-card-next" href={series.next.href} rel="next">
+            <span class="series-dir">Next →</span>
+            <span class="series-card-title">{series.next.title}</span>
+          </a>
+        ) : (
+          <span class="series-spacer" />
+        )}
+      </div>
+    </nav>
+  )
+}
+{
+  series.role === "parent" && (
+    <nav class="series-nav" aria-label="Posts in this series">
+      <div class="series-list-label">Posts in this series</div>
+      <ol class="series-list">
+        {series.children.map((child) => (
+          <li>
+            <a href={child.href}>{child.title}</a>
+          </li>
+        ))}
+      </ol>
+    </nav>
+  )
+}
+
+<style>
+  .series-nav {
+    margin-top: 3em;
+  }
+
+  .series-pager {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1em;
+  }
+
+  @media (max-width: 600px) {
+    .series-pager {
+      grid-template-columns: 1fr;
+    }
+    .series-spacer {
+      display: none;
+    }
+  }
+
+  .series-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3em;
+    border: 1px solid var(--main-border-color);
+    border-radius: 8px;
+    padding: 0.9em 1.1em;
+    text-decoration: none;
+    color: var(--sol-8);
+    transition: background-color 0.2s ease;
+  }
+
+  .series-card:hover {
+    background: var(--base4);
+    color: var(--sol-10);
+  }
+
+  .series-card-next {
+    text-align: right;
+    align-items: flex-end;
+  }
+
+  .series-dir {
+    font-size: 0.7em;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+    color: var(--sol-7);
+  }
+
+  .series-card-title {
+    font-size: 0.9em;
+  }
+
+  .series-up {
+    margin-bottom: 1em;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.6em;
+    font-size: 0.8em;
+  }
+
+  .series-up-label {
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+    font-size: 0.85em;
+    color: var(--sol-7);
+  }
+
+  .series-list-label {
+    font-size: 0.7em;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+    color: var(--sol-7);
+    margin-bottom: 0.75em;
+  }
+
+  .series-list {
+    border: 1px solid var(--main-border-color);
+    border-radius: 8px;
+    margin: 0;
+    padding: 1em 1.25em 1em 2.75em;
+  }
+
+  .series-list li {
+    margin: 0.4em 0;
+  }
+
+  :global([data-effective-theme="dark"]) .series-card,
+  :global([data-effective-theme="dark"]) .series-list {
+    border-color: var(--base01);
+  }
+
+  :global([data-effective-theme="dark"]) .series-card:hover {
+    background: var(--base02);
+  }
+</style>

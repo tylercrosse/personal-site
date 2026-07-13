@@ -7,6 +7,7 @@ import FormattedDate from "../../components/FormattedDate.astro";
 import readingTime from "reading-time";
 import { TAG_GROUPS } from "../../config/tagGroups";
 import { getIconForType, getColorForType, capitalize } from "../../utils/postIcons";
+import { compareSeriesOrder } from "../../utils/series";
 import socialCards from "../../config/socialCards.json";
 
 const posts = (await getCollection("ideas"))
@@ -87,17 +88,7 @@ const hierarchicalPosts = allPostsData
   .filter((post) => !post.parent) // Only top-level posts
   .map((post) => {
     const children = childrenByParent.get(post.slug) || [];
-    // Explicit order first, then chronologically (oldest to newest), then title.
-    children.sort((a, b) => {
-      const orderDelta = (a.order ?? Infinity) - (b.order ?? Infinity);
-      if (orderDelta !== 0) return orderDelta;
-      const aDate = a.date;
-      const bDate = b.date;
-      const dateDelta =
-        new Date(aDate || 0).valueOf() - new Date(bDate || 0).valueOf();
-      if (dateDelta !== 0) return dateDelta;
-      return a.title.localeCompare(b.title);
-    });
+    children.sort(compareSeriesOrder);
     return {
       ...post,
       children,
@@ -768,8 +759,9 @@ const hierarchicalPosts = allPostsData
                       data-has-parent="true"
                       data-parent-post={post.slug}
                     >
-                      {/* Show image on left for child posts */}
-                      {child.image?.path && (
+                      {/* Show image on left for child posts — except notes, which
+                          read better as compact text rows in a thread */}
+                      {child.image?.path && child.type !== "note" && (
                         <div class="child-post-media">
                           <Image
                             src={child.image.path}

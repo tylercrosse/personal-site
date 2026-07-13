@@ -58,7 +58,7 @@ const ideas = defineCollection({
         // Parent post relationship (for grouping project posts under retro posts)
         parent: z.string().optional(),
         // Explicit position within a parent's thread, ascending. Falls back to
-        // date then title when omitted (see [topic].astro / ideas/index.astro).
+        // date then title when omitted (see compareSeriesOrder in utils/series.ts).
         order: z.number().optional(),
       })
       .transform((data) => {
