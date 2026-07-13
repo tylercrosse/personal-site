@@ -398,12 +398,13 @@ const postTopics = [...topicsForPost.values()];
           )
         }
         {
-          series?.role === "child" && (series.parent || series.total > 1) && (
-            <div class="post-topics">
-              <span class="post-topics-label">Series</span>
-              <SeriesPill series={series} />
-            </div>
-          )
+          series &&
+            (series.role === "parent" || series.parent || series.total > 1) && (
+              <div class="post-topics">
+                <span class="post-topics-label">Series</span>
+                <SeriesPill series={series} />
+              </div>
+            )
         }
         <div class="meta">
           {

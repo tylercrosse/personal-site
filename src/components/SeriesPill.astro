@@ -25,7 +25,7 @@ const parentLink = isChild ? series.parent : null;
 
 <details class:list={["series-pill", { "series-pill-up": openUp }]}>
   <summary>
-    <span>{label}{counter}</span>
+    <span>{label}</span>
     <svg
       class="series-pill-caret"
       width="10"
@@ -38,23 +38,23 @@ const parentLink = isChild ? series.parent : null;
   </summary>
   <div class="series-panel">
     {
-      series.parent && (
-        <a class="series-panel-parent" href={series.parent.href}>
-          {series.parent.title}
+      parentLink && (
+        <a class="series-panel-parent" href={parentLink.href}>
+          {parentLink.title}
         </a>
       )
     }
     <ol class="series-panel-list">
       {
-        series.siblings.map((sibling, index) => (
+        items.map((item, index) => (
           <li>
-            {index === series.position - 1 ? (
+            {index === currentIndex ? (
               <span class="series-panel-current" aria-current="page">
-                {index + 1}. {sibling.title}
+                {index + 1}. {item.title}
               </span>
             ) : (
-              <a href={sibling.href}>
-                {index + 1}. {sibling.title}
+              <a href={item.href}>
+                {index + 1}. {item.title}
               </a>
             )}
           </li>
