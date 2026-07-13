@@ -58,7 +58,7 @@ export default defineConfig({
     "/ideas/nand2tetris-part1": "/ideas/2021/nand2tetris-part1",
     "/ideas/exponential-backoff": "/ideas/2022/exponential-backoff",
     "/ideas/nand2tetris-vm-translator": "/ideas/2022/nand2tetris-vm-translator",
-    "/ideas/planting-seeds": "/ideas/22022/planting-seeds",
+    "/ideas/planting-seeds": "/ideas/2022/planting-seeds",
     "/ideas/python-bitwise-set-and-dicts":
       "/ideas/2022/python-bitwise-set-and-dicts",
     "/ideas/search-engine-fundamentals":

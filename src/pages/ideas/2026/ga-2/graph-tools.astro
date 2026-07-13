@@ -1,5 +1,12 @@
 ---
+import { getEntry } from "astro:content";
 import BaseLayout from "../../../../layouts/BaseLayout.astro";
+
+// The parent article is a draft until published; only link back to it when it
+// actually builds, or this page ships a 404 link in production.
+const parentPost = await getEntry("ideas", "2026/ga-2");
+const parentVisible =
+  !!parentPost && (import.meta.env.DEV || !parentPost.data.draft);
 
 const tools = [
   {
@@ -41,9 +48,13 @@ const tools = [
       A compact index of the graph labs used in the Part 2 post. The main article
       embeds three of these directly; this page keeps the full set in one place.
     </p>
-    <p class="backlink">
-      <a href="/ideas/2026/ga-2/">Back to the graphs article</a>
-    </p>
+    {
+      parentVisible && (
+        <p class="backlink">
+          <a href="/ideas/2026/ga-2/">Back to the graphs article</a>
+        </p>
+      )
+    }
   </section>
 
   <section class="grid">
