@@ -16,18 +16,20 @@ hideCaption: true
 # TODO: hero image before publishing
 ---
 
+import PostLink from "../../../../components/PostLink.astro";
+
 The [Transformer Circuits thread](https://transformer-circuits.pub/) is the running publication venue for Anthropic's interpretability team. Since 2021 it has introduced, paper by paper, most of the standard toolkit of mechanistic interpretability: the residual-stream view of transformers, induction heads, superposition, sparse autoencoders, and attribution graphs.
 
 These are my reading notes on the thread, one post per paper (or pair of closely related papers). Each post covers the paper's core claim, the method in plain language, and what the evidence does and doesn't show, plus a short section on what has happened since. They are notes, not replacements for the papers. The originals are free, interactive, and unusually well produced.
 
 ## The notes
 
-1. [A Mathematical Framework for Transformer Circuits](/ideas/2026/circuits-framework/) (2021)
-2. [In-Context Learning and Induction Heads](/ideas/2026/circuits-induction-heads/) (2022)
-3. [Toy Models of Superposition](/ideas/2026/circuits-superposition/) (2022), including the follow-up _Superposition, Memorization, and Double Descent_ (2023)
-4. [Towards Monosemanticity and Scaling Monosemanticity](/ideas/2026/circuits-monosemanticity/) (2023–2024)
-5. [Sparse Crosscoders](/ideas/2026/circuits-crosscoders/) (2024)
-6. [Circuit Tracing and On the Biology of a Large Language Model](/ideas/2026/circuits-attribution-graphs/) (2025)
+<PostLink slug="2026/circuits-framework" size="md" />
+<PostLink slug="2026/circuits-induction-heads" size="md" />
+<PostLink slug="2026/circuits-superposition" size="md" />
+<PostLink slug="2026/circuits-monosemanticity" size="md" />
+<PostLink slug="2026/circuits-crosscoders" size="md" />
+<PostLink slug="2026/circuits-attribution-graphs" size="md" />
 
 The order is chronological, and chronology here is also the dependency graph: each paper leans on the vocabulary of the ones before it. The framework paper defines circuits and the residual stream; induction heads are the first circuit found in the wild; toy models explain why neurons are the wrong unit of analysis; the monosemanticity papers build the dictionary-learning response; crosscoders generalize dictionaries across layers and models; and attribution graphs assemble all of it into end-to-end explanations of model outputs.
 
@@ -74,10 +76,10 @@ The thread is a continuation of two earlier bodies of work on vision models, bot
 **The ongoing tail** (major papers since, not yet covered by a post):
 
 - 2025-07 [Tracing Attention Computation Through Feature Interactions](https://transformer-circuits.pub/2025/attention-qk/index.html) — We describe and apply a method to explain attention patterns in terms of feature interactions, and integrate this information into attribution graphs.
-- 2025 [When Models Manipulate Manifolds: The Geometry of a Counting Task](https://transformer-circuits.pub/2025/linebreaks/index.html) — We find geometric structure underlying the mechanisms of a fundamental language model behavior.
-- 2025 [Emergent Introspective Awareness in Large Language Models](https://transformer-circuits.pub/2025/introspection/index.html) — We find evidence that language models can introspect on their internal states.
-- 2026 [Emotion Concepts and their Function in a Large Language Model](https://transformer-circuits.pub/2026/emotions/index.html) — We find representations of emotion concepts in Claude Sonnet 4.5 and show that they causally influence its outputs.
-- 2026 [Natural Language Autoencoders Produce Unsupervised Explanations of LLM Activations](https://transformer-circuits.pub/2026/nla/index.html) — We train Claude to translate its internal state into natural language.
-- 2026 [Verbalizable Representations Form a Global Workspace in Language Models](https://transformer-circuits.pub/2026/workspace/index.html) — We find that Claude maintains a small, privileged set of representations it can report on, control, and reason with, atop a much larger volume of automatic processing.
+- 2025-10 [When Models Manipulate Manifolds: The Geometry of a Counting Task](https://transformer-circuits.pub/2025/linebreaks/index.html) — We find geometric structure underlying the mechanisms of a fundamental language model behavior.
+- 2025-10 [Emergent Introspective Awareness in Large Language Models](https://transformer-circuits.pub/2025/introspection/index.html) — We find evidence that language models can introspect on their internal states.
+- 2026-04 [Emotion Concepts and their Function in a Large Language Model](https://transformer-circuits.pub/2026/emotions/index.html) — We find representations of emotion concepts in Claude Sonnet 4.5 and show that they causally influence its outputs.
+- 2026-05 [Natural Language Autoencoders Produce Unsupervised Explanations of LLM Activations](https://transformer-circuits.pub/2026/nla/index.html) — We train Claude to translate its internal state into natural language.
+- 2026-07 [Verbalizable Representations Form a Global Workspace in Language Models](https://transformer-circuits.pub/2026/workspace/index.html) — We find that Claude maintains a small, privileged set of representations it can report on, control, and reason with, atop a much larger volume of automatic processing.
 
 The thread also publishes shorter monthly "Circuits Updates"; these notes stick to the major papers.
