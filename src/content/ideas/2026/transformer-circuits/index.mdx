@@ -17,28 +17,31 @@ hideCaption: true
 ---
 
 import PostLink from "../../../../components/PostLink.astro";
+import SeriesDagFigure from "../../../../components/ideas/circuits/SeriesDagFigure.astro";
+
+{/* NOTATION (series-wide, matches the framework paper and the CLT section of the attribution-graphs post):
+   residual stream x (x_i at position i); token embedding W_E, unembedding W_U; per-head W_Q, W_K, W_V, W_O,
+   used only via the combined matrices W_QK = W_Q^T W_K and W_OV = W_O W_V; attention pattern A (A^h per head);
+   layer index ℓ; dictionary features: activations a, encoder W_enc, decoder W_dec.
+   New math in any post in this series should use these symbols. */}
 
 The [Transformer Circuits thread](https://transformer-circuits.pub/) is the running publication venue for Anthropic's interpretability team. Since 2021 it has introduced, paper by paper, most of the standard toolkit of mechanistic interpretability: the residual-stream view of transformers, induction heads, superposition, sparse autoencoders, and attribution graphs.
 
-These are my reading notes on the thread, one post per paper (or pair of closely related papers). Each post covers the paper's core claim, the method in plain language, and what the evidence does and doesn't show, plus a short section on what has happened since. They are notes, not replacements for the papers. The originals are free, interactive, and unusually well produced.
+These are my notes on the thread, one post per paper (or pair of closely related papers). Each post works through the paper's core mechanism — how the thing actually works, not just what the paper claims about it — and then two sections a paper can't write about itself: what the evidence does and doesn't show, and what has happened since. The originals are free, interactive, and unusually well produced; these posts are written to be read alongside them, not instead of them.
 
 ## The notes
 
-<PostLink slug="2026/circuits-framework" size="md" />
-<PostLink slug="2026/circuits-induction-heads" size="md" />
-<PostLink slug="2026/circuits-superposition" size="md" />
-<PostLink slug="2026/circuits-monosemanticity" size="md" />
-<PostLink slug="2026/circuits-crosscoders" size="md" />
-<PostLink slug="2026/circuits-attribution-graphs" size="md" />
+<PostLink slug="2026/circuits-framework" size="md"><em>A Mathematical Framework for Transformer Circuits</em> — notes coming soon</PostLink>
+<PostLink slug="2026/circuits-induction-heads" size="md"><em>In-Context Learning and Induction Heads</em> — notes coming soon</PostLink>
+<PostLink slug="2026/circuits-superposition" size="md"><em>Toy Models of Superposition</em> — notes coming soon</PostLink>
+<PostLink slug="2026/circuits-monosemanticity" size="md"><em>Towards / Scaling Monosemanticity</em> — notes coming soon</PostLink>
+<PostLink slug="2026/circuits-crosscoders" size="md"><em>Sparse Crosscoders</em> — notes coming soon</PostLink>
+<PostLink slug="2026/circuits-attribution-graphs" size="md"><em>Circuit Tracing</em> and <em>the Biology of a Large Language Model</em> — notes coming soon</PostLink>
 
 The order is chronological, and chronology here is also the dependency graph: each paper leans on the vocabulary of the ones before it. The framework paper defines circuits and the residual stream; induction heads are the first circuit found in the wild; toy models explain why neurons are the wrong unit of analysis; the monosemanticity papers build the dictionary-learning response; crosscoders generalize dictionaries across layers and models; and attribution graphs assemble all of it into end-to-end explanations of model outputs.
 
-{/* FIGURE IDEA (series dependency graph): a small SVG or Excalidraw DAG in site style to sit under the list above.
-   Three eras as columns: Distill vision work (2017–2019) → Distill Circuits thread (2020–2021) → Transformer Circuits (2021–now).
-   Nodes are papers; solid arrows mean "builds directly on": framework → induction heads; framework → toy models;
-   toy models → monosemanticity; towards → scaling; monosemanticity → crosscoders; crosscoders → circuit tracing;
-   circuit tracing → biology. Papers not covered by a post render smaller and grayed. One muted accent color per era.
-   If the DAG gets busy, fall back to an annotated timeline with the six posts highlighted. */}
+<SeriesDagFigure />
+
 {/* TODO: closing note on open problems once the series is done */}
 
 ## Where the thread came from

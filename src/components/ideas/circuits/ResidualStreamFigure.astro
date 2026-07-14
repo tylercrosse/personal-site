@@ -1,0 +1,95 @@
+---
+/**
+ * Site-style redraw of the framework paper's residual-stream diagram:
+ * every component reads the stream with a linear projection and additively
+ * writes its output back in. Uses currentColor + fixed Solarized accents so
+ * it renders correctly in both themes.
+ */
+import SvgFigure from "../../SvgFigure.astro";
+
+interface Props {
+  caption?: string;
+  numbered?: boolean;
+}
+
+const {
+  caption = "The transformer as a residual stream. Each attention head is an independent operation, and every component — heads, then the MLP, layer after layer — reads the current stream with a linear projection and adds its result back in. The logits are the unembedding of the accumulated sum. Redrawn from the paper.",
+  numbered = true,
+} = Astro.props;
+---
+
+<SvgFigure
+  alt="A transformer drawn as a residual stream: tokens are embedded into the stream, attention heads and an MLP each read from it and additively write back into it, more layers repeat the pattern, and the unembedding produces logits"
+  caption={caption}
+  numbered={numbered}
+  maxWidth={680}
+>
+  <svg viewBox="0 0 760 260" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <marker id="rs-n" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor" />
+      </marker>
+      <marker id="rs-b" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+        <path d="M 0 0 L 10 5 L 0 10 z" style="fill: var(--blue)" />
+      </marker>
+      <marker id="rs-c" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+        <path d="M 0 0 L 10 5 L 0 10 z" style="fill: var(--cyan)" />
+      </marker>
+    </defs>
+
+    <!-- the stream -->
+    <rect x="120" y="170" width="520" height="36" rx="8" fill="currentColor" fill-opacity="0.07" stroke="currentColor" stroke-opacity="0.4" stroke-width="1.2" />
+    <text x="136" y="192" font-size="12.5" fill="currentColor" fill-opacity="0.6" font-style="italic">residual stream x</text>
+
+    <!-- tokens in, embed -->
+    <text x="34" y="192" font-size="12.5" text-anchor="middle" fill="currentColor" fill-opacity="0.85">tokens</text>
+    <line x1="56" y1="188" x2="66" y2="188" stroke="currentColor" stroke-opacity="0.55" stroke-width="1.5" marker-end="url(#rs-n)" />
+    <rect x="72" y="168" width="48" height="40" rx="6" fill="none" stroke="currentColor" stroke-opacity="0.7" stroke-width="1.3" />
+    <text x="96" y="193" font-size="13" text-anchor="middle" fill="currentColor" font-style="italic">W<tspan dy="3" font-size="9.5">E</tspan></text>
+    <text x="96" y="230" font-size="10.5" text-anchor="middle" fill="currentColor" fill-opacity="0.55">embed</text>
+
+    <!-- unembed, logits out -->
+    <rect x="640" y="168" width="48" height="40" rx="6" fill="none" stroke="currentColor" stroke-opacity="0.7" stroke-width="1.3" />
+    <text x="664" y="193" font-size="13" text-anchor="middle" fill="currentColor" font-style="italic">W<tspan dy="3" font-size="9.5">U</tspan></text>
+    <text x="664" y="230" font-size="10.5" text-anchor="middle" fill="currentColor" fill-opacity="0.55">unembed</text>
+    <line x1="692" y1="188" x2="704" y2="188" stroke="currentColor" stroke-opacity="0.55" stroke-width="1.5" marker-end="url(#rs-n)" />
+    <text x="731" y="192" font-size="12.5" text-anchor="middle" fill="currentColor" fill-opacity="0.85">logits</text>
+
+    <!-- one layer bracket -->
+    <path d="M 170 54 L 170 44 L 500 44 L 500 54" fill="none" stroke="currentColor" stroke-opacity="0.35" stroke-width="1" />
+    <text x="335" y="36" font-size="11" text-anchor="middle" fill="currentColor" fill-opacity="0.55">one layer</text>
+
+    <!-- attention heads -->
+    <rect x="170" y="64" width="80" height="42" rx="8" style="stroke: var(--blue); fill: var(--blue)" fill-opacity="0.07" stroke-width="1.4" />
+    <text x="210" y="90" font-size="12.5" text-anchor="middle" style="fill: var(--blue)">head h<tspan dy="3" font-size="9">1</tspan></text>
+    <rect x="270" y="64" width="80" height="42" rx="8" style="stroke: var(--blue); fill: var(--blue)" fill-opacity="0.07" stroke-width="1.4" />
+    <text x="310" y="90" font-size="12.5" text-anchor="middle" style="fill: var(--blue)">head h<tspan dy="3" font-size="9">2</tspan></text>
+
+    <!-- MLP -->
+    <rect x="420" y="64" width="80" height="42" rx="8" style="stroke: var(--cyan); fill: var(--cyan)" fill-opacity="0.07" stroke-width="1.4" />
+    <text x="460" y="90" font-size="12.5" text-anchor="middle" style="fill: var(--cyan)">MLP</text>
+
+    <!-- read arrows (stream up into component) -->
+    <line x1="186" y1="168" x2="186" y2="110" style="stroke: var(--blue)" stroke-width="1.5" marker-end="url(#rs-b)" />
+    <line x1="286" y1="168" x2="286" y2="110" style="stroke: var(--blue)" stroke-width="1.5" marker-end="url(#rs-b)" />
+    <line x1="436" y1="168" x2="436" y2="110" style="stroke: var(--cyan)" stroke-width="1.5" marker-end="url(#rs-c)" />
+
+    <!-- write arrows (component back down into stream) -->
+    <line x1="234" y1="106" x2="234" y2="164" style="stroke: var(--blue)" stroke-width="1.5" marker-end="url(#rs-b)" />
+    <line x1="334" y1="106" x2="334" y2="164" style="stroke: var(--blue)" stroke-width="1.5" marker-end="url(#rs-b)" />
+    <line x1="484" y1="106" x2="484" y2="164" style="stroke: var(--cyan)" stroke-width="1.5" marker-end="url(#rs-c)" />
+
+    <!-- plus signs at the write junctions -->
+    <text x="244" y="162" font-size="13" font-weight="bold" style="fill: var(--blue)">+</text>
+    <text x="344" y="162" font-size="13" font-weight="bold" style="fill: var(--blue)">+</text>
+    <text x="494" y="162" font-size="13" font-weight="bold" style="fill: var(--cyan)">+</text>
+
+    <!-- read/write labels, once -->
+    <text x="180" y="142" font-size="10.5" text-anchor="end" fill="currentColor" fill-opacity="0.55">read</text>
+    <text x="240" y="142" font-size="10.5" text-anchor="start" fill="currentColor" fill-opacity="0.55">add</text>
+
+    <!-- more layers -->
+    <text x="570" y="94" font-size="18" text-anchor="middle" fill="currentColor" fill-opacity="0.4">&#8943;</text>
+    <text x="570" y="114" font-size="10" text-anchor="middle" fill="currentColor" fill-opacity="0.5">more layers</text>
+  </svg>
+</SvgFigure>

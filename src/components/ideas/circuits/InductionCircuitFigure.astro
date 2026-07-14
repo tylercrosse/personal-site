@@ -1,0 +1,102 @@
+---
+/**
+ * Two-panel schematic of the induction circuit on the sequence A B C D A:
+ * panel 1 shows the previous-token head tagging each position with its
+ * predecessor; panel 2 shows the induction head matching that tag to attend
+ * back and raise the copied token's logit. One accent color per head.
+ */
+import SvgFigure from "../../SvgFigure.astro";
+
+interface Props {
+  caption?: string;
+  numbered?: boolean;
+}
+
+const {
+  caption = "The induction circuit on the repeated sequence A B C D A. Step 1: at every position, the previous-token head writes “the token before me” into the current position’s residual stream (shown for B; faded arcs mark the same move elsewhere). Step 2: at the second A, the induction head’s query (“I am A”) matches B’s key (“prev = A”), attention lands on B, and the head’s OV circuit raises B’s logit — completing A B … A → B.",
+  numbered = true,
+} = Astro.props;
+---
+
+<SvgFigure
+  alt="Two-panel schematic of the induction circuit: a previous-token head tags each token with its predecessor, then an induction head at the repeated token matches that tag to attend back and boost the following token's logit"
+  caption={caption}
+  numbered={numbered}
+  maxWidth={680}
+>
+  <svg viewBox="0 0 760 390" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <marker id="ind-c" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+        <path d="M 0 0 L 10 5 L 0 10 z" style="fill: var(--cyan)" />
+      </marker>
+      <marker id="ind-cf" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+        <path d="M 0 0 L 10 5 L 0 10 z" style="fill: var(--cyan)" fill-opacity="0.25" />
+      </marker>
+      <marker id="ind-o" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+        <path d="M 0 0 L 10 5 L 0 10 z" style="fill: var(--orange)" />
+      </marker>
+    </defs>
+
+    <!-- ===== panel 1: previous-token head ===== -->
+    <text x="112" y="26" font-size="13" font-weight="600" style="fill: var(--cyan)">Step 1 &#8212; the previous-token head attends one token back</text>
+
+    <!-- attention arcs (B looks at A, fainter elsewhere) -->
+    <path d="M 222 76 C 204 40, 172 40, 154 74" fill="none" style="stroke: var(--cyan)" stroke-width="1.6" marker-end="url(#ind-c)" />
+    <path d="M 318 76 C 300 40, 268 40, 250 74" fill="none" style="stroke: var(--cyan)" stroke-opacity="0.22" stroke-width="1.4" marker-end="url(#ind-cf)" />
+    <path d="M 414 76 C 396 40, 364 40, 346 74" fill="none" style="stroke: var(--cyan)" stroke-opacity="0.22" stroke-width="1.4" marker-end="url(#ind-cf)" />
+    <path d="M 510 76 C 492 40, 460 40, 442 74" fill="none" style="stroke: var(--cyan)" stroke-opacity="0.22" stroke-width="1.4" marker-end="url(#ind-cf)" />
+
+    <!-- token boxes -->
+    <rect x="112" y="80" width="56" height="44" rx="6" fill="none" stroke="currentColor" stroke-opacity="0.55" stroke-width="1.3" />
+    <rect x="208" y="80" width="56" height="44" rx="6" fill="none" stroke="currentColor" stroke-opacity="0.55" stroke-width="1.3" />
+    <rect x="304" y="80" width="56" height="44" rx="6" fill="none" stroke="currentColor" stroke-opacity="0.55" stroke-width="1.3" />
+    <rect x="400" y="80" width="56" height="44" rx="6" fill="none" stroke="currentColor" stroke-opacity="0.55" stroke-width="1.3" />
+    <rect x="496" y="80" width="56" height="44" rx="6" fill="none" stroke="currentColor" stroke-opacity="0.55" stroke-width="1.3" />
+    <rect x="592" y="80" width="56" height="44" rx="6" fill="none" stroke="currentColor" stroke-opacity="0.35" stroke-width="1.3" stroke-dasharray="4 3" />
+    <text x="140" y="108" font-size="16" text-anchor="middle" fill="currentColor">A</text>
+    <text x="236" y="108" font-size="16" text-anchor="middle" fill="currentColor">B</text>
+    <text x="332" y="108" font-size="16" text-anchor="middle" fill="currentColor">C</text>
+    <text x="428" y="108" font-size="16" text-anchor="middle" fill="currentColor">D</text>
+    <text x="524" y="108" font-size="16" text-anchor="middle" fill="currentColor">A</text>
+    <text x="620" y="108" font-size="16" text-anchor="middle" fill="currentColor" fill-opacity="0.5">?</text>
+
+    <!-- the write: B's stream gets tagged -->
+    <line x1="236" y1="126" x2="236" y2="144" style="stroke: var(--cyan)" stroke-width="1.6" marker-end="url(#ind-c)" />
+    <rect x="184" y="148" width="104" height="26" rx="13" style="stroke: var(--cyan); fill: var(--cyan)" fill-opacity="0.08" stroke-width="1.3" />
+    <text x="236" y="165" font-size="11.5" text-anchor="middle" style="fill: var(--cyan)">prev = A</text>
+    <text x="302" y="165" font-size="11" fill="currentColor" fill-opacity="0.6">the head writes this into B&#8217;s residual stream</text>
+
+    <!-- ===== divider ===== -->
+    <line x1="90" y1="206" x2="670" y2="206" stroke="currentColor" stroke-opacity="0.12" stroke-width="1" />
+
+    <!-- ===== panel 2: induction head ===== -->
+    <text x="112" y="232" font-size="13" font-weight="600" style="fill: var(--orange)">Step 2 &#8212; the induction head</text>
+
+    <!-- attention arc: second A back to B -->
+    <path d="M 510 282 C 450 218, 300 218, 244 280" fill="none" style="stroke: var(--orange)" stroke-width="1.7" marker-end="url(#ind-o)" />
+    <text x="377" y="258" font-size="11.5" text-anchor="middle" style="fill: var(--orange)">key matches &#8220;prev = A&#8221;</text>
+
+    <!-- token boxes -->
+    <rect x="112" y="286" width="56" height="44" rx="6" fill="none" stroke="currentColor" stroke-opacity="0.55" stroke-width="1.3" />
+    <rect x="208" y="286" width="56" height="44" rx="6" fill="none" stroke="currentColor" stroke-opacity="0.55" stroke-width="1.3" />
+    <rect x="304" y="286" width="56" height="44" rx="6" fill="none" stroke="currentColor" stroke-opacity="0.55" stroke-width="1.3" />
+    <rect x="400" y="286" width="56" height="44" rx="6" fill="none" stroke="currentColor" stroke-opacity="0.55" stroke-width="1.3" />
+    <rect x="496" y="286" width="56" height="44" rx="6" fill="none" style="stroke: var(--orange)" stroke-width="1.7" />
+    <rect x="592" y="286" width="56" height="44" rx="6" fill="none" stroke="currentColor" stroke-opacity="0.35" stroke-width="1.3" stroke-dasharray="4 3" />
+    <text x="140" y="314" font-size="16" text-anchor="middle" fill="currentColor">A</text>
+    <text x="236" y="314" font-size="16" text-anchor="middle" fill="currentColor">B</text>
+    <text x="332" y="314" font-size="16" text-anchor="middle" fill="currentColor">C</text>
+    <text x="428" y="314" font-size="16" text-anchor="middle" fill="currentColor">D</text>
+    <text x="524" y="314" font-size="16" text-anchor="middle" style="fill: var(--orange)">A</text>
+    <text x="620" y="314" font-size="15" text-anchor="middle" style="fill: var(--orange)">B &#8593;</text>
+
+    <!-- the tag from step 1 is still there -->
+    <rect x="184" y="340" width="104" height="26" rx="13" style="stroke: var(--cyan); fill: var(--cyan)" fill-opacity="0.08" stroke-opacity="0.75" stroke-width="1.3" />
+    <text x="236" y="357" font-size="11.5" text-anchor="middle" style="fill: var(--cyan)" fill-opacity="0.85">prev = A</text>
+
+    <!-- query and output labels -->
+    <text x="524" y="357" font-size="11" text-anchor="middle" style="fill: var(--orange)">query: &#8220;I am A&#8221;</text>
+    <line x1="552" y1="308" x2="586" y2="308" style="stroke: var(--orange)" stroke-width="1.6" marker-end="url(#ind-o)" />
+    <text x="620" y="381" font-size="11" text-anchor="middle" style="fill: var(--orange)">logit of B &#8593;</text>
+  </svg>
+</SvgFigure>
