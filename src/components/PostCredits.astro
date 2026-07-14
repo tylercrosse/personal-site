@@ -1,0 +1,314 @@
+---
+// Attribution footer for a post. Renders up to four independent blocks, each
+// answering a different question, driven by frontmatter:
+//   sources  -> "what this is notes on"      (credit the original work)
+//   credits  -> "attribution I owe"          (third-party media under licence)
+//   cite     -> "how to credit me"           (citation + BibTeX for my write-up)
+//   license  -> "how you may reuse this"     (CC BY 4.0 grant)
+// These are separate ledgers, not competing claims: crediting sources is what
+// makes signing your own commentary legitimate.
+
+type Source = {
+  title: string;
+  url?: string;
+  authors?: string;
+  year?: string;
+  venue?: string;
+};
+
+type Credit = {
+  title?: string;
+  author?: string;
+  url?: string;
+  license?: string;
+  licenseUrl?: string;
+  changes?: string;
+};
+
+interface Props {
+  title: string;
+  pubDate?: Date;
+  url: string;
+  cite?: boolean;
+  license?: boolean;
+  sources?: Source[];
+  credits?: Credit[];
+}
+
+const { title, pubDate, url, cite, license, sources, credits } = Astro.props;
+
+const showCite = Boolean(cite);
+// Opting into a citation opts into the licence unless it is explicitly disabled.
+const showLicense = license === undefined ? showCite : license;
+const showSources = Array.isArray(sources) && sources.length > 0;
+const showCredits = Array.isArray(credits) && credits.length > 0;
+const hasAnything = showCite || showLicense || showSources || showCredits;
+
+const LICENSE_URL = "https://creativecommons.org/licenses/by/4.0/";
+
+// Build the citation strings for the "cite this write-up" block.
+const date = pubDate ?? new Date();
+const year = date.getFullYear();
+const monthShort = date.toLocaleDateString("en-US", { month: "short" });
+const firstWord = (title.match(/[A-Za-z0-9]+/g)?.[0] ?? "post").toLowerCase();
+const bibKey = `crosse${year}${firstWord}`;
+const citationLine = `Crosse, Tyler. (${monthShort} ${year}). ${title}. tylercrosse.com. ${url}.`;
+const bibtex = `@article{${bibKey},
+  title   = {${title}},
+  author  = {Crosse, Tyler},
+  journal = {tylercrosse.com},
+  year    = {${year}},
+  month   = {${monthShort}},
+  url     = {${url}}
+}`;
+
+const sourceLabel = (s: Source) =>
+  [s.authors, [s.venue, s.year].filter(Boolean).join(" ")]
+    .filter(Boolean)
+    .join(", ");
+---
+
+{
+  hasAnything && (
+    <section class="post-credits" aria-label="Attribution and citation">
+      {showSources && (
+        <div class="pc-block">
+          <span class="pc-label">
+            {sources!.length > 1 ? "Primary sources" : "Primary source"}
+          </span>
+          <p class="pc-note">
+            These are notes. The original work belongs to its authors — please
+            cite the source rather than this page.
+          </p>
+          <ul class="pc-sources">
+            {sources!.map((s) => (
+              <li>
+                {s.url ? (
+                  <a href={s.url} target="_blank" rel="noopener noreferrer">
+                    {s.title}
+                  </a>
+                ) : (
+                  <span>{s.title}</span>
+                )}
+                {sourceLabel(s) && <span class="pc-source-meta"> — {sourceLabel(s)}</span>}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {showCredits && (
+        <div class="pc-block">
+          <span class="pc-label">Image credits</span>
+          <ul class="pc-credits">
+            {credits!.map((c) => (
+              <li>
+                {c.url ? (
+                  <a href={c.url} target="_blank" rel="noopener noreferrer">
+                    {c.title || c.url}
+                  </a>
+                ) : (
+                  <span>{c.title}</span>
+                )}
+                {c.author && <span> by {c.author}</span>}
+                {c.license && (
+                  <span>
+                    {" — "}
+                    {c.licenseUrl ? (
+                      <a href={c.licenseUrl} target="_blank" rel="noopener noreferrer">
+                        {c.license}
+                      </a>
+                    ) : (
+                      c.license
+                    )}
+                  </span>
+                )}
+                {c.changes && <span class="pc-source-meta"> ({c.changes})</span>}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {showCite && (
+        <div class="pc-block">
+          <span class="pc-label">Cite this write-up</span>
+          <p class="pc-citation">{citationLine}</p>
+          <div class="pc-bibtex">
+            <button type="button" class="pc-copy" data-copy-bibtex>
+              Copy
+            </button>
+            <pre><code>{bibtex}</code></pre>
+          </div>
+        </div>
+      )}
+
+      {showLicense && (
+        <p class="pc-license">
+          Except where otherwise noted, this post is licensed under a{" "}
+          <a href={LICENSE_URL} target="_blank" rel="noopener noreferrer">
+            Creative Commons International (CC BY 4.0)
+          </a>{" "}
+          license.
+        </p>
+      )}
+    </section>
+  )
+}
+
+<script>
+  // One delegated listener, bound once and kept across view transitions.
+  const w = window as unknown as { __pcCopyBound?: boolean };
+  if (!w.__pcCopyBound) {
+    w.__pcCopyBound = true;
+    document.addEventListener("click", async (event) => {
+      const target = event.target as HTMLElement | null;
+      const button = target?.closest<HTMLButtonElement>("[data-copy-bibtex]");
+      if (!button) return;
+      const code = button.parentElement?.querySelector("code")?.textContent ?? "";
+      try {
+        await navigator.clipboard.writeText(code);
+        const original = button.textContent;
+        button.textContent = "Copied";
+        button.setAttribute("disabled", "true");
+        window.setTimeout(() => {
+          button.textContent = original;
+          button.removeAttribute("disabled");
+        }, 1500);
+      } catch {
+        /* clipboard unavailable — leave the block for manual copy */
+      }
+    });
+  }
+</script>
+
+<style>
+  .post-credits {
+    margin-top: 3em;
+    padding-top: 1.5em;
+    border-top: 1px solid var(--main-border-color);
+    font-size: 0.9em;
+  }
+
+  :global([data-effective-theme="dark"]) .post-credits {
+    border-top-color: var(--base01);
+  }
+
+  .pc-block {
+    margin-bottom: 1.5em;
+  }
+
+  .pc-label {
+    display: block;
+    font-size: 0.7em;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+    color: var(--sol-7);
+    margin-bottom: 0.6em;
+  }
+
+  .pc-note {
+    margin: 0 0 0.6em;
+    color: var(--base01);
+  }
+
+  .pc-sources,
+  .pc-credits {
+    margin: 0;
+    padding-left: 1.25em;
+  }
+
+  .pc-sources li,
+  .pc-credits li {
+    margin: 0.3em 0;
+  }
+
+  .pc-source-meta {
+    color: var(--base01);
+  }
+
+  .pc-citation {
+    margin: 0 0 1em;
+    padding-left: 1em;
+    border-left: 3px solid var(--main-border-color);
+    color: var(--sol-8);
+    line-height: 1.6;
+    overflow-wrap: anywhere;
+  }
+
+  :global([data-effective-theme="dark"]) .pc-citation {
+    border-left-color: var(--base01);
+  }
+
+  .pc-bibtex {
+    position: relative;
+  }
+
+  .pc-bibtex pre {
+    margin: 0;
+    padding: 1em;
+    background: var(--base4);
+    border-radius: 8px;
+    overflow-x: auto;
+    font-size: 0.85em;
+    line-height: 1.5;
+  }
+
+  :global([data-effective-theme="dark"]) .pc-bibtex pre {
+    background: var(--base02);
+  }
+
+  .pc-bibtex code {
+    background: none;
+    padding: 0;
+    font-family: var(--font-mono, ui-monospace, monospace);
+    white-space: pre;
+  }
+
+  .pc-copy {
+    position: absolute;
+    top: 0.5em;
+    right: 0.5em;
+    font-size: 0.75em;
+    padding: 0.25em 0.6em;
+    border: 1px solid var(--main-border-color);
+    border-radius: 6px;
+    background: var(--base4);
+    color: var(--sol-7);
+    cursor: pointer;
+    transition: color 0.2s ease, border-color 0.2s ease;
+  }
+
+  .pc-copy:hover {
+    color: var(--sol-10);
+    border-color: var(--sol-7);
+  }
+
+  .pc-copy[disabled] {
+    cursor: default;
+    color: var(--sol-9);
+  }
+
+  :global([data-effective-theme="dark"]) .pc-copy {
+    border-color: var(--base01);
+    background: var(--base03, var(--base02));
+  }
+
+  .pc-license {
+    margin: 0;
+    color: var(--base01);
+    font-size: 0.8em;
+    line-height: 1.6;
+  }
+
+  .post-credits a {
+    color: var(--sol-8);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  .post-credits a:hover {
+    color: var(--sol-10);
+  }
+</style>

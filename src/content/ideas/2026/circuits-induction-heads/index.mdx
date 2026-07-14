@@ -8,6 +8,13 @@ tags: ['mechanistic-interpretability', 'deep-learning', 'research', 'AI-safety']
 category: ['ideas']
 draft: true
 audience: 'All'
+license: true
+sources:
+  - title: 'In-Context Learning and Induction Heads'
+    url: 'https://transformer-circuits.pub/2022/in-context-learning-and-induction-heads/index.html'
+    authors: 'Olsson et al.'
+    venue: 'Transformer Circuits Thread'
+    year: '2022'
 media_subpath: "/ideas/circuits-induction-heads/"
 parent: '2026/transformer-circuits'
 order: 2
@@ -19,6 +26,7 @@ hideCaption: true
 ---
 
 import Figure from "../../../../components/Figure.astro";
+import InductionCircuitFigure from "../../../../components/ideas/circuits/InductionCircuitFigure.astro";
 import phaseChange from "./induction-phase-change.png";
 import attentionPattern from "./induction-attention-pattern.png";
 
@@ -45,22 +53,41 @@ Or as the paper compresses it: "induction heads are any heads that empirically i
   caption={"An induction head on repeated text: on the second occurrence of 'Pot', the head attends to the token that followed 'Pot' last time ('ters') and raises its logit. The same mechanism works on 'D…urs…ley'. Figure from the paper."}
 />
 
-{/* FIGURE IDEA: redraw the induction circuit as a simple two-panel schematic in site style, instead of (or alongside)
-   the attention-pattern screenshot above: a sequence [A][B] … [A] where panel 1 shows the previous-token head writing
-   "A came before me" into B's position, and panel 2 shows the induction head at the second [A] attending back to B via
-   that copied signal and boosting B's logit. Two colors, one per head, no UI chrome. This is the diagram I most wish
-   the paper had. */}
+## How the circuit works
+
+For the pattern `[A][B] … [A] → [B]`, the induction head — sitting at the second `[A]` — has to attend to `[B]`. That step is worth slowing down on. Attention works by matching a **query** at the current position against **keys** at earlier positions, and if `[B]`'s key is built only from `[B]`'s own content, no query built from `[A]` can reliably find it: nothing about `[B]` says "I came right after an `[A]`."
+
+The circuit gets around this with two heads in different layers:
+
+1. **A previous-token head (layer 1)** attends, at every position, to the token immediately before it and writes a copy of that token into a subspace of the current position's residual stream. After it runs, position `[B]` carries a second piece of information alongside its own identity: "the token before me was `[A]`."
+2. **The induction head (layer 2)** builds its keys from that subspace and its queries from the current token. At the second `[A]`, the query says "I am `[A]`"; the key at `[B]` says "I follow an `[A]`"; they match, and attention lands on `[B]`. The OV circuit then does the boring part: copy the attended token, i.e. raise the logit of `[B]` itself.
+
+<InductionCircuitFigure />
+
+In the [framework paper's](/ideas/2026/circuits-framework/) terms this is **K-composition**: the induction head's keys are computed from the output of the layer-1 head, so the QK circuit that matters is the virtual weight
+
+$$
+W_E^T \, W_{QK}^{\text{ind}} \, W_{OV}^{\text{prev}} \, W_E
+$$
+
+— the current token's embedding on the query side, matched against the previous-token head's write on the key side. When that matrix is large on its diagonal (every token matches copies of itself), the head does prefix matching. The framework paper also exhibits a second construction that produces the same behavior — "pointer arithmetic" via Q-composition, attending one position past wherever an earlier head attended — but the K-composition version is the one usually drawn.
+
+This is also why one-layer models can't do it. With a single layer, queries and keys are both functions of individual token embeddings, so an attention score can only depend on the identities of the two tokens being compared — which is how one-layer models end up as skip-trigram machines. The rule "attend to whatever followed the last `[A]`" needs a key that knows about a *neighboring* token, and that information only exists after another head has moved it there. The two-head requirement is what makes the phase change (argument 1 below) such clean evidence: models with a single layer can never form the circuit, and they never show the phase change.
 
 ## The six arguments
 
 The argument names and one-line summaries below follow the paper's own framing:
 
-1. [Argument 1](https://transformer-circuits.pub/2022/in-context-learning-and-induction-heads/index.html#argument-phase-change) (Macroscopic co-occurrence): Transformer language models undergo a "phase change" early in training, during which induction heads form and simultaneously in-context learning improves dramatically.
-2. [Argument 2](https://transformer-circuits.pub/2022/in-context-learning-and-induction-heads/index.html#argument-architectural-requirements) (Macroscopic co-perturbation): Changing the architecture in a way that shifts whether (and when) induction heads can form shifts the improvement in in-context learning in a precisely matching way.
-3. [Argument 3](https://transformer-circuits.pub/2022/in-context-learning-and-induction-heads/index.html#argument-ablations) (Direct ablation): Knocking out induction heads at test time in small models greatly decreases in-context learning.
-4. [Argument 4](https://transformer-circuits.pub/2022/in-context-learning-and-induction-heads/index.html#argument-induction-heads-can-implement-abstract-behaviors) (Specific examples of induction head generality): Although induction heads are defined narrowly in terms of copying literal sequences, the same heads empirically appear to implement more sophisticated, abstract kinds of in-context learning.
-5. [Argument 5](https://transformer-circuits.pub/2022/in-context-learning-and-induction-heads/index.html#argument-induction-head-mechanism) (Mechanistic plausibility of induction head generality): For small models the mechanism is fully explained, and it suggests natural ways it could be repurposed for more general in-context learning.
-6. [Argument 6](https://transformer-circuits.pub/2022/in-context-learning-and-induction-heads/index.html#argument-extrapolation) (Continuity from small to large models): The first five arguments are stronger for small models, but behaviors and data related to both induction heads and in-context learning are smoothly continuous from small to large models, suggesting the mechanisms are the same.
+| # | Argument | What it shows |
+|---|----------|---------------|
+| 1 | [Macroscopic co-occurrence](https://transformer-circuits.pub/2022/in-context-learning-and-induction-heads/index.html#argument-phase-change) | Early in training, models undergo a "phase change" during which induction heads form and, simultaneously, in-context learning improves dramatically. |
+| 2 | [Macroscopic co-perturbation](https://transformer-circuits.pub/2022/in-context-learning-and-induction-heads/index.html#argument-architectural-requirements) | Architecture changes that shift whether (and when) induction heads can form shift the in-context learning improvement in a precisely matching way. |
+| 3 | [Direct ablation](https://transformer-circuits.pub/2022/in-context-learning-and-induction-heads/index.html#argument-ablations) | Knocking out induction heads at test time in small models greatly decreases in-context learning. |
+| 4 | [Examples of generality](https://transformer-circuits.pub/2022/in-context-learning-and-induction-heads/index.html#argument-induction-heads-can-implement-abstract-behaviors) | Heads that meet the narrow copying definition empirically also implement more sophisticated, abstract kinds of in-context learning. |
+| 5 | [Mechanistic plausibility](https://transformer-circuits.pub/2022/in-context-learning-and-induction-heads/index.html#argument-induction-head-mechanism) | In small models the mechanism is fully explained, and it suggests natural ways the same circuit could be repurposed for general in-context learning. |
+| 6 | [Continuity from small to large](https://transformer-circuits.pub/2022/in-context-learning-and-induction-heads/index.html#argument-extrapolation) | Everything measurable about induction heads and in-context learning varies smoothly from small to large models, suggesting the mechanisms are the same. |
+
+The paper is explicit that the first five arguments are strongest for small models; argument 6 — continuity — is what carries the claim to large ones.
 
 <Figure
   src={phaseChange}
