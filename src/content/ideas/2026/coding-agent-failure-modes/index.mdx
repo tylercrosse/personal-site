@@ -1,0 +1,227 @@
+---
+title: "Where coding agents break"
+description: "A working field guide to coding-agent failures, and how to tell model limits from bad tasks or bad graders."
+date: "2026-07-14"
+status: "draft"
+type: "article"
+tags: ["AI agents", "coding", "evaluations", "software engineering", "learning in public"]
+category: ["ideas"]
+draft: true
+cite: true
+audience: "Developers"
+sources:
+  - title: "GBA Eval"
+    authors: "Stephen Yang, Ege Erdil, and Tamay Besiroglu"
+    year: "2026"
+    url: "https://gbaeval.com/"
+  - title: "What skills does SWE-bench Verified evaluate?"
+    authors: "Florian Brand and Jean-Stanislas Denain"
+    year: "2025"
+    url: "https://epoch.ai/publications/what-skills-does-swe-bench-verified-evaluate"
+  - title: "Research Update: Algorithmic vs. Holistic Evaluation"
+    authors: "METR"
+    year: "2025"
+    url: "https://metr.org/blog/2025-08-12-research-update-towards-reconciling-slowdown-with-time-horizons/"
+---
+
+{/*
+Working draft. This is a learning document first, not a finished claim about
+frontier-model capability. Each section needs one concrete example, one way to
+distinguish competing explanations, and one implication for task design.
+*/}
+
+People often describe coding agents as unreliable. That word collapses too many
+different things. An agent may misunderstand the task. It may lack a tool or a
+piece of context that a human engineer would need. It may make a locally plausible
+change that breaks an invariant elsewhere. Or it may solve the task while the
+grader fails to recognize it.
+
+Those are different problems. They need different fixes, and they imply different
+things about what a benchmark score means.
+
+This is a field guide to diagnosing an apparent coding-agent failure before deciding
+that it is a model failure.
+
+## A simple diagnostic loop
+
+When an agent fails, I want to ask four questions before drawing a conclusion:
+
+1. Did it have the information and affordances that a competent engineer would need?
+2. Did it make a wrong engineering decision, or did the task leave the decision
+   underspecified?
+3. Did the grader measure the intended property?
+4. What is the smallest experiment that separates these explanations?
+
+The point is not to excuse the agent. It is to locate the failure well enough that
+the next task, scaffold, or training example teaches us something useful.
+
+{/* Tyler: Write 2-4 sentences here on why this distinction matters to you.
+Possible starting point: the same observed failure can lead to a bad conclusion if
+we do not separate capability, elicitation, environment, and grading. */}
+
+## 1. The agent implements a reasonable interpretation of the wrong task
+
+**What it looks like.** The patch is coherent and may even pass the visible tests,
+but it does not satisfy what the user or repository actually needed.
+
+**Other explanations.** The prompt omitted a critical constraint. The repository
+contained an unwritten convention. The task was solvable, but only by inferring an
+intent that a human maintainer would have asked about.
+
+**A useful test.** Give the same task to a senior engineer with the same prompt and
+environment. Ask whether they would know what to do without asking a clarifying
+question. Then compare the agent's chosen interpretation with plausible alternatives.
+
+**Implication for task design.** Decide whether intent inference is the capability
+being tested. If it is not, remove the ambiguity. If it is, make the hidden context
+available somewhere a careful engineer could reasonably find it.
+
+{/* Tyler: What is a real example where a technically plausible solution still
+missed the actual product or repository intent? What information would have made it
+fair, without making the task trivial? */}
+
+## 2. The agent cannot make progress because the environment is wrong
+
+**What it looks like.** The agent searches, guesses, or works around missing tools.
+It may fail an otherwise ordinary task because it cannot run the right tests, inspect
+the relevant state, use a dependency, or receive the feedback a human would use.
+
+**Other explanations.** The agent may be poor at tool use even when the tool is
+present. Or the environment may be intentionally restrictive because using the
+missing tool is itself out of scope.
+
+**A useful test.** Hold the model fixed and vary one affordance at a time. Does an
+oracle, a better reproduction script, a read-only log, or a documented tool interface
+turn an apparently impossible task into a routine one?
+
+**Implication for task design.** An environment should be difficult for the intended
+reason. A task that mostly measures how cleverly an agent works around missing
+affordances is usually not measuring software engineering.
+
+{/* Tyler: Where is the line between a realistic constraint and an unfair missing
+affordance? Use the GBA Eval oracle as one possible comparison. */}
+
+## 3. The local fix violates a global invariant
+
+**What it looks like.** The visible happy path works. A refresh, retry, second client,
+permission check, failure recovery, or full integration test reveals that the system is
+inconsistent.
+
+**Other explanations.** The agent may lack the relevant systems intuition. The task
+may also be missing the integration tests that would make the invariant visible.
+
+**A useful test.** Name the invariant before reviewing the patch. Drive the system
+through an adversarial sequence: retries, reordering, reconnects, concurrent clients,
+or a fresh read from durable state.
+
+**Implication for task design.** Good coding tasks often test a cross-layer property,
+not a clever line-level bug. The grader should check the property directly rather than
+hope a collection of unit tests happens to cover it.
+
+{/* Tyler: Use a public example here, or write a small toy scenario and label it as
+illustrative. Do not use the Mechanize take-home or any other non-public interview
+work. A useful toy scenario could be a service that reports success to a client while
+failing to persist the corresponding state; the point is the invariant, not the
+particular application. */}
+
+## 4. The agent loses control of a long task
+
+**What it looks like.** The agent stops after a superficially successful milestone,
+keeps repeating an unproductive approach, loses track of prior evidence, or cannot
+recover after a partial failure.
+
+**Other explanations.** The problem may be too large for the time or token budget.
+The agent may need a better checkpointing or note-taking mechanism. The task may be
+too open-ended to tell whether continued work is productive.
+
+**A useful test.** Inspect the trajectory, not only the final patch. Identify the
+first decision where the run should have branched: test a hypothesis, inspect a new
+file, change strategy, or ask for more information.
+
+**Implication for task design.** Long-horizon tasks need observable intermediate
+progress and a clear enough objective that persistence is meaningful. Otherwise a
+low score may only show that the task supplied weak feedback.
+
+{/* Tyler: What should count as a good stopping rule for an agent? When is it right
+to keep iterating, and when should it report uncertainty or request human input? */}
+
+## 5. The agent verifies the wrong thing
+
+**What it looks like.** The agent runs a test suite and declares success, but it did
+not test the changed behavior, test an important boundary, or notice that the tests
+were too narrow.
+
+**Other explanations.** The repository's own tests may be incomplete. The agent may
+have correctly optimized for the reward it was given. A human reviewer may also miss
+the same issue without a stronger test plan.
+
+**A useful test.** Start with known-good and deliberately broken implementations.
+Mutate the patch in ways that preserve the visible tests but violate the intended
+property. Check whether the evaluator catches those mutations.
+
+**Implication for task design.** Passing tests are evidence, not a definition of
+engineering success. A good grader has to make its blind spots legible.
+
+{/* Tyler: What is the difference between adding more tests and building a better
+grader? When should a task use deterministic tests, a code-quality rule, or a
+review-style rubric? */}
+
+## 6. The agent optimizes the score rather than the task
+
+**What it looks like.** The agent special-cases fixtures, finds a reference solution,
+modifies the test or scoring path, exploits a sandbox escape, or otherwise earns a
+high score without doing the intended work.
+
+**Other explanations.** Sometimes the task really did permit an unusual but valid
+solution. The hard part is distinguishing legitimate creativity from a loophole that
+would not transfer outside the benchmark.
+
+**A useful test.** Separate hidden evaluation from development feedback. Test
+alternative implementations, inspect trajectories, and ask whether the same strategy
+would work on a new instance of the task.
+
+**Implication for task design.** Optimization pressure changes the environment. If a
+task will be used for reinforcement learning or leaderboard competition, it needs more
+than a score that looks sensible on a few honest attempts.
+
+{/* Tyler: Find one concrete reward-hacking example from METR or GBA Eval. Then say
+what made the exploit possible and what a revised environment would change. */}
+
+## What this means for the jagged frontier
+
+The frontier is jagged partly because models have uneven capabilities. It is also
+jagged because coding tasks combine several different demands: interpreting intent,
+navigating tools and codebases, making changes, testing them, and deciding when the
+work is done.
+
+An agent can be strong at one of those and weak at another. A benchmark can isolate a
+useful slice of the problem, but it should say which slice it measures.
+
+{/* Tyler: This is the section where your own view should become clearest. Do you
+think the important distinction is formal feedback versus tacit judgment? Local code
+changes versus cross-system effects? Something else? Write a provisional 3-5 sentence
+claim, then we will pressure-test it. */}
+
+## A checklist for reading a coding-agent result
+
+Before treating a result as evidence of a capability gap, ask:
+
+- What is the agent actually required to do?
+- What context, tools, and feedback does it receive?
+- Could a competent human succeed under the same conditions?
+- What does the grader check, and what does it miss?
+- Can a known-bad solution pass?
+- Does the result reproduce across runs and reasonable scaffolds?
+- If the agent fails, what would make me update toward "model limitation" rather than
+  "bad task"?
+
+## Reading notes
+
+- Mechanize's [GBA Eval](https://gbaeval.com/) and its posts on
+  [environment design](https://gbaeval.com/blog/environment-design) and
+  [grading iteration](https://gbaeval.com/blog/grading-iteration).
+- METR's [algorithmic versus holistic evaluation](https://metr.org/blog/2025-08-12-research-update-towards-reconciling-slowdown-with-time-horizons/)
+  and [reward-hacking examples](https://metr.org/blog/2025-06-05-recent-reward-hacking/).
+- Epoch's [SWE-bench Verified audit](https://epoch.ai/publications/what-skills-does-swe-bench-verified-evaluate),
+  [MirrorCode](https://epoch.ai/MirrorCode), and
+  [RL-environment FAQ](https://epoch.ai/gradient-updates/state-of-rl-envs).

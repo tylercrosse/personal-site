@@ -1,7 +1,8 @@
 ---
 title: 'Language Diffusion Survey'
-description: 'A talk surveying diffusion models for language, from DDPM foundations to modern mask diffusion competing with auto-regressive models.'
+description: 'A written version of my Latent Space Paper Club talk surveying diffusion models for language, from denoising autoencoders and DDPM through LLaDA, Block Diffusion, and d1.'
 date: '2025-05-28'
+updated: '2026-07-14'
 status: 'complete'
 type: 'talk'
 tags: ['NLP', 'machine-learning', 'deep-learning', 'generative-models', 'paper-club']
@@ -12,11 +13,56 @@ image:
   alt: 'Diffusion - artist unknown'
 # hideCaption: true
 audience: 'All'
+cite: true
+sources:
+  - title: 'Structured Denoising Diffusion Models in Discrete State-Spaces'
+    url: 'https://arxiv.org/abs/2107.03006'
+    authors: 'Austin et al.'
+    year: '2021'
+  - title: 'Scaling up Masked Diffusion Models on Text'
+    url: 'https://arxiv.org/abs/2410.18514'
+    authors: 'Nie et al.'
+    year: '2024'
+  - title: 'Large Language Diffusion Models'
+    url: 'https://arxiv.org/abs/2502.09992'
+    authors: 'Nie et al.'
+    year: '2025'
+  - title: 'Block Diffusion: Interpolating Between Autoregressive and Diffusion Language Models'
+    url: 'https://arxiv.org/abs/2503.09573'
+    authors: 'Arriola et al.'
+    year: '2025'
+  - title: 'd1: Scaling Reasoning in Diffusion Large Language Models via Reinforcement Learning'
+    url: 'https://arxiv.org/abs/2504.12216'
+    authors: 'Zhao et al.'
+    year: '2025'
+credits:
+  - title: 'Forward/reverse diffusion figure'
+    author: 'Sohl-Dickstein et al., "Deep Unsupervised Learning using Nonequilibrium Thermodynamics"'
+    url: 'https://arxiv.org/abs/1503.03585'
+    changes: 'reproduced in my slides'
+  - title: 'D3PM Figure 2'
+    author: 'Austin et al., "Structured Denoising Diffusion Models in Discrete State-Spaces"'
+    url: 'https://arxiv.org/abs/2107.03006'
+    changes: 'reproduced in my slides'
+  - title: 'LLaDA Figure 2'
+    author: 'Nie et al., "Large Language Diffusion Models"'
+    url: 'https://arxiv.org/abs/2502.09992'
+    changes: 'reproduced in my slides'
+  - title: 'Block Diffusion Figure 1'
+    author: 'Arriola et al., "Block Diffusion"'
+    url: 'https://arxiv.org/abs/2503.09573'
+    changes: 'reproduced in my slides'
 ---
 
-## Overview
+import Figure from "../../../../components/Figure.astro";
 
-This presentation provides an overview of diffusion models and their evolution, especially in the context of language modeling. Delivered at the Latent Space Paper Club.
+import taxonomyImg from "./slide-taxonomy.png";
+import sohlDicksteinImg from "./slide-sohl-dickstein.png";
+import d3pmImg from "./slide-d3pm.png";
+import lladaImg from "./slide-llada.png";
+import blockDiffusionImg from "./slide-block-diffusion.png";
+
+I gave this talk at the [Latent Space](https://www.latent.space/) Paper Club in May 2025, shortly after Google announced Gemini Diffusion. Inception Labs had introduced Mercury a few months earlier with a similar pitch: accuracy comparable to autoregressive models at much higher output speed, on the order of a thousand tokens per second. That seemed worth understanding, so instead of covering one paper I surveyed the lineage that leads from denoising autoencoders to language diffusion models that compete with GPT-2 and Llama 2.
 
 <iframe
   width="100%"
@@ -29,43 +75,121 @@ This presentation provides an overview of diffusion models and their evolution, 
   style="border-radius: 8px; margin: 2rem 0;"
 ></iframe>
 
-## Key Points
+You can also [download the full slide deck (PDF, 9MB)](/ideas/language-diffusion-survey/language-diffusion-slides.pdf). The talk went broad rather than deep, covering a dozen papers at survey depth. The full reference list is at the bottom.
 
-### Generative Models Foundation
+## What a generative model is trying to do
 
-Generative models are models that learn the underlying probability distribution of unknown data. They can be categorized into:
-- **Explicit density models**
-  - Tractable models (auto-regressive models, normalizing flows)
-  - Approximate density models (VAEs, diffusion models)
-- **Implicit density models** (GANs, energy-based models)
+A generative model aims to learn the underlying probability distribution of a dataset. The true distribution is unknown, so we train a model with parameters that approximates it, and equivalently we can frame training as minimizing the KL divergence between the data distribution and the model distribution, or as maximizing the likelihood of the observed data. The catch is that the distributions we care about, like the distribution of natural images or English sentences, have shapes far too complex for something like a Gaussian to capture. Neural networks can represent them, and the interesting question becomes how you structure the learning problem so the network actually does.
 
-### Historical Foundation
+Different families of generative models answer that question differently. I made this taxonomy as an Obsidian canvas, loosely following Ian Goodfellow's 2017 GAN tutorial:
 
-The development of diffusion models can be traced back to:
-- Papers on denoising autoencoders
-- The idea of iteratively applying noise to data and then reconstructing it
-- The landmark **DDPM (Denoising Diffusion Probabilistic Models) paper from 2020**, which significantly improved image generation quality by predicting the noise added to the image
+<Figure
+  src={taxonomyImg}
+  alt="Taxonomy tree of generative models, splitting into explicit density (tractable: autoregressive, normalizing flows; approximate: VAEs, diffusion) and implicit density (GANs, energy-based models)"
+  caption="Generative model taxonomy. Diffusion models sit in the approximate explicit density branch: they define a density but optimize a bound on it rather than computing it directly."
+/>
 
-### Language Diffusion Models
+Autoregressive models and normalizing flows have tractable densities you can compute and optimize directly. VAEs and diffusion models define a density but optimize a lower bound on it. GANs and energy-based models never define the density explicitly; they just give you a way to sample. All of them are learning some compressed representation of the data and a way to generate from it, and ideas cross-pollinate between the branches constantly.
 
-The evolution into language modeling started with:
-- **Austin et al. 2021 paper**: Introduced structured corruption processes for text using masked tokens
-- Drew parallels between BERT (as a one-step diffusion model) and auto-regressive models (as discrete diffusion models)
+## Where diffusion came from
 
-### Recent Advancements (2023-2024)
+The earliest thread I could trace is a 2008 paper on denoising autoencoders by Vincent, Larochelle, Bengio, and Manzagol. The idea is simple: randomly zero out parts of the input and train the model to fill in the blanks. In 2013 Bengio and collaborators pushed it further and proved that training a model to denoise implicitly estimates the data-generating process, and that alternating between sampling from the denoising model and the corruption process converges to that estimate. In other words, any denoising autoencoder can be turned into a generative model.
 
-Mask diffusion models are scaling up to achieve performance competitive with traditional auto-regressive language models like GPT-2 and Llama 2.
+Sohl-Dickstein et al. made the connection to physics in 2015. Their framing borrowed from nonequilibrium thermodynamics: gradually add noise to data through a forward diffusion process, then learn to reverse it. The analogy I like is a drop of ink in water. The forward process is watching the ink spread out until it is uniformly dispersed. The learned reverse process is inferring, from the dispersed state, where the drop went in.
 
-### Key Advantages
+<Figure
+  src={sohlDicksteinImg}
+  alt="Slide showing a 2D spiral dataset being progressively noised into a Gaussian (forward diffusion) and recovered from noise (reverse diffusion)"
+  caption="The core diffusion idea from Sohl-Dickstein et al. (2015): a forward process gradually destroys structure with noise, and a learned reverse process recovers the data distribution."
+/>
 
-A major advantage of diffusion models for language is their ability to perform **bidirectional reasoning** due to the absence of a causal mask, allowing them to attend to the entire sequence at once.
+Not much happened with diffusion for the next few years. GANs dominated image generation, though they leaned toward realism over diversity and suffered from mode collapse. I hit this firsthand on a course project: I trained a GAN on Fashion-MNIST and about half of my generated samples came out as boots. VQ-VAE 2 and VQGAN established the other major pattern of the era, compressing images into discrete sequences and predicting them autoregressively.
 
-### Hybrid Approaches
+Diffusion came back around 2020 from two directions at once. Song and Ermon's score-matching line of work trained a network to estimate the gradient of the log-density at each noise level, and their 2020 paper worked out how to choose noise scales in a principled way. The math there goes deeper than I fully understand, but the results spoke for themselves. Then Ho et al. published DDPM, the breakout paper. Two things made it work: a simplified objective where the network just predicts the noise that was added at a randomly chosen timestep, and a large U-Net borrowed from image segmentation to do the predicting. That combination hit state-of-the-art FID on image benchmarks without any adversarial training. A year later Song et al. unified the diffusion and score-based views under stochastic differential equations, which is the framework most later work builds on.
 
-**Block Diffusion** combines auto-regressive generation of blocks with diffusion within those blocks to:
-- Improve sampling efficiency
-- Enable KV caching
+## Getting diffusion to work on text
 
-## Context
+Everything above operates on continuous values, where adding Gaussian noise to a pixel makes sense. Text is a sequence of discrete tokens, and there is no obvious way to add a little bit of noise to a token. This is the core obstacle for language diffusion, and the paper that cracked it is Austin et al. (2021), "Structured Denoising Diffusion Models in Discrete State-Spaces" (D3PM).
 
-Presented at the Latent Space Paper Club, an informal group exploring cutting-edge ML research.
+Their move was to define corruption through transition matrices over the vocabulary: at each timestep, each token either stays put or transitions according to some structured process. The variant that stuck is the absorbing-state process, where tokens randomly turn into a special [MASK] token. Run it long enough and the whole sequence is masks; the reverse process learns to unmask.
+
+<Figure
+  src={d3pmImg}
+  alt="Slide with D3PM Figure 2: perplexity vs sampling iterations on LM1B, and examples of generating and reconstructing sentences by progressive unmasking"
+  caption="D3PM on LM1B. The right side shows the forward process masking a sentence and the reverse process reconstructing it. The reconstruction is close but not exact: 'expand in Asia, where it trails local competitors' comes back as 'expand in China, where it faces local competitors.'"
+/>
+
+The paper also drew a parallel I found clarifying: BERT is a one-step diffusion model (corrupt by masking, denoise in one shot), and autoregressive models are discrete diffusion models with a deterministic corruption process that masks exactly the next token. This came up in the Q&A, and I'll get to it below.
+
+## Scaling up
+
+Between 2021 and 2024 there was a lot of work I skipped over, including approaches like Diffusion-LM and DiffuSeq that run diffusion in a continuous embedding space and then round to tokens. That direction hasn't produced today's state of the art, which is part of why I skipped it, but the papers are in the references.
+
+The line that did pan out is masked diffusion at scale:
+
+**Scaling up Masked Diffusion Models on Text** (Nie et al., October 2024) showed that masked diffusion models follow scaling laws similar to autoregressive models, with a constant multiplier. Their 1.1B parameter model was competitive with GPT-2 1.5B and, on some benchmarks, Llama 2 7B. The multiplier is real, though: reaching the same validation loss took about 16x the compute of the autoregressive baseline.
+
+**LLaDA** (Nie et al., February 2025, "Large Language Diffusion Models") scaled the same recipe to 8B parameters and 2.3 trillion training tokens, matching or beating Llama 2 7B and Llama 3 8B on a number of benchmarks. Because there is no causal mask, the model attends to the whole sequence in both directions. That shows up concretely on reversal tasks: given the last lines of a poem, predict what came before. LLaDA beat much larger autoregressive models, including GPT-4o, on that task. They also introduced a remasking trick at sampling time: after predicting all masked tokens, re-mask the low-confidence predictions and try them again.
+
+<Figure
+  src={lladaImg}
+  alt="Slide with LLaDA Figure 2: pre-training with random masking, SFT masking only response tokens, and sampling from fully masked to unmasked with remasking"
+  caption="LLaDA's training and sampling setup. Sampling starts from a fully masked response and unmasks over steps, with low-confidence tokens re-masked and re-predicted along the way."
+/>
+
+**Block Diffusion** (Arriola et al., March 2025) is a hybrid: generate fixed-size blocks autoregressively, but use diffusion within each block. Pure diffusion models regenerate everything from scratch and can't reuse a KV cache the way autoregressive decoding can; generating block by block restores that, while keeping parallel sampling inside each block.
+
+<Figure
+  src={blockDiffusionImg}
+  alt="Slide with Block Diffusion Figure 1 comparing autoregression, diffusion, and block diffusion on quality, arbitrary length, KV caching, and parallelism"
+  caption="Block diffusion keeps the autoregressive advantages (quality, arbitrary length, KV caching) while getting parallel generation within blocks."
+/>
+
+**d1** (Zhao et al., April 2025) tackles post-training, which LLaDA largely skipped. They fine-tune LLaDA on the s1k reasoning dataset, then apply diffu-GRPO, a critic-free RL algorithm adapted for the non-sequential nature of diffusion generation. The gains on math and reasoning benchmarks over the base model are substantial.
+
+## Why bother?
+
+Two properties make language diffusion interesting despite the compute multiplier.
+
+The first is speed. Diffusion predicts many tokens per step instead of one, which is where the Mercury and Gemini Diffusion throughput claims come from. When we asked Gemini during the talk, it reported Gemini Diffusion runs around 1,479 tokens per second, with a caveat of roughly 0.8 seconds of initial overhead.
+
+The second is bidirectional context. An autoregressive model editing the middle of a file has to attend to the code after the edit point through the lens of tokens that come before it in generation order. A diffusion model has no causal mask, so it conditions on both sides of the edit directly. Code infilling is the obvious application, and it is probably not a coincidence that the early diffusion demos lean on code editing.
+
+## Questions from the discussion
+
+The paper club format means the best parts are often interruptions. A few worth keeping, paraphrased:
+
+**If BERT is one-step diffusion, how are autoregressive models discrete diffusion?** I gave a rough answer and the group sharpened it. Training an autoregressive model amounts to a corruption process that masks exactly one position, the next token, and denoises it, with a deterministic answer instead of a stochastic one. One attendee put it well: autoregressive training is the special case where everything ahead of you is masked and you unmask one position at a time, while BERT masks 15% of positions anywhere in the sequence. Masked diffusion generalizes both: mask an arbitrary fraction, anywhere, and learn to reverse it in steps.
+
+**Does diffusion inference scale quadratically with sequence length?** Depends entirely on the backbone. The high-profile models (Stable Diffusion, DALL-E, DiT-style video models) use transformers or attention blocks somewhere, so quadratic attention cost shows up. Some earlier DDPM-style models are mostly convolutional. The diffusion process itself is orthogonal to the transformer-vs-not question; diffusion is an alternative to autoregressive generation, not to attention.
+
+**Where does attention live in image diffusion models?** This turned into a genuinely fun argument. The conditioning view: attention (often cross-attention over text embeddings) mostly grounds the generation in the prompt, and the diffusion backbone is separate. The counterpoint, which I'd also argue: even the original 2020 DDPM U-Net has self-attention operators at its 16x16 resolutions, and later architectures add more throughout the backbone. We agreed to argue about it offline.
+
+## References
+
+Background on diffusion:
+
+- [Extracting and Composing Robust Features with Denoising Autoencoders](https://dl.acm.org/doi/10.1145/1390156.1390294), Vincent, Larochelle, Bengio, Manzagol, 2008
+- [Generalized Denoising Auto-Encoders as Generative Models](https://arxiv.org/abs/1305.6663), Bengio et al., 2013
+- [Deep Unsupervised Learning using Nonequilibrium Thermodynamics](https://arxiv.org/abs/1503.03585), Sohl-Dickstein et al., 2015
+- [Improved Techniques for Training Score-Based Generative Models](https://arxiv.org/abs/2006.09011), Song & Ermon, 2020
+- [Denoising Diffusion Probabilistic Models](https://arxiv.org/abs/2006.11239), Ho et al., 2020
+- [Score-Based Generative Modeling Through Stochastic Differential Equations](https://arxiv.org/abs/2011.13456), Song et al., 2020
+
+Language diffusion:
+
+- [Structured Denoising Diffusion Models in Discrete State-Spaces](https://arxiv.org/abs/2107.03006), Austin et al., 2021
+- [Diffusion-LM Improves Controllable Text Generation](https://arxiv.org/abs/2205.14217), Li et al., 2022
+- [DiffuSeq: Sequence to Sequence Text Generation with Diffusion Models](https://arxiv.org/abs/2210.08933), Gong et al., 2022
+- [Scaling up Masked Diffusion Models on Text](https://arxiv.org/abs/2410.18514), Nie et al., 2024
+- [Large Language Diffusion Models](https://arxiv.org/abs/2502.09992), Nie et al., 2025
+- [Block Diffusion: Interpolating Between Autoregressive and Diffusion Language Models](https://arxiv.org/abs/2503.09573), Arriola et al., 2025
+- [d1: Scaling Reasoning in Diffusion Large Language Models via Reinforcement Learning](https://arxiv.org/abs/2504.12216), Zhao et al., 2025
+
+Misc:
+
+- [Gemini Diffusion](https://deepmind.google/models/gemini-diffusion/), Google DeepMind
+- [Introducing Mercury](https://www.inceptionlabs.ai/introducing-mercury), Inception Labs
+- [Diffusion and Score-Based Generative Models](https://www.youtube.com/watch?v=wMmqCMwuM2Q) (lecture), Yang Song, 2022
+- [What are Diffusion Models?](https://lilianweng.github.io/posts/2021-07-11-diffusion-models/), Lilian Weng, 2021
+- [Discrete Generative Modeling with Masked Diffusions](https://jiaxins.io/talks/jiaxins_md4_genu.pdf) (talk), Jiaxin Shi, 2024

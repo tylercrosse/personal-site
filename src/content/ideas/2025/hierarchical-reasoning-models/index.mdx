@@ -1,7 +1,8 @@
 ---
 title: 'Hierarchical Reasoning Models'
-description: 'A talk exploring novel neural architectures for complex reasoning tasks, featuring two-level recurrence and adaptive computation.'
+description: 'A written version of my Latent Space talk on HRM: how the architecture works, and what the ARC Prize analysis says actually drives its performance.'
 date: '2025-09-03'
+updated: '2026-07-14'
 status: 'complete'
 type: 'talk'
 tags: ['machine-learning', 'deep-learning', 'research', 'paper-club']
@@ -10,13 +11,39 @@ audience: 'All'
 media_subpath: "/ideas/hierarchical-reasoning-models/"
 image:
   path: "hero-hierarchy2.png"
-  alt: 'Diffusion - artist unknown'
+  alt: 'Abstract layered hierarchy artwork'
 hideCaption: true
+cite: true
+sources:
+  - title: 'Hierarchical Reasoning Model'
+    url: 'https://arxiv.org/abs/2506.21734'
+    authors: 'Wang et al.'
+    year: '2025'
+  - title: "Hierarchical Reasoning Model Analysis"
+    url: 'https://arcprize.org/blog/hrm-analysis'
+    authors: 'ARC Prize Foundation'
+    year: '2025'
+credits:
+  - title: 'HRM architecture diagram and pseudocode (Figure 4)'
+    author: 'Wang et al., "Hierarchical Reasoning Model"'
+    url: 'https://arxiv.org/abs/2506.21734'
+    changes: 'reproduced in my slides'
+  - title: 'Ablation charts'
+    author: 'ARC Prize Foundation, HRM analysis'
+    url: 'https://arcprize.org/blog/hrm-analysis'
+    changes: 'reproduced in my slides'
 ---
 
-## Overview
+import Figure from "../../../../components/Figure.astro";
 
-This presentation introduces the Hierarchical Reasoning Model (HRM), a novel architecture designed to perform well on tasks requiring complex reasoning, such as Sudoku and mazes, with a relatively small model (27 million parameters).
+import sudokuImg from "./slide-sudoku-backtracking.png";
+import architectureImg from "./slide-hrm-architecture.png";
+import modelMatterImg from "./slide-model-matter.png";
+import outerLoopImg from "./slide-outer-loop.png";
+
+The Hierarchical Reasoning Model (HRM) made a splash in mid-2025: a 27 million parameter model, trained on roughly a thousand examples per task, doing well on ARC-AGI and dramatically outperforming large reasoning models on hard Sudoku and maze puzzles. The authors attribute this to a novel two-level recurrent architecture. The more interesting story, which I spent the second half of this talk on, is the ARC Prize team's independent analysis of what actually drives the performance. Spoiler: it is mostly not the architecture.
+
+I presented this at the [Latent Space](https://www.latent.space/) Paper Club in September 2025.
 
 <iframe
   width="100%"
@@ -29,54 +56,92 @@ This presentation introduces the Hierarchical Reasoning Model (HRM), a novel arc
   style="border-radius: 8px; margin: 2rem 0;"
 ></iframe>
 
-## Key Architecture Features
+Slides: [download the deck (PDF, 2.6MB)](/ideas/hierarchical-reasoning-models/hrm-talk-slides.pdf).
 
-### Two-Level Recurrence
+## The problem HRM is aimed at
 
-HRM features:
-- A **high-level module** for abstract reasoning
-- A **low-level module** for detailed computations
+When an autoregressive model reasons with chain of thought, every generated token costs one forward pass through the same fixed stack of layers. The model's intermediate state has to be spelled out in tokens: for a Sudoku puzzle, that means serializing the board, proposing a value, and backtracking in text when a guess fails. The paper's framing is that standard transformers are fundamentally constrained by their computational depth, and chain of thought is an expensive workaround.
 
-This allows for a more adaptive use of computation compared to traditional chain-of-thought models.
+Sudoku makes the cost concrete. Solving it the classic way is backtracking search, and the search tree is enormous. Doing that search in token space means writing out board states over and over.
 
-### Latent Reasoning
+<Figure
+  src={sudokuImg}
+  alt="A backtracking search tree for Sudoku, showing candidate values tried at each cell and branches abandoned when they violate constraints"
+  caption="Sudoku as backtracking search. An autoregressive model has to represent each attempted branch in tokens; HRM keeps this iteration in its hidden state."
+/>
 
-Unlike autoregressive models that generate a new token for each step, HRM:
-- Keeps information in its hidden state
-- Passes it recurrently
-- Is more token-efficient for complex problems
+The paper's benchmark datasets lean into this. Their Sudoku-Extreme set averages far more forced backtracks per puzzle than the standard benchmarks, where typical puzzles average around 0.45 backtracks, which is part of why leading reasoning LLMs score near zero on it.
 
-### Adaptive Computational Time (ACT)
+HRM's alternative is latent reasoning: keep the intermediate state in hidden activations and pass it forward recurrently (the paper calls this the carry) instead of externalizing every step as a token.
 
-An external Q-learning objective determines whether the model should:
-- Halt computation for a given problem
-- Continue computations
+## The architecture
 
-This allows for dynamic adjustment of compute time based on problem complexity.
+HRM has two recurrent modules, both standard modern transformer blocks (rotary embeddings, GLU, RMSNorm, no bias terms). The low-level module runs several fast iterations of detailed computation; the high-level module updates once per cycle of low-level steps, doing slower, more abstract updates. One pass of L-steps followed by an H-step is a segment, and segments repeat.
 
-### Test-Time Augmentation
+<Figure
+  src={architectureImg}
+  alt="Slide showing HRM Figure 4: the unrolled H and L module diagram with gradient flowing only through the final states, alongside pseudocode for HRM with deep supervision"
+  caption="HRM's two-level recurrence, from Figure 4 of the paper. Most of the unrolled computation runs under no_grad; only the final H and L states carry gradient."
+/>
 
-A critical part of HRM's performance involves:
-- Generating and solving thousands of augmented variants of a problem
-- Inverting the solutions
-- Using a voting mechanism for the final answer
+Two training details matter more than the hierarchy itself:
 
-This method is resource-intensive but significantly boosts performance.
+**One-step gradient approximation.** Rather than backpropagating through the entire unrolled recurrence, they run most of it without gradient and only backpropagate through the final L and H updates. Their justification draws on work on deep equilibrium models. Someone asked why detaching the carry works, and I didn't have a confident answer. My guess is that it sidesteps vanishing gradients over long unrolls, but I flagged it in the talk as the part of the paper I understood least.
 
-## Emergent Properties
+**Deep supervision.** Training runs the model in a loop: call HRM, get a prediction and an updated carry, compute a loss and gradient step, detach the carry, repeat. Each outer step gets its own supervision signal.
 
-The model develops different representations in its high-level and low-level modules, with the high-level module learning more complex features.
+On top of this sits adaptive computation time (ACT). A separate Q-learning objective, with exactly two actions (halt or continue), decides after each segment whether to keep refining. Models trained with ACT match fixed-compute baselines while using substantially fewer segments on average, and a model trained with a maximum of 8 segments keeps improving when allowed 16 at inference.
 
-## ARC Analysis
+## The part the paper undersells: test-time augmentation
 
-Analysis of HRM's performance on ARC (Abstract Reasoning Corpus) datasets highlights that:
-- The architecture itself contributes to performance
-- Inner/outer refinement loops play a significant role
-- Data augmentation is crucial
-- Puzzle embeddings are important
+The headline numbers depend on a heavyweight inference procedure. For each test puzzle, they generate 1,000 augmented variants using invertible transformations (rotations, reflections, color permutations for ARC), solve every variant, map each solution back through the inverse transformation, and take the two most popular answers as the final predictions. That is where the pass@2 numbers come from.
 
-While the architecture is valuable, these supporting techniques are essential for achieving strong results on complex reasoning tasks.
+This stood out to me when reading the paper: it is not just the architecture solving the puzzle, it is a thousand solution attempts and a vote. It is also expensive. The ARC Prize team measured about 12 hours to run the 100-task semi-private set; prorated, that is on the order of $1.48 per task. A pre-trained LLM pays its costs differently, in generating chain-of-thought tokens, but the point stands that HRM's headline numbers are not cheap single-pass inference.
 
-## Context
+The paper also includes a nice interpretability aside: visualizing intermediate predictions across segments, you can watch a maze solution start as several candidate paths that get pruned and reconnected until the model settles on one. For what it's worth, they also measure that the H module's representations have higher effective dimensionality than the L module's (using participation ratio, which I think of loosely as counting principal components), and that this gap grows with task diversity. The paper spends a lot of pages connecting this to mouse cortex measurements. It's fun to think about, but I don't know enough neuroscience to evaluate it, and I didn't focus on it.
 
-Presented at the Latent Space Paper Club, an informal group exploring cutting-edge ML research.
+## What actually drives performance
+
+The ARC Prize team [reproduced HRM's results and ran ablations](https://arcprize.org/blog/hrm-analysis) to isolate five candidate explanations: the architecture, the hierarchical inner loop, the outer refinement loop (with and without ACT), data augmentation, and puzzle embeddings. Their reproduction held up: 32% pass@2 on the ARC v1 semi-private set against the paper's 41% on public, and 2% on the much harder ARC v2 semi-private set against the paper's 4% public. I stole several of their charts for the talk.
+
+The findings, in decreasing order of how much they changed my read of the paper:
+
+**The architecture mostly doesn't matter.** Swap HRM for a plain transformer with the same parameter count and same training setup and you land within about 5 percentage points, and the gap narrows as outer-loop refinement steps increase.
+
+<Figure
+  src={modelMatterImg}
+  alt="Slide comparing HRM and a same-size transformer across refinement loop counts; scores are within a few points at every loop count"
+  caption="ARC Prize ablation: HRM vs. a same-size, unoptimized transformer. 'The model doesn't seem to matter, at least on ARC.'"
+/>
+
+**The hierarchical inner loop doesn't matter much either.** One L cycle and one H cycle already gets about 7/8 of the performance of the paper's configuration, and scaling the inner loops higher doesn't help, while compute grows multiplicatively.
+
+**The outer refinement loop is the main event.** Varying the maximum number of outer refinement steps makes a large difference, refinement during training matters more than refinement at inference, and the learned halting signal helps at training time. Iteratively refining predictions, with supervision at each step, is the load-bearing mechanism.
+
+<Figure
+  src={outerLoopImg}
+  alt="Slide showing performance rising sharply with the number of outer refinement loops, and training-time refinement outperforming inference-time refinement"
+  caption="ARC Prize ablation of the outer loop: refinement of predictions works, and it matters most during training."
+/>
+
+**Augmentation helps, but saturates fast.** Roughly 1% of the 1,000 augmentations gets you about 75% of the benefit, and augmentation matters more at training time than at inference.
+
+**Puzzle embeddings matter and are also the catch.** HRM doesn't take instructions; each puzzle gets an ID mapped to a learned embedding, which is how the model knows what task it's solving. An earlier version of the codebase without puzzle embeddings reached about 76% per-token accuracy but only around 10% pass@2. The flip side is transduction-only generalization: the model can't do anything sensible with a puzzle ID it never trained on, so extending HRM to genuinely novel problems is an open problem.
+
+When I first summarized this paper, I wrote that the architecture "contributes to performance." Having spent more time with the ablations, I'd put it differently: on ARC, the refinement training loop, augmentation, and puzzle embeddings do almost all the work, and the two-level hierarchy is close to interchangeable with a vanilla transformer.
+
+## Questions from the discussion
+
+**If reasoning stays latent, what happens to safety and interpretability?** One attendee pointed out that chain of thought, whatever its faithfulness problems, gives you something to read, and HRM-style latent reasoning doesn't. My take: at 27M parameters, purpose-built for Sudoku, there isn't much of a safety question yet. If this style of architecture scaled up, the mechanistic interpretability toolkit should still apply, since it is still transformer blocks underneath, with superposition and features you could try to pull apart. The paper's own visualization of intermediate segment predictions is a decent start on introspection for this model class.
+
+**What does a "refinement loop" even mean for the baseline transformer?** The ablation chart shows a plain transformer improving with more refinement loops, which raises the question of what exactly gets passed between iterations if there's no H/L carry. I didn't have a good answer, and it's the follow-up question from the talk I most wish I'd chased down. Presumably some latent state is forwarded between refinement steps, but the analysis doesn't spell it out.
+
+**Why does deep supervision give the H module more frequent feedback?** An attendee got stuck on the same sentence in the paper that I did; our shared intuition was that the L module, which loops more often, should be the one getting more feedback. We left it unresolved. If you understand this, I'd genuinely like to hear the explanation.
+
+## References
+
+- [Hierarchical Reasoning Model](https://arxiv.org/abs/2506.21734), Wang et al., 2025
+  - [Code](https://github.com/sapientinc/HRM), [DeepWiki page](https://deepwiki.com/sapientinc/HRM/1-overview)
+- [ARC Prize analysis of HRM](https://arcprize.org/blog/hrm-analysis), ARC Prize Foundation, 2025
+  - [Their slides](https://docs.google.com/presentation/d/12IAuVKZXvbW6uCwzDhzN1PBh4fdjypjqyucYzoKJKMg/)
+- [ARC Prize leaderboard](https://arcprize.org/leaderboard)
