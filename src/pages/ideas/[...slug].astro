@@ -4,6 +4,7 @@ import BlogPost from "../../layouts/BlogPost.astro";
 import { render } from "astro:content";
 import type { MarkdownHeading } from "astro";
 import readingTime from "reading-time";
+import { getSeriesInfo, type SeriesInfo } from "../../utils/series";
 
 export async function getStaticPaths() {
   const posts = (await getCollection("ideas")).filter((post) => {
@@ -11,7 +12,11 @@ export async function getStaticPaths() {
     // In production, only show published posts (not drafts)
     return import.meta.env.DEV || !post.data.draft;
   });
-  
+
+  // Series (parent/child) navigation, computed over the same visible set so
+  // prev/next links never point at an unpublished post.
+  const seriesInfo = getSeriesInfo(posts);
+
   const headings = await Promise.all(
     posts.map(async (post) => {
       const data = await render(post);
@@ -23,7 +28,12 @@ export async function getStaticPaths() {
     const stats = readingTime(post.body || "");
     return {
       params: { slug: post.id },
-      props: { post, headings: headings[index], readingTimeText: stats.text },
+      props: {
+        post,
+        headings: headings[index],
+        readingTimeText: stats.text,
+        series: seriesInfo.get(post.id) ?? null,
+      },
     };
   });
 }
@@ -32,12 +42,13 @@ type Props = {
   post: CollectionEntry<"ideas">;
   headings: MarkdownHeading[];
   readingTimeText: string;
+  series: SeriesInfo | null;
 };
 
-const { post, headings, readingTimeText } = Astro.props;
+const { post, headings, readingTimeText, series } = Astro.props;
 const { Content } = await render(post);
 ---
 
-<BlogPost {...post.data} headings={headings} readingTimeText={readingTimeText}>
+<BlogPost {...post.data} headings={headings} readingTimeText={readingTimeText} series={series}>
   <Content />
 </BlogPost>

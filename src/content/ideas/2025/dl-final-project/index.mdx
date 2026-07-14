@@ -1,34 +1,50 @@
 ---
-title: 'DL Final Project — Crosscoding Reasoning Upgrades'
-description: 'Comparing base vs. s1K-finetuned Qwen2.5-0.5B-Instruct with Crosscoders and math benchmarks.'
-date: '2025-05-05'
-updated: '2025-10-20'
+title: 'Interpreting Model Differences: A Research-Oriented Deep Learning Final Project'
+description: 'A concept-first guide to representation comparison, Crosscoders, and evidence quality in interpretability work, grounded in a Qwen reasoning project.'
+date: '2026-02-27'
+updated: '2026-02-27'
 status: 'in-progress'
 type: 'project'
-tags: ['deep-learning', 'large-language-models', 'mechanistic-interpretability', 'pyTorch', 'MSCS']
+tags: ['deep-learning', 'mechanistic-interpretability', 'pyTorch', 'research', 'MSCS']
 category: ['projects']
 draft: true
+cite: true
 audience: 'All'
 media_subpath: "/ideas/dl-final-project/"
 parent: '2025/dl-retro'
+order: 5
 image:
-  # path: "hero-vintage-blumen-kunst-clipart.png"
-  # path: "hero-crosscoder.png"
   path: "hero-crosscoder2.png"
   alt: 'Green ripples abstract art'
-  # maxWidth: "600px"
 hideCaption: true
 ---
 
-## TL;DR
-For the final project our team fine-tuned **Qwen2.5-0.5B-Instruct** on the publicly released s1k reasoning traces and then used Crosscoders—a sparse autoencoder variant—to compare mid-layer activations between the base and fine-tuned checkpoints. We confirmed that scaling test-time reasoning steps improves accuracy on gsm8k and MATH-500, but the Crosscoder showed that the latent geometry at layer 12 remains largely conserved, suggesting downstream utilization changes rather than wholesale feature rewrites.
+import BookCard from "../../../../components/BookCard.astro";
 
-## What we built
-- Training pipeline in LoRA/QLoRA that squeezed 5 epochs of s1k fine-tuning into a 16 GB GPU by capping block size at 2048, enabling a 0.38 final training loss in ~30 minutes.
-- Evaluation harness that sweeps chain-of-thought token budgets to estimate *scaling slopes* (accuracy delta per additional 256 generated tokens) on gsm8k, boolq, and math-500.
-- Crosscoder atop frozen activations: encoder $B$, decoder $W$, and sparse ReLU features that reconstruct both model states so we can compare which features activate exclusively after fine-tuning.
+import deepLearningGoodfellow from "../../../books/dl-goodfellow.jpg";
+import deepLearningPrince from "../../../books/dl-prince.jpg";
 
-## Key results
+The final project centers on a different question: what changed inside the model when performance improved? Modern language models often get better through fine-tuning or test-time scaling before there is a clean explanation for what internal computation actually changed.
+
+The project fine-tuned **Qwen2.5-0.5B-Instruct** on the public `s1k` reasoning traces, evaluated how its reasoning performance changed as more generated tokens were allowed, and then used a Crosscoder to compare activations between the base and fine-tuned models.
+
+This post is more project-specific than the earlier assignment write-ups. The goal is still conceptual: to explain the scope and limits of representation comparison, and why interpretability needs stronger evidence standards than a single visualization or similarity score.
+
+> [!note]
+> This write-up discusses methodology and findings without publishing private course logistics or solution-like implementation detail.
+
+## Project Scope
+
+The project had three moving parts:
+
+1. fine-tune a small reasoning-capable language model on `s1k`,
+2. evaluate how accuracy changes as the model gets more test-time tokens,
+3. compare internal activations before and after fine-tuning with a Crosscoder.
+
+The project also required curating and decontaminating training data, evaluating the model across several token budgets instead of one fixed decode length, and collecting activations under matched prompt slices so that the comparison target stayed well defined.
+
+The results:
+
 | Dataset  | Model      | Scaling | Accuracy |
 |----------|------------|---------|----------|
 | gsm8k    | Pretrained | -0.0014 | 41.8     |
@@ -38,16 +54,182 @@ For the final project our team fine-tuned **Qwen2.5-0.5B-Instruct** on the publi
 | math-500 | Pretrained | 0.0115  | 34.8     |
 | math-500 | Fine-tuned | 0.0253  | 48.0     |
 
-We saw the biggest lift on math-500, while boolq slightly regressed—likely because the s1k traces are math-heavy.
+The fine-tuned model improved on the math-heavy benchmarks and showed stronger positive scaling with extra generation budget. At the layer studied, representation comparison showed no large internal rewrite. That mismatch framed the project.
 
-## Representative objective
-The Crosscoder fits a sparse autoencoder to both activation sets simultaneously:
+## Why Better Behavior Is Not Yet an Explanation
+
+Standard model evaluation is output-first. Benchmark accuracy shows whether behavior improved, but it does not identify the internal change responsible.
+
+Interpretability asks a harder question: what internal change produced the behavioral change, and what evidence supports that claim?
+
+Several things can happen at once:
+
+- the model can use existing features differently,
+- a small representational shift can matter more than a large visible one,
+- or the relevant change may happen in a different layer, on a different prompt slice, or under a different measurement.
+
+Interpretability work has to be explicit about what kind of claim it is making. A visualization is weaker evidence than a claim about the mechanism responsible for the behavior change.
+
+## Representation Comparison Starts with Matched Conditions
+
+If you want to compare two models, you need to compare them under matched inputs and matched measurement choices. Otherwise, you risk attributing differences to the model when they actually come from prompt selection, tokenization differences, or noisy sampling.
+
+The comparison setup was simple:
+
+- take a base model and a fine-tuned model,
+- run both on the same prompt set,
+- capture activations at the same layer,
+- and compare those activations in a shared feature space.
+
+It breaks the problem into a more concrete decomposition:
+
+- which features appear shared,
+- which features appear specialized,
+- and how stable those observations are across slices.
+
+The hard part is that similarity does not imply causal importance. A feature can look different without explaining the behavioral gain, and an important causal shift can be too subtle for a coarse summary metric.
+
+**Illustrative pseudocode, not project code:**
+
+```text
+prompts = sample_prompt_slice()
+
+base_acts = collect_activations(base_model, prompts, layer=L)
+tuned_acts = collect_activations(tuned_model, prompts, layer=L)
+
+shared_space = fit_shared_dictionary(base_acts, tuned_acts)
+shared_features, shifted_features = compare_feature_usage(
+    shared_space, base_acts, tuned_acts
+)
+
+report(shared_features, shifted_features)
+```
+
+This is the minimum structure for an honest comparison: same prompts, same layer, same measurement choice, then a shared representation space for the actual comparison.
+
+## Crosscoders Are Paired Sparse Autoencoders
+
+The Crosscoder is the central modeling tool in this project: a sparse autoencoder designed to work on activations from two related models at once.
+
+It learns a shared latent dictionary that tries to reconstruct both model states. That makes it useful for asking whether a feature is mostly shared, mostly model-specific, or differently weighted across the two models.
+
+The training objective balances reconstruction quality and sparsity:
 
 $$
 \min_{W,B} \; \|X - W\,\sigma(B^\top X)\|_2^2 + \|Y - W\,\sigma(B^\top Y)\|_2^2 + \lambda \|\sigma(B^\top X)\|_1,
 $$
 
-where $X$ and $Y$ are activations from the base and fine-tuned models, respectively, and $\sigma$ is ReLU. High reconstruction fidelity (>93% cross-entropy recovery) implied that shared features dominate even after fine-tuning.
+where `X` and `Y` are activation sets from the base and fine-tuned models, and `\sigma` is ReLU.
+
+In this objective:
+
+- the reconstruction terms force the latent features to preserve information relevant to reconstruction,
+- the sparsity term encourages a smaller, more interpretable active set,
+- and the paired setup makes comparison between model states easier than two independent SAEs would.
+
+Crosscoders provide a more structured comparison space. The scientific work still comes from deciding what counts as stable evidence inside that space.
+
+## Behavior Metrics and Representation Metrics Answer Different Questions
+
+Behavior-level metrics and representation-level metrics answer different questions and need to be read together.
+
+Behavior-level evaluation answers:
+
+- did the model get better on the task,
+- and did more test-time computation help?
+
+Representation-level analysis answers:
+
+- where do the two models still look similar,
+- where do they diverge,
+- and are those divergences stable across prompts or slices?
+
+The project used "scaling" as one of the behavior metrics: how much accuracy improved as the model was allowed more generated tokens. That metric is particularly relevant for reasoning work because it captures something closer to "benefit from additional thinking time" than one fixed-budget accuracy score can.
+
+Behavior metrics do not identify internal features directly. Similarity statistics do not establish causality by themselves. Keeping that separation clear matters.
+
+**Illustrative pseudocode, not project code:**
+
+```text
+dataset = curate_and_decontaminate(raw_sources)
+tuned_model = fine_tune(base_model, dataset)
+
+for budget in token_budgets:
+    behavior_metrics[budget] = evaluate(tuned_model, tasks, max_tokens=budget)
+
+matched_acts = collect_matched_activations(
+    base_model, tuned_model, prompt_slice
+)
+representation_metrics = compare_internal_features(matched_acts)
+
+combine(behavior_metrics, representation_metrics, robustness_checks)
+```
+
+The sequence matters. Behavior is evaluated across token budgets, representation is compared under matched conditions, and the final claim only becomes stronger if both kinds of evidence point in the same direction.
+
+## Findings
+
+The fine-tuned model improved on the math-focused tasks. At the layer analyzed, the Crosscoder found that most of the geometry remained shared.
+
+A few plausible interpretations fit:
+
+- the important change may be subtle in magnitude,
+- the relevant shift may happen in later layers or under different prompts,
+- or the fine-tuned model may be reusing broadly similar features with different coordination or weighting.
+
+This kind of outcome is common in interpretability work. The analysis points toward a more conservative lesson: improved behavior can arise from changes that are distributed, conditional, and hard to isolate with one analysis method.
+
+## Evidence Quality Matters More Than Pretty Visuals
+
+Interpretability work is especially vulnerable to overconfident storytelling. It is easy to produce a compelling figure, a cluster plot, or a similarity score and then say more than the evidence warrants.
+
+Interpretability claims usually need three layers:
+
+1. **behavior evidence**: did something measurable change?
+2. **representation evidence**: do internal activations show structured differences?
+3. **robustness evidence**: do those differences persist across prompts, slices, seeds, or measurement choices?
+
+If one of those layers is weak, the claim should be weaker too. Mechanistic understanding is simply harder to earn than a benchmark improvement.
+
+## Recap
+
+What I took away from the project:
+
+- Output gains don't specify a mechanism. A better benchmark score is where the explanation starts, not where it ends.
+- Comparing models requires matched conditions. Prompt selection, token budget, layer choice, and metric choice all matter.
+- Interpretability lives or dies on evidence discipline. The honest outcome is often a narrower hypothesis held with better-calibrated confidence.
+
+The earlier projects are mostly about optimization. This one is about internal comparison and explanation, which turns out to be the harder of the two.
 
 ## Artifact
+
 - [Project paper (PDF)](../dl-retro/DL_Final_Project.pdf)
+
+## Additional Resources
+
+- [s1: Simple test-time scaling](https://arxiv.org/abs/2501.19393)
+- [TransformerLens](https://github.com/TransformerLensOrg/TransformerLens)
+- [Scaling Monosemanticity](https://transformer-circuits.pub/2024/scaling-monosemanticity/index.html)
+- [Open Problems in Mechanistic Interpretability](https://arxiv.org/abs/2307.02591)
+
+<BookCard
+  title="Deep Learning"
+  author="Ian Goodfellow, Yoshua Bengio, and Aaron Courville"
+  img={deepLearningGoodfellow}
+  url="https://www.deeplearningbook.org/"
+>
+  <p>
+    Still relevant here as background on feature learning and representation geometry, even though the final project sits much closer to modern LLM interpretability than to classic supervised learning.
+  </p>
+</BookCard>
+
+<BookCard
+  title="Understanding Deep Learning"
+  author="Simon J. D. Prince"
+  img={deepLearningPrince}
+  url="https://udlbook.github.io/udlbook/"
+>
+  <p>
+    Helpful for keeping the representation-learning concepts legible while switching from image models to LLM interpretability questions.
+  </p>
+</BookCard>

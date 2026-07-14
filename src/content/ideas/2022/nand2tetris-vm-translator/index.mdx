@@ -1,6 +1,6 @@
 ---
 title: 'The Hack Virtual Machine'
-description: 'Creating a virtual machine translator for the Nand2Tetris course'
+description: 'The start of the second half of Nand2Tetris: stack machines, virtual memory segments, and a VM translator that compiles VM bytecode down to Hack assembly.'
 date: '2022-03-12'
 status: 'complete'
 type: 'retro'
@@ -8,10 +8,12 @@ category: ['seedling']
 tags: ['computer-architecture', 'computer-science', 'learning-in-public', 'typescript']
 media_subpath: '/ideas/nand2tetris-vm-translator/'
 parent: '2022/nand2tetris'
+order: 2
 hero:
     alt: 'Self Replicating Machine by Peter J. Yost'
     src: 'self-replicating-machine.png'
 draft: false
+cite: true
 audience: 'All'
 image:
   path: "./self-replicating-machine.png"
@@ -24,7 +26,7 @@ A VM Translator is a program that takes VM code as input and spits out assembly 
 
 To contextualize VM Translation, I think it's helpful to take a step back and see where this fits in the overall process of going from human thought to instructions that can be executed on hardware. Developers start with an idea about what they want to create. They turn these thoughts into programs that are typically written in high-level languages like Java, Python, or Javascript. High-level languages obscure many nitty-gritty details about how the hardware should execute programs. This allows developers to focus more on the 'what' and less on the 'how.' From there, high-level languages are compiled into a form specific to the hardware they need to get run on.
 
-The hardware side is where the first portion of the Nand to Tetris course picks up. I [previously summarized](/ideas/nand2tetris-part1) of the topics discussed in the first six modules of the course.
+The hardware side is where the first portion of the Nand to Tetris course picks up. I [previously summarized](/ideas/2021/nand2tetris-part1/) the topics discussed in the first six modules of the course.
 
 ![nand2tetris big picture](nand2tetris-big-picture-custom.png)
 
@@ -32,7 +34,7 @@ VM Translation sits in the middle to the tail end of the software hierarchy. The
 
 Another benefit of two-tiered compilation is that it allows multiple programming languages to compile to the intermediate VM code and then share the same VM translation software. For example, Java, Groovy, Kotlin, Scala, and Clojure compile from their respective files into \*.class files, which can then be run on the Java virtual machine (JVM) instead of all needing separate code to compile to assembly on different host platforms.
 
-For the nand2tetris course, the VM Translator I built creates code for the Hack computer I made in the [first half of this course](/ideas/nand2tetris-part1).
+For the nand2tetris course, the VM Translator I built creates code for the Hack computer I made in the [first half of this course](/ideas/2021/nand2tetris-part1/).
 
 ![compilation and translation](compilation-and-translation.png)
 

@@ -1,41 +1,240 @@
 ---
-title: 'DL A2 — Practical CNNs and Imbalanced Data'
-description: 'From NumPy convolutions to PyTorch ResNets and class-balanced focal loss on CIFAR-10.'
-date: '2025-02-17'
-updated: '2025-10-20'
+title: 'ConvNets and PyTorch Training Pipelines: From Baselines to Better Generalization'
+description: 'A concept-first guide to convolution, receptive fields, augmentation, calibration, and experiment discipline in vision models.'
+date: '2026-02-27'
+updated: '2026-02-27'
 status: 'in-progress'
 type: 'project'
-tags: ['deep-learning', 'pyTorch', 'computer-vision', 'MSCS']
+tags: ['deep-learning', 'computer-vision', 'pyTorch', 'MSCS']
 category: ['projects']
 draft: true
 audience: 'All'
 media_subpath: "/ideas/dl-a2/"
 parent: '2025/dl-retro'
+order: 2
 image:
-  # path: "hero-flower-2.png"
-  # path: "hero-cnn2.png"
   path: "hero-cnn4.png"
   alt: 'Layered mineral photograph'
-  # maxWidth: "600px"
 hideCaption: true
 ---
 
-## TL;DR
-Assignment 2 transitions the course from NumPy-only pedagogy to PyTorch-first workflows. Part I required hand-coding convolution and max-pooling layers plus a vanilla CNN in NumPy, reinforcing the tensor algebra behind `im2col`. Part II moved to PyTorch for CIFAR-10, where I trained baseline models (two-layer MLP + canonical CNN), designed a custom network, and experimented with class-balanced focal loss on an imbalanced split using ResNet-32.
+import BookCard from "../../../../components/BookCard.astro";
+import Figure from "../../../../components/Figure.astro";
 
-## Highlights
-- Implemented a reusable training loop that tracked loss/accuracy for both NumPy-based layers and PyTorch models, ensuring numerical parity between the two implementations.
-- Designed a lightweight custom CNN (stacked 3×3 convolutions, BatchNorm, GELU, and Dropout) that surpassed the >50% accuracy requirement on the CIFAR-10 holdout set while keeping checkpoints well under the 100 MB limit.
-- Derived and implemented the softmax version of class-balanced focal loss to stabilize minority-class gradients in the long-tailed CIFAR-10 variant.
+import deepLearningGoodfellow from "../../../books/dl-goodfellow.jpg";
+import deepLearningPrince from "../../../books/dl-prince.jpg";
+import p2Fig1 from "../figures/lowyx/dl-p2-fig-01-2d-convolution.png";
+import p2Fig2 from "../figures/lowyx/dl-p2-fig-02-receptive-fields.png";
+import p2Fig3 from "../figures/lowyx/dl-p2-fig-03-augmentation-flipping.png";
+import p2Fig4 from "../figures/lowyx/dl-p2-fig-04-train-valid-loss.png";
+import p2Fig5 from "../figures/lowyx/dl-p2-fig-05-calibration.png";
 
-## Representative equation
-For class-balanced focal loss, each example with label $y$ is reweighted by the “effective number” of samples $E_y = \frac{1 - \beta^{n_y}}{1 - \beta}$, yielding:
+## From Derivation to Experiments
+
+Assignment 2 shifts the course from derivation to controlled experimentation. The project begins with hand-built convolution and pooling layers, then moves to PyTorch models on CIFAR-10, and finally asks what happens when the data distribution is imbalanced and accuracy is no longer the whole story.
+
+The assignment bridges two kinds of understanding:
+
+- why convolutional models work in the first place,
+- and why experiment discipline matters once a framework lets you iterate quickly.
+
+> [!note]
+> This write-up keeps the assignment context at a high level and stays on the integrity-safe side of the course boundary.
+
+## Architecture and Protocol
+
+The assignment does three related things:
+
+1. implement core CNN building blocks from scratch,
+2. move to framework-scale training on CIFAR-10,
+3. reason about imbalance and confidence alongside raw accuracy.
+
+Computer vision performance comes from both architecture and protocol. Convolution gives the model the right bias for images, but the training loop, data transforms, and evaluation setup decide whether the comparison is meaningful.
+
+The repo mirrored that split. One layer of work was dedicated to implementing and checking the low-level operations, and another to running controlled PyTorch experiments, tracking trial configurations, and comparing models under fixed evaluation rules.
+
+## Convolution Is a Structured Prior
+
+CNNs aren't really about the kernel. The point is that a model can exploit the spatial structure already present in images, and convolution builds in two strong assumptions to do that:
+
+- nearby pixels matter together,
+- and the same local feature can appear in many places.
+
+<Figure
+  src={p2Fig1}
+  alt="Convolutional pipeline"
+  caption="Convolution works because it respects locality and reuses detectors across spatial positions. Source: Lowyx GT DL Notes (CC BY 4.0), https://lowyx.com/posts/gt-dl-notes/."
+  width={900}
+/>
+
+For a kernel of size `K`, stride `S`, and padding `P`, the spatial output size is
 
 $$
-\mathcal{L}_{\text{CB-Focal}} = - \frac{1 - \beta}{1 - \beta^{n_y}} (1 - p_t)^\gamma \log p_t,
+H_{\text{out}} = \left\lfloor \frac{H + 2P - K}{S} \right\rfloor + 1,
+\qquad
+W_{\text{out}} = \left\lfloor \frac{W + 2P - K}{S} \right\rfloor + 1.
 $$
 
-where $p_t$ is the predicted probability assigned to the ground-truth class. Sweeping $\beta$ in $[0.7, 0.999]$ showed how aggressive reweighting trades stability for recall.
+That formula is easy to forget once frameworks hide it. It still matters, because many practical mistakes in CNN work are shape-policy mistakes: too much downsampling, mismatched feature-map sizes, or pooling decisions that throw away detail too early.
 
-## Artifact
-- [Full write-up (PDF)](../dl-retro/DL_A2.pdf)
+Building convolution and max-pooling from scratch made those assumptions visible. The layers were no longer just boxes in a diagram; they were concrete operations with cost, geometry, and failure modes.
+
+## Receptive Fields Explain Why Depth Helps
+
+The next idea that becomes clearer in vision models is the receptive field: how much of the input can influence a unit at a given depth. Early layers see tiny neighborhoods. Deeper layers aggregate larger and larger context.
+
+<Figure
+  src={p2Fig2}
+  alt="Receptive field growth"
+  caption="Receptive field growth is the reason deeper layers can move from edges and textures toward shapes and larger structures. Source: Lowyx GT DL Notes (CC BY 4.0), https://lowyx.com/posts/gt-dl-notes/."
+  width={900}
+/>
+
+That idea is conceptually simple, but it explains a lot of design tradeoffs:
+
+- too little context and the model cannot distinguish globally similar classes,
+- too much aggressive downsampling and fine detail disappears,
+- more depth does not automatically help unless the receptive field is growing in a way that matches the scale of the task.
+
+CNN design feels more principled once you stop thinking of layers as arbitrary stacks and start thinking in terms of information retained, compressed, or discarded at each stage.
+
+## Training Protocols
+
+PyTorch makes experimentation faster, but it also makes it easier to confuse speed with rigor. With framework-scale training, the central question shifts toward whether the comparison is fair.
+
+<Figure
+  src={p2Fig4}
+  alt="Training curve diagnostics"
+  caption="Training curves are often the fastest way to separate real gains from schedule mismatch, overfitting, or noisy variance. Source: Lowyx GT DL Notes (CC BY 4.0), https://lowyx.com/posts/gt-dl-notes/."
+  width={900}
+/>
+
+Three things mattered most here:
+
+- normalization and optimization interact,
+- the learning-rate schedule changes what counts as a fair baseline,
+- a repeatable result is more informative than a lucky run.
+
+The CIFAR portion of the assignment made that plain. The framework removes derivative bookkeeping, but it does not remove the need for careful protocol design. If one model gets a different schedule, a more permissive augmentation policy, or a looser checkpoint rule, the comparison stops being informative.
+
+**Illustrative toy snippet, not assignment code:**
+
+```python
+import torch
+
+best_metric = float("-inf")
+for epoch in range(num_epochs):
+    model.train()
+    for xb, yb in train_loader:
+        optimizer.zero_grad()
+        loss = criterion(model(xb), yb)
+        loss.backward()
+        optimizer.step()
+
+    model.eval()
+    with torch.no_grad():
+        val_metric = evaluate(model, val_loader)
+
+    if val_metric > best_metric:
+        best_metric = val_metric
+        best_state = {k: v.detach().clone() for k, v in model.state_dict().items()}
+```
+
+The important habit is separating training from evaluation and keeping the best validated state instead of assuming the latest state is the best one.
+
+## Augmentation Is an Invariance Contract
+
+Data augmentation states which transformations the model should treat as label-preserving.
+
+<Figure
+  src={p2Fig3}
+  alt="Augmentation taxonomy"
+  caption="Augmentation helps when the transformation matches an invariance you actually want the model to learn. Source: Lowyx GT DL Notes (CC BY 4.0), https://lowyx.com/posts/gt-dl-notes/."
+  width={900}
+/>
+
+Random crops, flips, and color jitter are not inherently good. They help when they encode a sensible prior for the task, and they hurt when the transformation breaks the label semantics.
+
+The assignment also makes clear that training data is not fixed just because the dataset is fixed. The transform pipeline is part of the model's worldview.
+
+## Calibration and Imbalance
+
+The last major idea is that accuracy is too compressed to tell you what the model is doing. This becomes clear as soon as the class distribution becomes long-tailed or the output confidence is poorly matched to reality.
+
+Expected calibration error (ECE) is one way to measure that mismatch:
+
+$$
+\mathrm{ECE} = \sum_{m=1}^{M}\frac{|B_m|}{n}\left|\mathrm{acc}(B_m)-\mathrm{conf}(B_m)\right|.
+$$
+
+<Figure
+  src={p2Fig5}
+  alt="Calibration plot"
+  caption="Calibration makes visible something top-1 accuracy cannot: whether the confidence values themselves are trustworthy. Source: Lowyx GT DL Notes (CC BY 4.0), https://lowyx.com/posts/gt-dl-notes/."
+  width={900}
+/>
+
+The imbalanced-data section made this concrete. Techniques like focal loss change which examples dominate the learning signal. Once classes are imbalanced, a model can look decent on average while under-serving precisely the cases you care about most.
+
+**Illustrative toy snippet, not assignment code:**
+
+```python
+import torch
+
+def expected_calibration_error(probs, labels, n_bins=10):
+    conf = probs.max(dim=1).values
+    pred = probs.argmax(dim=1)
+    bins = torch.linspace(0, 1, n_bins + 1, device=probs.device)
+    ece = torch.tensor(0.0, device=probs.device)
+
+    for lo, hi in zip(bins[:-1], bins[1:]):
+        mask = (conf >= lo) & (conf < hi)
+        if mask.any():
+            acc = (pred[mask] == labels[mask]).float().mean()
+            ece += mask.float().mean() * (acc - conf[mask].mean()).abs()
+
+    return ece
+```
+
+This kind of metric check matters because a model can improve on accuracy while still being overconfident or underconfident in ways that matter downstream.
+
+## Recap
+
+The main points from this project:
+
+- Convolution encodes a design prior that still shapes how vision models are built.
+- The faster you can run experiments, the more you need fair controls around them.
+- Augmentation changes the task the model is effectively being trained on.
+- Accuracy alone isn't enough once confidence and class imbalance matter.
+
+The repo accumulated tuning scripts, saved trial configurations, and multiple checkpoints. The useful part of that machinery wasn't automation for its own sake. It made model comparisons reproducible enough to trust.
+
+This is where the course turns. The math from the first project stays, but running experiments carefully becomes its own engineering skill.
+
+## Additional Resources
+
+- [GT Deep Learning Notes (Lowyx)](https://lowyx.com/posts/gt-dl-notes/)
+- [A ConvNet for the 2020s? Reading on inductive bias and transfer](https://arxiv.org/abs/1809.00636)
+- [Deep Residual Learning for Image Recognition](https://arxiv.org/abs/1512.03385)
+
+<BookCard
+  title="Deep Learning"
+  author="Ian Goodfellow, Yoshua Bengio, and Aaron Courville"
+  img={deepLearningGoodfellow}
+  url="https://www.deeplearningbook.org/"
+>
+  <p>
+    Useful for the common conceptual thread between convolution, optimization, regularization, and why hierarchical representations work.
+  </p>
+</BookCard>
+
+<BookCard
+  title="Understanding Deep Learning"
+  author="Simon J. D. Prince"
+  img={deepLearningPrince}
+  url="https://udlbook.github.io/udlbook/"
+>
+  <p>
+    Helpful for a more intuitive explanation of receptive fields, representation learning, and the practical side of training image models.
+  </p>
+</BookCard>

@@ -1,0 +1,198 @@
+---
+title: 'Notes on Circuit Tracing and the Biology of a Large Language Model'
+description: 'Notes on cross-layer transcoders, local replacement models, and attribution graphs — and the case-study companion paper on Claude 3.5 Haiku.'
+date: '2026-07-12'
+status: 'in-progress'
+type: 'note'
+tags: ['mechanistic-interpretability', 'deep-learning', 'research', 'AI-safety']
+category: ['ideas']
+draft: true
+audience: 'All'
+license: true
+sources:
+  - title: 'Circuit Tracing: Revealing Computational Graphs in Language Models'
+    url: 'https://transformer-circuits.pub/2025/attribution-graphs/methods.html'
+    authors: 'Ameisen, Lindsey, Pearce, et al.'
+    venue: 'Transformer Circuits Thread'
+    year: '2025'
+  - title: 'On the Biology of a Large Language Model'
+    url: 'https://transformer-circuits.pub/2025/attribution-graphs/biology.html'
+    venue: 'Transformer Circuits Thread'
+    year: '2025'
+media_subpath: "/ideas/circuits-attribution-graphs/"
+parent: '2026/transformer-circuits'
+order: 6
+image:
+  path: 'biology.png'
+  alt: 'Abstract biology'
+hideCaption: true
+# TODO: hero image before publishing
+---
+
+import Figure from "../../../../components/Figure.astro";
+import attributionGraphUi from "./ct-attribution-graph-ui.png";
+
+Notes on [Circuit Tracing: Revealing Computational Graphs in Language Models](https://transformer-circuits.pub/2025/attribution-graphs/methods.html) (Ameisen, Lindsey, Pearce, et al., March 2025) and its companion [On the Biology of a Large Language Model](https://transformer-circuits.pub/2025/attribution-graphs/biology.html), from Anthropic's [Transformer Circuits thread](/ideas/2026/transformer-circuits/).
+
+## Circuit Tracing
+
+### Core claim
+
+"The goal of this paper is to describe and validate our methodology in detail, using a few case studies for illustration."
+
+Overview:
+
+- Cross-layer transcoders (CLTs) construct an interpretable "replacement model". The largest CLT matches the underlying model's output in 50% of cases.
+- Attribution graphs "describe the steps a model used to produce an output for a target token on a particular prompt."
+- Pruning of attribution graphs "allows production of sparse, interpretable graphs of the model's computation for arbitrary prompts."
+- The approach was validated by perturbing the original model and the attribution graph and comparing responses: "We find that across prompts, perturbation experiments are generally qualitatively consistent with our attribution graphs, though there are some deviations."
+
+{/* TODO: re-export the CLT/replacement-model excalidraw sketch from the Obsidian vault as PNG/SVG and place it here */}
+
+The paper's own list of limitations: "The role of attention patterns, the impact of reconstruction errors, the identification of suppression motifs, and the difficulty of understanding global circuits."
+
+### The replacement model
+
+- One CLT layer per MLP layer.
+- Each CLT layer receives input from the residual stream and tries to reconstruct the MLP output using sparsely active [features](/ideas/2026/circuits-monosemanticity/).
+- All features in all layers are trained jointly.
+
+#### Architecture
+
+**Feature activations:**
+
+$$
+\mathbf{a}^{\ell}=\operatorname{JumpReLU}\left(W_{enc}^{\ell} \mathbf{x}^{\ell}\right)
+$$
+
+where:
+
+- $\mathbf{a}^{\ell}$ is the CLT feature activations
+- $\mathbf{x}^{\ell}$ is the original model's residual stream
+- $W_{enc}^{\ell}$ is the CLT encoder matrix at layer $\ell$
+
+**Reconstruction of the MLP outputs:**
+
+$$
+\hat{\mathbf{y}}^{\ell}=\sum_{\ell^{\prime}=1}^{\ell} W_{dec}^{\ell^{\prime} \rightarrow \ell} \mathbf{a}^{\ell^{\prime}}
+$$
+
+where:
+
+- $\mathbf{y}^{\ell}$ is the output of the original model's MLP at layer $\ell$
+- $\hat{\mathbf{y}}^{\ell}$ is the CLT's attempted reconstruction
+- $W_{dec}^{\ell^{\prime} \rightarrow \ell}$ is the CLT decoder matrix for features at layer $\ell^{\prime}$ outputting to layer $\ell$
+
+Trained with two loss functions. Reconstruction:
+
+$$
+L_{\mathrm{MSE}}=\sum_{\ell=1}^L\left\|\hat{\mathbf{y}}^{\ell}-\mathbf{y}^{\ell}\right\|^2
+$$
+
+and sparsity:
+
+$$
+L_{\text {sparsity }}=\lambda \sum_{\ell=1}^L \sum_{i=1}^N \tanh \left(c \cdot\left\|\mathbf{W}_{\mathbf{dec}, \mathbf{i}}^{\ell}\right\| \cdot a_i^{\ell}\right)
+$$
+
+where $\lambda$ is the overall sparsity penalty, $c$ is "another hyperparameter", $L$ is the number of layers, $N$ is the number of features per layer, and $\mathbf{W}_{\text{dec}, i}^{\ell}$ is the concatenation of all decoder vectors of feature $i$.
+
+> [!quote]
+> We trained CLTs of varying sizes on a small 18-layer transformer model ("18L"), and on Claude 3.5 Haiku. The total number of features across all layers ranged from 300K to 10M features (for 18L) and from 300K to 30M features (for Haiku).
+
+(A footnote adds that 18L has no MLP in layer 0, so its CLT has 17 layers.)
+
+#### From cross-layer transcoder to replacement model
+
+- A simple eval measures the fraction of completions for which the replacement model's most likely token matches the underlying model's.
+- The fraction improves as CLT size increases.
+- The largest 18L CLT matches the underlying model's next-token completion on 50% of a diverse set of pretraining-style prompts.
+
+#### The local replacement model
+
+- There is a significant gap between the replacement model and the underlying model; reconstruction errors can compound across layers.
+- The "local replacement model" is a prompt-specific version that uses the attention patterns and normalization denominators from the underlying model on that prompt, plus error adjustments for the difference between the MLP and CLT outputs.
+- "The local replacement model can be viewed as a very large fully connected neural network" whose neurons are the CLT features active at every token position.
+
+### Attribution graphs
+
+"Nodes suggest which features matter for a model's output, and edges suggest how they matter."
+
+#### Constructing an attribution graph for a prompt
+
+Graphs contain four types of nodes:
+
+1. **Output** — candidate output tokens; only the $\leq 10$ tokens needed to reach 95% probability are constructed.
+2. **Intermediate** — active CLT features at each prompt token position.
+3. **Input** — the embeddings of the prompt tokens.
+4. **Error** — the portion of each MLP output in the underlying model unexplained by the CLT.
+
+Edges represent direct linear attributions in the local replacement model, with edge weight:
+
+$$
+A_{s \rightarrow t} := a_s w_{s \rightarrow t}
+$$
+
+where $s$ is a source feature node, $t$ a target feature node, $a_s$ the activation of the source feature, and $w_{s \rightarrow t}$ the (virtual) weight in the local replacement model viewed as a fully connected network — in terms of the underlying model, a sum over all linear paths (through attention-head OVs and residual connections) connecting the source feature's decoder vectors to the target feature's encoder vector. These edge weights can be computed efficiently with backwards Jacobians.
+
+> [!note]
+> The graphs do not contain information about the influence of nodes on other nodes *via their influence on attention patterns*, but do contain node-to-node influence through the outputs of frozen attention. In other words, they account for the information that flows from one token position to another, but not why the model moved that information — the "QK-circuits" are ignored while the "OV-circuits" are captured. Note also that the outgoing edges from a cross-layer feature aggregate the effect of its decodings at all of the layers it writes to.
+
+Pruning keeps the nodes and edges that directly or indirectly exert significant influence on the logit nodes.
+
+#### Learning from attribution graphs
+
+> [!quote]
+> Even following pruning, attribution graphs are quite information-dense. A pruned graph often contains hundreds of nodes and tens of thousands of edges — too much information to interpret all at once. To allow us to navigate this complexity, we developed an interactive attribution graphs visualization interface. The interface is designed to enable "tracing" key paths through the graph, retain the ability to revisit previously explored nodes and paths, and materialize the information needed to interpret features on an as-needed basis.
+
+<Figure
+  src={attributionGraphUi}
+  alt={"Annotated attribution graph interface: full graph with embedding, feature, error, and logit nodes; a selected and grouped subgraph with supernodes; and per-feature input/output edges, token predictions, and top activations"}
+  caption={"The attribution graph interface: the full pruned graph (top left), a manually grouped subgraph with supernodes (bottom left), and details for a selected feature — strongest input/output features by edge weight, token predictions, and top activating dataset examples. Figure from the paper."}
+/>
+
+{/* FIGURE IDEA: a simplified site-style anatomy of an attribution graph could replace the UI screenshot above:
+   a column of token positions, the four node types (input / feature / error / output) in distinct shapes,
+   a few weighted edges, one path traced in an accent color. The full interface screenshot could then move to the
+   "since the paper" section or out entirely — readers can open the real thing on Neuronpedia. */}
+
+#### Understanding and labeling features
+
+- Features are labeled with techniques similar to those in Scaling Monosemanticity.
+- Input and output features are easier to label: input features activate on specific tokens or closely related token categories (common in early layers); output features promote continuing with specific tokens or categories (common in late layers).
+- Features in the middle of the model are more abstract; their labels can draw on the contexts they activate over, their logit effects, and the features they connect to.
+
+#### Grouping features into supernodes
+
+- "Supernodes" are groupings of (feature, context position) pairs used for visualization and analysis.
+- Automated grouping strategies were insufficient to cover the range of useful groupings.
+- The grouping strategy depends on the analysis at hand and the roles features play in a given prompt.
+
+#### Validating attribution graph hypotheses with interventions
+
+{/* TODO: notes for section 3.5 (perturbation experiments, steering with supernodes, consistency results) were never taken; needs a read pass */}
+
+## On the Biology of a Large Language Model
+
+The companion paper applies the attribution-graph method to Claude 3.5 Haiku across a set of case studies — multi-step reasoning, planning in poetry, multilingual circuits, addition, medical diagnoses, hallucinations, refusals, jailbreaks, chain-of-thought faithfulness, and hidden goals.
+
+{/* TODO: read pass + notes — the source vault note has only a heading for this paper */}
+
+## What the evidence shows
+
+{/* NOTE: seeded evaluative draft — check it against your own read and rewrite in your voice before publishing */}
+
+- The number to hold onto is 50%: the best replacement model agrees with the underlying model's next token only half the time, and everything downstream (graphs, case studies) inherits that gap through error nodes.
+- Validation is perturbation-based and "generally qualitatively consistent … though there are some deviations." The method is better treated as a hypothesis generator than as a measurement instrument, and the paper mostly frames it that way.
+- Attention does real work the graphs don't explain: attention patterns are frozen and QK-circuits sit outside the graphs, so *why* information moved between positions is not part of the story. The thread's 2025 follow-up on attention (below) is the direct response.
+
+{/* TODO: expand once Biology notes exist — the case studies are where the method's usefulness is actually demonstrated */}
+
+## Since the papers
+
+Two things happened quickly. First, the method left the lab: Anthropic [open-sourced circuit tracing](https://www.anthropic.com/research/open-source-circuit-tracing) in mid-2025 via the [circuit-tracer library](https://github.com/safety-research/circuit-tracer) (built by Anthropic Fellows with Decode Research), and [Neuronpedia hosts an interactive version](https://www.neuronpedia.org/graph/info) where anyone can generate attribution graphs for open models like Gemma 2 2B and Llama 3.2 1B — thousands of user-generated graphs so far, and the same interface pattern as the paper's. Second, the biggest acknowledged gap got a follow-up: [Tracing Attention Computation Through Feature Interactions](https://transformer-circuits.pub/2025/attention-qk/index.html) extends the method to explain attention patterns themselves in terms of feature interactions, folding QK information into attribution graphs.
+
+## Further material
+
+- [Neuronpedia's attribution graph interface](https://www.neuronpedia.org/graph/info) — generate and explore graphs on open models without any setup.
+- [circuit-tracer on GitHub](https://github.com/safety-research/circuit-tracer) — the open-source implementation.

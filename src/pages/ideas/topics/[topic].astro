@@ -13,6 +13,7 @@ import {
 } from "../../../config/topicLandingPages";
 import { getCollectionPageStructuredData } from "../../../utils/structuredData";
 import { getIconForType, getColorForType, capitalize } from "../../../utils/postIcons";
+import { compareSeriesOrder } from "../../../utils/series";
 import socialCards from "../../../config/socialCards.json";
 
 export async function getStaticPaths() {
@@ -137,12 +138,7 @@ for (const parentSlug of parentSlugs) {
 
   const children = postCards
     .filter((post) => post.parent === parent.slug && topicSlugs.has(post.slug))
-    .sort(
-      (a, b) =>
-        (a.order ?? Infinity) - (b.order ?? Infinity) ||
-        dateValue(a.date) - dateValue(b.date) ||
-        a.title.localeCompare(b.title)
-    );
+    .sort(compareSeriesOrder);
 
   if (children.length === 0) continue;
 

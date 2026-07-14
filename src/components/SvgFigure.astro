@@ -1,0 +1,92 @@
+---
+/**
+ * Figure wrapper for inline-SVG diagrams. Mirrors Figure.astro's caption
+ * styling and shares its Astro.locals.figureCounter so numbering stays
+ * consistent when a post mixes image figures and SVG figures.
+ */
+interface Props {
+  alt: string;
+  caption?: string;
+  numbered?: boolean;
+  maxWidth?: number;
+}
+
+const { alt, caption, numbered = true, maxWidth } = Astro.props;
+
+let figureNumber: number | undefined;
+if (numbered) {
+  if (!Astro.locals.figureCounter) {
+    Astro.locals.figureCounter = 0;
+  }
+  Astro.locals.figureCounter++;
+  figureNumber = Astro.locals.figureCounter;
+}
+---
+
+<figure class="figure svg-figure" style={maxWidth ? `--fig-max: ${maxWidth}px` : undefined}>
+  <div class="svg-wrap" role="img" aria-label={alt}>
+    <slot />
+  </div>
+  {
+    caption && (
+      <figcaption class="caption">
+        {numbered && figureNumber && <strong>Figure {figureNumber}: </strong>}
+        {caption}
+      </figcaption>
+    )
+  }
+</figure>
+
+<style>
+  .figure {
+    margin: 1rem 0;
+    text-align: center;
+  }
+
+  .svg-wrap {
+    max-width: var(--fig-max, 100%);
+    margin: 0 auto;
+  }
+
+  .svg-wrap :global(svg) {
+    width: 100%;
+    height: auto;
+    display: block;
+    font-family: var(--font-body);
+  }
+
+  .caption {
+    margin-top: 0.75rem;
+    font-size: 0.9rem;
+    font-style: italic;
+    color: var(--sol-1);
+    line-height: 1.4;
+    max-width: min(90%, 800px);
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .caption strong {
+    font-style: normal;
+    color: var(--sol-9);
+  }
+
+  [data-effective-theme="dark"] .caption {
+    color: var(--sol-0);
+  }
+
+  [data-effective-theme="dark"] .caption strong {
+    color: var(--sol-10);
+  }
+
+  @media (max-width: 720px) {
+    .figure {
+      margin: 1.5rem 0;
+    }
+
+    .caption {
+      font-size: 0.85rem;
+      max-width: 90%;
+    }
+  }
+</style>

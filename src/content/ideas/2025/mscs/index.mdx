@@ -9,12 +9,15 @@ tags: ['MSCS', 'computer-science', 'learning-in-public']
 category: ['projects']
 draft: false
 audience: 'All'
+cite: true
 media_subpath: "/ideas/mscs/"
 image:
   path: "./rembrandt-computer5.png"
   alt: 'Rembrandt Computer'
 hideCaption: true
 ---
+
+import PostLink from "../../../../components/PostLink.astro";
 
 I completed Georgia Tech's Master of Science in Computer Science in May 2026. I started the program in Spring 2024 after several years in software engineering, and built my course plan around machine learning and computing systems.
 
@@ -28,11 +31,10 @@ I completed ten courses. The machine learning side covered model training, reinf
 
 ### Spring 2024
 
-- [CS 6200: Graduate Introduction to Operating Systems (GIOS)](/ideas/2025/gios-retro/)
-  - [Project 1: Simple File System](/ideas/2025/gios-pr1/)
-  - There was no Project 2 the semester I took the course.
-  - [Project 3: Proxy and Cache](/ideas/2025/gios-pr3/)
-  - [Project 4: Distributed File System](/ideas/2025/gios-pr4/)
+<PostLink slug="2025/gios-retro" size="lg" />
+<PostLink slug="2025/gios-pr1" size="sm" indent />
+<PostLink slug="2025/gios-pr3" size="sm" indent />
+<PostLink slug="2025/gios-pr4" size="sm" indent />
 
 ### Summer 2024
 
@@ -40,48 +42,63 @@ I took the summer off and traveled through Europe.
 
 ### Fall 2024
 
-  - [CS 7641: Machine Learning (ML)](/ideas/2025/ml-retro/)
-    - [Project 1: Supervised Learning](/ideas/2025/ml-a1/)
-    {/* - [Project 2: Randomized Optimization](/ideas/2025/ml-a2/) */}
-    {/* - [Project 3: Unsupervised Learning & Dimensionality Reduction](/ideas/2025/ml-a3/) */}
-    {/* - [Project 4: Reinforcement Learning](/ideas/2025/ml-a4/) */}
-  - CS 6290: High Performance Computer Architecture (HPCA)
+<PostLink slug="2025/ml-retro" size="lg" />
+<PostLink slug="2025/ml-a1" size="sm" indent />
+<PostLink slug="2025/ml-a2" size="sm" indent>Project 2: Randomized Optimization</PostLink>
+<PostLink slug="2025/ml-a3" size="sm" indent>Project 3: Unsupervised Learning & Dimensionality Reduction</PostLink>
+<PostLink slug="2025/ml-a4" size="sm" indent>Project 4: Reinforcement Learning</PostLink>
+<PostLink slug="2025/hpca-retro" size="lg">CS 6290: High Performance Computer Architecture (HPCA)</PostLink>
 
-### 🌱 Spring 2025:
-  - CS 7643: Deep Learning (DL)
-  {/* - [CS 7643: Deep Learning (DL)](/ideas/2025/dl-retro/)
-    - [Project 1: Foundations from Scratch](/ideas/2025/dl-a1/)
-    - [Project 2: ConvNets and Training Pipelines](/ideas/2025/dl-a2/)
-    - [Project 3: Seq2Seq, Attention, and Transformers](/ideas/2025/dl-a3/)
-    - [Project 4: VAE, GAN, and Diffusion](/ideas/2025/dl-a4/)
-    - [Final Project: Representation Comparison and Interpretability](/ideas/2025/dl-final-project/) */}
-  - CS 6210: Advanced Operating Systems (AOS)
+### Spring 2025:
+
+<PostLink slug="2025/dl-retro" size="lg">CS 7643: Deep Learning (DL)</PostLink>
+<PostLink slug="2025/dl-a1" size="sm" indent />
+<PostLink slug="2025/dl-a2" size="sm" indent />
+<PostLink slug="2025/dl-a3" size="sm" indent />
+<PostLink slug="2025/dl-a4" size="sm" indent />
+<PostLink slug="2025/dl-final-project" size="sm" indent />
+<PostLink slug="2025/aos-retro" size="lg">CS 6210: Advanced Operating Systems (AOS)</PostLink>
 
 ### Summer 2025
 
-- ISYE 6525: High-Dimensional Data Analysis (HDDA)
+<PostLink slug="2025/hdda-overview" size="lg">ISYE 6525: High-Dimensional Data Analysis (HDDA)</PostLink>
 
 ### Fall 2025
 
-- CS 7642: Reinforcement Learning (RL)
-- [CS 8803 O21: GPU Hardware and Software](/ideas/2026/gpu-retro/)
-  - [Projects 1 and 2: tiled matrix multiplication and bitonic sort](/ideas/2026/gpu-p1p2/)
-  - [Projects 3 and 4: warp scheduling and compute/tensor cores](/ideas/2026/gpu-p3p4/)
-  - [Project 5: static branch-divergence analysis](/ideas/2026/gpu-p5/)
-  - [Extra project: FlashAttention and LLM inference on GPUs](/ideas/2026/gpu-p6/)
-- CS 8903: Independent Research. I worked on offline model selection over 84.5 million edX clickstream events. The project became a first-author paper, [*When Offline Selectors Cannot Beat the Best Single Model*](https://arxiv.org/abs/2606.04161), accepted to the ICML 2026 DEMO Workshop.
+<PostLink slug="2025/rl-retro" size="lg">CS 7642: Reinforcement Learning (RL)</PostLink>
+
+<PostLink slug="2026/gpu-retro" size="lg" />
+<PostLink slug="2026/gpu-p1p2" size="sm" indent />
+<PostLink slug="2026/gpu-p3p4" size="sm" indent />
+<PostLink slug="2026/gpu-p5" size="sm" indent />
+<PostLink slug="2026/gpu-p6" size="sm" indent />
+
+- CS 8903: Independent Research. I worked on offline model selection over 84.5 million edX clickstream events. The project became a first-author paper, accepted to the ICML 2026 DEMO Workshop:
+
+<PostLink slug="2026/paper-offline-selectors" size="md" indent />
 
 ### Spring 2026
 
-- CS 6515: Introduction to Graduate Algorithms
+<PostLink slug="2026/ga-retro" size="lg">CS 6515: Introduction to Graduate Algorithms</PostLink>
 
 ## Research alongside the program
 
 The last year of the degree overlapped with several AI safety research programs:
 
-- In Fall 2025, I worked with [SPAR](https://sparai.org/) on goal drift in long-horizon agents. That project produced three co-authored workshop papers on inherited goal drift, asymmetric goal drift under value conflict, and inference effects in medical allocation.
+- In Fall 2025, I worked with [SPAR](https://sparai.org/) on goal drift in long-horizon agents. That project produced three co-authored workshop papers:
+
+<PostLink slug="2026/paper-inherited-goal-drift" size="md" indent />
+<PostLink slug="2026/paper-asymmetric-goal-drift" size="md" indent />
+<PostLink slug="2026/paper-same-facts-different-updates" size="md" indent />
+
 - In January and February 2026, I completed [ARENA 7.0](https://www.arena.education/curriculum) in London. My capstone used mechanistic interpretability to study how moral fine-tuning changes attention pathways in Gemma-2-2b.
-- From December 2025 into 2026, I worked through [MARS](https://caish.org/mars) and then continued on with Redwood Research. Our [attack-selection paper](https://arxiv.org/abs/2606.06529) showed that selective attacker policies can make agentic control evaluations look substantially less safe than evaluations using naive attackers.
+
+<PostLink slug="2026/llm-morality-mech-interp" size="md" indent />
+
+- From December 2025 into 2026, I worked through [MARS](https://caish.org/mars) and then continued on with Redwood Research. Our attack-selection paper showed that selective attacker policies can make agentic control evaluations look substantially less safe than evaluations using naive attackers:
+
+<PostLink slug="2026/paper-attack-selection" size="md" indent />
+
 - In Spring 2026, I returned to SPAR for a project on human-AI complementarity in scalable oversight. I contributed to methods and the FastAPI backend for a participant study run through Prolific.
 
 ## What I took from it

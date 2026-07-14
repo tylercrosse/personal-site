@@ -1,0 +1,113 @@
+---
+title: 'Notes on In-Context Learning and Induction Heads'
+description: 'Notes on the six lines of evidence that induction heads are the main mechanism behind in-context learning, and the training phase change in which they form.'
+date: '2026-07-12'
+status: 'in-progress'
+type: 'note'
+tags: ['mechanistic-interpretability', 'deep-learning', 'research', 'AI-safety']
+category: ['ideas']
+draft: true
+audience: 'All'
+license: true
+sources:
+  - title: 'In-Context Learning and Induction Heads'
+    url: 'https://transformer-circuits.pub/2022/in-context-learning-and-induction-heads/index.html'
+    authors: 'Olsson et al.'
+    venue: 'Transformer Circuits Thread'
+    year: '2022'
+media_subpath: "/ideas/circuits-induction-heads/"
+parent: '2026/transformer-circuits'
+order: 2
+image:
+  path: 'induction.png'
+  alt: 'Abstract shapes'
+hideCaption: true
+# TODO: hero image before publishing
+---
+
+import Figure from "../../../../components/Figure.astro";
+import InductionCircuitFigure from "../../../../components/ideas/circuits/InductionCircuitFigure.astro";
+import phaseChange from "./induction-phase-change.png";
+import attentionPattern from "./induction-attention-pattern.png";
+
+Notes on [In-Context Learning and Induction Heads](https://transformer-circuits.pub/2022/in-context-learning-and-induction-heads/index.html) (Olsson et al., March 2022), the second paper in Anthropic's [Transformer Circuits thread](/ideas/2026/transformer-circuits/).
+
+## Core claim
+
+The paper presents six complementary lines of evidence arguing that induction heads may be the mechanistic source of general in-context learning in transformer models of any size. The case is correlational for large models and the paper says so plainly; the strength of the claim comes from six weak arguments pointing the same direction rather than one decisive experiment.
+
+## What an induction head is
+
+Induction heads were first identified in two-layer attention-only models in [the framework paper](/ideas/2026/circuits-framework/). They are implemented by a circuit of two attention heads in different layers that work together to copy or complete patterns. The first head copies information from the previous token into each token, which makes it possible for the second head to attend to tokens based on what happened *before* them rather than their own content. The circuit completes patterns of the form `[A][B] … [A] → [B]`.
+
+> [!quote] The paper's operational definition
+> Formally, we define an induction head as one which exhibits the following two properties on a repeated random sequence of tokens:
+> - **Prefix matching:** The head attends back to previous tokens that were followed by the current and/or recent tokens. The simplest induction heads match just one preceding token. But we also often observe induction heads that perform a fuzzy match over several preceding tokens. That is, it attends to the token which induction would suggest comes next.
+> - **Copying:** The head's output increases the logit corresponding to the attended-to token.
+
+Or as the paper compresses it: "induction heads are any heads that empirically increase the likelihood of [B] given [A][B]...[A] when shown a repeated sequence of completely random tokens." Defining them on random sequences matters — it rules out heads that just exploit learned statistics of natural text.
+
+<Figure
+  src={attentionPattern}
+  alt={"An induction head processing repeated text: the attention pattern moves information from the token that followed the previous occurrence of the current prefix, raising that token's logit"}
+  caption={"An induction head on repeated text: on the second occurrence of 'Pot', the head attends to the token that followed 'Pot' last time ('ters') and raises its logit. The same mechanism works on 'D…urs…ley'. Figure from the paper."}
+/>
+
+## How the circuit works
+
+For the pattern `[A][B] … [A] → [B]`, the induction head — sitting at the second `[A]` — has to attend to `[B]`. That step is worth slowing down on. Attention works by matching a **query** at the current position against **keys** at earlier positions, and if `[B]`'s key is built only from `[B]`'s own content, no query built from `[A]` can reliably find it: nothing about `[B]` says "I came right after an `[A]`."
+
+The circuit gets around this with two heads in different layers:
+
+1. **A previous-token head (layer 1)** attends, at every position, to the token immediately before it and writes a copy of that token into a subspace of the current position's residual stream. After it runs, position `[B]` carries a second piece of information alongside its own identity: "the token before me was `[A]`."
+2. **The induction head (layer 2)** builds its keys from that subspace and its queries from the current token. At the second `[A]`, the query says "I am `[A]`"; the key at `[B]` says "I follow an `[A]`"; they match, and attention lands on `[B]`. The OV circuit then does the boring part: copy the attended token, i.e. raise the logit of `[B]` itself.
+
+<InductionCircuitFigure />
+
+In the [framework paper's](/ideas/2026/circuits-framework/) terms this is **K-composition**: the induction head's keys are computed from the output of the layer-1 head, so the QK circuit that matters is the virtual weight
+
+$$
+W_E^T \, W_{QK}^{\text{ind}} \, W_{OV}^{\text{prev}} \, W_E
+$$
+
+— the current token's embedding on the query side, matched against the previous-token head's write on the key side. When that matrix is large on its diagonal (every token matches copies of itself), the head does prefix matching. The framework paper also exhibits a second construction that produces the same behavior — "pointer arithmetic" via Q-composition, attending one position past wherever an earlier head attended — but the K-composition version is the one usually drawn.
+
+This is also why one-layer models can't do it. With a single layer, queries and keys are both functions of individual token embeddings, so an attention score can only depend on the identities of the two tokens being compared — which is how one-layer models end up as skip-trigram machines. The rule "attend to whatever followed the last `[A]`" needs a key that knows about a *neighboring* token, and that information only exists after another head has moved it there. The two-head requirement is what makes the phase change (argument 1 below) such clean evidence: models with a single layer can never form the circuit, and they never show the phase change.
+
+## The six arguments
+
+The argument names and one-line summaries below follow the paper's own framing:
+
+| # | Argument | What it shows |
+|---|----------|---------------|
+| 1 | [Macroscopic co-occurrence](https://transformer-circuits.pub/2022/in-context-learning-and-induction-heads/index.html#argument-phase-change) | Early in training, models undergo a "phase change" during which induction heads form and, simultaneously, in-context learning improves dramatically. |
+| 2 | [Macroscopic co-perturbation](https://transformer-circuits.pub/2022/in-context-learning-and-induction-heads/index.html#argument-architectural-requirements) | Architecture changes that shift whether (and when) induction heads can form shift the in-context learning improvement in a precisely matching way. |
+| 3 | [Direct ablation](https://transformer-circuits.pub/2022/in-context-learning-and-induction-heads/index.html#argument-ablations) | Knocking out induction heads at test time in small models greatly decreases in-context learning. |
+| 4 | [Examples of generality](https://transformer-circuits.pub/2022/in-context-learning-and-induction-heads/index.html#argument-induction-heads-can-implement-abstract-behaviors) | Heads that meet the narrow copying definition empirically also implement more sophisticated, abstract kinds of in-context learning. |
+| 5 | [Mechanistic plausibility](https://transformer-circuits.pub/2022/in-context-learning-and-induction-heads/index.html#argument-induction-head-mechanism) | In small models the mechanism is fully explained, and it suggests natural ways the same circuit could be repurposed for general in-context learning. |
+| 6 | [Continuity from small to large](https://transformer-circuits.pub/2022/in-context-learning-and-induction-heads/index.html#argument-extrapolation) | Everything measurable about induction heads and in-context learning varies smoothly from small to large models, suggesting the mechanisms are the same. |
+
+The paper is explicit that the first five arguments are strongest for small models; argument 6 — continuity — is what carries the claim to large ones.
+
+<Figure
+  src={phaseChange}
+  alt={"In-context learning score and per-head ablation across one-, two-, and three-layer models during training, showing a phase change window where induction heads form"}
+  caption={"The phase change: in models with more than one layer, in-context learning improves sharply (~-0.15 to ~-0.4 nats) in a narrow window of training, and per-head ablations show the heads driving the improvement are almost entirely induction heads. One-layer models, which cannot form the two-head circuit, show no phase change. Figure from the paper."}
+/>
+
+## What the evidence shows
+
+{/* NOTE: seeded evaluative draft — check it against your own read and rewrite in your voice before publishing */}
+
+- The paper describes its own case as circumstantial: for large models, no argument is causal. The mechanism is verified only in small attention-only models, and the large-model claim rests on the continuity of Argument 6.
+- The phase change is an observation that stands on its own regardless of the causal claim: in-context learning improves sharply in a narrow training window, at the same time induction heads form, and the window is visible in the loss curve.
+- The definition of an induction head is behavioral (prefix matching plus copying on repeated random tokens), so in large models "induction head" labels a behavior, not a verified circuit.
+
+## Since the paper
+
+The hypothesis has been narrowed rather than confirmed. [Todd et al. (ICLR 2024)](https://arxiv.org/abs/2310.15213) identified **function vector heads**: attention heads that carry a compact representation of the demonstrated task itself, not just token-level copying. Building on that, [Yin & Steinhardt (2025)](https://arxiv.org/abs/2502.14010) ran head-ablation studies comparing the two mechanisms directly and found that few-shot in-context learning performance depends primarily on function vector heads, especially in larger models — with the interesting wrinkle that many function vector heads *start out* as induction heads during training before transitioning. Other work has split induction into finer-grained variants, such as concept-level induction heads that copy word meanings rather than literal tokens ([Feucht et al., 2025](https://arxiv.org/abs/2504.03022)). The broad shape — induction-style copying matters early and for simple pattern completion, while richer task representations carry sophisticated in-context learning — is a good example of a circumstantial six-argument case being partly overturned by later causal experiments.
+
+## Further material
+
+- [ARENA's induction heads exercises](https://learn.arena.education/chapter1_transformer_interp/02_intro_mech_interp/) — locate and verify induction heads in a real 2-layer model with TransformerLens.
+- [Function vectors project page](https://functions.baulab.info/) — code and data for the function-vector line of work.

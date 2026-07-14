@@ -19,6 +19,7 @@ test-results/
 
 # private notes
 notes/
+planning/
 
 # environment variables
 .env

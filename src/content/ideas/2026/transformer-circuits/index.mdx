@@ -1,0 +1,88 @@
+---
+title: 'Transformer Circuits Thread Notes'
+description: "Paper-by-paper notes on Anthropic's Transformer Circuits thread: core claims, methods in plain language, and what the evidence does and doesn't show."
+date: '2026-07-12'
+status: 'in-progress'
+type: 'retro'
+tags: ['mechanistic-interpretability', 'deep-learning', 'research', 'AI-safety']
+category: ['ideas']
+draft: true
+audience: 'All'
+media_subpath: "/ideas/transformer-circuits/"
+image:
+  path: 'circuits-index.png'
+  alt: 'Abstract shapes'
+hideCaption: true
+# TODO: hero image before publishing
+---
+
+import PostLink from "../../../../components/PostLink.astro";
+import SeriesDagFigure from "../../../../components/ideas/circuits/SeriesDagFigure.astro";
+
+{/* NOTATION (series-wide, matches the framework paper and the CLT section of the attribution-graphs post):
+   residual stream x (x_i at position i); token embedding W_E, unembedding W_U; per-head W_Q, W_K, W_V, W_O,
+   used only via the combined matrices W_QK = W_Q^T W_K and W_OV = W_O W_V; attention pattern A (A^h per head);
+   layer index ℓ; dictionary features: activations a, encoder W_enc, decoder W_dec.
+   New math in any post in this series should use these symbols. */}
+
+The [Transformer Circuits thread](https://transformer-circuits.pub/) is the running publication venue for Anthropic's interpretability team. Since 2021 it has introduced, paper by paper, most of the standard toolkit of mechanistic interpretability: the residual-stream view of transformers, induction heads, superposition, sparse autoencoders, and attribution graphs.
+
+These are my notes on the thread, one post per paper (or pair of closely related papers). Each post works through the paper's core mechanism — how the thing actually works, not just what the paper claims about it — and then two sections a paper can't write about itself: what the evidence does and doesn't show, and what has happened since. The originals are free, interactive, and unusually well produced; these posts are written to be read alongside them, not instead of them.
+
+## The notes
+
+<PostLink slug="2026/circuits-framework" size="md"><em>A Mathematical Framework for Transformer Circuits</em> — notes coming soon</PostLink>
+<PostLink slug="2026/circuits-induction-heads" size="md"><em>In-Context Learning and Induction Heads</em> — notes coming soon</PostLink>
+<PostLink slug="2026/circuits-superposition" size="md"><em>Toy Models of Superposition</em> — notes coming soon</PostLink>
+<PostLink slug="2026/circuits-monosemanticity" size="md"><em>Towards / Scaling Monosemanticity</em> — notes coming soon</PostLink>
+<PostLink slug="2026/circuits-crosscoders" size="md"><em>Sparse Crosscoders</em> — notes coming soon</PostLink>
+<PostLink slug="2026/circuits-attribution-graphs" size="md"><em>Circuit Tracing</em> and <em>the Biology of a Large Language Model</em> — notes coming soon</PostLink>
+
+The order is chronological, and chronology here is also the dependency graph: each paper leans on the vocabulary of the ones before it. The framework paper defines circuits and the residual stream; induction heads are the first circuit found in the wild; toy models explain why neurons are the wrong unit of analysis; the monosemanticity papers build the dictionary-learning response; crosscoders generalize dictionaries across layers and models; and attribution graphs assemble all of it into end-to-end explanations of model outputs.
+
+<SeriesDagFigure />
+
+{/* TODO: closing note on open problems once the series is done */}
+
+## Where the thread came from
+
+The thread is a continuation of two earlier bodies of work on vision models, both published at Distill. The one-line descriptions below are the papers' own.
+
+**Distill (feature visualization era):**
+
+- 2017-11 [Feature Visualization](https://distill.pub/2017/feature-visualization) — How neural networks build up their understanding of images.
+- 2018-06 [The Building Blocks of Interpretability](https://distill.pub/2018/building-blocks) — Interpretability techniques are normally studied in isolation. We explore the powerful interfaces that arise when you combine them — and the rich structure of this combinatorial space.
+- 2019-03 [Activation Atlas](https://distill.pub/2019/activation-atlas) — By using feature inversion to visualize millions of activations from an image classification network, we create an explorable activation atlas of features the network has learned and what concepts it typically represents.
+
+**The Distill Circuits thread:**
+
+- 2020-03 [Zoom In: An Introduction to Circuits](https://distill.pub/2020/circuits/zoom-in/) — By studying the connections between neurons, we can find meaningful algorithms in the weights of neural networks.
+- 2020-06 [Curve Detectors](https://distill.pub/2020/circuits/curve-detectors/) — Every vision model we've explored in detail contains neurons which detect curves.
+- 2020-12 [Naturally Occurring Equivariance in Neural Networks](https://distill.pub/2020/circuits/equivariance/) — Neural networks naturally learn many transformed copies of the same feature, connected by symmetric weights.
+- 2021-01 [Curve Circuits](https://distill.pub/2020/circuits/curve-circuits/) — We reverse engineer a non-trivial learned algorithm from the weights of a neural network and use its core ideas to craft an artificial artificial neural network from scratch that reimplements it.
+- 2021-02 [Visualizing Weights](https://distill.pub/2020/circuits/visualizing-weights/) — We present techniques for visualizing, contextualizing, and understanding neural network weights.
+- 2021-04 [Branch Specialization](https://distill.pub/2020/circuits/branch-specialization/) — When a neural network layer is divided into multiple branches, neurons self-organize into coherent groupings.
+- 2021-04 [Weight Banding](https://distill.pub/2020/circuits/weight-banding/) — Weights in the final layer of common visual models appear as horizontal bands.
+
+**Anthropic's Transformer Circuits thread** (the papers these notes cover):
+
+- 2021-12 [A Mathematical Framework for Transformer Circuits](https://transformer-circuits.pub/2021/framework/index.html) — Our early mathematical framework for reverse engineering models, demonstrated by reverse engineering small toy models.
+- 2022-03 [In-Context Learning and Induction Heads](https://transformer-circuits.pub/2022/in-context-learning-and-induction-heads/index.html) — An exploration of the hypothesis that induction heads are the primary mechanism behind in-context learning. We also report the existence of a previously unknown phase change in transformer language models.
+- 2022-09 [Toy Models of Superposition](https://transformer-circuits.pub/2022/toy_model/index.html) — Neural networks often seem to pack many unrelated concepts into a single neuron — a puzzling phenomenon known as 'polysemanticity'. We build toy models where the origins and dynamics of polysemanticity can be fully understood.
+- 2023-01 [Superposition, Memorization and Double Descent](https://transformer-circuits.pub/2023/toy-double-descent/index.html) — We extend our previous work on toy models to shed light on how models generalize beyond their training data.
+- 2023-10 [Towards Monosemanticity: Decomposing Language Models With Dictionary Learning](https://transformer-circuits.pub/2023/monosemantic-features/index.html) — Using a sparse autoencoder, we extract a large number of interpretable features from a one-layer transformer.
+- 2024-05 [Scaling Monosemanticity: Extracting Interpretable Features from Claude 3 Sonnet](https://transformer-circuits.pub/2024/scaling-monosemanticity/index.html) — Using a sparse autoencoder, we extract a large number of interpretable features from Claude 3 Sonnet. Some appear to be safety-relevant.
+- 2024-10 [Sparse Crosscoders for Cross-Layer Features and Model Diffing](https://transformer-circuits.pub/2024/crosscoders/index.html) — A preliminary note on a way to get consistent features across layers, or across models.
+- 2025-03 [Circuit Tracing: Revealing Computational Graphs in Language Models](https://transformer-circuits.pub/2025/attribution-graphs/methods.html) — We describe an approach to tracing the "step-by-step" computation involved when a model responds to a single prompt.
+- 2025-03 [On the Biology of a Large Language Model](https://transformer-circuits.pub/2025/attribution-graphs/biology.html) — We investigate the internal mechanisms used by Claude 3.5 Haiku in a variety of contexts.
+
+**The ongoing tail** (major papers since, not yet covered by a post):
+
+- 2025-07 [Tracing Attention Computation Through Feature Interactions](https://transformer-circuits.pub/2025/attention-qk/index.html) — We describe and apply a method to explain attention patterns in terms of feature interactions, and integrate this information into attribution graphs.
+- 2025-10 [When Models Manipulate Manifolds: The Geometry of a Counting Task](https://transformer-circuits.pub/2025/linebreaks/index.html) — We find geometric structure underlying the mechanisms of a fundamental language model behavior.
+- 2025-10 [Emergent Introspective Awareness in Large Language Models](https://transformer-circuits.pub/2025/introspection/index.html) — We find evidence that language models can introspect on their internal states.
+- 2026-04 [Emotion Concepts and their Function in a Large Language Model](https://transformer-circuits.pub/2026/emotions/index.html) — We find representations of emotion concepts in Claude Sonnet 4.5 and show that they causally influence its outputs.
+- 2026-05 [Natural Language Autoencoders Produce Unsupervised Explanations of LLM Activations](https://transformer-circuits.pub/2026/nla/index.html) — We train Claude to translate its internal state into natural language.
+- 2026-07 [Verbalizable Representations Form a Global Workspace in Language Models](https://transformer-circuits.pub/2026/workspace/index.html) — We find that Claude maintains a small, privileged set of representations it can report on, control, and reason with, atop a much larger volume of automatic processing.
+
+The thread also publishes shorter monthly "Circuits Updates"; these notes stick to the major papers.

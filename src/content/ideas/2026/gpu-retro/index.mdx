@@ -9,6 +9,7 @@ category: ['mscs']
 draft: false
 featured: true
 audience: 'All'
+# cite: true
 media_subpath: "/ideas/gpu-retro/"
 image:
   path: "./hero-v3.png"
@@ -18,6 +19,7 @@ hideCaption: true
 
 import BookCard from "../../../../components/BookCard.astro";
 import Figure from "../../../../components/Figure.astro";
+import PostLink from "../../../../components/PostLink.astro";
 import pmppImg from "../../../books/pmpp.jpg";
 import compArchQuantImg from "../../../books/comp-arch-quant.jpg";
 import cudaByExampleImg from "../../../books/cuda-by-example.jpg";
@@ -52,10 +54,10 @@ There's a bit of a tension when writing a post like this. I want to be accurate 
 
 I wrote deeper dives on each of the projects:
 
-- **Projects 1 & 2:** [CUDA Fundamentals: Tiled Matrix Multiply & Bitonic Sort](/ideas/2026/gpu-p1p2/)
-- **Projects 3 & 4:** [GPU Simulation: Warp Scheduling & Compute/Tensor Cores](/ideas/2026/gpu-p3p4/)
-- **Project 5:** [Static Analysis: Detecting Branch Divergence](/ideas/2026/gpu-p5/)
-- **Extra Project:** [FlashAttention & LLM Inference on GPUs](/ideas/2026/gpu-p6/)
+<PostLink slug="2026/gpu-p1p2" size="md" />
+<PostLink slug="2026/gpu-p3p4" size="md" />
+<PostLink slug="2026/gpu-p5" size="md" />
+<PostLink slug="2026/gpu-p6" size="md" />
 
 ## GPU fundamentals
 

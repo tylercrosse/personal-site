@@ -1,0 +1,202 @@
+---
+import type { SeriesInfo } from "../utils/series";
+
+type Props = {
+  series: SeriesInfo;
+  // Open the panel above the pill — for placements near the bottom of the page.
+  openUp?: boolean;
+};
+
+const { series, openUp = false } = Astro.props;
+
+// On a child post the pill names the series and the reader's place in it; on
+// a parent post the series is the page itself, so the pill just counts the
+// posts and the panel lists them.
+const isChild = series.role === "child";
+const label = isChild
+  ? `${series.parent?.title ?? "This series"}${
+      series.total > 1 ? ` · ${series.position} of ${series.total}` : ""
+    }`
+  : `${series.children.length} post${series.children.length === 1 ? "" : "s"}`;
+const items = isChild ? series.siblings : series.children;
+const currentIndex = isChild ? series.position - 1 : -1;
+const parentLink = isChild ? series.parent : null;
+---
+
+<details class:list={["series-pill", { "series-pill-up": openUp }]}>
+  <summary>
+    <span>{label}</span>
+    <svg
+      class="series-pill-caret"
+      width="10"
+      height="10"
+      viewBox="0 0 10 10"
+      aria-hidden="true"
+    >
+      <path d="M1 3 L5 7 L9 3" fill="none" stroke="currentColor" stroke-width="1.5" />
+    </svg>
+  </summary>
+  <div class="series-panel">
+    {
+      parentLink && (
+        <a class="series-panel-parent" href={parentLink.href}>
+          {parentLink.title}
+        </a>
+      )
+    }
+    <ol class="series-panel-list">
+      {
+        items.map((item, index) => (
+          <li>
+            {index === currentIndex ? (
+              <span class="series-panel-current" aria-current="page">
+                {index + 1}. {item.title}
+              </span>
+            ) : (
+              <a href={item.href}>
+                {index + 1}. {item.title}
+              </a>
+            )}
+          </li>
+        ))
+      }
+    </ol>
+  </div>
+</details>
+
+<script>
+  // <details> doesn't close on outside click; make the dropdown behave like a menu.
+  document.addEventListener("click", (event) => {
+    document
+      .querySelectorAll<HTMLDetailsElement>("details.series-pill[open]")
+      .forEach((details) => {
+        if (event.target instanceof Node && !details.contains(event.target)) {
+          details.removeAttribute("open");
+        }
+      });
+  });
+</script>
+
+<style>
+  .series-pill {
+    position: relative;
+    margin-bottom: 0;
+  }
+
+  .series-pill summary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4em;
+    list-style: none;
+    cursor: pointer;
+    border: 1px solid var(--main-border-color);
+    border-radius: 6px;
+    padding: 0.3em 0.7em;
+    color: var(--sol-8);
+    transition: background-color 0.2s ease;
+  }
+
+  .series-pill summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .series-pill summary:hover {
+    background: var(--base4);
+    color: var(--sol-10);
+  }
+
+  .series-pill-caret {
+    flex-shrink: 0;
+    color: var(--sol-7);
+    transition: transform 0.15s ease;
+  }
+
+  .series-pill[open] .series-pill-caret {
+    transform: rotate(180deg);
+  }
+
+  .series-pill-up .series-pill-caret {
+    transform: rotate(180deg);
+  }
+
+  .series-pill-up[open] .series-pill-caret {
+    transform: rotate(0deg);
+  }
+
+  .series-pill-up .series-panel {
+    top: auto;
+    bottom: calc(100% + 0.5em);
+  }
+
+  .series-panel {
+    position: absolute;
+    top: calc(100% + 0.5em);
+    left: 0;
+    z-index: 20;
+    min-width: 18em;
+    max-width: min(32em, calc(100vw - 2rem));
+    background: #fff;
+    border: 1px solid var(--main-border-color);
+    border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    padding: 0.5em;
+  }
+
+  .series-panel-parent {
+    display: block;
+    padding: 0.4em 0.6em;
+    margin-bottom: 0.25em;
+    border-bottom: 1px solid var(--main-border-color);
+    border-radius: 4px 4px 0 0;
+    color: var(--sol-8);
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .series-panel-parent:hover {
+    background: var(--base4);
+    color: var(--sol-10);
+  }
+
+  .series-panel-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .series-panel-list a,
+  .series-panel-current {
+    display: block;
+    padding: 0.35em 0.6em;
+    border-radius: 4px;
+    color: var(--sol-8);
+    text-decoration: none;
+  }
+
+  .series-panel-list a:hover {
+    background: var(--base4);
+    color: var(--sol-10);
+  }
+
+  .series-panel-current {
+    font-weight: 600;
+    color: var(--sol-10);
+  }
+
+  :global([data-effective-theme="dark"]) .series-pill summary,
+  :global([data-effective-theme="dark"]) .series-panel,
+  :global([data-effective-theme="dark"]) .series-panel-parent {
+    border-color: var(--base01);
+  }
+
+  :global([data-effective-theme="dark"]) .series-pill summary:hover,
+  :global([data-effective-theme="dark"]) .series-panel-list a:hover,
+  :global([data-effective-theme="dark"]) .series-panel-parent:hover {
+    background: var(--base02);
+  }
+
+  :global([data-effective-theme="dark"]) .series-panel {
+    background: var(--base03);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  }
+</style>

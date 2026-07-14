@@ -7,6 +7,9 @@ import FormattedDate from "../../components/FormattedDate.astro";
 import readingTime from "reading-time";
 import { TAG_GROUPS } from "../../config/tagGroups";
 import { getIconForType, getColorForType, capitalize } from "../../utils/postIcons";
+import { compareSeriesOrder } from "../../utils/series";
+import PostLink from "../../components/PostLink.astro";
+import { LayoutGrid, List } from "lucide-astro";
 import socialCards from "../../config/socialCards.json";
 
 const posts = (await getCollection("ideas"))
@@ -87,17 +90,7 @@ const hierarchicalPosts = allPostsData
   .filter((post) => !post.parent) // Only top-level posts
   .map((post) => {
     const children = childrenByParent.get(post.slug) || [];
-    // Explicit order first, then chronologically (oldest to newest), then title.
-    children.sort((a, b) => {
-      const orderDelta = (a.order ?? Infinity) - (b.order ?? Infinity);
-      if (orderDelta !== 0) return orderDelta;
-      const aDate = a.date;
-      const bDate = b.date;
-      const dateDelta =
-        new Date(aDate || 0).valueOf() - new Date(bDate || 0).valueOf();
-      if (dateDelta !== 0) return dateDelta;
-      return a.title.localeCompare(b.title);
-    });
+    children.sort(compareSeriesOrder);
     return {
       ...post,
       children,
@@ -255,6 +248,26 @@ const hierarchicalPosts = allPostsData
       background-color: var(--accent);
       color: var(--black);
     }
+    .view-toggle {
+      display: inline-flex;
+      margin-left: auto;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .view-toggle button {
+      display: inline-flex;
+      align-items: center;
+      background: rgba(var(--gray-light), 0.8);
+      border: none;
+      padding: 0.35rem 0.6rem;
+      cursor: pointer;
+      color: var(--black);
+      transition: background-color 0.2s ease;
+    }
+    .view-toggle button.active {
+      background-color: var(--accent);
+      color: var(--black);
+    }
     .post-grid {
       display: flex;
       gap: 2rem;
@@ -268,12 +281,48 @@ const hierarchicalPosts = allPostsData
       }
     }
 
+    .post-views[data-view="list"] .post-grid {
+      display: none;
+    }
+    .post-views:not([data-view="list"]) .post-list {
+      display: none;
+    }
+    .post-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      max-width: 900px;
+    }
+    .post-list :global(.post-link) {
+      margin: 0;
+    }
+    .post-list-children {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+      margin-left: 2.5rem;
+    }
+    .post-list-item.hidden,
+    .post-list-child.hidden,
+    .post-list-children.hidden {
+      display: none;
+    }
+    @media (max-width: 480px) {
+      .post-list-children {
+        margin-left: 1.25rem;
+      }
+    }
+
     .masonry-column {
       flex: 1;
       display: flex;
       flex-direction: column;
       gap: 2rem;
       width: 100%;
+      /* Let columns shrink below their content's min-content width so a
+         nowrap child title ellipsizes instead of widening its column */
+      min-width: 0;
     }
 
     @media (min-width: 768px) {
@@ -443,6 +492,43 @@ const hierarchicalPosts = allPostsData
       object-fit: cover;
       object-position: center;
       border-radius: 0;
+    }
+
+    /* Compact one-line rows for note-type children */
+    .child-post-item--compact {
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 0.75rem;
+      min-width: 0;
+    }
+
+    .child-post-item--compact .draft-indicator,
+    .child-post-item--compact .compact-note-icon {
+      display: inline-flex;
+      flex-shrink: 0;
+    }
+
+    .compact-note-title {
+      flex: 1;
+      min-width: 0;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      font-family: var(--font-heading);
+      font-weight: 600;
+      color: var(--sol-10);
+    }
+
+    :global([data-effective-theme="dark"]) .compact-note-title {
+      color: var(--sol-5);
+    }
+
+    .compact-note-time {
+      flex-shrink: 0;
+      font-size: 0.75rem;
+      color: var(--sol-7);
+      white-space: nowrap;
     }
     .post-card-content {
       padding: 1rem;
@@ -665,6 +751,14 @@ const hierarchicalPosts = allPostsData
             ))
           }
         </select>
+        <div class="view-toggle" role="group" aria-label="Layout view">
+          <button id="view-grid-btn" class="active" aria-pressed="true" aria-label="Grid view">
+            <LayoutGrid size={16} />
+          </button>
+          <button id="view-list-btn" aria-pressed="false" aria-label="List view">
+            <List size={16} />
+          </button>
+        </div>
       </div>
 
       <div class="filters" data-pagefind-ignore>
@@ -686,7 +780,8 @@ const hierarchicalPosts = allPostsData
     </div>
   </header>
 
-  <section class="post-grid slide-in-block" data-pagefind-ignore>
+  <div class="post-views slide-in-block" data-view="grid">
+  <section class="post-grid" data-pagefind-ignore>
     <!-- Server-rendered single column - works without JS -->
     <div class="masonry-column" data-column="0">
       {
@@ -757,6 +852,35 @@ const hierarchicalPosts = allPostsData
               <div class="child-posts" data-parent={post.slug}>
                 {post.children.map((child) => {
                   const childTypeClass = child.type ? `post-card--${child.type}` : '';
+                  const ChildIcon = getIconForType(child.type);
+
+                  // Note-type children (e.g. paper-notes threads) render as
+                  // compact one-line rows so long series stay scannable
+                  if (child.type === "note") {
+                    return (
+                      <a
+                        href={`/ideas/${child.slug}/`}
+                        class={`child-post-item child-post-item--compact ${childTypeClass}`}
+                        data-tags={child.tags?.join(" ")}
+                        data-type={child.type}
+                        data-status={child.status}
+                        data-has-parent="true"
+                        data-parent-post={post.slug}
+                      >
+                        {child.draft && <span class="draft-indicator">DRAFT</span>}
+                        {ChildIcon && (
+                          <span
+                            class="compact-note-icon"
+                            style={getColorForType(child.type) && `color: ${getColorForType(child.type)}`}
+                          >
+                            <ChildIcon size={14} />
+                          </span>
+                        )}
+                        <span class="compact-note-title">{child.title}</span>
+                        <span class="compact-note-time">{child.readingTimeText}</span>
+                      </a>
+                    );
+                  }
 
                   return (
                     <a
@@ -768,8 +892,9 @@ const hierarchicalPosts = allPostsData
                       data-has-parent="true"
                       data-parent-post={post.slug}
                     >
-                      {/* Show image on left for child posts */}
-                      {child.image?.path && (
+                      {/* Show image on left for child posts — except notes, which
+                          read better as compact text rows in a thread */}
+                      {child.image?.path && child.type !== "note" && (
                         <div class="child-post-media">
                           <Image
                             src={child.image.path}
@@ -825,6 +950,36 @@ const hierarchicalPosts = allPostsData
     <div class="masonry-column" data-column="2"></div>
   </section>
 
+  <section class="post-list" data-pagefind-ignore>
+    {
+      hierarchicalPosts.map((post) => (
+        <div
+          class="post-list-item"
+          data-tags={post.tags?.join(" ")}
+          data-type={post.type}
+          data-status={post.status}
+        >
+          <PostLink post={post} size="lg" />
+          {post.children.length > 0 && (
+            <div class="post-list-children">
+              {post.children.map((child) => (
+                <div
+                  class="post-list-child"
+                  data-tags={child.tags?.join(" ")}
+                  data-type={child.type}
+                  data-status={child.status}
+                >
+                  <PostLink post={child} size="sm" />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ))
+    }
+  </section>
+  </div>
+
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       // Initialize masonry layout
@@ -839,6 +994,7 @@ const hierarchicalPosts = allPostsData
       // Get all post items from the first column (server-rendered)
       const firstColumn = columns[0];
       const postItems = Array.from(firstColumn.querySelectorAll('.post-card')) as HTMLElement[];
+      const listItems = Array.from(document.querySelectorAll('.post-list-item')) as HTMLElement[];
       let lastLayoutWidth = window.innerWidth;
 
       // Function to get visible columns based on screen width
@@ -851,6 +1007,10 @@ const hierarchicalPosts = allPostsData
 
       // Distribute items into columns using "shortest column" algorithm
       function layoutMasonry(force = false) {
+        // While the list view is active the grid is display:none, so every
+        // column measures 0 height and all items would pile into column 0.
+        if (postGrid.offsetParent === null) return;
+
         const currentWidth = window.innerWidth;
         // Ignore height-only resizes (e.g., mobile address bar hide/show) to avoid jumpy relayouts
         if (!force && currentWidth === lastLayoutWidth) {
@@ -890,6 +1050,42 @@ const hierarchicalPosts = allPostsData
 
       // Initial layout
       layoutMasonry(true);
+
+      // View toggle (grid <-> list)
+      const postViews = document.querySelector(".post-views") as HTMLElement;
+      const gridBtn = document.getElementById("view-grid-btn");
+      const listBtn = document.getElementById("view-list-btn");
+      const VIEW_KEY = "ideas-view";
+
+      function setView(view: "grid" | "list") {
+        if (!postViews) return;
+        postViews.dataset.view = view;
+        gridBtn?.classList.toggle("active", view === "grid");
+        listBtn?.classList.toggle("active", view === "list");
+        gridBtn?.setAttribute("aria-pressed", String(view === "grid"));
+        listBtn?.setAttribute("aria-pressed", String(view === "list"));
+        try {
+          localStorage.setItem(VIEW_KEY, view);
+        } catch {
+          // localStorage unavailable (e.g. private mode) - view just won't persist
+        }
+        if (view === "grid") {
+          // The grid was display:none while the list was active; any layout
+          // attempted meanwhile was skipped, so relayout once it's visible.
+          requestAnimationFrame(() => layoutMasonry(true));
+        }
+      }
+
+      gridBtn?.addEventListener("click", () => setView("grid"));
+      listBtn?.addEventListener("click", () => setView("list"));
+
+      let storedView: string | null = null;
+      try {
+        storedView = localStorage.getItem(VIEW_KEY);
+      } catch {
+        // ignore
+      }
+      if (storedView === "list") setView("list");
 
       // Re-layout on window resize (debounced)
       let resizeTimeout: ReturnType<typeof setTimeout>;
@@ -964,6 +1160,27 @@ const hierarchicalPosts = allPostsData
               container.classList.add("hidden");
             }
           }
+        });
+
+        // Mirror the same filtering onto the list-view rows
+        const rowMatches = (el: HTMLElement) => {
+          const tags = el.dataset.tags?.split(" ") || [];
+          return (
+            (activeTag === "all" || tags.includes(activeTag)) &&
+            (activeType === "all" || el.dataset.type === activeType) &&
+            (activeStatus === "all" || el.dataset.status === activeStatus)
+          );
+        };
+        listItems.forEach((item) => {
+          let anyChildMatches = false;
+          item.querySelectorAll<HTMLElement>(".post-list-child").forEach((child) => {
+            const ok = rowMatches(child);
+            child.classList.toggle("hidden", !ok);
+            if (ok) anyChildMatches = true;
+          });
+          const childWrap = item.querySelector<HTMLElement>(".post-list-children");
+          childWrap?.classList.toggle("hidden", !anyChildMatches);
+          item.classList.toggle("hidden", !(rowMatches(item) || anyChildMatches));
         });
 
         // Re-layout masonry after filtering to fix column distribution

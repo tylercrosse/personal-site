@@ -1,10 +1,11 @@
 ---
 title: 'Deep Learning'
-description: 'A survey of concepts covered in my graduate Deep Learning course'
-date: '2025-10-20'
+description: 'A concept-first map of the main ideas in Graduate Deep Learning, from optimization and CNNs to transformers, generative models, and interpretability.'
+date: '2026-02-27'
+updated: '2026-02-27'
 status: 'in-progress'
 type: 'retro'
-tags: ['deep-learning', 'python', 'pyTorch', 'computer-vision', 'NLP', 'computer-science', 'learning-in-public', 'MSCS']
+tags: ['deep-learning', 'machine-learning', 'python', 'pyTorch', 'computer-vision', 'NLP', 'generative-models', 'mechanistic-interpretability', 'learning-in-public', 'MSCS']
 category: ['mscs']
 draft: true
 audience: 'All'
@@ -15,185 +16,164 @@ image:
 hideCaption: true
 ---
 
-import BookCard from "../../../../components/BookCard.astro";
 import Figure from "../../../../components/Figure.astro";
+import PostLink from "../../../../components/PostLink.astro";
 
+import retroFig1 from "../figures/lowyx/dl-retro-fig-01-various-networks.png";
+import retroFig2 from "../figures/lowyx/dl-retro-fig-02-inception-idea.png";
+import retroFig3 from "../figures/lowyx/dl-retro-fig-03-generative-models2.png";
+import BookCard from "../../../../components/BookCard.astro";
 import mathematicsForMachineLearning from "../../../books/math-for-ml.jpg";
-import elementaryLinearAlgebra from "../../../books/elementary-linear-algebra.jpg";
 import deepLearningGoodfellow from "../../../books/dl-goodfellow.jpg";
 import deepLearningPrince from "../../../books/dl-prince.jpg";
-import handsOnMl from "../../../books/hands-on-ml.jpg";
 
-import computationalGraph from "./computational-graph-placeholder.png";
-import backprop from "./backprop-placeholder.png";
-import cnn from "./convolution-placeholder.png";
-// import transformer from "./transformer-placeholder.png";
-// import gan from "./gan-placeholder.png";
+Graduate Deep Learning is organized as a sequence of model classes and training objectives. Each module introduces a new function family, a new optimization setup, and a new set of characteristic failure modes. By the end, the recurring question becomes what assumptions each model family makes and which errors those assumptions tend to produce.
 
+This post is a concept-first guide to the course: the ideas each module tried to teach, why they matter, and which project in the series pushed them from theory into something operational.
 
-This piece serves as both a personal retrospective and a technical overview. I took Georgia Tech's [CS 7643: Deep Learning](https://omscs.gatech.edu/cs-7643-deep-learning) in the Spring 2025 semester. I'm revisiting the material to consolidate my learning - following the Feynman technique of teaching to understand, while also sharing insights for those interested in the course or my background. My audience includes prospective OMSCS students, potential employers, and colleagues seeking to understand the course content and my current knowledge. The bulk of this article summarizes the course material, with additional sections covering course logistics, my personal experience, and helpful resources.
+> [!note]
+> All of the companion posts in this series stay on the public, integrity-safe side of the line. The assignments provide motivation and examples, but these posts do not publish graded solution details, code, or restricted handout content.
 
-## Introduction to Deep Learning
+## Course Map
 
-Deep learning has become the driving force behind the recent explosion in AI capabilities, from image recognition to natural language understanding. This course provides a comprehensive tour of the field, starting with the foundational principles of neural networks and progressing through the advanced architectures that power today's most sophisticated models.
+The course progresses from basic optimization to structured representation learning:
 
-The course is structured into four main modules, each building on the last:
-1.  **Introduction to Neural Networks**: The fundamentals of neural networks, from linear classifiers to backpropagation.
-2.  **Convolutional Neural Networks (CNNs)**: The workhorses of computer vision.
-3.  **Structured Neural Representations**: Handling sequential data with RNNs, LSTMs, and the revolutionary Transformer architecture.
-4.  **Advanced Topics**: A look at the cutting edge, including Deep Reinforcement Learning and Generative Models.
+<PostLink slug="2025/dl-a1" size="md" />
+<PostLink slug="2025/dl-a2" size="md" />
+<PostLink slug="2025/dl-a3" size="md" />
+<PostLink slug="2025/dl-a4" size="md" />
+<PostLink slug="2025/dl-final-project" size="md" />
 
-We'll look at each module in turn, connecting the lecture concepts to the hands-on assignments that form the core of the learning experience.
-
-## Module 1: Introduction to Neural Networks
-
-This module lays the groundwork for the entire course, starting from first principles. We formalize supervised learning as the minimization of a loss functional
-
-$$
-\min_{\theta} \mathcal{L}(\theta) = -\frac{1}{N} \sum_{i=1}^N \left[ y_i \log \hat{y}_i + (1-y_i) \log (1-\hat{y}_i) \right],
-$$
-
-and then study how gradient descent iteratively updates the parameters by
-
-$$
-\theta^{(t+1)} = \theta^{(t)} - \eta \nabla_\theta \mathcal{L}(\theta^{(t)}).
-$$
-
-From there, we build up to a full understanding of a "vanilla" neural network. The key concept is the **computational graph**, which represents the network's operations as a directed graph so we can apply the chain rule efficiently—**backpropagation** is simply reverse-mode automatic differentiation on this graph.
+| Companion post | Main engineering habit |
+| --- | --- |
+| [Project 1: Foundations from Scratch](/ideas/2025/dl-a1/) | Verification, numerical checks, validation-based model selection, and optimization basics |
+| [Project 2: ConvNets and Training Pipelines](/ideas/2025/dl-a2/) | Controlled comparison, tuning discipline, calibration, and imbalance-aware evaluation |
+| [Project 3: Seq2Seq, Attention, and Transformers](/ideas/2025/dl-a3/) | Model comparison, decoding analysis, and qualitative inspection of outputs |
+| [Project 4: VAE, GAN, and Diffusion](/ideas/2025/dl-a4/) | Family-specific debugging, multi-metric evaluation, and tradeoff-aware model selection |
+| [Project 5: Representation Comparison and Interpretability](/ideas/2025/dl-final-project/) | Evidence quality, matched-condition evaluation, and representation comparison |
 
 <Figure
-  src={computationalGraph}
-  alt="Computational Graph"
-  caption="A computational graph illustrates how inputs are transformed by a series of operations to produce an output, enabling efficient backpropagation. Credit Justin Johnson."
+  src={retroFig1}
+  alt="Deep learning family overview"
+  caption="A high-level view of the network families that show up across the course. Source: Lowyx GT DL Notes (CC BY 4.0), https://lowyx.com/posts/gt-dl-notes/."
+  width={920}
 />
+
+## Optimization Foundations
+
+The course begins with linear models, explicit losses, and gradient descent before larger architectures enter the picture. That is where deep learning is easiest to reason about. If the behavior of a softmax classifier, cross-entropy gradient, or learning rate is unclear, larger models mostly add more ways to fail.
+
+Three ideas from the early module recur everywhere else:
+
+- **Scores are not probabilities.** A model needs both a predictive function and a loss that turns mistakes into gradient signal.
+- **Backpropagation is graph bookkeeping.** The chain rule is the math, but the practical lesson is that every intermediate value and local derivative matters.
+- **Optimization is geometry plus noise.** Batch size, scheduler shape, normalization, and regularization all change the surface you are traversing and the signal you see while traversing it.
+
+The first project is the right starting point. Implementing a training loop without high-level framework abstractions makes it obvious that "the model" is only one piece of the system. Data preprocessing, initialization, loss design, regularization, and logging are part of the same optimization story.
+
+The repo made the same point operational: tests, numerical checks, sweep plots, and best-checkpoint selection were built into the workflow from the start.
+
+Related post: [Project 1: Foundations from Scratch](/ideas/2025/dl-a1/).
+
+## Convolutional Representation Learning
+
+The next move is to make architecture reflect structure in the data. Images contain locality, translation, and repeated small-scale motifs. Convolutional networks work because they encode those assumptions directly.
+
+The main concepts recur throughout the course:
+
+- **Local connectivity** says a unit does not need to look at the whole image to detect an edge or corner.
+- **Parameter sharing** says the same detector should work across many spatial locations.
+- **Receptive field growth** explains why deeper layers move from texture and contour information toward larger semantic structures.
 
 <Figure
-  src={backprop}
-  alt="Backpropagation"
-  caption="Backpropagation is a technique for efficiently computing the gradients of a neural network. Credit Justin Johnson."
+  src={retroFig2}
+  alt="Multi-scale convolutional design"
+  caption="Multi-branch convolutional design shows how models can aggregate information at different scales within the same network. Source: Lowyx GT DL Notes (CC BY 4.0), https://lowyx.com/posts/gt-dl-notes/."
+  width={920}
 />
 
-**Assignment 1** solidifies these concepts by having you build a neural network from scratch using only NumPy. This includes implementing:
-*   Forward and backward passes for various layers (e.g., ReLU, Softmax).
-*   Loss functions like Cross-Entropy.
-*   An optimizer using Stochastic Gradient Descent (SGD).
+The vision project adds two broader points. First, training pipelines can dominate architecture differences if preprocessing, augmentation, schedules, or checkpoint criteria are not controlled. Second, accuracy alone is an incomplete summary. Once confidence quality, class imbalance, or deployment thresholds matter, calibration and error distribution matter just as much as top-1 score.
 
-This hands-on experience provides a deep intuition for how neural networks learn, before moving on to higher-level frameworks like PyTorch.
+That is the bridge from textbook CNNs to model development: architecture gives you the bias; the experiment protocol tells you whether you are learning anything trustworthy.
 
-## Module 2: Convolutional Neural Networks
+In practice, that meant validating manual layer implementations first, then moving to controlled baseline comparisons, tuning studies, and calibration-focused evaluation once the pipeline moved into PyTorch.
 
-This module dives into Convolutional Neural Networks (CNNs), the architecture that revolutionized computer vision. We learn about the key building blocks: **convolutional layers**, which apply learnable filters to input images to detect features like edges and textures, and **pooling layers**, which downsample the feature maps to reduce dimensionality and create translational invariance. The discrete convolution that drives each layer is written as
+Related post: [Project 2: ConvNets and Training Pipelines](/ideas/2025/dl-a2/).
 
-$$
-(f * k)_{i,j} = \sum_m \sum_n f_{i+m, j+n}\, k_{m,n},
-$$
+## Sequence Modeling and Attention
 
-so analyzing how receptive fields grow with depth feels much more concrete than when I first encountered CNNs in a purely code-first way. We explore classic CNN architectures and the techniques used to visualize what they've learned.
+Sequence modeling introduces a different kind of difficulty. In image classification, the output is often one label. In translation and related NLP tasks, the output is another sequence whose quality depends on local choice, long-range structure, and inference policy.
+
+The progression is:
+
+1. **Recurrent models** make temporal dependence explicit, but they compress too much of the source sequence into a narrow channel.
+2. **Attention** relaxes that bottleneck by turning retrieval over source-side states into part of each decoding step.
+3. **Transformers** go further by treating attention, positional information, residual paths, and feed-forward blocks as the primary computation pattern.
+
+The shift is that alignment becomes dynamic instead of fixed. Once attention is treated as differentiable retrieval, later developments make more sense. Transformers organize computation so that many relationships can be modeled in parallel while training remains stable.
+
+The assignment also makes a systems point: decoding policy is part of model quality. Greedy decoding, beam search, and sampling can change observed behavior enough that model comparisons become noisy if inference is not held fixed.
+
+The repo structure reinforced that lesson: saved configurations, comparison scripts, and direct translation inspection sat alongside the training code because sequence models are hard to judge from a single scalar metric alone.
+
+Related post: [Project 3: Seq2Seq, Attention, and Transformers](/ideas/2025/dl-a3/).
+
+## Generative Modeling
+
+Generative modeling is where the course stops letting you pretend that one metric or one objective can summarize everything. VAE, GAN, and diffusion models all try to model data, but they do it under very different contracts.
+
+- **VAEs** trade some perceptual sharpness for stable training and a structured latent space.
+- **GANs** can produce sharp samples, but the optimization problem is an adversarial game with unstable equilibria.
+- **Diffusion models** trade sampling speed for stable denoising-based training dynamics.
 
 <Figure
-  src={cnn}
-  alt="Convolutional Neural Network"
-  caption="A typical CNN architecture, showing the flow from input image through convolutional and pooling layers to the final classification. Credit Justin Johnson."
+  src={retroFig3}
+  alt="Generative model landscape"
+  caption="A generative-model family map clarifies the tradeoff surface: latent structure, adversarial sharpness, and iterative denoising are different modeling commitments, not small variations of one method. Source: Lowyx GT DL Notes (CC BY 4.0), https://lowyx.com/posts/gt-dl-notes/."
+  width={920}
 />
 
-**Assignment 2** is a two-part challenge. First, you implement the forward and backward passes for convolutional and max-pooling layers in NumPy, reinforcing the fundamentals. Then, you transition to PyTorch to build a more complex CNN, gaining familiarity with the framework that will be used for the rest of the course.
+It also forces a broader definition of evaluation. Sample quality, diversity, controllability, and compute cost can move in different directions at the same time. A model can produce sharper samples while covering less of the distribution, or optimize cleanly while still missing the cases you care about.
 
-**Assignment 3** focuses on understanding what happens inside the "black box" of a CNN. You implement techniques to visualize the network's learned features and create adversarial examples to fool the model, providing insight into its strengths and weaknesses.
+Generative-model choice is contextual. There's no universal winner; you pick the objective and failure-mode profile that fits your constraints.
 
-## Module 3: Structured Neural Representations
+The repo reflected that pattern: separate configs for beta sweeps, mode-collapse stress tests, noise-schedule experiments, and saved sample grids across training. The debugging loop changed with the model family.
 
-This module shifts focus from images to sequential data, like text and time series. We begin with **Recurrent Neural Networks (RNNs)** and their more powerful variant, **Long Short-Term Memory (LSTM)** networks, which are designed to handle long-range dependencies in data. A recurrent cell propagates information via
+Related post: [Project 4: VAE, GAN, and Diffusion](/ideas/2025/dl-a4/).
 
-$$
-h_t = \tanh (W_{hh} h_{t-1} + W_{xh} x_t + b_h),
-$$
+## Representation Analysis and Interpretability
 
-while LSTMs extend this equation with gating to maintain a long-term cell state. The highlight of this module is the **Transformer architecture**, introduced in the seminal paper "Attention Is All You Need." Transformers dispense with recurrence entirely and rely on a mechanism called **self-attention** to weigh the importance of different words in a sequence:
+The final turn asks what changed internally when behavior changes, and how much confidence the evidence supports.
 
-$$
-\text{Attention}(Q,K,V) = \text{softmax}\left(\frac{QK^\top}{\sqrt{d_k}}\right) V.
-$$
+This module treats interpretability as an evidence problem:
 
-This allows for massive parallelization and has made Transformers the state-of-the-art for nearly all NLP tasks. Compared with [yxlow's 2022 experience](https://lowyx.com/posts/gt-dl/)—which emphasized reinforcement learning earlier—our Spring 2025 section devoted **Project 3** entirely to RNNs, LSTMs, and Transformers so we could push sequence-to-sequence models further before touching policy gradients.
+- Behavior-level changes tell you that something improved or regressed.
+- Representation-level analysis tells you where internal differences might live.
+- Robustness checks tell you whether the proposed explanation survives alternate prompts, slices, or measurement choices.
 
-{/* <Figure
-  src={transformer}
-  alt="The Transformer Architecture"
-  caption="The Transformer architecture, based on self-attention, has become the dominant model for natural language processing tasks."
-/> */}
+A more reliable default treats a visualization or similarity score as partial evidence. Interpretability methods are usually most valuable when they help narrow hypotheses, compare model states, and calibrate confidence.
 
-**Assignment 4** (my numbering) is an extensive project where you implement several sequence models:
-*   RNN and LSTM networks.
-*   A Sequence-to-Sequence (Seq2Seq) model with attention.
-*   The full Transformer model (encoder and decoder).
+The final project also showed that interpretability is a pipeline problem that extends beyond the analysis notebook: data curation, decontamination, token-budget evaluation, and matched-condition activation collection all had to be defined before any feature comparison was worth interpreting.
 
-The final part of the assignment involves training a model to translate German to English, comparing the performance of the traditional Seq2Seq model against the more advanced Transformer, mirroring the techniques documented in [yxlow's course notes](https://lowyx.com/posts/gt-dl-notes/) but with newer PyTorch primitives.
+Related post: [Project 5: Representation Comparison and Interpretability](/ideas/2025/dl-final-project/).
 
-## Module 4: Advanced Topics
+## Five Recurring Questions
 
-The final module provides a glimpse into the broader applications of deep learning and is where my experience diverged most from yxlow's recap. While the 2022 run concluded with reinforcement learning-heavy material, our **Project 4** centered on generative modeling for FashionMNIST: VAEs, GANs, and even a tiny diffusion model.
+The course kept returning to the same five questions:
 
-*   **Deep Reinforcement Learning**: We still covered the policy gradient and Q-learning families conceptually, but primarily as context for how deep nets integrate with classical RL objectives.
-*   **Variational Autoencoders (VAEs)**: We implemented the evidence lower bound
+1. What structure is this model family assuming about the data?
+2. What loss is it actually optimizing?
+3. What does the optimizer see during training, and how noisy is that signal?
+4. Which failure modes are characteristic of this setup?
+5. What evaluation protocol is rich enough to detect those failures?
 
-    $$
-    \mathcal{L}_{\text{ELBO}} = \mathbb{E}_{q_\phi(z|x)}[\log p_\theta(x|z)] - D_{\text{KL}}(q_\phi(z|x) \parallel p(z)),
-    $$
+In practice, they cash out as three habits: validate the implementation before trusting a curve, keep comparison conditions fixed before claiming an improvement, and choose metrics rich enough to expose the failure modes you expect.
 
-    which enforces both reconstruction fidelity and a structured latent prior.
-*   **Generative Adversarial Networks (GANs)**: Training revolved around the minimax problem
+The same questions apply to small MNIST models, CNNs on CIFAR, translation systems, generative models, and mechanistic-interpretability work. They are a better long-term memory of the course than any single benchmark result.
 
-    $$
-    \min_G \max_D \mathbb{E}_{x \sim p_{\text{data}}}[\log D(x)] + \mathbb{E}_{z \sim p(z)}[\log(1-D(G(z)))].
-    $$
+What remains open is the gap between clean conceptual understanding and reliable empirical behavior. Modern deep learning works because architecture, objective, data, optimization, and evaluation all push on the same system at once. That same coupling is what makes it easy to confuse a successful run with a complete explanation.
 
-    Implementing the alternating optimization loop demystified the stability issues everyone warns about.
-*   **Diffusion Models**: We explored how iteratively denoising a sample follows the reweighted score-matching objective, with the forward process defined as
-
-    $$
-    q(x_t | x_{t-1}) = \sqrt{1-\beta_t}\, x_{t-1} + \sqrt{\beta_t}\, \epsilon,
-    $$
-
-    and learned networks predicting either $\epsilon$ or $x_0$.
-
-{/* <Figure
-  src={gan}
-  alt="Generative Adversarial Network"
-  caption="A GAN consists of a Generator that creates fake images and a Discriminator that tries to distinguish them from real images. Through this competition, both networks improve."
-/> */}
-
-## Assignment Writeups
-
-For readers who prefer compact, assignment-by-assignment recaps, I pulled my writeups into focused posts:
-
-1. [DL A1 — Backprop from Scratch](/ideas/2025/dl-a1/): NumPy-based MNIST pipelines, theory problems, and paper reviews.
-2. [DL A2 — Practical CNNs and Imbalanced Data](/ideas/2025/dl-a2/): PyTorch CNNs on CIFAR-10 plus class-balanced focal loss experiments with ResNet-32.
-3. [DL A3 — Sequence Models, Attention, and Translation](/ideas/2025/dl-a3/): LSTMs, Seq2Seq with cosine attention, and Transformers for German→English.
-4. [DL A4 — VAEs, GANs, and Diffusion on FashionMNIST](/ideas/2025/dl-a4/): Generative modeling lab notes (VAE, GAN, DDPM) across MNIST/FashionMNIST.
-5. [DL Final Project — Crosscoding Reasoning Upgrades](/ideas/2025/dl-final-project/): Fine-tuning Qwen2.5-0.5B-Instruct on s1k and comparing representations with Crosscoders.
-
-## Group Project
-
-The course culminates in a group project where students can apply their knowledge to a real-world problem. This could involve reproducing the results of a research paper, exploring a novel architecture, or participating in a Kaggle-style competition. A popular project is the "Hateful Memes Challenge," which requires building a multimodal model that can understand the combination of text and images to detect hate speech.
-
-## Course Overview
-
-The course is demanding and time-consuming, particularly the assignments. Access to a GPU is highly recommended for Assignments 2 and 4, as well as the group project. The course provides guidance on using services like Google Colab.
-
-### Grading
-
-The grading breakdown from the Spring 2022 semester was as follows:
-
-| Component      | Weight |
-|----------------|--------|
-| Assignments (4)| 55%    |
-| Quizzes (6)    | 20%    |
-| Final Project  | 20%    |
-| Participation  | 5%     |
-
-### Books
-
-These are some of the key texts that are highly relevant to the course material.
+## Books
 
 <BookCard
   title="Mathematics for Machine Learning"
@@ -201,17 +181,7 @@ These are some of the key texts that are highly relevant to the course material.
   img={mathematicsForMachineLearning}
 >
   <p>
-    A comprehensive introduction to the mathematics of machine learning, covering the concepts covered in the course. It's an excellent reference for the mathematical concepts covered in the course.
-  </p>
-</BookCard>
-
-<BookCard
-  title="Elementary Linear Algebra"
-  author="Howard Anton"
-  img={elementaryLinearAlgebra}
->
-  <p>
-    A classic textbook on elementary linear algebra.
+    A solid reference for the linear algebra, probability, and optimization background that deep learning courses tend to use implicitly after the first week.
   </p>
 </BookCard>
 
@@ -219,9 +189,10 @@ These are some of the key texts that are highly relevant to the course material.
   title="Deep Learning"
   author="Ian Goodfellow, Yoshua Bengio, and Aaron Courville"
   img={deepLearningGoodfellow}
+  url="https://www.deeplearningbook.org/"
 >
   <p>
-    Often called the "bible" of deep learning, this book provides a comprehensive and rigorous mathematical treatment of the field. It's an excellent reference for the theoretical concepts covered in the course.
+    A strong general reference for the conceptual core across optimization, CNNs, sequence models, and generative methods.
   </p>
 </BookCard>
 
@@ -229,24 +200,17 @@ These are some of the key texts that are highly relevant to the course material.
   title="Understanding Deep Learning"
   author="Simon J. D. Prince"
   img={deepLearningPrince}
+  url="https://udlbook.github.io/udlbook/"
 >
   <p>
-    A more accessible introduction to deep learning, this book provides a clear and intuitive explanation of the concepts covered in the course. It's an excellent reference for the practical concepts covered in the course.
+    Clearer and more intuitive than many graduate texts for building a conceptual explanation before returning to implementation details.
   </p>
 </BookCard>
 
-### Other Resources
+## Public Resources
 
-Here are some of the excellent resources from other students that I found helpful:
-
-- [yxlow's Course Review](https://lowyx.com/posts/gt-dl/)
-- [yxlow's Course Notes](https://lowyx.com/posts/gt-dl-notes/)
-- [Monzer Saleh's Course Notes](https://monzersaleh.github.io/GeorgiaTech/CS7643_DeepLearning.html)
-
-## My Experience
-
-{/* TODO: Add personal experience here. */}
-
-Thanks for reading!
-
-## References
+- [GT Deep Learning Notes (Lowyx)](https://lowyx.com/posts/gt-dl-notes/)
+- [GT Deep Learning Overview (Lowyx)](https://lowyx.com/posts/gt-dl/)
+- [CS231n Notes](https://cs231n.github.io/)
+- [The Illustrated Transformer](https://jalammar.github.io/illustrated-transformer/)
+- [Denoising Diffusion Probabilistic Models](https://arxiv.org/abs/2006.11239)

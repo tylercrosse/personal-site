@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="520" viewBox="0 0 1200 520" role="img" aria-label="Behavior vs representation disagreement matrix">
+  <rect width="1200" height="520" fill="#f9fafb"/>
+  <text x="40" y="58" font-family="Georgia, serif" font-size="30" fill="#1f2937">Behavior vs Representation Signal Matrix</text>
+
+  <rect x="250" y="120" width="700" height="320" fill="#ffffff" stroke="#111827" stroke-width="2"/>
+  <line x1="600" y1="120" x2="600" y2="440" stroke="#111827" stroke-width="2"/>
+  <line x1="250" y1="280" x2="950" y2="280" stroke="#111827" stroke-width="2"/>
+
+  <text x="350" y="105" font-family="Verdana" font-size="18" fill="#111827">Representation signal: weak</text>
+  <text x="670" y="105" font-family="Verdana" font-size="18" fill="#111827">Representation signal: strong</text>
+  <text x="70" y="210" font-family="Verdana" font-size="18" fill="#111827">Behavior signal: weak</text>
+  <text x="70" y="370" font-family="Verdana" font-size="18" fill="#111827">Behavior signal: strong</text>
+
+  <rect x="270" y="140" width="310" height="120" fill="#e5e7eb"/>
+  <text x="285" y="180" font-family="Verdana" font-size="16" fill="#111827">Low confidence</text>
+  <text x="285" y="206" font-family="Verdana" font-size="14" fill="#374151">Keep exploratory</text>
+
+  <rect x="620" y="140" width="310" height="120" fill="#fde68a"/>
+  <text x="635" y="180" font-family="Verdana" font-size="16" fill="#111827">Potential overfit story</text>
+  <text x="635" y="206" font-family="Verdana" font-size="14" fill="#374151">Run negative controls</text>
+
+  <rect x="270" y="300" width="310" height="120" fill="#fecaca"/>
+  <text x="285" y="340" font-family="Verdana" font-size="16" fill="#111827">Behavior-only drift</text>
+  <text x="285" y="366" font-family="Verdana" font-size="14" fill="#374151">Check observability gaps</text>
+
+  <rect x="620" y="300" width="310" height="120" fill="#bbf7d0"/>
+  <text x="635" y="340" font-family="Verdana" font-size="16" fill="#111827">Highest confidence quadrant</text>
+  <text x="635" y="366" font-family="Verdana" font-size="14" fill="#374151">Promote with scope labels</text>
+</svg>

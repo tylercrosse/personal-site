@@ -1,0 +1,344 @@
+---
+import { getEntry } from "astro:content";
+import { Image } from "astro:assets";
+import type { ImageMetadata } from "astro";
+import readingTime from "reading-time";
+import GradientThumb from "./GradientThumb.astro";
+import FormattedDate from "./FormattedDate.astro";
+import { getIconForType, getColorForType, capitalize } from "../utils/postIcons";
+
+export interface PostLinkData {
+  slug: string;
+  title: string;
+  description?: string;
+  date?: Date;
+  updated?: Date;
+  type?: string;
+  status?: string;
+  venue?: string;
+  draft?: boolean;
+  image?: { path?: ImageMetadata; alt?: string };
+  readingTimeText?: string;
+}
+
+interface Props {
+  /** MDX mode: resolve by collection id, e.g. "2025/gios-retro". */
+  slug?: string;
+  /** Page mode: pass pre-flattened post data. */
+  post?: PostLinkData;
+  size?: "sm" | "md" | "lg";
+  /** Indent this row under a preceding parent card (MDX series lists). */
+  indent?: boolean;
+  showDescription?: boolean;
+}
+
+const {
+  slug,
+  post: postProp,
+  size = "md",
+  indent = false,
+  showDescription = true,
+} = Astro.props;
+
+if (!slug === !postProp) {
+  throw new Error("<PostLink> requires exactly one of `slug` or `post`.");
+}
+
+let post: PostLinkData;
+if (postProp) {
+  post = postProp;
+} else {
+  const entry = await getEntry("ideas", slug!);
+  if (!entry) {
+    throw new Error(
+      `<PostLink slug="${slug}"> matches no post in the ideas collection ` +
+        `(expected an id like "2025/gios-retro").`,
+    );
+  }
+  post = {
+    slug: entry.id,
+    title: entry.data.title,
+    description: entry.data.description,
+    date: entry.data.pubDate ?? entry.data.date,
+    updated: entry.data.updated,
+    type: entry.data.type,
+    status: entry.data.status,
+    venue: entry.data.venue,
+    draft: entry.data.draft,
+    image: entry.data.image,
+    readingTimeText: readingTime(entry.body || "").text,
+  };
+}
+
+// Cards pointing at drafts render nothing in prod so no dead hrefs ship.
+const visible = import.meta.env.DEV || !post.draft;
+
+const Icon = getIconForType(post.type);
+const typeColor = getColorForType(post.type);
+const thumbAspect = size === "lg" ? "4 / 3" : "1 / 1";
+const imageWidth = size === "lg" ? 800 : 400;
+---
+
+{
+  visible ? (
+    <a
+      href={`/ideas/${post.slug}/`}
+      class:list={["post-link", `post-link--${size}`, { "post-link--indent": indent }]}
+      data-type={post.type}
+    >
+      <div class="post-link-media">
+        {post.image?.path ? (
+          <Image src={post.image.path} alt={post.image.alt || ""} width={imageWidth} />
+        ) : (
+          <GradientThumb seed={post.slug} aspectRatio={thumbAspect} />
+        )}
+      </div>
+      <div class="post-link-body">
+        {size === "lg" && (
+          <div class="post-link-meta">
+            {post.draft && <span class="draft-indicator">DRAFT</span>}
+            {post.type && (
+              <span class="meta-chunk type-chunk" style={typeColor && `color: ${typeColor}`}>
+                {Icon && <Icon size={14} />}
+                {capitalize(post.type)}
+              </span>
+            )}
+            {post.venue && <span class="meta-chunk">{post.venue}</span>}
+            {post.status && <span class="meta-chunk">{capitalize(post.status)}</span>}
+            {post.readingTimeText && <span class="meta-chunk">{post.readingTimeText}</span>}
+          </div>
+        )}
+        <span class="post-link-title">
+          {size !== "lg" && post.draft && <span class="draft-indicator">DRAFT</span>}
+          {post.title}
+        </span>
+        {size !== "sm" && showDescription && post.description && (
+          <p class="post-link-description">{post.description}</p>
+        )}
+        {size === "lg" && post.date && (
+          <div class="post-link-dates">
+            <FormattedDate date={post.date} />
+            {post.updated && (
+              <span>
+                Updated: <FormattedDate date={post.updated} />
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+    </a>
+  ) : (
+    Astro.slots.has("default") && (
+      <div class:list={["post-link-fallback", { "post-link--indent": indent }]}>
+        <slot />
+      </div>
+    )
+  )
+}
+
+<style>
+  .post-link {
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    gap: 0.9rem;
+    border: 1px solid var(--main-border-color);
+    background-color: var(--base4);
+    border-radius: 8px;
+    overflow: hidden;
+    color: inherit;
+    text-decoration: none;
+    margin: 0.4rem 0;
+    transition:
+      transform 0.2s ease,
+      box-shadow 0.2s ease,
+      opacity 0.2s ease;
+  }
+
+  .post-link:hover {
+    opacity: 0.92;
+    transform: translateY(-1px);
+  }
+
+  .post-link:focus-visible {
+    outline: 2px solid var(--blue);
+    outline-offset: 2px;
+  }
+
+  :global([data-effective-theme="dark"]) .post-link {
+    border: 1px solid var(--base03);
+    background-color: var(--base02);
+  }
+
+  .post-link--indent {
+    margin-left: 2.5rem;
+  }
+
+  .post-link--sm {
+    --thumb: 56px;
+  }
+
+  .post-link--md {
+    --thumb: 96px;
+  }
+
+  .post-link--lg {
+    --thumb: 168px;
+  }
+
+  .post-link-media {
+    flex: 0 0 var(--thumb);
+    overflow: hidden;
+    background: var(--bg-2);
+  }
+
+  .post-link--sm .post-link-media,
+  .post-link--md .post-link-media {
+    aspect-ratio: 1 / 1;
+  }
+
+  .post-link--lg .post-link-media {
+    aspect-ratio: 4 / 3;
+  }
+
+  .post-link-media :global(img),
+  .post-link-media :global(.gradient-thumb) {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .post-link-media :global(img) {
+    object-fit: cover;
+    object-position: center;
+  }
+
+  .post-link-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    padding: 0.6rem 0.9rem;
+    min-width: 0;
+    flex: 1;
+  }
+
+  .post-link--sm .post-link-body {
+    justify-content: center;
+  }
+
+  .post-link--lg .post-link-body {
+    padding: 0.9rem 1.1rem;
+    gap: 0.5rem;
+  }
+
+  .post-link-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem 1em;
+    font-size: 0.75rem;
+    text-transform: capitalize;
+    color: var(--sol-7);
+  }
+
+  .meta-chunk {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    white-space: nowrap;
+  }
+
+  .type-chunk :global(svg) {
+    flex-shrink: 0;
+    vertical-align: middle;
+  }
+
+  .post-link-title {
+    font-family: var(--font-heading);
+    font-weight: 600;
+    line-height: 1.25;
+    color: var(--sol-10);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  :global([data-effective-theme="dark"]) .post-link-title {
+    color: var(--sol-5);
+  }
+
+  .post-link--sm .post-link-title {
+    font-size: 0.95rem;
+  }
+
+  .post-link--md .post-link-title {
+    font-size: 1.1rem;
+  }
+
+  .post-link--lg .post-link-title {
+    font-size: 1.35rem;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+
+  .post-link-description {
+    margin: 0;
+    color: var(--sol-8);
+    font-size: 0.85rem;
+    line-height: 1.45;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .post-link--lg .post-link-description {
+    font-size: 0.95rem;
+    line-height: 1.5;
+    -webkit-line-clamp: 3;
+  }
+
+  .post-link-dates {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+    color: var(--sol-7);
+    margin-top: auto;
+  }
+
+  /* Prod-only stand-in for a card whose target is still a draft; styled as a
+     list item so it reads naturally alongside sibling cards in a list. */
+  .post-link-fallback {
+    display: list-item;
+    list-style: disc;
+    margin: 0.4rem 0 0.4rem 1.5rem;
+  }
+
+  .draft-indicator {
+    color: var(--green);
+    font-size: 0.6rem;
+    font-weight: bold;
+    padding: 2px 6px;
+    border-radius: 3px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-family: var(--font-body);
+  }
+
+  @media (max-width: 480px) {
+    .post-link--lg {
+      --thumb: 96px;
+    }
+
+    .post-link--lg .post-link-description {
+      -webkit-line-clamp: 2;
+    }
+
+    .post-link--indent {
+      margin-left: 1.25rem;
+    }
+  }
+</style>

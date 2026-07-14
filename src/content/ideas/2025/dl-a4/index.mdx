@@ -1,45 +1,223 @@
 ---
-title: 'DL A4 — VAEs, GANs, and Diffusion on FashionMNIST'
-description: 'A generative-models lab covering VAEs, conditional GANs, and DDPMs for MNIST/FashionMNIST.'
-date: '2025-04-10'
-updated: '2025-10-20'
+title: 'Generative Modeling in Practice: VAE, GAN, and Diffusion Tradeoffs'
+description: 'A concept-first guide to VAE, GAN, and diffusion models, with an emphasis on objectives, failure modes, and evaluation tradeoffs.'
+date: '2026-02-27'
+updated: '2026-02-27'
 status: 'in-progress'
 type: 'project'
-tags: ['deep-learning', 'pyTorch', 'generative-models', 'MSCS']
+tags: ['deep-learning', 'generative-models', 'computer-vision', 'pyTorch', 'MSCS']
 category: ['projects']
 draft: true
 audience: 'All'
-media_subpath: "/ideas/dl-a3/"
+media_subpath: "/ideas/dl-a4/"
 parent: '2025/dl-retro'
+order: 4
 image:
-  # path: "hero-blume-blute-vintage-kunst-1598099664dKm.png"
-  # path: "hero-vae1.png"
   path: "hero-vae3.png"
   alt: 'Layered mineral photograph'
-  # maxWidth: "600px"
 hideCaption: true
 ---
 
-## TL;DR
-Assignment 4 was a tour through three generative paradigms. I implemented and trained a variational autoencoder (VAE), DCGAN-style adversarial model, and a lightweight diffusion model, running each on MNIST and FashionMNIST. The shared trainer infrastructure meant I could isolate the effect of latent dimensionality, discriminator updates, or diffusion noise schedules without rewriting boilerplate.
+import BookCard from "../../../../components/BookCard.astro";
+import Figure from "../../../../components/Figure.astro";
 
-## Highlights
-- Verified the reparameterization trick and KL annealing in the VAE to stabilize reconstructions while keeping disentangled latent traversals.
-- Implemented GAN training loops with alternating generator/discriminator steps, label smoothing, and gradient clipping to tame early-mode collapse on FashionMNIST coats/bags.
-- Built a DDPM from scratch: linear $\beta_t$ schedule, cached $\alpha_t$/$\bar{\alpha}_t$, forward diffusion sampler, UNet noise predictor, and reverse-time sampling to produce crisp samples with competitive FID for such a small model.
+import deepLearningGoodfellow from "../../../books/dl-goodfellow.jpg";
+import deepLearningPrince from "../../../books/dl-prince.jpg";
+import p4Fig1 from "../figures/lowyx/dl-p4-fig-01-autoencoder.png";
+import p4Fig2 from "../figures/lowyx/dl-p4-fig-02-gan-architecture.png";
+import p4Fig3 from "../figures/lowyx/dl-p4-fig-03-gan-objective.png";
+import p4Fig4 from "../figures/custom/dl-p4-fig-04-diffusion-process.svg";
+import p4Fig5 from "../figures/lowyx/dl-p4-fig-05-generative-models.png";
 
-## Representative equations
-Both the probabilistic and diffusion perspectives were front and center:
+## Generative Models Force Tradeoffs
+
+Generative modeling makes it clear that one objective or metric is rarely enough. In supervised learning, the target is usually explicit. In generative modeling, the model is trying to capture a distribution, so fidelity, diversity, controllability, and compute cost can all move in different directions.
+
+Comparing VAE, GAN, and diffusion models is useful for exactly that reason. These are not small variants of the same method. They give different answers to the question: what should a generative model optimize, and what kinds of failures should follow from that choice?
+
+The assignment puts those differences side by side across MNIST and FashionMNIST, with all three families compared through generated samples and quantitative evaluation.
+
+## Project Scope
+
+The assignment moved through three families:
+
+1. a VAE with an encoder, decoder, latent sampling, and ELBO loss,
+2. a GAN with alternating generator and discriminator updates,
+3. a diffusion model with forward noising and reverse denoising.
+
+The sequence mirrors the field's progression. The project compared how objective design creates specific strengths, weaknesses, and debugging patterns.
+
+The repo made the workflow differences obvious too. Separate trainers, config families, saved sample grids, and metric-oriented tuning runs showed that each model family needed its own debugging protocol.
+
+## VAEs Trade Sharpness for Structure and Stability
+
+The VAE starts from a structured latent space between data and sampling.
+
+The standard objective is the evidence lower bound:
 
 $$
-\mathcal{L}_{\text{ELBO}} = \mathbb{E}_{q_\phi(z|x)}[\log p_\theta(x|z)] - D_{\text{KL}}\big(q_\phi(z|x) \parallel p(z)\big),
+\mathcal{L}_{\text{ELBO}} = \mathbb{E}_{q_\phi(z\mid x)}[\log p_\theta(x\mid z)] - D_{\text{KL}}(q_\phi(z\mid x)\,\|\,p(z)).
 $$
 
+<Figure
+  src={p4Fig1}
+  alt="Variational autoencoder"
+  caption="VAEs make the latent-variable tradeoff explicit: reconstruction quality versus structured representation. Source: Lowyx GT DL Notes (CC BY 4.0), https://lowyx.com/posts/gt-dl-notes/."
+  width={900}
+/>
+
+The first term rewards faithful reconstructions. The KL term shapes the latent distribution so sampling stays meaningful. That gives VAEs two strengths:
+
+- stable optimization,
+- and a latent space that supports interpolation and downstream use.
+
+The cost is that pixel-level sharpness can suffer. In practice, VAEs often look blurrier than adversarial models because the objective rewards broad probabilistic coverage more than visual crispness.
+
+**Illustrative toy snippet, not assignment code:**
+
+```python
+import torch
+
+def sample_latent(mu, logvar):
+    std = (0.5 * logvar).exp()
+    eps = torch.randn_like(std)
+    return mu + eps * std
+
+z = sample_latent(mu, logvar)
+recon_loss = (x_hat - x).abs().mean()
+kl = -0.5 * (1 + logvar - mu.pow(2) - logvar.exp()).mean()
+loss = recon_loss + beta * kl
+```
+
+The point is that the objective is doing two jobs at once: reconstructing the data and shaping the latent space so that sampling remains meaningful.
+
+## GANs Trade Stability for Sharpness
+
+GANs make a very different bet. Instead of modeling likelihood explicitly, they set up a game between a generator and a discriminator:
+
 $$
-x_t = \sqrt{\bar{\alpha}_t}\, x_0 + \sqrt{1-\bar{\alpha}_t}\,\epsilon, \qquad \epsilon \sim \mathcal{N}(0, I),
+\min_G \max_D \; \mathbb{E}_{x\sim p_{\text{data}}}[\log D(x)] + \mathbb{E}_{z\sim p(z)}[\log(1-D(G(z)))].
 $$
 
-followed by a learned denoiser $\epsilon_\theta(x_t, t)$ for the reverse process.
+<Figure
+  src={p4Fig2}
+  alt="GAN architecture"
+  caption="GANs work by coupling generation and discrimination, which is why they can produce sharp samples and unstable training in the same run. Source: Lowyx GT DL Notes (CC BY 4.0), https://lowyx.com/posts/gt-dl-notes/."
+  width={900}
+/>
 
-## Artifact
-- [Full write-up (PDF)](../dl-retro/DL_A4_generative_models_v1-1.pdf)
+That adversarial setup can produce sharp samples because the discriminator keeps pushing the generator toward more realistic detail. But it also creates an unstable optimization problem. If one side learns much faster than the other, gradients become uninformative and training quality degrades.
+
+Mode collapse is the standard example of this failure mode.
+
+<Figure
+  src={p4Fig3}
+  alt="Mode collapse"
+  caption="Mode collapse is not a cosmetic bug; it is a structural warning that the adversarial game is no longer exploring the data distribution well. Source: Lowyx GT DL Notes (CC BY 4.0), https://lowyx.com/posts/gt-dl-notes/."
+  width={900}
+/>
+
+A model that repeatedly generates a narrow family of convincing samples is still a poor generator if it is missing large parts of the distribution.
+
+The repo made that failure pattern visible. VAE work centered on beta and reconstruction tradeoffs, GAN work included collapse-oriented stress configs and long sample grids across training, and diffusion work revolved around timestep and noise-schedule choices. Each family failed differently, so each one had to be debugged differently.
+
+## Diffusion Models Trade Sampling Speed for Stable Optimization
+
+Diffusion models ask a different question: what if generation were framed as learning to reverse a gradual corruption process?
+
+The forward process progressively adds noise:
+
+$$
+x_t = \sqrt{\bar{\alpha}_t}\, x_0 + \sqrt{1-\bar{\alpha}_t}\,\epsilon,
+\qquad \epsilon \sim \mathcal{N}(0, I),
+$$
+
+and training teaches a model to predict the noise or denoise each corrupted sample.
+
+<Figure
+  src={p4Fig4}
+  alt="Diffusion process"
+  caption="Diffusion models separate generation into a forward noising process and a learned reverse denoising process. Created by author."
+  width={900}
+/>
+
+Diffusion is attractive because the training problem is often smoother and more stable than adversarial training. The main drawback is inference cost: high-quality generation usually requires many denoising steps, so easy training and cheap sampling don't come together here.
+
+**Illustrative toy snippet, not assignment code:**
+
+```python
+import torch
+
+eps = torch.randn_like(x0)
+x_t = alpha_bar_t.sqrt() * x0 + (1 - alpha_bar_t).sqrt() * eps
+
+eps_hat = model(x_t, t)
+x_prev = (x_t - (1 - alpha_t).sqrt() * eps_hat) / alpha_t.sqrt()
+```
+
+That is enough to see the contract: corrupt a clean example with scheduled noise, then train a model to predict or remove that noise one step at a time.
+
+## Evaluation Has to Be Multi-Axis
+
+Generative modeling breaks the habit of relying on one summary number. Evaluation has to ask at least four questions:
+
+- Do the samples look plausible?
+- Does the model cover enough of the distribution?
+- Are the outputs fit for the task at hand?
+- What is the compute cost of getting that quality?
+
+<Figure
+  src={p4Fig5}
+  alt="Generative tradeoffs"
+  caption="A family-level comparison makes the tradeoffs explicit: no one model wins on every axis at once. Source: Lowyx GT DL Notes (CC BY 4.0), https://lowyx.com/posts/gt-dl-notes/."
+  width={900}
+/>
+
+Metrics like FID are informative but incomplete. A good scalar score does not guarantee healthy diversity, and a visually nice sample grid does not guarantee the model is learning the right distribution.
+
+In the assignment, each family had a characteristic debugging style:
+
+- VAE issues often look like reconstruction-vs-latent tradeoffs,
+- GAN issues often look like balance problems or collapse,
+- diffusion issues often look like schedule, sampling, or compute-budget problems.
+
+The repo showed that directly: multiple config families, saved outputs across epochs, and FID-oriented tuning runs. That setup made it harder to fool yourself with one especially good sample grid or one unusually bad run.
+
+## Recap
+
+The main tradeoffs from this project:
+
+- Objective choice predicts failure mode. The loss is the model's contract with the data.
+- Visual quality is only one axis. Diversity and coverage can still fail when the samples look appealing.
+- Compute belongs in the conversation about model quality. A model that trains cleanly but samples slowly is still making a tradeoff.
+
+Generative modeling earns its place in the course by forcing all of this into the open: you can't pick a winner without saying which objective, failure mode, and compute budget you're willing to live with.
+
+## Additional Resources
+
+- [GT Deep Learning Notes (Lowyx)](https://lowyx.com/posts/gt-dl-notes/)
+- [Auto-Encoding Variational Bayes](https://arxiv.org/abs/1312.6114)
+- [Generative Adversarial Nets](https://arxiv.org/abs/1406.2661)
+- [Denoising Diffusion Probabilistic Models](https://arxiv.org/abs/2006.11239)
+
+<BookCard
+  title="Deep Learning"
+  author="Ian Goodfellow, Yoshua Bengio, and Aaron Courville"
+  img={deepLearningGoodfellow}
+  url="https://www.deeplearningbook.org/"
+>
+  <p>
+    A useful reference for how latent-variable models, adversarial learning, and optimization tradeoffs fit into one broader generative-modeling picture.
+  </p>
+</BookCard>
+
+<BookCard
+  title="Understanding Deep Learning"
+  author="Simon J. D. Prince"
+  img={deepLearningPrince}
+  url="https://udlbook.github.io/udlbook/"
+>
+  <p>
+    A companion text for the objective-level intuition behind VAE, GAN, and diffusion models when exhaustive mathematical detail is not the goal.
+  </p>
+</BookCard>

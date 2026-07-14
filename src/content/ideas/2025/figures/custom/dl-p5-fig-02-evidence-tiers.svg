@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="520" viewBox="0 0 1200 520" role="img" aria-label="Interpretability evidence tiers">
+  <rect width="1200" height="520" fill="#fcfbf7"/>
+  <text x="40" y="58" font-family="Georgia, serif" font-size="30" fill="#1f2937">Interpretability Evidence Tiers</text>
+
+  <rect x="80" y="100" width="1040" height="68" rx="10" fill="#e0f2fe" stroke="#0369a1"/>
+  <text x="110" y="143" font-family="Verdana" font-size="22" fill="#0c4a6e">Tier 1: Observational repeatability under fixed settings</text>
+
+  <rect x="120" y="186" width="1000" height="68" rx="10" fill="#d9f99d" stroke="#4d7c0f"/>
+  <text x="150" y="229" font-family="Verdana" font-size="22" fill="#365314">Tier 2: Behavior association across multiple slices</text>
+
+  <rect x="160" y="272" width="960" height="68" rx="10" fill="#fde68a" stroke="#92400e"/>
+  <text x="190" y="315" font-family="Verdana" font-size="22" fill="#78350f">Tier 3: Robustness under perturbation and redefinition</text>
+
+  <rect x="200" y="358" width="920" height="68" rx="10" fill="#fecaca" stroke="#991b1b"/>
+  <text x="230" y="401" font-family="Verdana" font-size="22" fill="#7f1d1d">Tier 4: Intervention-backed mechanism evidence</text>
+
+  <text x="80" y="478" font-family="Verdana" font-size="18" fill="#374151">Reporting rule: if a higher tier fails, downgrade claim confidence and preserve contradiction logs.</text>
+</svg>

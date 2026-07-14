@@ -1,0 +1,59 @@
+---
+title: 'Notes on Sparse Crosscoders'
+description: 'Notes on sparse crosscoders: one shared feature dictionary across layers or across models, and what that enables for cross-layer analysis and model diffing.'
+date: '2026-07-12'
+status: 'in-progress'
+type: 'note'
+tags: ['mechanistic-interpretability', 'deep-learning', 'research', 'AI-safety']
+category: ['ideas']
+draft: true
+audience: 'All'
+license: true
+sources:
+  - title: 'Sparse Crosscoders for Cross-Layer Features and Model Diffing'
+    url: 'https://transformer-circuits.pub/2024/crosscoders/index.html'
+    venue: 'Transformer Circuits Thread'
+    year: '2024'
+media_subpath: "/ideas/circuits-crosscoders/"
+parent: '2026/transformer-circuits'
+order: 5
+image:
+  path: 'crosscoders2.png'
+  alt: 'Abstract stacks'
+hideCaption: true
+# TODO: hero image before publishing
+---
+
+Notes on [Sparse Crosscoders for Cross-Layer Features and Model Diffing](https://transformer-circuits.pub/2024/crosscoders/index.html) (October 2024), a research note in Anthropic's [Transformer Circuits thread](/ideas/2026/transformer-circuits/).
+
+## Core idea
+
+A [sparse autoencoder](/ideas/2026/circuits-monosemanticity/) learns a feature dictionary for one activation site. A **crosscoder** learns a single shared dictionary across several sites at once — multiple layers of one model, or corresponding sites in two related models — so each feature has one activation but separate encoder/decoder directions per site. That shared latent space is what makes two kinds of questions tractable:
+
+- **Cross-layer features:** if features persist across layers in the residual stream, per-layer dictionaries learn duplicated copies of them; a crosscoder can represent each such feature once and show where it is read and written.
+- **Model diffing:** trained across two related models (base vs. fine-tuned, checkpoints during training), the dictionary exposes which features are shared, which are model-specific, and which are shared but differently weighted.
+
+{/* FIGURE IDEA (this post's one figure — currently it has none): a three-panel comparison diagram in site style.
+   Panel 1, SAE: one activation site, encoder → sparse features → decoder reconstructs the same site.
+   Panel 2, transcoder: reads the MLP input, sparse features, decoder predicts the MLP *output*.
+   Panel 3, crosscoder: several sites (layers of one model, or matched layers of two models) share ONE sparse feature
+   vector, with per-site encoder/decoder arrows. The crosscoders note has no crisp version of this; it would be an
+   original contribution and could reuse the SAE sub-diagram proposed for the monosemanticity post. */}
+
+{/* TODO: read pass + real notes — the source vault note has no section for this paper */}
+
+## Method
+
+{/* TODO: setup and loss (shared feature activations, per-site decoders), variants (cross-layer, model-diffing), relationship to SAEs and transcoders */}
+
+## What the evidence shows
+
+{/* TODO: what the note demonstrates vs. proposes — it is explicitly a research preview; note its own caveats */}
+
+## Since the paper
+
+Model diffing is the application that stuck, and it picked up an important correction. Anthropic followed up with [Insights on Crosscoder Model Diffing](https://transformer-circuits.pub/2025/crosscoder-diffing-update/index.html), and an external group showed that the crosscoder's L1 training loss can *manufacture* apparent differences: concepts present in both models get misattributed as fine-tuned-model-specific through artifacts they call complete shrinkage and latent decoupling. Their fix — latent scaling to flag the artifacts, plus a BatchTopK training variant — recovers latents that really are chat-specific (refusal handling, false information) when diffing Gemma 2 2B base against chat ([Overcoming Sparsity Artifacts in Crosscoders to Interpret Chat-Tuning](https://arxiv.org/abs/2504.02922), NeurIPS 2025; there's an accessible [Alignment Forum companion post](https://www.alignmentforum.org/posts/xmpauEXEerzYcJKNm/what-we-learned-trying-to-diff-base-and-chat-models-and-why)). The cross-layer half of the idea fed directly into the [cross-layer transcoders behind attribution graphs](/ideas/2026/circuits-attribution-graphs/).
+
+## Related
+
+[Interpreting Model Differences](/ideas/2025/dl-final-project/) applies a crosscoder to compare activations between a base and a reasoning-fine-tuned Qwen model.

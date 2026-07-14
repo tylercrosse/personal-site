@@ -58,8 +58,45 @@ const ideas = defineCollection({
         // Parent post relationship (for grouping project posts under retro posts)
         parent: z.string().optional(),
         // Explicit position within a parent's thread, ascending. Falls back to
-        // date then title when omitted (see [topic].astro / ideas/index.astro).
+        // date then title when omitted (see compareSeriesOrder in utils/series.ts).
         order: z.number().optional(),
+        // Attribution footer (rendered by PostCredits.astro). See that component
+        // for how these compose.
+        // Show a "Cite this write-up" block. Only for original, sole-authored
+        // pieces — never for the multi-author `paper` posts, whose citation
+        // belongs to the venue and full author list.
+        cite: z.boolean().optional(),
+        // Show the CC BY 4.0 license line. Defaults to `cite` when omitted, so
+        // opting into a citation opts into the licence too; set false to suppress.
+        license: z.boolean().optional(),
+        // Primary source(s) this post is notes on. Credits the original work in
+        // the footer so readers cite the source, not these notes.
+        sources: z
+          .array(
+            z.object({
+              title: z.string(),
+              url: z.string().optional(),
+              authors: z.string().optional(),
+              year: z.string().optional(),
+              venue: z.string().optional(),
+            })
+          )
+          .optional(),
+        // Third-party media used under licence (TASL attribution). One entry per
+        // asset that carries an obligation; public-domain and AI-generated images
+        // need none.
+        credits: z
+          .array(
+            z.object({
+              title: z.string().optional(),
+              author: z.string().optional(),
+              url: z.string().optional(),
+              license: z.string().optional(),
+              licenseUrl: z.string().optional(),
+              changes: z.string().optional(),
+            })
+          )
+          .optional(),
       })
       .transform((data) => {
         // Transform Gatsby 'date' field to Astro 'pubDate' if needed
