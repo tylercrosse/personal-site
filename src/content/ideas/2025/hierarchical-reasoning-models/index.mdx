@@ -35,13 +35,14 @@ credits:
 ---
 
 import Figure from "../../../../components/Figure.astro";
+import PostLink from "../../../../components/PostLink.astro";
 
 import sudokuImg from "./slide-sudoku-backtracking.png";
 import architectureImg from "./slide-hrm-architecture.png";
 import modelMatterImg from "./slide-model-matter.png";
 import outerLoopImg from "./slide-outer-loop.png";
 
-The Hierarchical Reasoning Model (HRM) made a splash in mid-2025: a 27 million parameter model, trained on roughly a thousand examples per task, doing well on ARC-AGI and dramatically outperforming large reasoning models on hard Sudoku and maze puzzles. The authors attribute this to a novel two-level recurrent architecture. The more interesting story, which I spent the second half of this talk on, is the ARC Prize team's independent analysis of what actually drives the performance. Spoiler: it is mostly not the architecture.
+The Hierarchical Reasoning Model (HRM) made a splash in mid-2025. It has 27 million parameters, trains on roughly a thousand examples per task, and still does well on ARC-AGI while beating much larger reasoning models on hard Sudoku and maze puzzles. The authors attribute this to a novel two-level recurrent architecture. The more interesting story, which I spent the second half of this talk on, is the ARC Prize team's independent analysis of what actually drives the performance. It is mostly not the architecture.
 
 I presented this at the [Latent Space](https://www.latent.space/) Paper Club in September 2025.
 
@@ -86,7 +87,7 @@ HRM has two recurrent modules, both standard modern transformer blocks (rotary e
 
 Two training details matter more than the hierarchy itself:
 
-**One-step gradient approximation.** Rather than backpropagating through the entire unrolled recurrence, they run most of it without gradient and only backpropagate through the final L and H updates. Their justification draws on work on deep equilibrium models. Someone asked why detaching the carry works, and I didn't have a confident answer. My guess is that it sidesteps vanishing gradients over long unrolls, but I flagged it in the talk as the part of the paper I understood least.
+**One-step gradient approximation.** Rather than backpropagating through the entire unrolled recurrence, they run most of it without gradient and only backpropagate through the final L and H updates. Someone asked why detaching the carry works, and I didn't have a confident answer in the talk; my guess was that it sidesteps vanishing gradients over long unrolls. The paper's actual argument, which I went back and read properly, comes from deep equilibrium models: if the recurrence converges to a fixed point, the implicit function theorem writes the exact gradient as an infinite series, and the one-step gradient keeps just the first term. The practical draw is memory, O(1) instead of backprop-through-time's O(T). Whether the fixed-point assumption really holds is a separate question, and TRM (below) later got better results by dropping the approximation and backpropagating through the whole recursion.
 
 **Deep supervision.** Training runs the model in a loop: call HRM, get a prediction and an updated carry, compute a loss and gradient step, detach the carry, repeat. Each outer step gets its own supervision signal.
 
@@ -96,7 +97,7 @@ On top of this sits adaptive computation time (ACT). A separate Q-learning objec
 
 The headline numbers depend on a heavyweight inference procedure. For each test puzzle, they generate 1,000 augmented variants using invertible transformations (rotations, reflections, color permutations for ARC), solve every variant, map each solution back through the inverse transformation, and take the two most popular answers as the final predictions. That is where the pass@2 numbers come from.
 
-This stood out to me when reading the paper: it is not just the architecture solving the puzzle, it is a thousand solution attempts and a vote. It is also expensive. The ARC Prize team measured about 12 hours to run the 100-task semi-private set; prorated, that is on the order of $1.48 per task. A pre-trained LLM pays its costs differently, in generating chain-of-thought tokens, but the point stands that HRM's headline numbers are not cheap single-pass inference.
+This stood out to me when reading the paper: the reported numbers come from a thousand solution attempts and a vote, not from the model solving each puzzle once. It is also expensive. The ARC Prize team measured about 12 hours to run the 100-task semi-private set; prorated, that is on the order of $1.48 per task. A pre-trained LLM pays its costs differently, in generating chain-of-thought tokens, but HRM's headline numbers are not cheap single-pass inference either.
 
 The paper also includes a nice interpretability aside: visualizing intermediate predictions across segments, you can watch a maze solution start as several candidate paths that get pruned and reconnected until the model settles on one. For what it's worth, they also measure that the H module's representations have higher effective dimensionality than the L module's (using participation ratio, which I think of loosely as counting principal components), and that this gap grows with task diversity. The paper spends a lot of pages connecting this to mouse cortex measurements. It's fun to think about, but I don't know enough neuroscience to evaluate it, and I didn't focus on it.
 
@@ -116,7 +117,7 @@ The findings, in decreasing order of how much they changed my read of the paper:
 
 **The hierarchical inner loop doesn't matter much either.** One L cycle and one H cycle already gets about 7/8 of the performance of the paper's configuration, and scaling the inner loops higher doesn't help, while compute grows multiplicatively.
 
-**The outer refinement loop is the main event.** Varying the maximum number of outer refinement steps makes a large difference, refinement during training matters more than refinement at inference, and the learned halting signal helps at training time. Iteratively refining predictions, with supervision at each step, is the load-bearing mechanism.
+**The outer refinement loop is what matters.** Varying the maximum number of outer refinement steps makes a large difference, refinement during training matters more than refinement at inference, and the learned halting signal helps at training time. Iterative refinement of predictions, with supervision at each step, is doing most of the work.
 
 <Figure
   src={outerLoopImg}
@@ -126,17 +127,25 @@ The findings, in decreasing order of how much they changed my read of the paper:
 
 **Augmentation helps, but saturates fast.** Roughly 1% of the 1,000 augmentations gets you about 75% of the benefit, and augmentation matters more at training time than at inference.
 
-**Puzzle embeddings matter and are also the catch.** HRM doesn't take instructions; each puzzle gets an ID mapped to a learned embedding, which is how the model knows what task it's solving. An earlier version of the codebase without puzzle embeddings reached about 76% per-token accuracy but only around 10% pass@2. The flip side is transduction-only generalization: the model can't do anything sensible with a puzzle ID it never trained on, so extending HRM to genuinely novel problems is an open problem.
+**Puzzle embeddings matter and are also the catch.** HRM doesn't take instructions; each puzzle gets an ID mapped to a learned embedding, which is how the model knows what task it's solving. An earlier version of the codebase without puzzle embeddings reached about 76% per-token accuracy but only around 10% pass@2. The flip side: the model can't do anything sensible with a puzzle ID it never trained on, so getting this approach to work on new tasks is an open question.
 
 When I first summarized this paper, I wrote that the architecture "contributes to performance." Having spent more time with the ablations, I'd put it differently: on ARC, the refinement training loop, augmentation, and puzzle embeddings do almost all the work, and the two-level hierarchy is close to interchangeable with a vanilla transformer.
 
 ## Questions from the discussion
 
-**If reasoning stays latent, what happens to safety and interpretability?** One attendee pointed out that chain of thought, whatever its faithfulness problems, gives you something to read, and HRM-style latent reasoning doesn't. My take: at 27M parameters, purpose-built for Sudoku, there isn't much of a safety question yet. If this style of architecture scaled up, the mechanistic interpretability toolkit should still apply, since it is still transformer blocks underneath, with superposition and features you could try to pull apart. The paper's own visualization of intermediate segment predictions is a decent start on introspection for this model class.
+**If reasoning stays latent, what happens to safety and interpretability?** One attendee pointed out that chain of thought, whatever its [faithfulness problems](/ideas/2025/ai-safety-evals-paper-club-notes/), gives you something to read, and HRM-style latent reasoning doesn't. My take: at 27M parameters, purpose-built for Sudoku, there isn't much of a safety question yet. If this style of architecture scaled up, the mechanistic interpretability toolkit should still apply, since it is still transformer blocks underneath, with superposition and features you could try to pull apart. The paper's own visualization of intermediate segment predictions is a decent start on introspection for this model class.
 
-**What does a "refinement loop" even mean for the baseline transformer?** The ablation chart shows a plain transformer improving with more refinement loops, which raises the question of what exactly gets passed between iterations if there's no H/L carry. I didn't have a good answer, and it's the follow-up question from the talk I most wish I'd chased down. Presumably some latent state is forwarded between refinement steps, but the analysis doesn't spell it out.
+**What does a "refinement loop" even mean for the baseline transformer?** The ablation chart shows a plain transformer improving with more refinement loops, which raises the question of what exactly gets passed between iterations if there's no H/L carry. I didn't have a good answer during the talk. I've since read the [analysis code](https://github.com/arcprize/hierarchical-reasoning-model-analysis), and the answer is that the transformer keeps HRM's carry and outer loop wholesale. The baseline ([hrm_act_v2.py](https://github.com/arcprize/hierarchical-reasoning-model-analysis/blob/main/models/hrm/hrm_act_v2.py)) holds a single hidden state: each refinement step feeds the transformer that state plus a fresh injection of the input embedding, the output head reads the updated state, and the state is detached and carried into the next step, with the same per-segment supervision and ACT halting. What's removed is only the H/L split and the inner cycles. So the ablation is a clean one: same refinement harness, hierarchical core swapped for a flat one.
 
-**Why does deep supervision give the H module more frequent feedback?** An attendee got stuck on the same sentence in the paper that I did; our shared intuition was that the L module, which loops more often, should be the one getting more feedback. We left it unresolved. If you understand this, I'd genuinely like to hear the explanation.
+**Why does deep supervision give the H module more frequent feedback?** An attendee got stuck on the same sentence in the paper that I did; our shared intuition was that the L module, which loops more often, should be the one getting more feedback. We left it unresolved in the session. Going back to the paper, I think we were reading the sentence as H versus L, when it is really deep supervision versus a single end-of-run loss. Each segment ends in its own loss, and that loss enters through the output head, which reads the H state directly, so the H module's slow trajectory gets graded every segment instead of once per sample. The L module's many micro-updates are unsupervised either way, since gradient only ever touches its final update, so adding segments mostly changes how often H hears about the answer, not L. The rest of the sentence is an empirical claim from the deep equilibrium literature, where this segment-wise supervision beats Jacobian-based regularization for stability.
+
+## Since the talk (July 2026)
+
+The ablation story held up. In October 2025, Alexia Jolicoeur-Martineau published the [Tiny Recursive Model (TRM)](https://arxiv.org/abs/2510.04871), which takes "the architecture doesn't matter, refinement does" to its logical end: a single two-layer network with 7M parameters, no H/L hierarchy, and full backpropagation through the recursion instead of the one-step gradient approximation. It reports about 45% on ARC-AGI-1 and 8% on ARC-AGI-2, well above HRM at a quarter of the size. The [ARC Prize 2025 technical report](https://arxiv.org/abs/2601.10904) later named the refinement loop the central theme of the year's competition, with zero-pretraining methods using networks as small as 7M parameters staying competitive; the winning entry scored 24% on the ARC-AGI-2 private set.
+
+This was my second talk at the paper club. The first surveyed diffusion models for language:
+
+<PostLink slug="2025/language-diffusion-survey" size="md" />
 
 ## References
 

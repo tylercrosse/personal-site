@@ -10,7 +10,7 @@ draft: false
 media_subpath: "/ideas/language-diffusion-survey/"
 image:
   path: "hero-diffusion.jpg"
-  alt: 'Diffusion - artist unknown'
+  alt: 'Abstract swirls of colored brushstrokes dispersing like ink in water'
 # hideCaption: true
 audience: 'All'
 cite: true
@@ -55,6 +55,7 @@ credits:
 ---
 
 import Figure from "../../../../components/Figure.astro";
+import PostLink from "../../../../components/PostLink.astro";
 
 import taxonomyImg from "./slide-taxonomy.png";
 import sohlDicksteinImg from "./slide-sohl-dickstein.png";
@@ -75,11 +76,11 @@ I gave this talk at the [Latent Space](https://www.latent.space/) Paper Club in 
   style="border-radius: 8px; margin: 2rem 0;"
 ></iframe>
 
-You can also [download the full slide deck (PDF, 9MB)](/ideas/language-diffusion-survey/language-diffusion-slides.pdf). The talk went broad rather than deep, covering a dozen papers at survey depth. The full reference list is at the bottom.
+You can also [download the full slide deck (PDF, 9MB)](/ideas/language-diffusion-survey/language-diffusion-slides.pdf). The talk was optimized for exploration rather than exploitation: a dozen papers, none in much depth. The full reference list is at the bottom.
 
 ## What a generative model is trying to do
 
-A generative model aims to learn the underlying probability distribution of a dataset. The true distribution is unknown, so we train a model with parameters that approximates it, and equivalently we can frame training as minimizing the KL divergence between the data distribution and the model distribution, or as maximizing the likelihood of the observed data. The catch is that the distributions we care about, like the distribution of natural images or English sentences, have shapes far too complex for something like a Gaussian to capture. Neural networks can represent them, and the interesting question becomes how you structure the learning problem so the network actually does.
+A generative model aims to learn the underlying probability distribution of a dataset. The true distribution is unknown, so we train a parameterized model to approximate it. Training can be framed as minimizing the KL divergence between the two distributions, or equivalently as maximizing the likelihood of the observed data. The catch is that the distributions we care about, like the distribution of natural images or English sentences, have shapes far too complex for something like a Gaussian to capture. Neural networks can represent them, and the question is how you structure the learning problem so the network actually does.
 
 Different families of generative models answer that question differently. I made this taxonomy as an Obsidian canvas, loosely following Ian Goodfellow's 2017 GAN tutorial:
 
@@ -103,9 +104,9 @@ Sohl-Dickstein et al. made the connection to physics in 2015. Their framing borr
   caption="The core diffusion idea from Sohl-Dickstein et al. (2015): a forward process gradually destroys structure with noise, and a learned reverse process recovers the data distribution."
 />
 
-Not much happened with diffusion for the next few years. GANs dominated image generation, though they leaned toward realism over diversity and suffered from mode collapse. I hit this firsthand on a course project: I trained a GAN on Fashion-MNIST and about half of my generated samples came out as boots. VQ-VAE 2 and VQGAN established the other major pattern of the era, compressing images into discrete sequences and predicting them autoregressively.
+Not much happened with diffusion for the next few years. GANs dominated image generation, though they leaned toward realism over diversity and suffered from mode collapse. I hit this firsthand on a course project: I trained a GAN on Fashion-MNIST and about half of my generated samples came out as boots. VQ-VAE 2 and VQGAN established the other major pattern of the era: compress images into discrete sequences, then predict them autoregressively.
 
-Diffusion came back around 2020 from two directions at once. Song and Ermon's score-matching line of work trained a network to estimate the gradient of the log-density at each noise level, and their 2020 paper worked out how to choose noise scales in a principled way. The math there goes deeper than I fully understand, but the results spoke for themselves. Then Ho et al. published DDPM, the breakout paper. Two things made it work: a simplified objective where the network just predicts the noise that was added at a randomly chosen timestep, and a large U-Net borrowed from image segmentation to do the predicting. That combination hit state-of-the-art FID on image benchmarks without any adversarial training. A year later Song et al. unified the diffusion and score-based views under stochastic differential equations, which is the framework most later work builds on.
+Diffusion came back around 2020 from two directions at once. Song and Ermon's score-matching line of work trained a network to estimate the gradient of the log-density at each noise level, and their 2020 paper worked out how to choose noise scales in a principled way. The math there goes deeper than I fully understand or want to get into here. Then Ho et al. published DDPM, the breakout paper. Two things made it work: a simplified objective where the network just predicts the noise that was added at a randomly chosen timestep, and a large U-Net borrowed from image segmentation to do the predicting. That combination hit state-of-the-art FID on image benchmarks without any adversarial training. A year later Song et al. unified the diffusion and score-based views under stochastic differential equations, which is the framework most later work builds on.
 
 ## Getting diffusion to work on text
 
@@ -123,7 +124,7 @@ The paper also drew a parallel I found clarifying: BERT is a one-step diffusion 
 
 ## Scaling up
 
-Between 2021 and 2024 there was a lot of work I skipped over, including approaches like Diffusion-LM and DiffuSeq that run diffusion in a continuous embedding space and then round to tokens. That direction hasn't produced today's state of the art, which is part of why I skipped it, but the papers are in the references.
+Between 2021 and 2024 there was a lot of work I skipped over, including approaches like Diffusion-LM and DiffuSeq that run diffusion in a continuous embedding space and then round to tokens. That direction hasn't produced today's state of the art, but the papers are in the references.
 
 The line that did pan out is masked diffusion at scale:
 
@@ -153,7 +154,7 @@ Two properties make language diffusion interesting despite the compute multiplie
 
 The first is speed. Diffusion predicts many tokens per step instead of one, which is where the Mercury and Gemini Diffusion throughput claims come from. When we asked Gemini during the talk, it reported Gemini Diffusion runs around 1,479 tokens per second, with a caveat of roughly 0.8 seconds of initial overhead.
 
-The second is bidirectional context. An autoregressive model editing the middle of a file has to attend to the code after the edit point through the lens of tokens that come before it in generation order. A diffusion model has no causal mask, so it conditions on both sides of the edit directly. Code infilling is the obvious application, and it is probably not a coincidence that the early diffusion demos lean on code editing.
+The second is bidirectional context. An autoregressive model editing the middle of a file has to take the code after the edit point as prior context and attend to it as if it came earlier. A diffusion model has no causal mask, so it attends to both sides of the edit directly. Code infilling is the obvious application, and it is probably not a coincidence that the early diffusion demos lean on code editing.
 
 ## Questions from the discussion
 
@@ -163,7 +164,16 @@ The paper club format means the best parts are often interruptions. A few worth 
 
 **Does diffusion inference scale quadratically with sequence length?** Depends entirely on the backbone. The high-profile models (Stable Diffusion, DALL-E, DiT-style video models) use transformers or attention blocks somewhere, so quadratic attention cost shows up. Some earlier DDPM-style models are mostly convolutional. The diffusion process itself is orthogonal to the transformer-vs-not question; diffusion is an alternative to autoregressive generation, not to attention.
 
-**Where does attention live in image diffusion models?** This turned into a genuinely fun argument. The conditioning view: attention (often cross-attention over text embeddings) mostly grounds the generation in the prompt, and the diffusion backbone is separate. The counterpoint, which I'd also argue: even the original 2020 DDPM U-Net has self-attention operators at its 16x16 resolutions, and later architectures add more throughout the backbone. We agreed to argue about it offline.
+**Where does attention live in image diffusion models?** This one turned into a real argument.
+ The conditioning view: attention (often cross-attention over text embeddings) mostly grounds the generation in the prompt, and the diffusion backbone is separate. The counterpoint, which I'd also argue: even the original 2020 DDPM U-Net has self-attention operators at its 16x16 resolutions, and later architectures add more throughout the backbone. We agreed to argue about it offline.
+
+## Since the talk (July 2026)
+
+A year on, most of the threads above kept going. Inception Labs published a [Mercury technical report](https://arxiv.org/abs/2506.17298) in June 2025, reporting over 1,000 tokens per second on an H100. ByteDance and Tsinghua released [Seed Diffusion Preview](https://arxiv.org/abs/2508.02193) in August 2025, a code model reporting 2,146 tokens per second, roughly twice Mercury Coder's throughput and 1.5x Gemini Diffusion's by their measurements. The LLaDA line kept scaling: [LLaDA 1.5](https://github.com/ML-GSAI/LLaDA) added variance-reduced preference optimization, [LLaDA-MoE](https://arxiv.org/abs/2509.24389) (September 2025) was the first mixture-of-experts diffusion LM pre-trained from scratch, and [LLaDA 2.0](https://github.com/inclusionAI/LLaDA2.X) (early 2026) pushed the architecture to a 100B-parameter MoE. The framing has shifted from "can masked diffusion match GPT-2" to shipping code models where latency is the selling point.
+
+I gave a later talk at the same paper club:
+
+<PostLink slug="2025/hierarchical-reasoning-models" size="md" />
 
 ## References
 
