@@ -10,6 +10,9 @@ category: ['mscs']
 draft: false
 audience: 'All'
 media_subpath: "/ideas/debunking-the-cuda-myth/"
+image:
+  path: "moebius-style-cuda-v-intel.png"
+  alt: 'Moedbius style CUDA vs. Intel'
 cite: true
 sources:
   - title: 'Debunking the CUDA Myth Towards GPU-based AI Systems'
@@ -31,7 +34,6 @@ import gaudiArchImg from "./slide-gaudi-architecture.png";
 import gemmUtilImg from "./slide-gemm-utilization.png";
 import llmEnergyImg from "./slide-llm-energy.png";
 import vllmImg from "./slide-vllm-paged-attention.png";
-import acceleratorTableImg from "./slide-accelerator-table.png";
 
 In November 2025 I presented this paper for the paper-reading portion of Georgia Tech's CS 8803: GPU Hardware and Software. There's no talk video for this one; the class recording includes other students and isn't mine to publish. This post is the written version, and you can [download the slide deck (PDF, 3.2MB)](/ideas/debunking-the-cuda-myth/cuda-myth-slides.pdf).
 
@@ -51,6 +53,8 @@ A GPU is a sea of identical streaming multiprocessors, each mixing SIMD cores an
   src={gaudiArchImg}
   alt="Slide with Figure 1 of the paper: Gaudi NPU architecture with configurable MME systolic arrays, programmable TPCs, shared SRAM, DMA, and HBM"
   caption="Gaudi's split: MMEs are configurable systolic arrays, TPCs are programmable cores. On a GPU both roles live inside every SM."
+  width={1000}
+  fullWidth
 />
 
 The programming model difference matters as much as the silicon. On NVIDIA hardware, a fused matrix multiply-add is a single kernel launch using the WMMA APIs, with tensor cores and SIMD cores cooperating inside one kernel. On Gaudi, you cannot touch the MME from a low-level kernel at all: GEMM is only expressible at the PyTorch/graph-compiler level, and a custom TPC-C kernel handles the rest. Keep that constraint in mind for the vLLM case study below.
@@ -65,6 +69,8 @@ The paper structures its performance story as numbered takeaways, which I kept i
   src={gemmUtilImg}
   alt="Slide with Figure 5 of the paper: heatmaps of compute utilization for square and irregularly shaped GEMMs on Gaudi-2 and A100"
   caption="Compute utilization across GEMM shapes (warmer is higher). Gaudi-2's configurable MME holds up better on irregularly shaped GEMMs."
+  width={1000}
+  fullWidth
 />
 
 **2. Non-GEMM vector math: a 3.5x throughput gap.** Gaudi-2 falls well short of A100 in absolute vector performance. In terms of compute *efficiency* (achieved fraction of peak), it's comparable, so the design is competitive; there's just less vector hardware.
@@ -81,6 +87,8 @@ The fifth takeaway is the punchline of the performance half. LLM serving is domi
   src={llmEnergyImg}
   alt="Slide with Figure 13 of the paper: heatmaps of Gaudi-2 performance per watt versus A100 for Llama-3.1 8B and 70B across batch sizes and output lengths"
   caption="Performance per watt vs. A100 for Llama-3.1 serving (red means Gaudi-2 ahead). The advantage holds across batch sizes, output lengths, and device counts."
+  width={1000}
+  fullWidth
 />
 
 ## Programmability: the case studies
@@ -95,6 +103,8 @@ Benchmarks tell you what the hardware can do; the case studies ask how hard you 
   src={vllmImg}
   alt="Slide with Figure 16 of the paper: baseline vLLM gathering cache blocks before attention versus the optimized version pipelining batched GEMM and softmax across MME and TPC"
   caption="The vLLM case study: the baseline serializes cache gathering and attention; the optimized version restructures PagedAttention at the PyTorch level so the graph compiler can pipeline MME and TPC work."
+  width={1000}
+  fullWidth
 />
 
 ## So is CUDA the moat?
@@ -103,11 +113,14 @@ The paper's conclusion, which I agree with after living in CUDA for a semester, 
 
 For the talk I added some context the paper leaves out: where these parts sit in time and price.
 
-<Figure
-  src={acceleratorTableImg}
-  alt="Slide comparing Gaudi 2, Gaudi 3, A100, and H100 on announcement-to-availability dates, HBM capacity and bandwidth, scale-out fabric, and 2024-2025 pricing signals"
-  caption="My comparison of the accelerator generations. Gaudi-2/A100 is the like-for-like pair the paper evaluates; Gaudi 3 and H100 are the next generation, with Intel's reference pricing far below NVIDIA's."
-/>
+| Accelerator | Announce → GA | HBM (capacity / BW) | Scale-out fabric | Typical 2024–2025 pricing signal* |
+| :--- | :--- | :--- | :--- | :--- |
+| Intel Gaudi 2 | May 2022 → 2022 | 96 GB HBM2e / 2.45 TB/s | 24×100 GbE on-chip | 8-GPU kit \$65k (Intel ref) |
+| Intel Gaudi 3 | Apr 2024 → 2H 2024 | 128 GB HBM2e / 3.7 TB/s | 24×200 GbE on-chip | 8-GPU kit \$125k (Intel ref) |
+| NVIDIA A100 | May 2020 → 2020 | 40/80 GB HBM2(e) / 1.6–2.0 TB/s | NVLink + IB/Ethernet | DGX A100 \$199k (8×A100 system at launch) |
+| NVIDIA H100 | Mar 2022 → Sept 2022 prod | 80 GB HBM3 (3.35 TB/s); NVL 96 GB | NVLink + IB/Ethernet | \$27k–\$40k per GPU (range); \$216k–\$320k x8 (range) |
+
+*My comparison of the accelerator generations, added for the talk. Gaudi-2/A100 is the like-for-like pair the paper evaluates; Gaudi 3 and H100 are the next generation, with Intel's reference pricing far below NVIDIA's.
 
 The pricing column is the part I'd emphasize: Intel's reference price for an 8-accelerator Gaudi 3 kit was less than half of typical 8xH100 system pricing. If the software gap closes, the economics are real.
 
