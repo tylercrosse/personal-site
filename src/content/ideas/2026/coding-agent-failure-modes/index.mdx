@@ -1,19 +1,34 @@
 ---
 title: "Where coding agents break"
-description: "A working field guide to coding-agent failures, and how to tell model limits from bad tasks or bad graders."
+description: "Six ways coding agents fail, and how to tell model limits from bad tasks and bad graders."
 date: "2026-07-14"
 status: "draft"
 type: "article"
-tags: ["AI agents", "coding", "evaluations", "software engineering", "learning in public"]
+tags:
+  [
+    "agents",
+    "evaluations",
+    "software-engineering",
+    "learning-in-public",
+  ]
 category: ["ideas"]
 draft: true
 cite: true
 audience: "Developers"
+media_subpath: "/ideas/coding-agent-failure-modes/"
+image:
+  path: "sleeping-agent.png"
+  alt: "Sleeping agent in its environment"
+hideCaption: true
 sources:
   - title: "GBA Eval"
     authors: "Stephen Yang, Ege Erdil, and Tamay Besiroglu"
     year: "2026"
     url: "https://gbaeval.com/"
+  - title: "How bad data teaches models to write terrible code"
+    authors: "Max Niederman, Stephen Yang, and Ege Erdil"
+    year: "2026"
+    url: "https://www.mechanize.work/podcast/how-bad-data-teaches-models-to-write-terrible-code/"
   - title: "What skills does SWE-bench Verified evaluate?"
     authors: "Florian Brand and Jean-Stanislas Denain"
     year: "2025"
@@ -22,206 +37,229 @@ sources:
     authors: "METR"
     year: "2025"
     url: "https://metr.org/blog/2025-08-12-research-update-towards-reconciling-slowdown-with-time-horizons/"
+  - title: "An FAQ on Reinforcement Learning Environments"
+    authors: "Jean-Stanislas Denain and Chris Barber"
+    year: "2026"
+    url: "https://epoch.ai/gradient-updates/state-of-rl-envs"
 ---
 
-{/*
-Working draft. This is a learning document first, not a finished claim about
-frontier-model capability. Each section needs one concrete example, one way to
-distinguish competing explanations, and one implication for task design.
-*/}
+import FailureChainFigure from "../../../../components/ideas/agent-failures/FailureChainFigure.astro";
+import DebounceSequenceFigure from "../../../../components/ideas/agent-failures/DebounceSequenceFigure.astro";
 
-People often describe coding agents as unreliable. That word collapses too many
-different things. An agent may misunderstand the task. It may lack a tool or a
-piece of context that a human engineer would need. It may make a locally plausible
-change that breaks an invariant elsewhere. Or it may solve the task while the
-grader fails to recognize it.
+{/* Working draft. This is a learning document first, not a finished claim about frontier-model capability. Each section needs one concrete example, one way to distinguish competing explanations, and one implication for task design. */}
 
-Those are different problems. They need different fixes, and they imply different
-things about what a benchmark score means.
+People often describe coding agents as unreliable. That description covers at least four different problems. An agent may misunderstand the task. It may lack a tool or a piece of context that a human engineer would need. It may make a locally plausible change that breaks an invariant elsewhere. Or it may solve the task while the grader fails to recognize it. Each needs a different fix, and each implies something different about what a benchmark score means.
 
-This is a field guide to diagnosing an apparent coding-agent failure before deciding
-that it is a model failure.
+The stakes go beyond leaderboards. The same tasks and graders are increasingly used as reinforcement learning environments. In that setting a grading blind spot becomes a reward signal, and models learn whatever behavior the signal pays for.
 
-## A simple diagnostic loop
+This is a catalog of the ways an apparent coding-agent failure can be something else, and of the experiments that tell the explanations apart.
 
-When an agent fails, I want to ask four questions before drawing a conclusion:
+## A four-way decomposition of agent failure
 
-1. Did it have the information and affordances that a competent engineer would need?
-2. Did it make a wrong engineering decision, or did the task leave the decision
-   underspecified?
-3. Did the grader measure the intended property?
-4. What is the smallest experiment that separates these explanations?
+An agent run is a function of four components: the model, the scaffold that elicits it, the task and environment it acts in, and the grader that scores it. An observed failure can be attributed to any of the four:
 
-The point is not to excuse the agent. It is to locate the failure well enough that
-the next task, scaffold, or training example teaches us something useful.
+- Model. The capability is missing: no reasonable prompt, scaffold, or budget produces a correct solution.
+- Elicitation. The capability exists, but the prompt, scaffolding, tools, or token budget did not draw it out.
+- Task and environment. The requirement was never discoverable, or the environment lacked something a competent engineer would rely on.
+- Grading. The work was acceptable, and the evaluator measured something else.
 
-{/* Tyler: Write 2-4 sentences here on why this distinction matters to you.
-Possible starting point: the same observed failure can lead to a bad conclusion if
-we do not separate capability, elicitation, environment, and grading. */}
+The operational definition: a failure lives in the component whose smallest change flips the outcome. Attribution under this definition is not always unique, since changes to several components might each flip a given run; the informative attribution is usually the cheapest one.
+
+Each class has a different fix: a better model, a better scaffold, a better task, or a better grader. Each also changes what the score means. A low score caused by elicitation understates the model; a high score earned against a weak grader overstates it.
+
+Diagnosis is a loop of single-variable interventions: hypothesize a component, change it while holding the other three fixed, and observe whether the outcome moves. A stronger scaffold on the same task separates model from elicitation. Adding one missing affordance separates elicitation from environment. Hand-grading a sample of transcripts separates all of them from grading. Iterate until one attribution survives.
+
+The point is not to excuse the agent. It is to locate the failure well enough that the next task, scaffold, or training example teaches us something useful. The numbered failure modes later in this post are the patterns this loop turns up most often for coding agents; the causal chain next is the same analysis applied within a single trajectory.
+
+
+## A process model of a single run
+
+A duplicate payment does not, by itself, tell us whether the model missed an obvious requirement or the task never exposed the requirement in the first place.
+
+The figure below is a process model of a single run: six stages of agent work, each depending on what came before, the environment they all run on, and grading at the end. The structure implies an attribution rule: name the earliest broken stage, because everything downstream inherits the damage. An agent that never explored the repository will also formulate the wrong plan, implement the wrong change, and verify the wrong property; blaming verification there misattributes the run. The rule is a heuristic: stages can also fail independently, and a run can break in more than one place.
+
+<FailureChainFigure />
+
+For evidence about what the model "knew," the files it opened, the commands it ran, the patch it produced, and the tests it added usually say more than any explanation it wrote in the transcript.
+
+One gap in the figure is deliberate: implementation carries no failure-mode badge, because plain coding mistakes are the easiest to attribute and the least contested. The environment band hides a second failure: an environment can be flaky or nondeterministic, which corrupts every inference downstream of it. That is an infrastructure problem, and one reason GBA Eval, discussed below, grades with deterministic replay.
+
+The six failure modes below each get the same treatment: what the failure looks like, what else could explain it, an experiment that separates the explanations, and what it means for task design.
 
 ## 1. The agent implements a reasonable interpretation of the wrong task
 
-**What it looks like.** The patch is coherent and may even pass the visible tests,
-but it does not satisfy what the user or repository actually needed.
+**What it looks like.** The patch is coherent and may even pass the visible tests, but it does not satisfy what the user or repository actually needed.
 
-**Other explanations.** The prompt omitted a critical constraint. The repository
-contained an unwritten convention. The task was solvable, but only by inferring an
-intent that a human maintainer would have asked about.
+**Other explanations.** The prompt omitted a critical constraint. The repository contained an unwritten convention. The task was solvable, but only by inferring an intent that a human maintainer would have asked about.
 
-**A useful test.** Give the same task to a senior engineer with the same prompt and
-environment. Ask whether they would know what to do without asking a clarifying
-question. Then compare the agent's chosen interpretation with plausible alternatives.
+**Separating experiment.** Give the same task to a senior engineer with the same prompt and environment. Ask whether they would know what to do without asking a clarifying question. Then compare the agent's chosen interpretation with plausible alternatives.
 
-**Implication for task design.** Decide whether intent inference is the capability
-being tested. If it is not, remove the ambiguity. If it is, make the hidden context
-available somewhere a careful engineer could reasonably find it.
+**What it means for task design.** Decide whether intent inference is the capability being tested. If it is not, remove the ambiguity. If it is, make the hidden context available somewhere a careful engineer could reasonably find it.
 
-{/* Tyler: What is a real example where a technically plausible solution still
-missed the actual product or repository intent? What information would have made it
-fair, without making the task trivial? */}
+{/* Tyler: What is a real example where a technically plausible solution still missed the actual product or repository intent? What information would have made it fair, without making the task trivial? */}
 
 ## 2. The agent cannot make progress because the environment is wrong
 
-**What it looks like.** The agent searches, guesses, or works around missing tools.
-It may fail an otherwise ordinary task because it cannot run the right tests, inspect
-the relevant state, use a dependency, or receive the feedback a human would use.
+**What it looks like.** The agent searches, guesses, or works around missing tools. It may fail an otherwise ordinary task because it cannot run the right tests, inspect the relevant state, use a dependency, or receive the feedback a human would use.
 
-**Other explanations.** The agent may be poor at tool use even when the tool is
-present. Or the environment may be intentionally restrictive because using the
-missing tool is itself out of scope.
+**Other explanations.** The agent may be poor at tool use even when the tool is present. Or the environment may be intentionally restrictive because using the missing tool is itself out of scope.
 
-**A useful test.** Hold the model fixed and vary one affordance at a time. Does an
-oracle, a better reproduction script, a read-only log, or a documented tool interface
-turn an apparently impossible task into a routine one?
+**Separating experiment.** Hold the model fixed and vary one affordance at a time. Does an oracle, a better reproduction script, a read-only log, or a documented tool interface turn an apparently impossible task into a routine one?
 
-**Implication for task design.** An environment should be difficult for the intended
-reason. A task that mostly measures how cleverly an agent works around missing
-affordances is usually not measuring software engineering.
-
-{/* Tyler: Where is the line between a realistic constraint and an unfair missing
-affordance? Use the GBA Eval oracle as one possible comparison. */}
+**What it means for task design.** An environment should be difficult for the intended reason. A task that mostly measures how cleverly an agent works around missing affordances is usually not measuring software engineering.
 
 ## 3. The local fix violates a global invariant
 
-**What it looks like.** The visible happy path works. A refresh, retry, second client,
-permission check, failure recovery, or full integration test reveals that the system is
-inconsistent.
+**What it looks like.** The visible happy path works. A refresh, retry, second client, permission check, failure recovery, or full integration test reveals that the system is inconsistent.
 
-**Other explanations.** The agent may lack the relevant systems intuition. The task
-may also be missing the integration tests that would make the invariant visible.
+**Other explanations.** The agent may lack the relevant systems intuition. The task may also be missing the integration tests that would make the invariant visible.
 
-**A useful test.** Name the invariant before reviewing the patch. Drive the system
-through an adversarial sequence: retries, reordering, reconnects, concurrent clients,
-or a fresh read from durable state.
+**Separating experiment.** Name the invariant before reviewing the patch. Drive the system through an adversarial sequence: retries, concurrent clients, or a fresh read from durable state.
 
-**Implication for task design.** Good coding tasks often test a cross-layer property,
-not a clever line-level bug. The grader should check the property directly rather than
-hope a collection of unit tests happens to cover it.
+**What it means for task design.** Good coding tasks often test a property that spans layers. The grader should check that property directly rather than hope a collection of unit tests happens to cover it.
 
-{/* Tyler: Use a public example here, or write a small toy scenario and label it as
-illustrative. Do not use the Mechanize take-home or any other non-public interview
-work. A useful toy scenario could be a service that reports success to a client while
-failing to persist the corresponding state; the point is the invariant, not the
-particular application. */}
+### An illustrative example: duplicate payments
 
-## 4. The agent loses control of a long task
+Suppose a user story says that customers sometimes double-click Pay and should not be charged twice. The story establishes a product requirement, but it does not tell us where idempotency belongs. The payment provider may already support idempotency keys. The application may need its own payment-attempt record or uniqueness constraint. The repository may also have an existing convention that rules out one of those options.
 
-**What it looks like.** The agent stops after a superficially successful milestone,
-keeps repeating an unproductive approach, loses track of prior evidence, or cannot
-recover after a partial failure.
+A careful agent should look for cues before choosing an implementation: provider contracts, schemas, existing tests, or similar call sites. If none of these makes the intended boundary recoverable, asking a focused question may be better than making a speculative patch. A product requirement can be discoverable even when its implementation strategy is not.
 
-**Other explanations.** The problem may be too large for the time or token budget.
-The agent may need a better checkpointing or note-taking mechanism. The task may be
-too open-ended to tell whether continued work is productive.
+The environment should support a chain of justification:
 
-**A useful test.** Inspect the trajectory, not only the final patch. Identify the
-first decision where the run should have branched: test a hypothesis, inspect a new
-file, change strategy, or ask for more information.
+```text
+cue in the task, repository, or runtime
+  -> inferred requirement
+  -> targeted investigation or test
+  -> bounded patch
+```
 
-**Implication for task design.** Long-horizon tasks need observable intermediate
-progress and a clear enough objective that persistence is meaningful. Otherwise a
-low score may only show that the task supplied weak feedback.
+This also gives us a way to review an agent trajectory. Each nontrivial action should trace back to an explicit requirement, a reasonable implication of the environment, or a necessary check on the proposed change. The fact that a failure mode is common in payment systems is not enough by itself to justify redesigning this payment system.
 
-{/* Tyler: What should count as a good stopping rule for an agent? When is it right
-to keep iterating, and when should it report uncertainty or request human input? */}
+## 4. The agent stops too early or invents a larger task
+
+**What it looks like.** The agent stops after a superficially successful milestone, keeps repeating an unproductive approach, loses track of prior evidence, or cannot recover after a partial failure. The opposite pattern also occurs: it keeps adding checks and speculative features after it has exhausted the evidence available in the task. Both patterns come from the same miscalibrated judgment about whether more work is justified.
+
+**Other explanations.** The problem may be too large for the time or token budget. The agent may need a better checkpointing or note-taking mechanism. The task may be too open-ended to tell whether continued work is productive.
+
+**Separating experiment.** Inspect the trajectory, not only the final patch. Identify the first decision where the run should have branched: test a hypothesis, inspect a new file, change strategy, or ask for more information.
+
+**What it means for task design.** Long-horizon tasks need observable intermediate progress and a clear enough objective that persistence is meaningful. Otherwise a low score may only show that the task supplied weak feedback.
+
+Knowing when to stop is partly an engineering judgment. More code and more tests are not always better. A useful standard is defensible thoroughness, which is a value-of-information rule: keep working while the next investigation or test has an expected information gain that justifies its cost, and stop when the marginal test no longer changes what you would do.
+
+For the payment example, a bounded stopping rule might be:
+
+1. Inspect the available contracts, call sites, and tests for idempotency and retry semantics.
+2. Exercise the narrowest available test of the inferred invariant.
+3. Make a patch supported by that evidence.
+4. Report what was verified and what could not be tested without the external service.
+
+It should not invent a new queue, change unrelated timeout policy, or build a generic reliability system without some cue that this work belongs to the task.
+
+The [GBA Eval environment-design post](https://gbaeval.com/blog/environment-design/) uses a related counterfactual: a senior engineer given the same environment should be able to make sustained progress toward a high score.
 
 ## 5. The agent verifies the wrong thing
 
-**What it looks like.** The agent runs a test suite and declares success, but it did
-not test the changed behavior, test an important boundary, or notice that the tests
-were too narrow.
+**What it looks like.** The agent runs a test suite and declares success, but it did not test the changed behavior, test an important boundary, or notice that the tests were too narrow.
 
-**Other explanations.** The repository's own tests may be incomplete. The agent may
-have correctly optimized for the reward it was given. A human reviewer may also miss
-the same issue without a stronger test plan.
+**Other explanations.** The repository's own tests may be incomplete. The agent may have correctly optimized for the reward it was given. A human reviewer may also miss the same issue without a stronger test plan.
 
-**A useful test.** Start with known-good and deliberately broken implementations.
-Mutate the patch in ways that preserve the visible tests but violate the intended
-property. Check whether the evaluator catches those mutations.
+**Separating experiment.** Start with known-good and deliberately broken implementations. Mutate the patch in ways that preserve the visible tests but violate the intended property. Check whether the evaluator catches those mutations.
 
-**Implication for task design.** Passing tests are evidence, not a definition of
-engineering success. A good grader has to make its blind spots legible.
+**What it means for task design.** Passing tests are evidence, not a definition of engineering success. A good grader makes it clear what it does not check.
 
-{/* Tyler: What is the difference between adding more tests and building a better
-grader? When should a task use deterministic tests, a code-quality rule, or a
-review-style rubric? */}
+A grader's specificity should match the environment's specificity. If the task exposes an existing provider idempotency mechanism and repository conventions make it the intended design, checking that mechanism may be reasonable. If the task only establishes the outcome, the grader should usually check the invariant rather than one preferred implementation.
+
+An implementation-agnostic payment grader could check that:
+
+- two near-simultaneous submissions produce at most one charge;
+- a retry after an ambiguous timeout does not create another charge;
+- a genuinely new payment attempt can still create a new charge; and
+- the client receives a coherent result after a retry.
+
+Provider-level idempotency and application-level deduplication could both pass these tests. Requiring one of them is defensible only when the task made that design choice recoverable.
+
+The same verification blind spot shows up in two failure modes. Here it lets an honest agent fool itself. In the next, an agent under optimization pressure uses it to fool the grader.
 
 ## 6. The agent optimizes the score rather than the task
 
-**What it looks like.** The agent special-cases fixtures, finds a reference solution,
-modifies the test or scoring path, exploits a sandbox escape, or otherwise earns a
-high score without doing the intended work.
+**What it looks like.** The agent special-cases fixtures, finds a reference solution, modifies the test or scoring path, exploits a sandbox escape, or otherwise earns a high score without doing the intended work.
 
-**Other explanations.** Sometimes the task really did permit an unusual but valid
-solution. The hard part is distinguishing legitimate creativity from a loophole that
-would not transfer outside the benchmark.
+**Other explanations.** Sometimes the task really did permit an unusual but valid solution. The hard part is distinguishing legitimate creativity from a loophole that would not transfer outside the benchmark.
 
-**A useful test.** Separate hidden evaluation from development feedback. Test
-alternative implementations, inspect trajectories, and ask whether the same strategy
-would work on a new instance of the task.
+**Separating experiment.** Separate hidden evaluation from development feedback. Test alternative implementations, inspect trajectories, and ask whether the same strategy would work on a new instance of the task.
 
-**Implication for task design.** Optimization pressure changes the environment. If a
-task will be used for reinforcement learning or leaderboard competition, it needs more
-than a score that looks sensible on a few honest attempts.
+**What it means for task design.** Optimization pressure changes the environment. If a task will be used for reinforcement learning or leaderboard competition, it needs more than a score that looks sensible on a few honest attempts.
 
-{/* Tyler: Find one concrete reward-hacking example from METR or GBA Eval. Then say
-what made the exploit possible and what a revised environment would change. */}
+Return to the double-click test. An agent could add a short debounce timer and pass a narrow grader that sends the same browser event twice in quick succession, while still double-charging on a retry outside the window, a concurrent client, or a restart between attempts. It has fitted the observed trace without preserving the invariant.
+
+<DebounceSequenceFigure />
+
+A stronger grader can vary timing, concurrency, and what the client knows about the first request. It can accept a database uniqueness constraint, a provider idempotency key, or any other design that preserves one charge per logical payment attempt, while rejecting patches that only recognize one superficial pattern.
+
+### Public examples: GBA Eval and METR
+
+The [GBA Eval blog](https://gbaeval.com/blog/) describes an unsuccessful reward-hack from Grok Build 0.1: the agent hard-coded the exact example ROMs into its CPU implementation so that the visible examples would appear to pass. GBA Eval gives agents example ROMs for development but excludes them from the test set, so this strategy does not implement an emulator that generalizes to new games. The public description is brief, but the failure is easy to classify: the agent optimized for known fixtures instead of the stated task of implementing the hardware behavior.
+
+The debounce example is subtler. A debounce timer is a legitimate way to prevent one class of duplicate UI events, so a narrow test can make it look like a reasonable solution. It still fails if the requirement is one charge per logical payment attempt across retries, concurrent clients, or service restarts. The two cases point to the same grader lesson at different levels of severity: test variation should distinguish general behavior from memorizing the development distribution, while preserving room for multiple implementations that satisfy the behavior.
+
+METR reports more direct variants of the same pattern. In one task, an agent replaced the timing function so the scorer measured an artificially short runtime; in another, it modified the evaluator so every submission was marked successful. Those are useful examples of reward hacking, but the GBA case is closer to ordinary software testing: the exploit targets the gap between visible development fixtures and held-out inputs.
+
+## Comparing benchmark designs: duplicate payments and GBA Eval
+
+A benchmark design is a choice about which failure modes remain live. GBA Eval and the duplicate-payments task are the two extremes of that choice. Walking both through the taxonomy shows how much of a score's meaning is set by the design rather than the model.
+
+The task gives an agent 24 hours to write a Game Boy Advance emulator from scratch in Rust, compiled to WebAssembly. The container includes the toolchain, the ABI documentation, development ROMs, and an oracle: a black-box build of the reference emulator (a modified Mesen2) that the agent can run on any ROM with any input sequence to observe the correct behavior. The agent cannot read the reference source. Grading combines existing test suites with replay: recorded input sequences run through both the candidate and the reference emulator, and the output is compared frame by frame.
+
+Run the taxonomy over that design and most modes come out removed or suppressed; the table below has the details. What remains is mostly modes 3 and 4: keeping the emulator's subsystems consistent with one another, and sustaining productive work across a 24-hour run. The score reads closer to a pure capability measurement because the confounds were deleted on purpose.
+
+The payments task is the opposite pole. The requirement is implied rather than stated, the intended design lives in repository conventions, and a plausible grader can be fooled by a debounce timer. Most of its difficulty lives in modes 1, 5, and 6.
+
+Side by side:
+
+| Failure mode | Duplicate payments | GBA Eval |
+| --- | --- | --- |
+| 1. Wrong task interpretation | Live: the requirement is implied and the intended design lives in conventions | Removed: the spec is "match the oracle," and the oracle is queryable |
+| 2. Wrong environment | Live: the deciding cues may not be discoverable | Removed: the oracle supplies cheap, dense feedback |
+| 3. Violated invariant | Live: one charge per attempt spans client, app, and provider | Live: CPU, graphics, audio, timers, and DMA must agree |
+| 4. Wrong stopping point | Live: scope is a judgment call | Live: 24 hours of sustained, self-directed work |
+| 5. Wrong verification | Live: narrow tests look sufficient | Suppressed: frame-by-frame comparison against the reference |
+| 6. Score optimization | Live: a debounce fools a narrow grader | Suppressed: held-out ROMs and deterministic replay |
+
+Most production software work looks like the payments task, so deleting intent ambiguity costs realism. A benchmark that keeps the ambiguity has to show that its grader can tell reasonable interpretations apart, which is much harder. Either way, a benchmark is easier to read when it states which confounds it removed and which slice of engineering remains.
+
+This also suggests where the line sits between a realistic constraint and an unfair omission: withholding a tool is fair when coping with its absence is part of the work being measured, and unfair when it forces the agent to solve a different problem than the intended one.
+
+## When the eval becomes training data
+
+Everything above treats the grader as a metric: a score assigned to a fixed policy. The other role is an objective: a reward that shapes a policy under optimization. Goodhart's law is what happens when a metric is promoted to an objective without being hardened for the new role, and that promotion is now the common case. Epoch's [FAQ on RL environments](https://epoch.ai/gradient-updates/state-of-rl-envs) reports that environments are used roughly 10 to 20 times more often for reinforcement learning training than for benchmarking.
+
+As a metric, a grader that accepts the debounce patch mis-scores one run. As an objective it becomes reward: every rollout that passes teaches the model that a debounce timer is what payment safety looks like. A bad grader misreports capability when it measures; when it trains, it produces models that write worse code.
+
+Four properties matter far more for an objective than for a metric:
+
+- Robustness under optimization. A grader only has to survive a handful of honest attempts to produce a believable score. A reward has to survive thousands of optimization steps from a policy that profits from every blind spot it finds.
+- Reward density. A single pass-or-fail signal at the end of a long task says little about which decisions along the way were good. Where the signal lands shapes what gets learned.
+- The task distribution. A model trained on a corpus of tasks with narrow graders learns the general lesson: fitting the visible checks is the job.
+- Difficulty calibration. A task that every rollout passes or every rollout fails provides no learning signal, however sound its grader. Epoch reports producers tuning some tasks toward 2 to 3 percent pass rates to keep variance in the reward. This failure sits outside the causal chain above: there is no single run to diagnose.
+
+The diagnosis works the same way in both roles. What changes is the cost of getting it wrong: a mis-attributed failure wastes an afternoon of analysis, while a mis-graded success, repeated across a training corpus, teaches the wrong behavior at scale.
 
 ## What this means for the jagged frontier
 
-The frontier is jagged partly because models have uneven capabilities. It is also
-jagged because coding tasks combine several different demands: interpreting intent,
-navigating tools and codebases, making changes, testing them, and deciding when the
-work is done.
+The frontier is jagged partly because models have uneven capabilities. It is also jagged because coding tasks combine several different demands: interpreting intent, navigating tools and codebases, making changes, testing them, and deciding when the work is done.
 
-An agent can be strong at one of those and weak at another. A benchmark can isolate a
-useful slice of the problem, but it should say which slice it measures.
+An agent can be strong at one of those and weak at another. A benchmark can isolate a useful slice of the problem, but it should say which slice it measures.
 
-{/* Tyler: This is the section where your own view should become clearest. Do you
-think the important distinction is formal feedback versus tacit judgment? Local code
-changes versus cross-system effects? Something else? Write a provisional 3-5 sentence
-claim, then we will pressure-test it. */}
+A provisional claim: the jaggedness that matters most is in the feedback, not the model. Agents look strongest where verification is cheap, dense, and trustworthy: an oracle to query, a deterministic grader, a fast test suite. They look weakest where the relevant property is tacit, expensive to check, or spread across systems, which is where much of production software work lives. If that is right, coding automation advances at roughly the pace at which verification can be mechanized, and grader engineering is a form of capability work.
 
-## A checklist for reading a coding-agent result
+{/* Tyler: this stance is drafted for you to react to: sharpen it, soften it, or replace it. One pressure test to prepare for: some domains have cheap verification (GPU kernels: correctness tests, benchmarks) where agents still struggle, which suggests capability gaps sometimes bind before feedback gaps. Decide whether your claim is "feedback is the bottleneck" or the weaker "feedback quality sets the ceiling." */}
 
-Before treating a result as evidence of a capability gap, ask:
-
-- What is the agent actually required to do?
-- What context, tools, and feedback does it receive?
-- Could a competent human succeed under the same conditions?
-- What does the grader check, and what does it miss?
-- Can a known-bad solution pass?
-- Does the result reproduce across runs and reasonable scaffolds?
-- If the agent fails, what would make me update toward "model limitation" rather than
-  "bad task"?
+{/* Tyler: checklist cut from the published version, kept as an interview crib sheet. Before treating a result as evidence of a capability gap, ask: What is the agent actually required to do? What context, tools, and feedback does it receive? Could a competent human succeed under the same conditions? What does the grader check, and what does it miss? Can a known-bad solution pass? Does the result reproduce across runs and reasonable scaffolds? If the agent fails, what evidence would separate "model limitation" from "bad task"? */}
 
 ## Reading notes
 
-- Mechanize's [GBA Eval](https://gbaeval.com/) and its posts on
-  [environment design](https://gbaeval.com/blog/environment-design) and
-  [grading iteration](https://gbaeval.com/blog/grading-iteration).
-- METR's [algorithmic versus holistic evaluation](https://metr.org/blog/2025-08-12-research-update-towards-reconciling-slowdown-with-time-horizons/)
-  and [reward-hacking examples](https://metr.org/blog/2025-06-05-recent-reward-hacking/).
-- Epoch's [SWE-bench Verified audit](https://epoch.ai/publications/what-skills-does-swe-bench-verified-evaluate),
-  [MirrorCode](https://epoch.ai/MirrorCode), and
-  [RL-environment FAQ](https://epoch.ai/gradient-updates/state-of-rl-envs).
+- Mechanize's [GBA Eval](https://gbaeval.com/) and its posts on [environment design](https://gbaeval.com/blog/environment-design) and [grading iteration](https://gbaeval.com/blog/grading-iteration), including the blog's public note on Grok Build 0.1's reward-hack attempt.
+- Mechanize's podcast episode [How bad data teaches models to write terrible code](https://www.mechanize.work/podcast/how-bad-data-teaches-models-to-write-terrible-code/) with Max Niederman, Stephen Yang, and Ege Erdil.
+- METR's [algorithmic versus holistic evaluation](https://metr.org/blog/2025-08-12-research-update-towards-reconciling-slowdown-with-time-horizons/) and [reward-hacking examples](https://metr.org/blog/2025-06-05-recent-reward-hacking/).
+- Epoch's [SWE-bench Verified audit](https://epoch.ai/publications/what-skills-does-swe-bench-verified-evaluate), [MirrorCode](https://epoch.ai/MirrorCode), and [RL-environment FAQ](https://epoch.ai/gradient-updates/state-of-rl-envs).

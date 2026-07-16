@@ -1,0 +1,78 @@
+---
+/**
+ * Two-panel sequence diagram for the coding-agent failure modes post: the
+ * debounce patch absorbing the grader's double-click probe, then the retry
+ * outside the debounce window that still double-charges.
+ */
+import SvgFigure from "../../SvgFigure.astro";
+
+interface Props {
+  caption?: string;
+  numbered?: boolean;
+}
+
+const {
+  caption = "A debounce patch passes the grader's double-click probe (top) and still double-charges on a retry outside its window (bottom).",
+  numbered = true,
+} = Astro.props;
+---
+
+<SvgFigure
+  alt="Two sequence diagrams between a client and a payment service. Top: a double-click where the second click arrives 80 milliseconds later and is absorbed by the debounce, so only one charge is created and the grader's probe passes. Bottom: a payment request whose response is lost to a timeout, followed by a client retry 30 seconds later that creates a second charge, a path the grader never probes."
+  caption={caption}
+  numbered={numbered}
+  maxWidth={900}
+>
+  <svg viewBox="0 0 760 344" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <marker id="dsf-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor" fill-opacity="0.6" />
+      </marker>
+    </defs>
+
+    <!-- panel A: the grader's probe -->
+    <text x="10" y="20" font-size="14" font-weight="600" fill="currentColor" fill-opacity="0.75">A. What the grader probes: a double-click</text>
+
+    <text x="140" y="44" font-size="13" font-weight="600" text-anchor="middle" fill="currentColor" fill-opacity="0.9">Client</text>
+    <text x="620" y="44" font-size="13" font-weight="600" text-anchor="middle" fill="currentColor" fill-opacity="0.9">Payment service</text>
+    <line x1="140" y1="52" x2="140" y2="146" stroke="currentColor" stroke-opacity="0.3" stroke-width="1.2" />
+    <line x1="620" y1="52" x2="620" y2="146" stroke="currentColor" stroke-opacity="0.3" stroke-width="1.2" />
+
+    <text x="360" y="64" font-size="12.5" text-anchor="middle" fill="currentColor" fill-opacity="0.7">pay (click 1)</text>
+    <line x1="145" y1="72" x2="562" y2="72" stroke="currentColor" stroke-opacity="0.6" stroke-width="1.4" marker-end="url(#dsf-arrow)" />
+    <rect x="566" y="61" width="108" height="22" rx="4" style="stroke: var(--green); fill: var(--green)" fill-opacity="0.08" stroke-width="1.3" />
+    <text x="620" y="76" font-size="12" font-weight="600" text-anchor="middle" fill="currentColor" fill-opacity="0.85">charge #1</text>
+
+    <text x="152" y="104" font-size="12.5" fill="currentColor" fill-opacity="0.7">click 2 (+80 ms): debounced</text>
+    <line x1="145" y1="112" x2="290" y2="112" stroke="currentColor" stroke-opacity="0.6" stroke-width="1.4" />
+    <text x="296" y="117" font-size="15" font-weight="700" fill="currentColor" fill-opacity="0.7">&#215;</text>
+
+    <text x="380" y="140" font-size="13" font-weight="600" text-anchor="middle" style="fill: var(--green)">one charge &#8212; the probe passes</text>
+
+    <line x1="10" y1="158" x2="750" y2="158" stroke="currentColor" stroke-opacity="0.15" stroke-width="1" />
+
+    <!-- panel B: the unprobed path -->
+    <text x="10" y="182" font-size="14" font-weight="600" fill="currentColor" fill-opacity="0.75">B. What it misses: a retry outside the window</text>
+
+    <text x="140" y="206" font-size="13" font-weight="600" text-anchor="middle" fill="currentColor" fill-opacity="0.9">Client</text>
+    <text x="620" y="206" font-size="13" font-weight="600" text-anchor="middle" fill="currentColor" fill-opacity="0.9">Payment service</text>
+    <line x1="140" y1="214" x2="140" y2="316" stroke="currentColor" stroke-opacity="0.3" stroke-width="1.2" />
+    <line x1="620" y1="214" x2="620" y2="316" stroke="currentColor" stroke-opacity="0.3" stroke-width="1.2" />
+
+    <text x="360" y="226" font-size="12.5" text-anchor="middle" fill="currentColor" fill-opacity="0.7">pay (attempt 1)</text>
+    <line x1="145" y1="234" x2="562" y2="234" stroke="currentColor" stroke-opacity="0.6" stroke-width="1.4" marker-end="url(#dsf-arrow)" />
+    <rect x="566" y="223" width="108" height="22" rx="4" style="stroke: var(--green); fill: var(--green)" fill-opacity="0.08" stroke-width="1.3" />
+    <text x="620" y="238" font-size="12" font-weight="600" text-anchor="middle" fill="currentColor" fill-opacity="0.85">charge #1</text>
+
+    <text x="470" y="262" font-size="12.5" text-anchor="middle" fill="currentColor" fill-opacity="0.7">response lost (timeout)</text>
+    <line x1="615" y1="270" x2="386" y2="270" stroke="currentColor" stroke-opacity="0.6" stroke-width="1.4" stroke-dasharray="5 4" />
+    <text x="368" y="275" font-size="15" font-weight="700" style="fill: var(--red)">&#215;</text>
+
+    <text x="360" y="298" font-size="12.5" text-anchor="middle" fill="currentColor" fill-opacity="0.7">pay (retry, +30 s)</text>
+    <line x1="145" y1="306" x2="562" y2="306" stroke="currentColor" stroke-opacity="0.6" stroke-width="1.4" marker-end="url(#dsf-arrow)" />
+    <rect x="566" y="295" width="108" height="22" rx="4" style="stroke: var(--red); fill: var(--red)" fill-opacity="0.08" stroke-width="1.3" />
+    <text x="620" y="310" font-size="12" font-weight="600" text-anchor="middle" fill="currentColor" fill-opacity="0.85">charge #2</text>
+
+    <text x="380" y="336" font-size="13" font-weight="600" text-anchor="middle" style="fill: var(--red)">two charges &#8212; never probed</text>
+  </svg>
+</SvgFigure>
