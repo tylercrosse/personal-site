@@ -268,6 +268,29 @@ const hierarchicalPosts = allPostsData
       background-color: var(--accent);
       color: var(--black);
     }
+    /* Compact the filter controls so all four fit on one row on phones */
+    @media (max-width: 767px) {
+      .select-filters {
+        gap: 0.375rem;
+      }
+      .select-filters select,
+      #all-tags {
+        padding: 0.25rem 0.4rem;
+        font-size: 0.8rem;
+      }
+      /* On very narrow screens the selects give up width (with ellipsis)
+         rather than pushing the view toggle off the edge */
+      .select-filters select {
+        min-width: 0;
+        text-overflow: ellipsis;
+      }
+      .view-toggle {
+        flex-shrink: 0;
+      }
+      .view-toggle button {
+        padding: 0.3rem 0.45rem;
+      }
+    }
     .post-grid {
       display: flex;
       gap: 2rem;
@@ -292,6 +315,7 @@ const hierarchicalPosts = allPostsData
       flex-direction: column;
       gap: 0.75rem;
       max-width: 900px;
+      margin: 0 auto;
     }
     .post-list :global(.post-link) {
       margin: 0;
@@ -308,7 +332,7 @@ const hierarchicalPosts = allPostsData
     .post-list-children.hidden {
       display: none;
     }
-    @media (max-width: 480px) {
+    @media (max-width: 767px) {
       .post-list-children {
         margin-left: 1.25rem;
       }

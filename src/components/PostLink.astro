@@ -328,13 +328,32 @@ const imageWidth = size === "lg" ? 800 : 400;
     font-family: var(--font-body);
   }
 
-  @media (max-width: 480px) {
+  @media (max-width: 767px) {
     .post-link--lg {
       --thumb: 96px;
     }
 
     .post-link--lg .post-link-description {
       -webkit-line-clamp: 2;
+    }
+
+    /* Paper rows shrink to match the grid view's compact reference-card
+       look so the type reads the same in both views */
+    .post-link--lg[data-type="paper"] {
+      --thumb: 80px;
+    }
+
+    .post-link--lg[data-type="paper"] .post-link-body {
+      padding: 0.6rem 0.75rem;
+      gap: 0.35rem;
+    }
+
+    .post-link--lg[data-type="paper"] .post-link-title {
+      font-size: 1.05rem;
+    }
+
+    .post-link--lg[data-type="paper"] .post-link-description {
+      font-size: 0.85rem;
     }
 
     .post-link--indent {
