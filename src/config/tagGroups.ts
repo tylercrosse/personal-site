@@ -19,6 +19,7 @@ export const TAG_GROUPS: Record<string, string[]> = {
     "machine-learning",
     "optimization",
     "agents",
+    "evaluations",
     "NLP",
     "computer-vision",
     "generative-models",
