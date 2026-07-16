@@ -69,6 +69,8 @@ Sudoku makes the cost concrete. Solving it the classic way is backtracking searc
   src={sudokuImg}
   alt="A backtracking search tree for Sudoku, showing candidate values tried at each cell and branches abandoned when they violate constraints"
   caption="Sudoku as backtracking search. An autoregressive model has to represent each attempted branch in tokens; HRM keeps this iteration in its hidden state."
+  width={1000}
+  fullWidth
 />
 
 The paper's benchmark datasets lean into this. Their Sudoku-Extreme set averages far more forced backtracks per puzzle than the standard benchmarks, where typical puzzles average around 0.45 backtracks, which is part of why leading reasoning LLMs score near zero on it.
@@ -83,6 +85,8 @@ HRM has two recurrent modules, both standard modern transformer blocks (rotary e
   src={architectureImg}
   alt="Slide showing HRM Figure 4: the unrolled H and L module diagram with gradient flowing only through the final states, alongside pseudocode for HRM with deep supervision"
   caption="HRM's two-level recurrence, from Figure 4 of the paper. Most of the unrolled computation runs under no_grad; only the final H and L states carry gradient."
+  width={1000}
+  fullWidth
 />
 
 Two training details matter more than the hierarchy itself:
@@ -113,6 +117,8 @@ The findings, in decreasing order of how much they changed my read of the paper:
   src={modelMatterImg}
   alt="Slide comparing HRM and a same-size transformer across refinement loop counts; scores are within a few points at every loop count"
   caption="ARC Prize ablation: HRM vs. a same-size, unoptimized transformer. 'The model doesn't seem to matter, at least on ARC.'"
+  width={1000}
+  fullWidth
 />
 
 **The hierarchical inner loop doesn't matter much either.** One L cycle and one H cycle already gets about 7/8 of the performance of the paper's configuration, and scaling the inner loops higher doesn't help, while compute grows multiplicatively.
@@ -123,6 +129,8 @@ The findings, in decreasing order of how much they changed my read of the paper:
   src={outerLoopImg}
   alt="Slide showing performance rising sharply with the number of outer refinement loops, and training-time refinement outperforming inference-time refinement"
   caption="ARC Prize ablation of the outer loop: refinement of predictions works, and it matters most during training."
+  width={1000}
+  fullWidth
 />
 
 **Augmentation helps, but saturates fast.** Roughly 1% of the 1,000 augmentations gets you about 75% of the benefit, and augmentation matters more at training time than at inference.

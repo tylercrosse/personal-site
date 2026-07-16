@@ -88,6 +88,8 @@ Different families of generative models answer that question differently. I made
   src={taxonomyImg}
   alt="Taxonomy tree of generative models, splitting into explicit density (tractable: autoregressive, normalizing flows; approximate: VAEs, diffusion) and implicit density (GANs, energy-based models)"
   caption="Generative model taxonomy. Diffusion models sit in the approximate explicit density branch: they define a density but optimize a bound on it rather than computing it directly."
+  width={1000}
+  fullWidth
 />
 
 Autoregressive models and normalizing flows have tractable densities you can compute and optimize directly. VAEs and diffusion models define a density but optimize a lower bound on it. GANs and energy-based models never define the density explicitly; they just give you a way to sample. All of them are learning some compressed representation of the data and a way to generate from it, and ideas cross-pollinate between the branches constantly.
@@ -102,6 +104,8 @@ Sohl-Dickstein et al. made the connection to physics in 2015. Their framing borr
   src={sohlDicksteinImg}
   alt="Slide showing a 2D spiral dataset being progressively noised into a Gaussian (forward diffusion) and recovered from noise (reverse diffusion)"
   caption="The core diffusion idea from Sohl-Dickstein et al. (2015): a forward process gradually destroys structure with noise, and a learned reverse process recovers the data distribution."
+  width={1000}
+  fullWidth
 />
 
 Not much happened with diffusion for the next few years. GANs dominated image generation, though they leaned toward realism over diversity and suffered from mode collapse. I hit this firsthand on a course project: I trained a GAN on Fashion-MNIST and about half of my generated samples came out as boots. VQ-VAE 2 and VQGAN established the other major pattern of the era: compress images into discrete sequences, then predict them autoregressively.
@@ -118,6 +122,8 @@ Their move was to define corruption through transition matrices over the vocabul
   src={d3pmImg}
   alt="Slide with D3PM Figure 2: perplexity vs sampling iterations on LM1B, and examples of generating and reconstructing sentences by progressive unmasking"
   caption="D3PM on LM1B. The right side shows the forward process masking a sentence and the reverse process reconstructing it. The reconstruction is close but not exact: 'expand in Asia, where it trails local competitors' comes back as 'expand in China, where it faces local competitors.'"
+  width={1000}
+  fullWidth
 />
 
 The paper also drew a parallel I found clarifying: BERT is a one-step diffusion model (corrupt by masking, denoise in one shot), and autoregressive models are discrete diffusion models with a deterministic corruption process that masks exactly the next token. This came up in the Q&A, and I'll get to it below.
@@ -136,6 +142,8 @@ The line that did pan out is masked diffusion at scale:
   src={lladaImg}
   alt="Slide with LLaDA Figure 2: pre-training with random masking, SFT masking only response tokens, and sampling from fully masked to unmasked with remasking"
   caption="LLaDA's training and sampling setup. Sampling starts from a fully masked response and unmasks over steps, with low-confidence tokens re-masked and re-predicted along the way."
+  width={1000}
+  fullWidth
 />
 
 **Block Diffusion** (Arriola et al., March 2025) is a hybrid: generate fixed-size blocks autoregressively, but use diffusion within each block. Pure diffusion models regenerate everything from scratch and can't reuse a KV cache the way autoregressive decoding can; generating block by block restores that, while keeping parallel sampling inside each block.
@@ -144,6 +152,8 @@ The line that did pan out is masked diffusion at scale:
   src={blockDiffusionImg}
   alt="Slide with Block Diffusion Figure 1 comparing autoregression, diffusion, and block diffusion on quality, arbitrary length, KV caching, and parallelism"
   caption="Block diffusion keeps the autoregressive advantages (quality, arbitrary length, KV caching) while getting parallel generation within blocks."
+  width={1000}
+  fullWidth
 />
 
 **d1** (Zhao et al., April 2025) tackles post-training, which LLaDA largely skipped. They fine-tune LLaDA on the s1k reasoning dataset, then apply diffu-GRPO, a critic-free RL algorithm adapted for the non-sequential nature of diffusion generation. The gains on math and reasoning benchmarks over the base model are substantial.
