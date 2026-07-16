@@ -12,7 +12,7 @@ import SeriesNav from "../components/SeriesNav.astro";
 import SeriesPill from "../components/SeriesPill.astro";
 import type { SeriesInfo } from "../utils/series";
 import BaseLayout from "./BaseLayout.astro";
-import { PenTool, RotateCcw, Code, Lightbulb, Notebook, Youtube } from "lucide-astro";
+import { getIconForType, getColorForType, capitalize } from "../utils/postIcons";
 import { getBlogPostingStructuredData } from "../utils/structuredData";
 import {
   getTopicForTag,
@@ -87,24 +87,6 @@ const blogPostingStructuredData = getBlogPostingStructuredData({
   tags,
   section: type,
 });
-
-// Map post types to their corresponding icons
-const getIconForType = (type: string) => {
-  const icons = {
-    'article': PenTool,
-    'retro': RotateCcw,
-    'project': Code,
-    'idea': Lightbulb,
-    'note': Notebook,
-    'talk': Youtube,
-  };
-  return icons[type as keyof typeof icons];
-};
-
-const capitalize = (s: string) => {
-  if (typeof s !== "string" || !s) return s;
-  return s.charAt(0).toUpperCase() + s.slice(1);
-};
 
 // Tags are filters: every tag chip refines the /ideas list. (Topic membership
 // is surfaced separately, below, as a "Part of" destination link.)
@@ -377,7 +359,10 @@ const postTopics = [...topicsForPost.values()];
         <div class="title-meta">
           {draft && <span class="draft-indicator">DRAFT</span>}
           {type && (
-            <span class="type-with-icon">
+            <span
+              class="type-with-icon"
+              style={getColorForType(type) && `color: ${getColorForType(type)}`}
+            >
               {(() => {
                 const Icon = getIconForType(type);
                 return Icon ? <Icon size={14} /> : null;

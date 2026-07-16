@@ -1,0 +1,140 @@
+---
+title: 'Debunking the CUDA Myth'
+description: "A written version of my CS 8803 paper presentation on Lee et al.'s ISCA 2025 evaluation of Intel's Gaudi-2 NPU: performance, programmability, and whether CUDA is really the moat."
+date: '2025-11-01'
+updated: '2026-07-14'
+status: 'complete'
+type: 'talk'
+tags: ['GPU', 'CUDA', 'computer-architecture', 'machine-learning', 'MSCS']
+category: ['mscs']
+draft: false
+audience: 'All'
+media_subpath: "/ideas/debunking-the-cuda-myth/"
+image:
+  path: "moebius-style-cuda-v-intel.png"
+  alt: 'Moedbius style CUDA vs. Intel'
+cite: true
+sources:
+  - title: 'Debunking the CUDA Myth Towards GPU-based AI Systems'
+    url: 'https://arxiv.org/abs/2501.00210'
+    authors: 'Lee, Lim, et al.'
+    venue: 'ISCA'
+    year: '2025'
+credits:
+  - title: 'Gaudi architecture, GEMM utilization, LLM energy-efficiency, and PagedAttention figures (Figures 1, 5, 13, 16)'
+    author: 'Lee et al., "Debunking the CUDA Myth Towards GPU-based AI Systems"'
+    url: 'https://arxiv.org/abs/2501.00210'
+    changes: 'reproduced in my slides'
+---
+
+import Figure from "../../../../components/Figure.astro";
+import PostLink from "../../../../components/PostLink.astro";
+
+import gaudiArchImg from "./slide-gaudi-architecture.png";
+import gemmUtilImg from "./slide-gemm-utilization.png";
+import llmEnergyImg from "./slide-llm-energy.png";
+import vllmImg from "./slide-vllm-paged-attention.png";
+
+In November 2025 I presented this paper for the paper-reading portion of Georgia Tech's CS 8803: GPU Hardware and Software. There's no talk video for this one; the class recording includes other students and isn't mine to publish. This post is the written version, and you can [download the slide deck (PDF, 3.2MB)](/ideas/debunking-the-cuda-myth/cuda-myth-slides.pdf).
+
+The paper is [Debunking the CUDA Myth Towards GPU-based AI Systems](https://arxiv.org/abs/2501.00210) (Lee, Lim, et al., ISCA 2025), the first comprehensive characterization of Intel's Gaudi NPU as a serious alternative to NVIDIA GPUs for AI serving. I picked it because it asks a question I kept circling all semester: NVIDIA's dominance is usually attributed to "the CUDA moat," but what exactly is the moat? The instruction set? The kernel programming model? The years of library engineering on top? The paper gets at this by asking three concrete questions about Gaudi-2:
+
+1. How does its hardware performance compare to an A100?
+2. Is it programmable enough for real-world, low-level optimization?
+3. Is CUDA itself the moat, or is it something else?
+
+Gaudi-2 versus A100 is the fair fight; they're roughly contemporaries, and the paper is explicit about that framing. The authors built a microbenchmark suite for NPU evaluation, ran end-to-end serving workloads, and did two detailed programmability case studies.
+
+## How Gaudi differs from a GPU
+
+A GPU is a sea of identical streaming multiprocessors, each mixing SIMD cores and tensor cores. Gaudi is a heterogeneous design with two engine types: Matrix Multiplication Engines (MMEs), large *configurable* (but not programmable) systolic arrays that handle GEMM, and Tensor Processing Cores (TPCs), fully programmable VLIW SIMD cores for everything else, all sharing SRAM scratchpad and HBM.
+
+<Figure
+  src={gaudiArchImg}
+  alt="Slide with Figure 1 of the paper: Gaudi NPU architecture with configurable MME systolic arrays, programmable TPCs, shared SRAM, DMA, and HBM"
+  caption="Gaudi's split: MMEs are configurable systolic arrays, TPCs are programmable cores. On a GPU both roles live inside every SM."
+  width={1000}
+  fullWidth
+/>
+
+The programming model difference matters as much as the silicon. On NVIDIA hardware, a fused matrix multiply-add is a single kernel launch using the WMMA APIs, with tensor cores and SIMD cores cooperating inside one kernel. On Gaudi, you cannot touch the MME from a low-level kernel at all: GEMM is only expressible at the PyTorch/graph-compiler level, and a custom TPC-C kernel handles the rest. Keep that constraint in mind for the vLLM case study below.
+
+## Microbenchmarks: four takeaways
+
+The paper structures its performance story as numbered takeaways, which I kept in the talk:
+
+**1. GEMM: Gaudi-2 wins.** Higher absolute throughput and higher compute utilization than A100. The interesting part is why: the MME's systolic array can reconfigure its geometry to fit the shape of the target GEMM's (M, K, N) dimensions, where a GPU's fixed tensor-core tiles leave utilization on the table for irregular shapes.
+
+<Figure
+  src={gemmUtilImg}
+  alt="Slide with Figure 5 of the paper: heatmaps of compute utilization for square and irregularly shaped GEMMs on Gaudi-2 and A100"
+  caption="Compute utilization across GEMM shapes (warmer is higher). Gaudi-2's configurable MME holds up better on irregularly shaped GEMMs."
+  width={1000}
+  fullWidth
+/>
+
+**2. Non-GEMM vector math: a 3.5x throughput gap.** Gaudi-2 falls well short of A100 in absolute vector performance. In terms of compute *efficiency* (achieved fraction of peak), it's comparable, so the design is competitive; there's just less vector hardware.
+
+**3. Memory: fine until accesses get small.** Streaming access patterns are competitive. Random gather-scatter is not, once transfers drop below Gaudi-2's 256-byte minimum access granularity. This number shows up again in both end-to-end results and the first case study.
+
+**4. Collectives: the system, not the chip.** Gaudi-2's collective communication falls short of an A100 system's, but the authors attribute it to the box, not the processor: a DGX A100 has an all-to-all NVSwitch fabric, while Gaudi-2 systems wire 24x100GbE directly on-chip with no switch, so intra-node bandwidth is less flexible when fewer devices participate.
+
+## End-to-end: LLMs yes, RecSys no
+
+The fifth takeaway is the punchline of the performance half. LLM serving is dominated by matrix multiplication, which is Gaudi-2's strength, so on Llama-3.1 serving it beat the A100 in energy efficiency by an average of 48% single-device and 52% multi-device. Recommendation systems invert the picture: DLRM-style models lean on embedding gathers (takeaway 3's weakness) and small MLP layers, and Gaudi-2 averaged 20% slower with 28% worse energy efficiency.
+
+<Figure
+  src={llmEnergyImg}
+  alt="Slide with Figure 13 of the paper: heatmaps of Gaudi-2 performance per watt versus A100 for Llama-3.1 8B and 70B across batch sizes and output lengths"
+  caption="Performance per watt vs. A100 for Llama-3.1 serving (red means Gaudi-2 ahead). The advantage holds across batch sizes, output lengths, and device counts."
+  width={1000}
+  fullWidth
+/>
+
+## Programmability: the case studies
+
+Benchmarks tell you what the hardware can do; the case studies ask how hard you have to work to get it.
+
+**6. Embedding lookups in TPC-C.** The authors hand-optimized embedding-bag kernels (the heart of RecSys serving) and compared against FBGEMM-optimized A100 baselines. For embedding vectors of 256 bytes or larger, their Gaudi kernels reached 95% of A100 throughput on average. For smaller vectors, 47%. Their diagnosis: the shortfall is A100's finer-grained memory hardware, not anything missing from the TPC-C programming model. Programmability was sufficient; the 256-byte granularity was the wall.
+
+**7. Optimizing vLLM without touching the MME.** Since GEMM can't be programmed at the kernel level, the question is whether PyTorch-level restructuring is enough. They rewrote PagedAttention to gather KV-cache blocks and express attention as batched GEMMs the graph compiler can pipeline across MME and TPC. The optimized version reached 45% of a GPU-optimized vLLM's PagedAttention throughput, yet end-to-end LLM serving stayed competitive with A100, because attention is only part of the pipeline and the GEMM-heavy rest runs well.
+
+<Figure
+  src={vllmImg}
+  alt="Slide with Figure 16 of the paper: baseline vLLM gathering cache blocks before attention versus the optimized version pipelining batched GEMM and softmax across MME and TPC"
+  caption="The vLLM case study: the baseline serializes cache gathering and attention; the optimized version restructures PagedAttention at the PyTorch level so the graph compiler can pipeline MME and TPC work."
+  width={1000}
+  fullWidth
+/>
+
+## So is CUDA the moat?
+
+The paper's conclusion, which I agree with after living in CUDA for a semester, is that the moat is not the CUDA language. Gaudi-2's hardware is competitive where it counts for LLM serving, and its programming stack proved flexible enough for serious optimization. What Gaudi lacked was the thing NVIDIA has spent fifteen years building: framework integration that works flawlessly out of the box, so that nobody *needs* a low-level programmer to hit good performance. The authors' bet is that Gaudi's success "will depend less on winning over low-level programmers and more on Intel's ability to provide a flawless, high-performance software experience within major AI frameworks."
+
+For the talk I added some context the paper leaves out: where these parts sit in time and price.
+
+| Accelerator | Announce → GA | HBM (capacity / BW) | Scale-out fabric | Typical 2024–2025 pricing signal* |
+| :--- | :--- | :--- | :--- | :--- |
+| Intel Gaudi 2 | May 2022 → 2022 | 96 GB HBM2e / 2.45 TB/s | 24×100 GbE on-chip | 8-GPU kit \$65k (Intel ref) |
+| Intel Gaudi 3 | Apr 2024 → 2H 2024 | 128 GB HBM2e / 3.7 TB/s | 24×200 GbE on-chip | 8-GPU kit \$125k (Intel ref) |
+| NVIDIA A100 | May 2020 → 2020 | 40/80 GB HBM2(e) / 1.6–2.0 TB/s | NVLink + IB/Ethernet | DGX A100 \$199k (8×A100 system at launch) |
+| NVIDIA H100 | Mar 2022 → Sept 2022 prod | 80 GB HBM3 (3.35 TB/s); NVL 96 GB | NVLink + IB/Ethernet | \$27k–\$40k per GPU (range); \$216k–\$320k x8 (range) |
+
+*My comparison of the accelerator generations, added for the talk. Gaudi-2/A100 is the like-for-like pair the paper evaluates; Gaudi 3 and H100 are the next generation, with Intel's reference pricing far below NVIDIA's.
+
+The pricing column is the part I'd emphasize: Intel's reference price for an 8-accelerator Gaudi 3 kit was less than half of typical 8xH100 system pricing. If the software gap closes, the economics are real.
+
+## Since the talk (July 2026)
+
+The economics arrived with an asterisk. [Gaudi 3 expanded availability](https://newsroom.intel.com/artificial-intelligence/intel-gaudi-3-expands-availability-drive-ai-innovation-scale) through 2025, with Intel pitching roughly 2x price/performance against H100 for Llama-2-70B inference. But Intel's accelerator roadmap has visibly shifted toward GPU architectures: [Crescent Island](https://www.tomshardware.com/tech-industry/semiconductors/intel-chip-roadmap-2026-2028), announced at the OCP Global Summit shortly before this talk, is an inference-focused data center GPU on the Xe3P architecture with 160GB of LPDDR5X (deliberately not HBM), with customer sampling planned for the second half of 2026. Reading the paper's conclusion against that pivot, it holds up: the hardware was never the main problem, and Intel appears to be consolidating its software effort around a GPU-shaped programming model rather than continuing to ask developers to meet the NPU where it is.
+
+I wrote up the course this talk was part of:
+
+<PostLink slug="2026/gpu-retro" size="md" />
+
+## References
+
+- [Debunking the CUDA Myth Towards GPU-based AI Systems](https://arxiv.org/abs/2501.00210), Lee, Lim, et al., 2025
+  - [ISCA 2025 proceedings version](https://dl.acm.org/doi/10.1145/3695053.3731050)
+- [Intel Gaudi 3 AI Accelerator white paper](https://www.intel.com/content/www/us/en/content-details/817486/intel-gaudi-3-ai-accelerator-white-paper.html), Intel
+- [vLLM](https://github.com/vllm-project/vllm) and [FBGEMM](https://github.com/pytorch/FBGEMM), the serving and kernel baselines used in the case studies

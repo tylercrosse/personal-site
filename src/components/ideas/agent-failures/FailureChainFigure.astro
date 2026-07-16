@@ -1,0 +1,101 @@
+---
+/**
+ * Process model of a single agent run for the coding-agent failure modes
+ * post: six agent stages plus grading flowing top to bottom, the environment
+ * as a band alongside the stages it supports, and numbered badges anchoring
+ * each failure mode to the stage it lives in.
+ */
+import SvgFigure from "../../SvgFigure.astro";
+
+interface Props {
+  caption?: string;
+  numbered?: boolean;
+}
+
+const {
+  caption = "The process model: each stage depends on the ones before it, so attribution names the earliest broken stage. Numbered badges mark where each failure mode lives; implementation carries none because plain coding mistakes are the easiest to attribute.",
+  numbered = true,
+} = Astro.props;
+---
+
+<SvgFigure
+  alt="Vertical pipeline of an agent run: task specification, exploration, problem formulation, state management, implementation, and verification flow down into grading, with the environment drawn as a band alongside the middle stages. Numbered badges tie failure modes 1 through 6 to their stages, and an annotation reads: attribute to the earliest broken stage."
+  caption={caption}
+  numbered={numbered}
+  maxWidth={560}
+>
+  <svg viewBox="0 0 540 636" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <marker id="fcf-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor" fill-opacity="0.6" />
+      </marker>
+    </defs>
+
+    <!-- stage-to-stage arrows -->
+    <line x1="149" y1="73" x2="149" y2="94" stroke="currentColor" stroke-opacity="0.5" stroke-width="1.6" marker-end="url(#fcf-arrow)" />
+    <line x1="149" y1="157" x2="149" y2="178" stroke="currentColor" stroke-opacity="0.5" stroke-width="1.6" marker-end="url(#fcf-arrow)" />
+    <line x1="149" y1="241" x2="149" y2="262" stroke="currentColor" stroke-opacity="0.5" stroke-width="1.6" marker-end="url(#fcf-arrow)" />
+    <line x1="149" y1="325" x2="149" y2="346" stroke="currentColor" stroke-opacity="0.5" stroke-width="1.6" marker-end="url(#fcf-arrow)" />
+    <line x1="149" y1="409" x2="149" y2="430" stroke="currentColor" stroke-opacity="0.5" stroke-width="1.6" marker-end="url(#fcf-arrow)" />
+    <line x1="149" y1="493" x2="149" y2="514" stroke="currentColor" stroke-opacity="0.5" stroke-width="1.6" marker-end="url(#fcf-arrow)" />
+
+    <!-- agent stages -->
+    <rect x="24" y="16" width="250" height="54" rx="9" style="stroke: var(--blue); fill: var(--blue)" fill-opacity="0.06" stroke-width="1.5" />
+    <text x="149" y="48" font-size="15" font-weight="600" text-anchor="middle" fill="currentColor" fill-opacity="0.9">Task specification</text>
+
+    <rect x="24" y="100" width="250" height="54" rx="9" style="stroke: var(--blue); fill: var(--blue)" fill-opacity="0.06" stroke-width="1.5" />
+    <text x="149" y="132" font-size="15" font-weight="600" text-anchor="middle" fill="currentColor" fill-opacity="0.9">Exploration</text>
+
+    <rect x="24" y="184" width="250" height="54" rx="9" style="stroke: var(--blue); fill: var(--blue)" fill-opacity="0.06" stroke-width="1.5" />
+    <text x="149" y="216" font-size="15" font-weight="600" text-anchor="middle" fill="currentColor" fill-opacity="0.9">Problem formulation</text>
+
+    <rect x="24" y="268" width="250" height="54" rx="9" style="stroke: var(--blue); fill: var(--blue)" fill-opacity="0.06" stroke-width="1.5" />
+    <text x="149" y="300" font-size="15" font-weight="600" text-anchor="middle" fill="currentColor" fill-opacity="0.9">State management</text>
+
+    <rect x="24" y="352" width="250" height="54" rx="9" style="stroke: var(--blue); fill: var(--blue)" fill-opacity="0.06" stroke-width="1.5" />
+    <text x="149" y="384" font-size="15" font-weight="600" text-anchor="middle" fill="currentColor" fill-opacity="0.9">Implementation</text>
+
+    <rect x="24" y="436" width="250" height="54" rx="9" style="stroke: var(--blue); fill: var(--blue)" fill-opacity="0.06" stroke-width="1.5" />
+    <text x="149" y="468" font-size="15" font-weight="600" text-anchor="middle" fill="currentColor" fill-opacity="0.9">Verification</text>
+
+    <!-- grading, outside the agent's run -->
+    <rect x="24" y="520" width="250" height="54" rx="9" style="stroke: var(--orange); fill: var(--orange)" fill-opacity="0.06" stroke-width="1.5" />
+    <text x="149" y="552" font-size="15" font-weight="600" text-anchor="middle" fill="currentColor" fill-opacity="0.9">Grading</text>
+
+    <!-- failure-mode badges -->
+    <circle cx="302" cy="43" r="12" style="stroke: var(--red); fill: var(--red)" fill-opacity="0.08" stroke-width="1.4" />
+    <text x="302" y="47.5" font-size="13" font-weight="600" text-anchor="middle" fill="currentColor" fill-opacity="0.8">1</text>
+
+    <circle cx="302" cy="127" r="12" style="stroke: var(--red); fill: var(--red)" fill-opacity="0.08" stroke-width="1.4" />
+    <text x="302" y="131.5" font-size="13" font-weight="600" text-anchor="middle" fill="currentColor" fill-opacity="0.8">1</text>
+    <circle cx="332" cy="127" r="12" style="stroke: var(--red); fill: var(--red)" fill-opacity="0.08" stroke-width="1.4" />
+    <text x="332" y="131.5" font-size="13" font-weight="600" text-anchor="middle" fill="currentColor" fill-opacity="0.8">2</text>
+
+    <circle cx="302" cy="211" r="12" style="stroke: var(--red); fill: var(--red)" fill-opacity="0.08" stroke-width="1.4" />
+    <text x="302" y="215.5" font-size="13" font-weight="600" text-anchor="middle" fill="currentColor" fill-opacity="0.8">1</text>
+    <circle cx="332" cy="211" r="12" style="stroke: var(--red); fill: var(--red)" fill-opacity="0.08" stroke-width="1.4" />
+    <text x="332" y="215.5" font-size="13" font-weight="600" text-anchor="middle" fill="currentColor" fill-opacity="0.8">3</text>
+    <circle cx="362" cy="211" r="12" style="stroke: var(--red); fill: var(--red)" fill-opacity="0.08" stroke-width="1.4" />
+    <text x="362" y="215.5" font-size="13" font-weight="600" text-anchor="middle" fill="currentColor" fill-opacity="0.8">4</text>
+
+    <circle cx="302" cy="295" r="12" style="stroke: var(--red); fill: var(--red)" fill-opacity="0.08" stroke-width="1.4" />
+    <text x="302" y="299.5" font-size="13" font-weight="600" text-anchor="middle" fill="currentColor" fill-opacity="0.8">4</text>
+
+    <circle cx="302" cy="463" r="12" style="stroke: var(--red); fill: var(--red)" fill-opacity="0.08" stroke-width="1.4" />
+    <text x="302" y="467.5" font-size="13" font-weight="600" text-anchor="middle" fill="currentColor" fill-opacity="0.8">5</text>
+
+    <circle cx="302" cy="547" r="12" style="stroke: var(--red); fill: var(--red)" fill-opacity="0.08" stroke-width="1.4" />
+    <text x="302" y="551.5" font-size="13" font-weight="600" text-anchor="middle" fill="currentColor" fill-opacity="0.8">6</text>
+
+    <!-- environment substrate, spanning exploration through verification -->
+    <rect x="400" y="100" width="124" height="390" rx="9" style="stroke: var(--green); fill: var(--green)" fill-opacity="0.06" stroke-width="1.5" />
+    <text x="462" y="274" font-size="14" font-weight="600" text-anchor="middle" fill="currentColor" fill-opacity="0.9">Environment</text>
+    <text x="462" y="294" font-size="12" text-anchor="middle" fill="currentColor" fill-opacity="0.7">tools, feedback,</text>
+    <text x="462" y="310" font-size="12" text-anchor="middle" fill="currentColor" fill-opacity="0.7">affordances</text>
+    <circle cx="462" cy="342" r="12" style="stroke: var(--red); fill: var(--red)" fill-opacity="0.08" stroke-width="1.4" />
+    <text x="462" y="346.5" font-size="13" font-weight="600" text-anchor="middle" fill="currentColor" fill-opacity="0.8">2</text>
+
+    <!-- attribution rule -->
+    <text x="270" y="616" font-size="13" text-anchor="middle" fill="currentColor" fill-opacity="0.55">&#8593; attribute to the earliest broken stage</text>
+  </svg>
+</SvgFigure>
