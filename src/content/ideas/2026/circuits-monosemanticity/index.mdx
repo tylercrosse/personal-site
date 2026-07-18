@@ -8,18 +8,9 @@ tags: ['mechanistic-interpretability', 'deep-learning', 'research', 'AI-safety']
 category: ['ideas']
 draft: true
 audience: 'All'
-license: true
 sources:
-  - title: 'Towards Monosemanticity: Decomposing Language Models With Dictionary Learning'
-    url: 'https://transformer-circuits.pub/2023/monosemantic-features/index.html'
-    authors: 'Bricken et al.'
-    venue: 'Transformer Circuits Thread'
-    year: '2023'
-  - title: 'Scaling Monosemanticity: Extracting Interpretable Features from Claude 3 Sonnet'
-    url: 'https://transformer-circuits.pub/2024/scaling-monosemanticity/index.html'
-    authors: 'Templeton et al.'
-    venue: 'Transformer Circuits Thread'
-    year: '2024'
+  - bricken2023monosemanticity
+  - templeton2024scaling
 media_subpath: "/ideas/circuits-monosemanticity/"
 parent: '2026/transformer-circuits'
 order: 4
@@ -40,7 +31,7 @@ import arabicActivation from "./mono-arabic-activation.png";
 import umap from "./mono-umap.png";
 import featureSplitting from "./mono-feature-splitting.png";
 
-Notes on [Towards Monosemanticity: Decomposing Language Models With Dictionary Learning](https://transformer-circuits.pub/2023/monosemantic-features/index.html) (Bricken et al., October 2023) and [Scaling Monosemanticity: Extracting Interpretable Features from Claude 3 Sonnet](https://transformer-circuits.pub/2024/scaling-monosemanticity/index.html) (Templeton et al., May 2024), from Anthropic's [Transformer Circuits thread](/ideas/2026/transformer-circuits/).
+Notes on _Towards Monosemanticity: Decomposing Language Models With Dictionary Learning_ [@bricken2023monosemanticity] and _Scaling Monosemanticity: Extracting Interpretable Features from Claude 3 Sonnet_ [@templeton2024scaling], from Anthropic's [Transformer Circuits thread](/ideas/2026/transformer-circuits/).
 
 The two papers are one arc: the first shows that sparse autoencoders (SAEs) can pull interpretable features out of a one-layer transformer's MLP; the second scales the same recipe to a frontier model.
 
