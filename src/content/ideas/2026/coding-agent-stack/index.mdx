@@ -1,0 +1,237 @@
+---
+title: "The coding-agent stack"
+description: "A mental model for the model, harness, context, tools, execution, orchestration, and verification behind a coding agent."
+date: "2026-07-16"
+status: "draft"
+type: "article"
+tags: ["agents", "software-engineering", "learning-in-public"]
+category: ["ideas"]
+draft: true
+cite: true
+audience: "Developers"
+sources:
+  - title: "Harness engineering: leveraging Codex in an agent-first world"
+    authors: "Ryan Lopopolo"
+    year: "2026"
+    url: "https://openai.com/index/harness-engineering/"
+  - title: "Long-running work"
+    authors: "OpenAI"
+    year: "2026"
+    url: "https://learn.chatgpt.com/docs/long-running-work"
+  - title: "Codex cloud environments"
+    authors: "OpenAI"
+    year: "2026"
+    url: "https://learn.chatgpt.com/docs/environments/cloud-environment"
+  - title: "Codex subagents"
+    authors: "OpenAI"
+    year: "2026"
+    url: "https://learn.chatgpt.com/docs/agent-configuration/subagents"
+  - title: "Codex CLI command reference"
+    authors: "OpenAI"
+    year: "2026"
+    url: "https://learn.chatgpt.com/docs/developer-commands?surface=cli"
+  - title: "Goal mode"
+    authors: "Anthropic"
+    year: "2026"
+    url: "https://code.claude.com/docs/en/goal"
+  - title: "Create custom subagents"
+    authors: "Anthropic"
+    year: "2026"
+    url: "https://code.claude.com/docs/en/sub-agents"
+  - title: "Agents"
+    authors: "OpenCode"
+    year: "2026"
+    url: "https://opencode.ai/docs/agents/"
+  - title: "Agent Skills Specification"
+    authors: "Agent Skills"
+    year: "2026"
+    url: "https://agentskills.io/specification"
+  - title: "Deep research in ChatGPT"
+    authors: "OpenAI"
+    year: "2026"
+    url: "https://help.openai.com/en/articles/10500283-deep-research-in-chatgpt"
+---
+
+import Figure from "../../../../components/Figure.astro";
+import codingAgentLoop from "./coding-agent-loop.png";
+
+My default way of using a coding agent is still fairly simple. I open a local repository, describe a task, watch one agent inspect and edit the code, and review the diff. It works well enough that I have not felt much pressure to change it.
+
+At the same time, current agents expose a much larger set of controls: plan modes, goals, skills, subagents, cloud environments, MCP servers, hooks, permission policies, and background execution. I know roughly what each feature does. I have had less of a sense for how they fit together, or which combinations would materially improve my work.
+
+A list of product features did not clear this up. The features cut across products and often cross conceptual boundaries. A goal is partly a way to keep an agent running and partly a definition of done. A skill supplies context, but it may also prescribe a workflow and call tools. A cloud agent changes where code runs, how long it can run, and what access it has.
+
+What finally made the list coherent for me was treating it as a stack. A coding agent is a composition of a model, a harness, context, tools, an execution environment, orchestration, and verification, with governance and observability cutting across the whole system. The pieces are rarely exposed separately, but naming them makes it easier to see where a capability comes from and what is missing from a workflow.
+
+## A single agent run
+
+The core loop looks something like this:
+
+<Figure
+  src={codingAgentLoop}
+  alt="Coding-agent loop: context enters the harness, which exchanges with the model; the model calls a tool in an execution environment, whose result is verified and returned to the harness. Orchestration, governance, and observability surround the loop."
+  numbered={false}
+/>
+
+The harness assembles context and asks the model what to do. The model proposes an answer or tool call. The tool acts inside some environment and returns a result. The harness feeds that result back to the model until the run stops. Verification provides evidence that the work is done, while orchestration decides whether to repeat the loop, branch it, delegate part of it, or keep it alive after the current interaction.
+
+The diagram is a process model. Products do not need eight independent modules, and Claude Code, Codex, and OpenCode package many of these concerns together. The distinction is useful because two products can expose a shell tool while giving it different context, permissions, continuation rules, and execution environments. Those differences often matter more than the tool's name.
+
+## The model and the harness
+
+The model supplies the underlying language, reasoning, and code-generation capability. Model choice affects what the agent can infer, how well it uses tools, how much context it can handle, and the cost and latency of a run.
+
+The harness turns that capability into an agent. It decides how to assemble the prompt, expose tools, return tool results, compact a long conversation, apply repository instructions, request approval, and decide when another turn is warranted. It may also provide the terminal UI, diff review, checkpoints, and session persistence.
+
+Changing the model and changing the coding agent are different interventions. The same model can behave differently when one harness encourages repository exploration, another loads a larger instruction set, and a third automatically runs a review pass. Conversely, two harnesses can produce similar behavior with different models because they impose similar loops and checks.
+
+Plan mode mostly lives here. It changes how the harness handles the early part of a task: inspect and reason before editing, keep tools read-only, ask questions, or produce a plan for approval. Planning can improve a task with ambiguous scope, but it does not add a missing tool or make the environment reproducible.
+
+## Context is the agent's working world
+
+Context includes the user's request, conversation history, files the agent reads, repository instructions, tool results, retrieved documentation, and any memory or skill loaded for the task. Some context is ambient, such as an `AGENTS.md` file. Some is discovered during the run. Some is pulled in only when a router decides it is relevant.
+
+A larger context window can still contain worse context. A huge instruction file can bury the rule that matters, and a long conversation can anchor the model on an approach that should have been abandoned. Useful context is current, relevant, and easy for the agent to connect to the action it needs to take.
+
+This also explains why repository legibility has become part of agent engineering. OpenAI's [harness-engineering write-up](https://openai.com/index/harness-engineering/) describes moving important knowledge from private conversations and external documents into versioned, repository-local artifacts that agents can inspect. Part of the improvement came from making the environment explain itself and turning important rules into tests and linters.
+
+[Skills](/ideas/2026/agent-skills/) sit between context and procedure. A skill can supply a domain reference, a repeatable sequence of steps, helper scripts, and a standard output format. It cannot grant network access, create a browser tool, or make an unreliable test deterministic. I wrote a separate post about skills because the packaging is simple while the contents and evidence vary widely.
+
+## Tools and execution are different layers
+
+A tool is an interface the model can invoke: read a file, run a command, search the web, query an API, inspect a database, or control a browser. The tool schema tells the model what action is available and what arguments it accepts.
+
+The execution environment is where that action has effects. A shell tool might run on my laptop, in an isolated worktree, inside a cloud container, or against a remote development environment. Each has a different filesystem, dependency state, network boundary, credential story, and cleanup model.
+
+[MCP](https://docs.anthropic.com/en/docs/claude-code/mcp) mostly standardizes the connection to tools and external context. It can make the same database, issue tracker, or research source available to several harnesses. It does not decide whether an operation should be approved, which secrets the process can see, or whether a write happens in a disposable container. Those remain properties of the host and environment.
+
+Cloud agents are easiest to understand as a change to execution and orchestration, not an intelligence upgrade. A cloud run can check out a known commit, execute a setup script, work in an isolated container, and return a diff later. [Codex cloud environments](https://learn.chatgpt.com/docs/environments/cloud-environment), for example, separate setup from the agent phase, let the agent run tests in the container, and return a result that can become a follow-up or pull request.
+
+That boundary is useful when the repository can reproduce its own setup and the task can proceed without local state. It is less useful when success depends on an uncommitted file, a local GUI, a hardware device, or a credential that should not be available to the agent. Moving a task to the cloud exposes assumptions that a local machine quietly satisfies.
+
+## Verification closes the loop
+
+Verification is any evidence used to decide whether the requested outcome has been reached: tests, type checks, linters, screenshots, graders, invariant checks, reviewer judgment, or a human looking at the result. It belongs in the loop because the result of a check should change what the agent does next.
+
+Weak verification makes every other layer harder to interpret. If an agent reports success after running an unrelated test, I cannot tell from the final answer whether the model misunderstood the task, the harness stopped too early, or the repository lacked the right check. This is the same attribution problem I explored in [Where coding agents break](/ideas/2026/coding-agent-failure-modes/).
+
+Verification also determines whether long-running autonomy is useful. A goal such as "finish the migration" gives the agent persistence but no reliable stopping condition. A better goal identifies an observable end state and the checks that establish it. If a condition can be enforced with a test, schema check, or lint rule, that is usually stronger than asking the model to reread the original prompt and declare itself finished.
+
+Reviewer agents are another form of verification. They are useful for properties that are hard to reduce to one command, such as whether a migration missed a caller, a design introduced a security boundary, or a test plan covers the important failures. Their output is still judgment rather than proof, so it works best alongside deterministic checks.
+
+## Orchestration changes the shape of the run
+
+Orchestration controls work across turns, agents, and environments. It includes continuation, retries, checkpoints, delegation, parallel branches, queues, and the rules for combining results. The simplest orchestration is the harness asking the same model for another turn. A goal, a subagent, and a fleet of issue-driven cloud workers are progressively larger versions of the same concern.
+
+Goals are useful when the work has a measurable condition but may take more than one interactive exchange. Implementations differ. [Claude Code's goal mode](https://code.claude.com/docs/en/goal) describes a separate evaluator that checks the goal after each turn and continues until the condition is met. [Codex goals](https://learn.chatgpt.com/docs/long-running-work) treat the initial prompt as a long-running objective with completion criteria, progress controls, and the ability to pause or steer the work. In both cases, the quality of the goal depends on the quality of its stopping rule.
+
+Subagents split a run into separate contexts. A parent can delegate repository exploration, test analysis, or review to a child and receive a smaller result back. Current [Claude Code](https://code.claude.com/docs/en/sub-agents), [Codex](https://learn.chatgpt.com/docs/agent-configuration/subagents), and [OpenCode](https://opencode.ai/docs/agents/) implementations all support some combination of custom prompts, tool restrictions, model selection, and separate context for subagents.
+
+The separate context is often more important than parallelism. A reviewer can inspect the diff without inheriting every justification made by the implementer. A research agent can return ten relevant facts without filling the main thread with every page it opened. Parallel execution helps when branches are independent, but two agents editing the same files can create more coordination work than they save.
+
+## Familiar features cross the layers
+
+The taxonomy is most useful when a product feature refuses to fit in one box:
+
+| Feature | Main layers | What it changes |
+| --- | --- | --- |
+| Plan mode | Harness, context | How the agent investigates and commits to an approach before writing |
+| Goals | Orchestration, verification | How long work continues and what condition stops it |
+| Skills | Context, sometimes tools | Which reusable knowledge and workflow are loaded for a task |
+| MCP | Tools, context | Which external actions and resources the harness can expose |
+| Subagents | Orchestration, context | How work is delegated, isolated, and sometimes parallelized |
+| Cloud agents | Execution, orchestration | Where work runs and whether it can continue independently |
+| Permissions | Governance | Which actions can run, require approval, or are denied |
+| Hooks and tests | Governance, verification | Which requirements are mechanically enforced or checked |
+
+This mapping gives me a better way to diagnose a missing capability. If an agent knows how to perform a research process but cannot access the web, writing more skill instructions addresses the wrong layer. If it has a browser but produces unsupported conclusions, the missing piece may be a verification procedure. If the procedure works but consumes the entire main thread, a subagent may be the right orchestration change.
+
+## Three workflows I want to use better
+
+The stack becomes practical when several layers are composed around a real task. These are the three combinations that feel most relevant to gaps in how I currently work.
+
+### A persistent migration goal
+
+I have rarely used goals because "keep going until this is done" felt like a longer prompt rather than a different capability. It becomes useful when the task has a stable end condition, a repeatable check, and enough work that I do not want to supervise every turn.
+
+For example:
+
+```text
+Migrate the package from the legacy configuration format to v3.
+
+Done when:
+- no production code imports the legacy adapter;
+- the migration test and full package test suite pass;
+- the old dependency is absent from the lockfile; and
+- the final report lists any callers that could not be migrated.
+
+Constraints:
+- preserve the public API;
+- do not change generated files by hand;
+- stop and report if a required credential or external service is unavailable.
+```
+
+The goal supplies persistence and a stopping condition. A worktree or cloud container supplies isolation. Repository instructions and a migration skill can supply the expected procedure. Tests and lockfile checks provide verification. Permissions determine whether dependency installation, network access, or destructive cleanup can proceed unattended. Together, those pieces decide whether the goal produces durable progress or merely keeps the agent busy.
+
+### A reusable deep-research workflow
+
+Deep research looks like a skill because much of its value is procedural: clarify the question, propose a plan, search across source types, follow important disagreements, synthesize the evidence, attach citations, and check that the citations support the claims. That procedure could be useful for technical surveys, dependency choices, or understanding an unfamiliar area of a codebase.
+
+But the skill is only one part. A useful implementation also needs:
+
+- search, browsing, file retrieval, or MCP tools that can reach the relevant sources;
+- enough persistence to follow leads instead of stopping after the first plausible answer;
+- subagents or other context isolation when several questions can be investigated independently;
+- a citation format that preserves the connection between a claim and its source; and
+- a verification pass that opens the important sources and checks for unsupported synthesis.
+
+OpenAI's [deep-research product](https://help.openai.com/en/articles/10500283-deep-research-in-chatgpt) has the user define the outcome and sources, review a research plan, and receive a cited report. The [developer guide](https://developers.openai.com/api/docs/guides/deep-research) exposes the same decomposition more directly through web search, file search, and MCP integrations.
+
+If I created a skill for this, I would start by encoding the research procedure and output contract. I would keep source access and delegation explicit because those are host capabilities, not properties of the skill. I would also add a final reviewer whose only job is to find claims that are weakly sourced, out of date, or stronger than the evidence permits.
+
+That design would be less portable than a generic "research this topic" prompt, but more honest about what the workflow requires. Portability would come from defining the required capabilities clearly and providing adapters for different harnesses, not pretending that every host exposes the same tools.
+
+### Adversarial review with another agent
+
+My normal agent workflow asks the same thread to implement a change and then review its own work. The review benefits from full context, but it also inherits the implementation's assumptions. A separate reviewer can approach the diff with a fresh context and a narrower job.
+
+A simple version would be:
+
+1. The primary agent makes the change and runs the expected checks.
+2. A read-only reviewer receives the task, diff, and relevant repository instructions, but not the implementer's running explanation.
+3. The reviewer returns findings with severity, file references, evidence, and missing tests. It does not edit the patch.
+4. The primary agent or a human adjudicates the findings and makes any changes.
+5. Deterministic checks run again on the resulting diff.
+
+This can stay inside one harness using a custom subagent. A cross-harness version can add some independence in how prompts are assembled, tools are used, and code is judged. For example, Claude could invoke a restricted `codex exec` process, or connect to Codex through its [`mcp-server` command](https://learn.chatgpt.com/docs/developer-commands?surface=cli), and ask it to review the current diff.
+
+The cross-harness version has real costs. It needs a clean artifact boundary, compatible repository access, explicit permissions, and a way to keep the reviewer from writing over the implementer. It also spends more tokens and can produce contradictory opinions with no automatic resolution. I would reserve it for risky changes or cases where the first agent seems anchored on a questionable design.
+
+A second vote is weak evidence by itself. The useful part is giving the second pass a deliberately different information set and role. The review is more independent when the reviewer sees the task and artifact rather than a transcript explaining why the artifact is correct.
+
+## Governance and observability set the practical limits
+
+Permissions, isolation, network policy, and secret handling determine what can safely run without supervision. A tool may be available in principle but denied for one agent, read-only for another, and approval-gated for a third. Custom subagents are particularly useful here because a reviewer can receive file and test access without write access or deployment credentials.
+
+Approval prompts are therefore part of the workflow design. Requiring confirmation before every test command makes a long-running goal impractical. Allowing unrestricted shell and network access makes it easier to automate, but expands the blast radius. A good setup grants the smallest set of capabilities that lets the task finish and moves risky actions to explicit checkpoints.
+
+Observability is the complementary requirement. For a short local task, a diff and terminal transcript may be enough. For a goal or several cloud workers, I also want progress, tool failures, test results, cost, elapsed time, and a record of which agent produced each artifact. Without that trail, delegation makes the system harder to debug just as the work becomes harder to supervise directly.
+
+## How much stack does a task need?
+
+Most tasks do not need every layer exposed as a control. My current rule of thumb is to add structure when it addresses a specific failure in the simpler workflow:
+
+- Use one local agent for a short, coherent change with fast feedback.
+- Add plan mode when the main uncertainty is scope or approach.
+- Add a skill when a useful procedure or body of context repeats across tasks.
+- Add a goal when the end state is measurable and reaching it requires sustained work.
+- Add a subagent when a branch is self-contained, context-heavy, or benefits from an independent read.
+- Move to a worktree or cloud environment when isolation, reproducibility, or offloading matters.
+- Add a cross-model or cross-harness reviewer when the risk justifies a genuinely independent pass.
+- Prefer a test, hook, or policy whenever a requirement can be enforced mechanically.
+
+Each addition has a coordination cost. More agents produce more summaries to reconcile. More tools create more permission and failure surfaces. More context can make routing worse. Cloud execution asks the repository to reproduce assumptions that were previously implicit. The relevant question is not whether a feature is advanced, but which limitation in the current loop it removes.
+
+This stack gives me a way to answer that question. It separates model capability from the machinery around it, and it shows why the more interesting workflows are compositions rather than product features. A deep-research skill needs tools and citation checks. An adversarial reviewer needs context isolation and an artifact boundary. A useful goal needs a verifiable stopping condition and an environment that can keep making progress.
+
+I want to start with a few bounded experiments: specify one migration as a goal, turn one recurring research process into a skill, and give one risky diff to a read-only reviewer with fresh context. Those should reveal which pieces change the work and which ones only make the diagram larger.
