@@ -5,7 +5,7 @@ import { render } from "astro:content";
 import type { MarkdownHeading } from "astro";
 import readingTime from "reading-time";
 import { getSeriesInfo, type SeriesInfo } from "../../utils/series";
-import { legacyFooterAttribution } from "../../utils/referenceFooter";
+import { footerMediaCredits } from "../../utils/referenceFooter";
 
 export async function getStaticPaths() {
   const posts = (await getCollection("ideas")).filter((post) => {
@@ -49,16 +49,14 @@ type Props = {
 const { post, headings, readingTimeText, series } = Astro.props;
 const { Content } = await render(post);
 
-// Bib-key `sources`/`credits` render inside the article's References section
-// (rehypeArticleCitations); the footer only receives the legacy self-contained
-// entries so nothing is listed twice. Overrides the raw frontmatter spread
-// below.
-const referenceFooter = legacyFooterAttribution(post);
+// Sources and bib-backed credits render inside the article's References section
+// (rehypeArticleCitations); the footer only receives media credits whose source
+// is not a bib work. Overrides the raw frontmatter spread below.
+const referenceFooter = footerMediaCredits(post);
 ---
 
 <BlogPost
   {...post.data}
-  sources={referenceFooter.sources}
   credits={referenceFooter.credits}
   headings={headings}
   readingTimeText={readingTimeText}

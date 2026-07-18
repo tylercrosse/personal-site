@@ -1,20 +1,11 @@
 import type { CollectionEntry } from "astro:content";
 
-// Legacy self-contained attribution shapes, rendered by PostCredits. Key-form
-// `sources` and `sourceKey` credits render inside the article's References
-// section instead (see rehypeArticleCitations.mjs), so they are filtered out
-// here and the footer never re-renders a work the bibliography already lists.
-// Both types (and this whole module) disappear once every article is on bib
-// keys.
-export type LegacySource = {
-  title: string;
-  url?: string;
-  authors?: string;
-  year?: string;
-  venue?: string;
-};
-
-export type LegacyCredit = {
+// A media credit whose source is not a scholarly work — a stock photo, a
+// CC-licensed image — so it carries its own author/url/licence rather than a
+// bib `sourceKey`. These render in the PostCredits footer. Credits that do have
+// a `sourceKey` render inside the References section instead (as the "Figures:"
+// note; see rehypeArticleCitations.mjs) and never reach the footer.
+export type MediaCredit = {
   title?: string;
   author?: string;
   url?: string;
@@ -24,16 +15,13 @@ export type LegacyCredit = {
 };
 
 /**
- * Filter a post's `sources`/`credits` frontmatter down to the legacy entries
- * that still render in the PostCredits footer.
+ * Select the credits that belong in the footer: those without a `sourceKey`,
+ * i.e. media attributed to a non-bib source. Sources and bib-backed credits are
+ * handled by rehypeArticleCitations inside the References section.
  */
-export function legacyFooterAttribution(post: CollectionEntry<"ideas">): {
-  sources?: LegacySource[];
-  credits?: LegacyCredit[];
+export function footerMediaCredits(post: CollectionEntry<"ideas">): {
+  credits?: MediaCredit[];
 } {
-  const sources = post.data.sources?.filter(
-    (source): source is LegacySource => typeof source !== "string",
-  );
   const credits = post.data.credits?.filter((credit) => !credit.sourceKey);
-  return { sources, credits };
+  return { credits };
 }

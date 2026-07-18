@@ -1,11 +1,12 @@
 // Attribution-metadata guard for the `sources` and `credits` frontmatter.
 // Companion to audit-references.mjs (which covers inline [@key] citations). The
 // article's references.bib is the single store of citation metadata: `sources`
-// entries and credit `sourceKey`s are bib keys that must resolve there. Key-form
-// sources and sourceKey credits render inside the References section
-// (rehypeArticleCitations); only the legacy self-contained forms still render in
-// the PostCredits footer — they are accepted during migration and flagged here
-// so the remaining work stays visible.
+// entries and credit `sourceKey`s are bib keys that must resolve there, and both
+// render inside the References section (rehypeArticleCitations). A credit may
+// instead name a non-bib source inline (author/url) for media that is not a
+// scholarly work — a stock photo, a CC image — which renders in the PostCredits
+// footer. This guard checks that keys resolve and that inline credits are
+// complete.
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import process from "node:process";
@@ -77,15 +78,12 @@ for (const articlePath of articleFiles(contentRoot)) {
     const seenKeys = new Map();
     sources.forEach((source, index) => {
       const where = `${relArticle} source #${index + 1}`;
-      if (typeof source === "string") {
-        checkKey(where, source);
-        seenKeys.set(source, (seenKeys.get(source) ?? 0) + 1);
-      } else {
-        warnings.push(`${where} uses the legacy object form; migrate it to a bib key`);
-        if (!source?.title) errors.push(`${where} is missing a title`);
-        if (!source?.url) errors.push(`${where} is missing a url`);
-        if (!source?.authors) warnings.push(`${where} is missing an author`);
+      if (typeof source !== "string") {
+        errors.push(`${where} must be a bib key (string)`);
+        return;
       }
+      checkKey(where, source);
+      seenKeys.set(source, (seenKeys.get(source) ?? 0) + 1);
     });
     for (const [key, count] of seenKeys) {
       if (count > 1) warnings.push(`${relArticle} lists source ${key} ${count} times`);
@@ -116,10 +114,12 @@ for (const articlePath of articleFiles(contentRoot)) {
 
       if (credit?.sourceKey) {
         checkKey(where, credit.sourceKey);
+      } else if (credit?.author || credit?.url) {
+        // Non-bib media (stock photo, CC image): attributed inline, needs both.
+        if (!credit?.author) warnings.push(`${where} has a url but no author`);
+        if (!credit?.url) warnings.push(`${where} has an author but no url`);
       } else {
-        warnings.push(`${where} uses legacy author/url; migrate it to a sourceKey`);
-        if (!credit?.author) warnings.push(`${where} is missing an author`);
-        if (!credit?.url) warnings.push(`${where} is missing a url`);
+        warnings.push(`${where} has neither a sourceKey nor author/url`);
       }
 
       if (credit?.license && !credit?.licenseUrl) {

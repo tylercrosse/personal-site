@@ -12,7 +12,7 @@ import ReferencePopover from "../components/ReferencePopover.astro";
 import SeriesNav from "../components/SeriesNav.astro";
 import SeriesPill from "../components/SeriesPill.astro";
 import type { SeriesInfo } from "../utils/series";
-import type { LegacySource, LegacyCredit } from "../utils/referenceFooter";
+import type { MediaCredit } from "../utils/referenceFooter";
 import BaseLayout from "./BaseLayout.astro";
 import { getIconForType, getColorForType, capitalize } from "../utils/postIcons";
 import { getBlogPostingStructuredData } from "../utils/structuredData";
@@ -23,14 +23,13 @@ import {
   type TopicLandingPage,
 } from "../config/topicLandingPages";
 
-type Props = Omit<CollectionEntry<"ideas">["data"], "sources" | "credits"> & {
+type Props = Omit<CollectionEntry<"ideas">["data"], "credits"> & {
   headings?: MarkdownHeading[];
   readingTimeText: string;
   series?: SeriesInfo | null;
-  // Pre-filtered by legacyFooterAttribution in pages/ideas/[...slug].astro —
-  // bib-key forms render inside the References section, not the footer.
-  sources?: LegacySource[];
-  credits?: LegacyCredit[];
+  // Pre-filtered by footerMediaCredits in pages/ideas/[...slug].astro to the
+  // non-bib media credits; sources and bib-backed credits render in References.
+  credits?: MediaCredit[];
 };
 
 const {
@@ -51,7 +50,6 @@ const {
   series,
   cite,
   license,
-  sources,
   credits,
 } = Astro.props;
 
@@ -503,7 +501,6 @@ const postTopics = [...topicsForPost.values()];
         url={postUrl.href}
         cite={cite}
         license={license}
-        sources={sources}
         credits={credits}
       />
       {series && <SeriesNav series={series} />}

@@ -1,27 +1,16 @@
 ---
-// Attribution footer for a post. Renders up to four independent blocks, each
+// Attribution footer for a post. Renders three independent blocks, each
 // answering a different question, driven by frontmatter:
-//   sources  -> "what this is notes on"      (legacy object form only — key-form
-//               sources render inside the article's References section instead;
-//               this block disappears once every article is on bib keys)
-//   credits  -> "attribution I owe"          (legacy inline form only — credits
-//               with a bib `sourceKey` render as the Figures note under
-//               References; same sunset as sources)
+//   credits  -> "attribution I owe"          (media whose source is not a bib
+//               work — a stock photo, a CC image; bib-backed credits render as
+//               the Figures note under References instead)
 //   cite     -> "how to credit me"           (citation + BibTeX for my write-up)
 //   license  -> "how you may reuse this"     (CC BY 4.0 grant)
-// These are separate ledgers, not competing claims: crediting sources is what
-// makes signing your own commentary legitimate.
-
-type Source = {
-  title: string;
-  url?: string;
-  authors?: string;
-  year?: string;
-  venue?: string;
-};
+// These are separate ledgers, not competing claims. What a post is notes on
+// renders in the References section, not here.
 
 type Credit = {
-  // Description of the reproduced media (e.g. "Figure 4 architecture diagram").
+  // Description of the media (e.g. "hero photograph").
   title?: string;
   changes?: string;
   license?: string;
@@ -36,18 +25,16 @@ interface Props {
   url: string;
   cite?: boolean;
   license?: boolean;
-  sources?: Source[];
   credits?: Credit[];
 }
 
-const { title, pubDate, url, cite, license, sources, credits } = Astro.props;
+const { title, pubDate, url, cite, license, credits } = Astro.props;
 
 const showCite = Boolean(cite);
 // Opting into a citation opts into the licence unless it is explicitly disabled.
 const showLicense = license === undefined ? showCite : license;
-const showSources = Array.isArray(sources) && sources.length > 0;
 const showCredits = Array.isArray(credits) && credits.length > 0;
-const hasAnything = showCite || showLicense || showSources || showCredits;
+const hasAnything = showCite || showLicense || showCredits;
 
 const LICENSE_URL = "https://creativecommons.org/licenses/by/4.0/";
 
@@ -66,42 +53,11 @@ const bibtex = `@article{${bibKey},
   month   = {${monthShort}},
   url     = {${url}}
 }`;
-
-const sourceLabel = (s: Source) =>
-  [s.authors, [s.venue, s.year].filter(Boolean).join(" ")]
-    .filter(Boolean)
-    .join(", ");
 ---
 
 {
   hasAnything && (
     <section class="post-credits" aria-label="Attribution and citation">
-      {showSources && (
-        <div class="pc-block">
-          <span class="pc-label">
-            {sources!.length > 1 ? "Primary sources" : "Primary source"}
-          </span>
-          <p class="pc-note">
-            These are notes. The original work belongs to its authors — please
-            cite the source rather than this page.
-          </p>
-          <ul class="pc-sources">
-            {sources!.map((s) => (
-              <li>
-                {s.url ? (
-                  <a href={s.url} target="_blank" rel="noopener noreferrer">
-                    {s.title}
-                  </a>
-                ) : (
-                  <span>{s.title}</span>
-                )}
-                {sourceLabel(s) && <span class="pc-source-meta"> — {sourceLabel(s)}</span>}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
       {showCredits && (
         <div class="pc-block">
           <span class="pc-label">Image credits</span>
@@ -213,18 +169,11 @@ const sourceLabel = (s: Source) =>
     margin-bottom: 0.6em;
   }
 
-  .pc-note {
-    margin: 0 0 0.6em;
-    color: var(--base01);
-  }
-
-  .pc-sources,
   .pc-credits {
     margin: 0;
     padding-left: 1.25em;
   }
 
-  .pc-sources li,
   .pc-credits li {
     margin: 0.3em 0;
   }
