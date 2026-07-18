@@ -15,29 +15,6 @@ category: ["ideas"]
 draft: true
 cite: true
 audience: "Developers"
-sources:
-  - title: "Agent Skills Specification"
-    authors: "Agent Skills"
-    year: "2026"
-    url: "https://agentskills.io/specification"
-  - title: "Best practices for skill creators"
-    authors: "Agent Skills"
-    year: "2026"
-    url: "https://agentskills.io/skill-creation/best-practices"
-  - title: "Evaluating skill output quality"
-    authors: "Agent Skills"
-    year: "2026"
-    url: "https://agentskills.io/skill-creation/evaluating-skills"
-  - title: "SWE-Skills-Bench: Do Agent Skills Actually Help in Real-World Software Engineering?"
-    authors: "Tingxu Han et al."
-    year: "2026"
-    url: "https://arxiv.org/abs/2603.15401"
-  - title: "From Registry to Repository: How AI Agent Skills Are Written, Adapted, and Maintained"
-    year: "2026"
-    url: "https://arxiv.org/abs/2607.00911"
-  - title: "What Keeps Agent Skills from Being Reusable? Evidence from 138K SKILL.md Files"
-    year: "2026"
-    url: "https://openreview.net/pdf/2cdc7efc5d27097ba5d6b4a0814f5d624c2b693b.pdf"
 ---
 
 I keep running into "skills" in coding agents. Claude Code, Codex, and OpenCode all support some version of them. Public registries collect them by the thousands, and there are increasingly detailed guides for writing them.
@@ -127,7 +104,7 @@ A useful claim about a skill has to name the agent, the class of tasks, and the 
 
 Registries rank skills using stars, downloads, installs, forks, and reuse. Those numbers help people find candidates, but a good name and an easy installation path can drive them without improving an agent's work.
 
-A recent [study of skills](https://arxiv.org/abs/2607.00911) found that adoption often meant a one-time copy rather than an actively maintained dependency. In its sample, 53% of reused skills were never modified after being copied. That measures distribution, not whether the procedure was effective.
+A recent study of skills [@gao2026registry] found that adoption often meant a one-time copy rather than an actively maintained dependency. In its sample, 53% of reused skills were never modified after being copied. That measures distribution, not whether the procedure was effective.
 
 The signals answer different questions:
 
@@ -184,13 +161,13 @@ The [best-practices guide](https://agentskills.io/skill-creation/best-practices)
 
 ## What the early evidence says
 
-[SWE-Skills-Bench](https://arxiv.org/abs/2603.15401) evaluates 49 public software-engineering skills on roughly 565 task instances, comparing runs with and without a skill. In that benchmark, 39 of the 49 skills produced no pass-rate improvement, while the average gain across the set was about 1.2%. Token overhead ranged from modest savings to a 451% increase. A small group of specialized skills produced meaningful gains, including improvements of up to 30%, while a few degraded performance because their guidance was mismatched to the repository or version.
+SWE-Skills-Bench [@han2026sweskills] evaluates 49 public software-engineering skills on roughly 565 task instances, comparing runs with and without a skill. In that benchmark, 39 of the 49 skills produced no pass-rate improvement, while the average gain across the set was about 1.2%. Token overhead ranged from modest savings to a 451% increase. A small group of specialized skills produced meaningful gains, including improvements of up to 30%, while a few degraded performance because their guidance was mismatched to the repository or version.
 
 I would not generalize from one benchmark to every kind of skill. What I take from it is the shape of the distribution: many did little, a few helped a lot, and some hurt.
 
-A separate [large-scale evaluation framework](https://arxiv.org/abs/2606.17819) also reports substantial variation across skills, models, and configurations. The same instructions do not produce the same behavior in every host.
+A separate large-scale evaluation framework [@shaposhnikov2026framework] also reports substantial variation across skills, models, and configurations. The same instructions do not produce the same behavior in every host.
 
-A [structural audit](https://openreview.net/pdf/2cdc7efc5d27097ba5d6b4a0814f5d624c2b693b.pdf) of 138,133 `SKILL.md` files answers a narrower question. It reported that most had at least one detected reusability defect under its criteria. Static checks can catch missing metadata, unclear scope, and portability problems. Paired runs are still needed to find out whether the skill improves a real task.
+A structural audit [@skillmd2026reusable] of 138,133 `SKILL.md` files answers a narrower question. It reported that most had at least one detected reusability defect under its criteria. Static checks can catch missing metadata, unclear scope, and portability problems. Paired runs are still needed to find out whether the skill improves a real task.
 
 Static checks catch structural problems. Paired runs measure outcomes, while traces help explain why the result changed. A registry needs more than one of them to be useful.
 

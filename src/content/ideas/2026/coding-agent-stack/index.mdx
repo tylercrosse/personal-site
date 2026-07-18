@@ -9,47 +9,6 @@ category: ["ideas"]
 draft: true
 cite: true
 audience: "Developers"
-sources:
-  - title: "Harness engineering: leveraging Codex in an agent-first world"
-    authors: "Ryan Lopopolo"
-    year: "2026"
-    url: "https://openai.com/index/harness-engineering/"
-  - title: "Long-running work"
-    authors: "OpenAI"
-    year: "2026"
-    url: "https://learn.chatgpt.com/docs/long-running-work"
-  - title: "Codex cloud environments"
-    authors: "OpenAI"
-    year: "2026"
-    url: "https://learn.chatgpt.com/docs/environments/cloud-environment"
-  - title: "Codex subagents"
-    authors: "OpenAI"
-    year: "2026"
-    url: "https://learn.chatgpt.com/docs/agent-configuration/subagents"
-  - title: "Codex CLI command reference"
-    authors: "OpenAI"
-    year: "2026"
-    url: "https://learn.chatgpt.com/docs/developer-commands?surface=cli"
-  - title: "Goal mode"
-    authors: "Anthropic"
-    year: "2026"
-    url: "https://code.claude.com/docs/en/goal"
-  - title: "Create custom subagents"
-    authors: "Anthropic"
-    year: "2026"
-    url: "https://code.claude.com/docs/en/sub-agents"
-  - title: "Agents"
-    authors: "OpenCode"
-    year: "2026"
-    url: "https://opencode.ai/docs/agents/"
-  - title: "Agent Skills Specification"
-    authors: "Agent Skills"
-    year: "2026"
-    url: "https://agentskills.io/specification"
-  - title: "Deep research in ChatGPT"
-    authors: "OpenAI"
-    year: "2026"
-    url: "https://help.openai.com/en/articles/10500283-deep-research-in-chatgpt"
 ---
 
 import Figure from "../../../../components/Figure.astro";
@@ -235,3 +194,12 @@ Each addition has a coordination cost. More agents produce more summaries to rec
 This stack gives me a way to answer that question. It separates model capability from the machinery around it, and it shows why the more interesting workflows are compositions rather than product features. A deep-research skill needs tools and citation checks. An adversarial reviewer needs context isolation and an artifact boundary. A useful goal needs a verifiable stopping condition and an environment that can keep making progress.
 
 I want to start with a few bounded experiments: specify one migration as a goal, turn one recurring research process into a skill, and give one risky diff to a read-only reviewer with fresh context. Those should reveal which pieces change the work and which ones only make the diagram larger.
+
+## Further reading
+
+Product documentation and background for the features above:
+
+- **Claude Code** — [goal mode](https://code.claude.com/docs/en/goal) and [custom subagents](https://code.claude.com/docs/en/sub-agents).
+- **Codex** — [long-running work](https://learn.chatgpt.com/docs/long-running-work), [cloud environments](https://learn.chatgpt.com/docs/environments/cloud-environment), [subagents](https://learn.chatgpt.com/docs/agent-configuration/subagents), the [CLI command reference](https://learn.chatgpt.com/docs/developer-commands?surface=cli), and [deep research](https://help.openai.com/en/articles/10500283-deep-research-in-chatgpt).
+- **OpenCode** — [agents](https://opencode.ai/docs/agents/).
+- **Cross-cutting** — OpenAI's [harness-engineering write-up](https://openai.com/index/harness-engineering/) by Ryan Lopopolo, and the [Agent Skills specification](https://agentskills.io/specification).
