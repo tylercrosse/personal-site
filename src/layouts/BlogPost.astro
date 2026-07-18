@@ -8,6 +8,7 @@ import FormattedDate from "../components/FormattedDate.astro";
 import TableOfContents from "../components/TableOfContents.astro";
 import Comments from "../components/Comments.astro";
 import PostCredits from "../components/PostCredits.astro";
+import ReferencePopover from "../components/ReferencePopover.astro";
 import SeriesNav from "../components/SeriesNav.astro";
 import SeriesPill from "../components/SeriesPill.astro";
 import type { SeriesInfo } from "../utils/series";
@@ -335,15 +336,49 @@ const postTopics = [...topicsForPost.values()];
     }
 
     :global(.csl-bib-body) {
+      margin: 0;
+      padding-left: 2.25em;
       font-size: 0.7em;
     }
 
     :global(.csl-entry) {
       margin-bottom: 0.8em;
-      margin-left: 1.5em;
-      display: list-item;
-      list-style: decimal;
+      margin-left: 0;
+      padding-left: 0.3em;
+      text-indent: 0;
       line-height: 1.6em;
+    }
+
+    :global(#refs .csl-entry::marker),
+    :global([data-footnotes] > ol > li::marker) {
+      color: var(--sol-7);
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+
+    :global(#refs a[target="_blank"]) {
+      overflow-wrap: anywhere;
+      text-underline-offset: 0.15em;
+    }
+
+    :global(#refs a[target="_blank"]::after) {
+      content: " ↗";
+      white-space: nowrap;
+    }
+
+    :global([data-footnotes]) {
+      margin-top: 3rem;
+      border-top: 1px solid var(--main-border-color);
+      font-size: 0.75em;
+    }
+
+    :global([data-footnotes] > ol) {
+      padding-left: 2.25em;
+    }
+
+    :global([data-footnotes] > ol > li) {
+      margin-bottom: 0.8em;
+      padding-left: 0.3em;
     }
 
     /* Responsive adjustments for ToC */
@@ -454,6 +489,7 @@ const postTopics = [...topicsForPost.values()];
       <Comments />
     </div>
   </article>
+  <ReferencePopover />
 
   <script type="module" is:inline>
     const MERMAID_BLOCK_SELECTOR =

@@ -8,9 +8,10 @@
   },
   "scripts": {
     "dev": "astro dev",
-    "build": "astro build && node scripts/check-internal-links.mjs",
+    "build": "node scripts/audit-references.mjs && astro build && node scripts/check-internal-links.mjs",
     "preview": "astro preview",
     "check:links": "node scripts/check-internal-links.mjs",
+    "check:references": "node scripts/audit-references.mjs",
     "social:generate": "node scripts/generate-social-cards.mjs",
     "astro": "astro",
     "test:e2e": "playwright test",
