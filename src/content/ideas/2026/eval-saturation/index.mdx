@@ -1,0 +1,167 @@
+---
+title: "Benchmark scores are per-step reliability, exponentiated"
+description: "Steady progress on the thing that matters looks like a sudden jump on the thing we measure. The sigmoid is arithmetic, not a phase change — and it puts the inflection at 37% of ceiling, not 50%."
+date: "2026-07-16"
+status: "in-progress"
+tags: ["AI-safety", "evaluations", "machine-learning", "research"]
+draft: true
+cite: true
+media_subpath: "/ideas/eval-saturation/"
+image:
+  path: "mississippi.jpg"
+  alt: "Mississippi River banks"
+  # path: "history-of-evolution.jpg"
+  # alt: "History of Evolution"
+hideCaption: true
+---
+
+import EvalSigmoidViz from "../../../../components/ideas/eval-saturation/EvalSigmoidViz.jsx";
+import BenchmarkStages from "../../../../components/ideas/eval-saturation/BenchmarkStages.jsx";
+
+{/* cSpell:words Sinha Schaeffer Koyejo Kwa GPQA Gompertz Arvindh Geiping Staab Denain Atanasov Albanie Rohin */}
+
+Benchmark curves keep tracing the same shape: a long stretch near the floor, a steep run through the middle, then years of expensive grinding just below the ceiling. Each phase gets read as news about the models, a breakthrough when the curve turns up and a wall when it flattens. GPQA went from stumping frontier models to saturated in about two years, and both ends of that run produced their own narratives [@burnham2026rip]. I think the shape is mostly arithmetic, and the arithmetic fits in two lines.
+
+A task that takes 100 steps, each done right 99% of the time, succeeds 37% of the time.
+
+Make each step 99.9% reliable, one more nine, and the task succeeds 90% of the time.
+
+That is a 54-point benchmark jump from one steady 10× reduction in per-step error. The model improved smoothly the whole way; the exponent did the rest.
+
+None of the parts here are original, and the sources are worth naming up front. Sinha et al. built a benchmark around exactly this compounding and argue it makes scaling look better than headline scores suggest [@sinha2025illusion]. Schaeffer, Miranda, and Koyejo used the same compounding to argue that "emergent abilities" are mostly artifacts of metric choice [@schaeffer2023mirage]. Ord turned it into a survival model for AI agents, which builds on METR's time-horizon measurements [@ord2025halflife; @kwa2025measuring]. What I want to add is smaller: these are one equation wearing three different morals, and the equation makes a testable prediction about where eval curves should inflect.
+
+## One equation
+
+Call the chance that one step goes right $n$. A task that takes $p$ steps succeeds only when every step does, so its success rate is
+
+$$
+n^p.
+$$
+
+That exponent is the entire mechanism behind the opening numbers: $0.99^{100} \approx 37\%$, and $0.999^{100} \approx 90\%$. When $p$ is large, small movements in $n$ produce large movements in $n^p$.
+
+Scaling enters through $n$. Per-step error, $\varepsilon = 1 - n$, falls as a power law in compute:
+
+$$
+\varepsilon(C) = \varepsilon_0\, C^{-\alpha}.
+$$
+
+Here $C$ is compute, measured in multiples of some reference model's budget; $\varepsilon_0$ is that reference model's per-step error, where the curve starts; and $\alpha$ is how fast error falls with scale: cutting error by 10× always costs the same factor of compute, $10^{1/\alpha}$. This is the boring, well-attested part; smooth power-law improvement is what scaling laws describe.
+
+Substitute $n = 1 - \varepsilon(C)$ into $n^p$ and the score of a $p$-step task becomes a function of compute:
+
+$$
+S(C) = \left(1 - \varepsilon_0 C^{-\alpha}\right)^p.
+$$
+
+A benchmark is a bag of tasks with different $p$, so its score averages these curves over a task-length distribution. The sigmoid appears when the exponent meets the falling error rate.
+
+That is the whole model, and the widget's sliders are exactly its parameters: $\alpha$, $\varepsilon_0$, and the task lengths $p$. Drag it:
+
+<div class="viz-shell">
+  <EvalSigmoidViz client:visible />
+</div>
+
+Every curve in the widget comes from the equation and the slider values alone.
+
+Three things fall out:
+
+- Plotted against log-compute, $S$ is an S-curve whose steepest point sits at a score of $1/e \approx 37\%$ regardless of task length (exactly $(1 - 1/p)^p$, which converges to $1/e$ as $p$ grows).
+- Task length only slides the curve sideways. Doubling $p$ costs a constant factor $2^{1/\alpha}$ of compute, so the task horizon a model can handle grows exponentially under steady scaling. This is the same arithmetic behind METR's doubling time horizons [@kwa2025measuring].
+- Mixing task lengths smears the crisp S into the familiar saturation grind. Short tasks are solved early and prop up the low end; the longest tasks hold the ceiling out of reach for years.
+
+## Three papers, one equation
+
+Part of why I trust this frame is that three groups derived it independently and pointed it in three directions.
+
+Sinha et al. call the pessimistic reading an illusion [@sinha2025illusion]. When single-step accuracy is already high, further gains look like diminishing returns (99.2% to 99.8% reads as noise), but the task horizon that accuracy supports grows exponentially. Their experiments isolate execution: hand the model the plan and the knowledge, then count how many steps it carries out before failing. Small models with near-perfect single-step accuracy still fall apart quickly, and larger models execute far longer tasks. Their moral: scaling is underrated.
+
+Schaeffer, Miranda, and Koyejo run the same compounding in reverse [@schaeffer2023mirage]. A model whose per-token accuracy improves smoothly looks flat on an exact-match, multi-token metric until the compounding crosses over, at which point the score leaps and someone declares emergence. Score the same outputs with a metric that is linear in per-token error and the leap disappears. Their moral: breakthroughs are overrated.
+
+Ord reads it as actuarial science [@ord2025halflife]. Treat each unit of task time as carrying a constant hazard of fatal failure and you get an exponentially declining success rate in task length, a characteristic half-life per agent, and a clean fit to METR's data [@kwa2025measuring]. No moral at all, just a hazard rate.
+
+All three are right at once, which is the point. The information was never in the benchmark score; it is in the per-step error rate, and the score is a lens over it with a known distortion. Whether you call the distortion an illusion of diminishing returns or a mirage of emergence depends on which end of the lens you are looking through.
+
+## The same curve in the wild
+
+Epoch's Benchmarking Hub publishes score-by-model data for dozens of benchmarks [@epochbenchmarkinghub], which makes the model cheap to check against reality. Here are five frontier trajectories, picked to span the stages:
+
+<BenchmarkStages />
+
+MATH Level 5 is finished. It crossed 37% in late 2023, hit 95% within about a year, and has gained a third of a point since spring 2025. GPQA Diamond is deep in the grind: 87% in mid-2025, 95% today. FrontierMath and Humanity's Last Exam are in the steep middle and have more than doubled in the past year. And the Remote Labor Index is where every benchmark starts, at 1% a year ago and 16% now, still below the turn.
+
+The model puts the steepest part of every curve at 37% of ceiling, and the crossings came in pairs: GPT-4 Turbo carried MATH Level 5 and GPQA Diamond past that line on the same day in November 2023, and Gemini 3 Pro carried FrontierMath and Humanity's Last Exam past it on the same day in November 2025.
+
+The chart and the equation run on different axes, so the tie between them is worth making explicit. The equation runs on compute; the chart runs on dates. Frontier training compute has grown at a roughly steady exponential rate, which makes calendar time a stand-in for log-compute. Substitute that in, take the large-$p$ limit, and the whole model collapses to two numbers per benchmark:
+
+$$
+S(t) = e^{-e^{-r\,(t - t^{*})}}.
+$$
+
+Everything from the derivation is still inside. Task length $p$ and starting error $\varepsilon_0$ merge into $t^{*}$, the date the benchmark crosses 1/e: longer tasks and harder problems mean a later $t^{*}$. The scaling exponent $\alpha$ and the compute growth rate merge into $r$, the climb rate.
+
+The dashed curves in the chart are that two-parameter form, fit to each frontier[^fit-method]:
+
+| Benchmark             | Crosses 1/e             | r (per year) | Implied α | R²   |
+| --------------------- | ----------------------- | ------------ | --------- | ---- |
+| MATH Level 5          | Dec 2023                | 1.50         | 1.00      | 0.79 |
+| GPQA Diamond          | Apr 2024                | 1.28         | 0.85      | 0.97 |
+| FrontierMath          | Oct 2025                | 1.00         | 0.66      | 0.98 |
+| Humanity's Last Exam  | Nov 2025                | 1.00         | 0.66      | 0.96 |
+| Remote Labor Index    | Mar 2027 (extrapolated) | 0.98         | 0.65      | 0.84 |
+
+GPQA Diamond's fit includes its 25% multiple-choice floor. The three tightest fits share nearly the same climb rate, so those curves really do differ mainly in $t^{*}$. The R² column deserves a caveat, though: a logistic would track these frontiers about as well. Goodness of fit alone cannot separate the two families; they diverge at the inflection height, and that comparison is the next section's job.
+
+The implied-$\alpha$ column converts each climb rate back into the equation's terms. Frontier training compute has grown about 4.5× per year [@sevilla2024compute], and with time standing in for log-compute the two rates are tied by $r = \alpha \ln 4.5$. The fitted values land between 0.65 and 1.0, ordinary scaling-exponent territory; treat them as upper bounds, since algorithmic progress makes effective compute grow faster than training compute alone, which shrinks the implied $\alpha$. At $r \approx 1$ the climb from 10% to 90% takes about three years, roughly two orders of magnitude of compute.
+
+Two rows need caveats. MATH Level 5 fits worst because the jump when reasoning models arrived in September 2024 was a genuine change in rate, and a single $r$ cannot absorb it. And the Remote Labor Index row is an extrapolation: the fit puts its 1/e crossing in March 2027, a dated prediction this post can be checked against.
+
+[^fit-method]: Least-squares Gompertz fits to the frontier points, grid-searched over $t^{*}$ and $r$; floors are zero except GPQA's 25%. Two limitations to keep in mind: frontier points are running maxima, so the fits select on lucky runs and read slightly high, and no uncertainty is reported, though a dozen points per benchmark implies real error bars on both parameters. Implied $\alpha$ uses the midpoint of Epoch's 4–5×-per-year range; using 4× or 5× instead moves it by under 10%.
+
+## The check: 37% or 50%?
+
+The model makes one prediction that standard practice quietly contradicts. When people fit benchmark trajectories they usually reach for a logistic, and a logistic inflects at half its ceiling. Compounding says a fixed-length task family follows a Gompertz-type sigmoid instead, with its steepest point near $1/e$, about 37% of the ceiling. Fastest progress should arrive well before the halfway mark, and the top half of the curve should take longer than the bottom half.
+
+Epoch's Benchmarking Hub publishes model-by-model scores across dozens of benchmarks under CC BY [@epochbenchmarkinghub], which is enough to test this: fit both curve families, compare inflection heights, and account for the chance floor on multiple-choice suites. Two wrinkles make it a genuine test. Mixing task lengths pushes the steepest point back up toward the middle (the benchmark-mix view above shows this happening), so the prediction is sharpest for benchmarks with narrow task-length distributions, like Sinha et al.'s fixed-turn execution suites, and blurriest for grab-bag agentic evals. And placing many benchmarks on a common difficulty scale is its own hard problem, which Ho et al. treat properly [@ho2025rosetta].
+
+The dashed curves above show the Gompertz family tracking five frontiers I picked by hand; a fair test fits both families across the whole Hub and compares. I have not run that yet. This section will hold the result when I have it, including a negative one: if eval curves inflect at 50% even after controlling for mixture, the simple compounding story is missing something important.
+
+{/* TODO: run the logistic-vs-Gompertz inflection comparison on Benchmarking Hub trajectories and report the fits here. */}
+
+## Where the model breaks
+
+The equation assumes steps fail independently, and they don't.
+
+Failures correlate. One bad early decision, a wrong plan or a misread file, poisons every step after it, which makes a long task behave like a shorter task with a worse per-step rate. Sinha et al. document a sharper version they call self-conditioning: models become more likely to err after seeing their own earlier errors in context, so the per-step rate drifts upward within a task instead of holding constant [@sinha2025illusion].
+
+Recovery cuts the other way. Real agents retry and backtrack, and a reanalysis of METR's data by Gus Hamilton found that hazard rates decline over the course of a task: an agent that survives the opening minutes is disproportionately likely to finish.[^hamilton-reanalysis] That is what you would expect if some tasks, or some starts, are simply harder, and it complicates the constant hazard in Ord's original model.
+
+[^hamilton-reanalysis]: [Ord summarizes Hamilton's reanalysis here](https://x.com/tobyordoxford/status/2018986170324054064).
+
+So the $p$ in the equation is an effective step count, shrunk by correlated failures and stretched by recovery. I treat the model the way you would treat an ideal gas law: wrong in the details but right about which variables matter.
+
+## What this changes about reading benchmarks
+
+A benchmark's useful life is roughly computable. Given a scaling exponent and a task-length distribution, the time from "frontier models get traction" to "saturated" is a number, and it is short: the steep middle of the sigmoid spans a couple of orders of magnitude of effective compute. The goalposts move on a schedule, and retiring GPQA-class suites in favor of longer-horizon ones [@burnham2026rip] is what that schedule looks like from the inside.
+
+Score deltas compress at both ends of the scale. A 2-point gain at 95% is a much larger reliability improvement than a 10-point gain at 50%; per-step error (the nines view in the widget) is the honest axis. METR's choice to report time horizon at a fixed success rate instead of score on a fixed suite [@kwa2025measuring] is the same correction applied at the other end.
+
+A "sudden" jump on an eval is usually steady progress after the exponent is done with it.
+
+If you have seen the inflection check done properly, or you know a benchmark whose curve clearly inflects at 50% after accounting for mixture and the chance floor, I want to know; the comments are open.
+
+
+<style>
+  {`
+    .viz-shell {
+      grid-column: 1 / 4 !important;
+      position: relative;
+      z-index: 1;
+      isolation: isolate;
+      width: 100%;
+      max-width: 1600px;
+      margin: 1rem auto 2rem;
+      overflow-x: auto;
+    }
+  `}
+</style>
