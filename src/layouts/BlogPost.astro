@@ -12,6 +12,7 @@ import ReferencePopover from "../components/ReferencePopover.astro";
 import SeriesNav from "../components/SeriesNav.astro";
 import SeriesPill from "../components/SeriesPill.astro";
 import type { SeriesInfo } from "../utils/series";
+import type { LegacySource, LegacyCredit } from "../utils/referenceFooter";
 import BaseLayout from "./BaseLayout.astro";
 import { getIconForType, getColorForType, capitalize } from "../utils/postIcons";
 import { getBlogPostingStructuredData } from "../utils/structuredData";
@@ -22,10 +23,14 @@ import {
   type TopicLandingPage,
 } from "../config/topicLandingPages";
 
-type Props = CollectionEntry<"ideas">["data"] & {
+type Props = Omit<CollectionEntry<"ideas">["data"], "sources" | "credits"> & {
   headings?: MarkdownHeading[];
   readingTimeText: string;
   series?: SeriesInfo | null;
+  // Pre-filtered by legacyFooterAttribution in pages/ideas/[...slug].astro —
+  // bib-key forms render inside the References section, not the footer.
+  sources?: LegacySource[];
+  credits?: LegacyCredit[];
 };
 
 const {
@@ -364,6 +369,22 @@ const postTopics = [...topicsForPost.values()];
     :global(#refs a[target="_blank"]::after) {
       content: " ↗";
       white-space: nowrap;
+    }
+
+    /* Primary-source role and figure attributions, rendered inside the
+       References section. */
+    :global(.refs-note) {
+      margin: 0 0 1em;
+      font-size: 0.75em;
+      color: var(--base01);
+    }
+
+    :global(.refs-figures) {
+      margin: 1em 0 0;
+    }
+
+    :global(.refs-primary) {
+      color: var(--sol-7);
     }
 
     :global([data-footnotes]) {

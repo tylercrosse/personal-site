@@ -10,6 +10,25 @@ function getFrontmatter(file) {
   return file.data?.astro?.frontmatter ?? file.data?.matter ?? {};
 }
 
+// `sources` frontmatter marks which bib entries this post is notes on. The role
+// renders inside the References section (disclaimer + marker) rather than as a
+// separate list in the footer. Legacy object-form entries are ignored here —
+// PostCredits still renders those until they are migrated to keys.
+function primarySourceKeys(file) {
+  const sources = getFrontmatter(file).sources;
+  if (!Array.isArray(sources)) return [];
+  return sources.filter((source) => typeof source === "string");
+}
+
+// Credits that point at a bib entry render as a "Figures" note under the
+// References list, citing the entry by number. Legacy credits (inline
+// author/url) stay in the PostCredits footer until they are migrated.
+function bibliographyCredits(file) {
+  const credits = getFrontmatter(file).credits;
+  if (!Array.isArray(credits)) return [];
+  return credits.filter((credit) => typeof credit?.sourceKey === "string");
+}
+
 function findElementParent(node, predicate) {
   if (!node?.children) return null;
 
@@ -120,7 +139,65 @@ function linkifyReferenceUrls(node) {
   }
 }
 
-function addReferencesHeading(tree) {
+// Build the "Figures: … — from [4] (changes)" note that replaces the footer
+// image-credit list for bib-backed credits. `entryNumbers` maps bib keys to
+// their 1-based position in the rendered References list.
+function figuresNote(credits, entryNumbers) {
+  const children = [{ type: "text", value: "Figures: " }];
+  let rendered = 0;
+
+  for (const credit of credits) {
+    const number = entryNumbers.get(credit.sourceKey);
+    // Unresolvable keys are audit-metadata errors; skip rather than render "[?]".
+    if (!number) continue;
+
+    if (rendered > 0) children.push({ type: "text", value: "; " });
+    rendered += 1;
+
+    if (credit.title) {
+      children.push({ type: "text", value: `${credit.title} — from ` });
+    } else {
+      children.push({ type: "text", value: "from " });
+    }
+    children.push({
+      type: "element",
+      tagName: "a",
+      properties: { href: `#bib-${credit.sourceKey}` },
+      children: [{ type: "text", value: `[${number}]` }],
+    });
+    if (credit.license) {
+      children.push({ type: "text", value: " — " });
+      children.push(
+        credit.licenseUrl
+          ? {
+              type: "element",
+              tagName: "a",
+              properties: {
+                href: credit.licenseUrl,
+                target: "_blank",
+                rel: ["noopener", "noreferrer"],
+              },
+              children: [{ type: "text", value: credit.license }],
+            }
+          : { type: "text", value: credit.license },
+      );
+    }
+    if (credit.changes) {
+      children.push({ type: "text", value: ` (${credit.changes})` });
+    }
+  }
+
+  if (!rendered) return null;
+  children.push({ type: "text", value: "." });
+  return {
+    type: "element",
+    tagName: "p",
+    properties: { className: ["refs-note", "refs-figures"] },
+    children,
+  };
+}
+
+function addReferencesHeading(tree, sourceKeys = [], credits = []) {
   const result = findElementParent(
     tree,
     (node) => node.type === "element" && node.properties?.id === "refs",
@@ -145,6 +222,7 @@ function addReferencesHeading(tree) {
       properties: { id: "references" },
       children: [{ type: "text", value: "References" }],
     });
+    result.index += 1;
   }
 
   result.node.properties = {
@@ -153,6 +231,9 @@ function addReferencesHeading(tree) {
   };
 
   result.node.tagName = "ol";
+  const primaryIds = new Set(sourceKeys.map((key) => `bib-${key}`));
+  const entryNumbers = new Map();
+  let markedPrimaries = 0;
   for (const child of result.node.children ?? []) {
     const classNames = child.properties?.className;
     if (
@@ -162,7 +243,49 @@ function addReferencesHeading(tree) {
     ) {
       child.tagName = "li";
       linkifyReferenceUrls(child);
+
+      const id = child.properties?.id;
+      if (typeof id === "string" && id.startsWith("bib-")) {
+        entryNumbers.set(id.slice("bib-".length), entryNumbers.size + 1);
+      }
+
+      if (primaryIds.has(id)) {
+        markedPrimaries += 1;
+        child.children.push({
+          type: "element",
+          tagName: "span",
+          properties: {
+            className: ["refs-primary"],
+            title: "Primary source",
+            ariaLabel: "Primary source",
+          },
+          children: [{ type: "text", value: " ★" }],
+        });
+      }
     }
+  }
+
+  // Figure attributions, directly after the References list.
+  const figures = figuresNote(credits, entryNumbers);
+  if (figures) {
+    result.parent.children.splice(result.index + 1, 0, figures);
+  }
+
+  // The primary-source disclaimer, directly under the References heading.
+  if (markedPrimaries > 0) {
+    result.parent.children.splice(result.index, 0, {
+      type: "element",
+      tagName: "p",
+      properties: { className: ["refs-note"] },
+      children: [
+        {
+          type: "text",
+          value: `${
+            markedPrimaries > 1 ? "These are notes on the works" : "These are notes on the work"
+          } marked ★ — cite the original rather than this page.`,
+        },
+      ],
+    });
   }
 }
 
@@ -213,17 +336,28 @@ export default function rehypeArticleCitations(options = {}) {
     }
 
     const bibliographyText = readFileSync(bibliographyPath, "utf8");
+    // Primary sources and credited works must appear in References, cited
+    // inline or not. Passing their keys as `noCite` looks right but is broken
+    // in rehype-citation <=2.3.2: explicit noCite keys are merged with only
+    // the *last* inline citation's entries, dropping every other cited work.
+    // The `@*` branch (render the whole bibliography) is safe, and matches
+    // this site's convention anyway — audit-references.mjs warns about bib
+    // entries that are neither cited nor referenced from frontmatter.
+    const sourceKeys = primarySourceKeys(file);
+    const figureCredits = bibliographyCredits(file);
     const transform = rehypeCitation({
       ...options,
       bibliography,
       path: articleDirectory,
+      noCite:
+        sourceKeys.length || figureCredits.length ? ["@*"] : options.noCite,
       inlineClass: ["citation-reference"],
       linkCitations: true,
       showTooltips: false,
     });
 
     await transform(tree, file);
-    addReferencesHeading(tree);
+    addReferencesHeading(tree, sourceKeys, figureCredits);
     addReferenceData(tree, bibliographyText);
   };
 }

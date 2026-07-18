@@ -71,29 +71,44 @@ const ideas = defineCollection({
         license: z.boolean().optional(),
         // Primary source(s) this post is notes on. Credits the original work in
         // the footer so readers cite the source, not these notes.
+        //
+        // Preferred form: a bib key (string) that resolves against the article's
+        // sibling references.bib, so citation metadata lives in one place. The
+        // legacy object form is still accepted during migration and is flagged by
+        // audit-metadata.mjs; it will be removed once every article uses keys.
         sources: z
           .array(
-            z.object({
-              title: z.string(),
-              url: z.string().optional(),
-              authors: z.string().optional(),
-              year: z.string().optional(),
-              venue: z.string().optional(),
-            })
+            z.union([
+              z.string(),
+              z.object({
+                title: z.string(),
+                url: z.string().optional(),
+                authors: z.string().optional(),
+                year: z.string().optional(),
+                venue: z.string().optional(),
+              }),
+            ])
           )
           .optional(),
         // Third-party media used under licence (TASL attribution). One entry per
         // asset that carries an obligation; public-domain and AI-generated images
-        // need none.
+        // need none. `title` describes the media; `sourceKey` points at the
+        // originating work in references.bib for its author/title/url (legacy
+        // inline `author`/`url` still accepted during migration).
         credits: z
           .array(
             z.object({
               title: z.string().optional(),
+              sourceKey: z.string().optional(),
               author: z.string().optional(),
               url: z.string().optional(),
               license: z.string().optional(),
               licenseUrl: z.string().optional(),
               changes: z.string().optional(),
+              // Article-local file(s) this entry covers, relative to the post
+              // directory. Provenance only — audited by audit-metadata.mjs, not
+              // rendered in the footer.
+              assets: z.array(z.string()).optional(),
             })
           )
           .optional(),

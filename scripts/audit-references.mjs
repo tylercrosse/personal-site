@@ -1,6 +1,7 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import process from "node:process";
+import matter from "gray-matter";
 
 const contentRoot = path.resolve("src/content/ideas");
 const citationGroupPattern = /\[[^\]\n]*@[^\]\n]+\]/g;
@@ -32,33 +33,50 @@ let citationCount = 0;
 let referenceCount = 0;
 
 for (const articlePath of articleFiles(contentRoot)) {
-  const markdown = readFileSync(articlePath, "utf8");
-  const citations = citationKeys(markdown);
+  const { data, content } = matter(readFileSync(articlePath, "utf8"));
+  const citations = citationKeys(content);
   const bibliographyPath = path.join(path.dirname(articlePath), "references.bib");
 
-  if (!citations.length) {
+  // Bib keys referenced from frontmatter also consume entries: `sources` render
+  // inside the References section and credit `sourceKey`s render in the footer.
+  // audit-metadata.mjs owns validating that these resolve; here they only count
+  // as usage.
+  const frontmatterKeys = [
+    ...(Array.isArray(data.sources) ? data.sources : []).filter(
+      (source) => typeof source === "string",
+    ),
+    ...(Array.isArray(data.credits) ? data.credits : [])
+      .map((credit) => credit?.sourceKey)
+      .filter(Boolean),
+  ];
+
+  if (!citations.length && !frontmatterKeys.length) {
     if (existsSync(bibliographyPath)) {
       warnings.push(`${path.relative(process.cwd(), bibliographyPath)} is unused`);
     }
     continue;
   }
 
-  citedArticles += 1;
-  citationCount += citations.length;
+  if (citations.length) {
+    citedArticles += 1;
+    citationCount += citations.length;
+  }
 
   if (!existsSync(bibliographyPath)) {
-    errors.push(
-      `${path.relative(process.cwd(), articlePath)} cites references but has no sibling references.bib`,
-    );
+    if (citations.length) {
+      errors.push(
+        `${path.relative(process.cwd(), articlePath)} cites references but has no sibling references.bib`,
+      );
+    }
     continue;
   }
 
   const bibliography = bibliographyKeys(readFileSync(bibliographyPath, "utf8"));
   const available = new Set(bibliography);
-  const used = new Set(citations);
+  const used = new Set([...citations, ...frontmatterKeys]);
   referenceCount += bibliography.length;
 
-  for (const key of used) {
+  for (const key of new Set(citations)) {
     if (!available.has(key)) {
       errors.push(
         `${path.relative(process.cwd(), articlePath)} cites missing key ${key}`,

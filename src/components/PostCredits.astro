@@ -1,8 +1,12 @@
 ---
 // Attribution footer for a post. Renders up to four independent blocks, each
 // answering a different question, driven by frontmatter:
-//   sources  -> "what this is notes on"      (credit the original work)
-//   credits  -> "attribution I owe"          (third-party media under licence)
+//   sources  -> "what this is notes on"      (legacy object form only — key-form
+//               sources render inside the article's References section instead;
+//               this block disappears once every article is on bib keys)
+//   credits  -> "attribution I owe"          (legacy inline form only — credits
+//               with a bib `sourceKey` render as the Figures note under
+//               References; same sunset as sources)
 //   cite     -> "how to credit me"           (citation + BibTeX for my write-up)
 //   license  -> "how you may reuse this"     (CC BY 4.0 grant)
 // These are separate ledgers, not competing claims: crediting sources is what
@@ -17,12 +21,13 @@ type Source = {
 };
 
 type Credit = {
+  // Description of the reproduced media (e.g. "Figure 4 architecture diagram").
   title?: string;
-  author?: string;
-  url?: string;
+  changes?: string;
   license?: string;
   licenseUrl?: string;
-  changes?: string;
+  url?: string;
+  author?: string;
 };
 
 interface Props {
