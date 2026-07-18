@@ -1,0 +1,226 @@
+---
+title: "What coding-agent skills are"
+description: "A survey of what coding-agent skills contain, how they differ from tools and plugins, and how to tell whether one helps."
+date: "2026-07-16"
+status: "draft"
+type: "article"
+tags:
+  [
+    "agents",
+    "software-engineering",
+    "evaluations",
+    "learning-in-public",
+  ]
+category: ["ideas"]
+draft: true
+cite: true
+audience: "Developers"
+sources:
+  - title: "Agent Skills Specification"
+    authors: "Agent Skills"
+    year: "2026"
+    url: "https://agentskills.io/specification"
+  - title: "Best practices for skill creators"
+    authors: "Agent Skills"
+    year: "2026"
+    url: "https://agentskills.io/skill-creation/best-practices"
+  - title: "Evaluating skill output quality"
+    authors: "Agent Skills"
+    year: "2026"
+    url: "https://agentskills.io/skill-creation/evaluating-skills"
+  - title: "SWE-Skills-Bench: Do Agent Skills Actually Help in Real-World Software Engineering?"
+    authors: "Tingxu Han et al."
+    year: "2026"
+    url: "https://arxiv.org/abs/2603.15401"
+  - title: "From Registry to Repository: How AI Agent Skills Are Written, Adapted, and Maintained"
+    year: "2026"
+    url: "https://arxiv.org/abs/2607.00911"
+  - title: "What Keeps Agent Skills from Being Reusable? Evidence from 138K SKILL.md Files"
+    year: "2026"
+    url: "https://openreview.net/pdf/2cdc7efc5d27097ba5d6b4a0814f5d624c2b693b.pdf"
+---
+
+I keep running into "skills" in coding agents. Claude Code, Codex, and OpenCode all support some version of them. Public registries collect them by the thousands, and there are increasingly detailed guides for writing them.
+
+The basic pitch is simple: a skill is a bundle of instructions an agent can load when a task calls for it.
+
+That description covers artifacts with very little in common. A skill might be a page of reference material, a tested workflow with helper scripts, or a wrapper around a tool. It can live in one repository, be shared across a team, or be published for anyone to install. Some capture real experience in a narrow domain. Others are generic prompts in a new directory.
+
+The part I found confusing was what, exactly, the category standardized. The answer is mostly packaging. I now think of a skill as a versioned bundle of context and procedure: the format tells an agent how to find and load it, while the contents determine whether it helps.
+
+## The standard is small
+
+The [Agent Skills specification](https://agentskills.io/specification) describes a skill as a directory with a required `SKILL.md` file and optional supporting material:
+
+```
+review-api/
+├── SKILL.md
+├── scripts/
+│   └── check_openapi.py
+├── references/
+│   └── api-guidelines.md
+└── assets/
+    └── review-template.md
+```
+
+The frontmatter in `SKILL.md` has two required fields: a name and a description. The description matters because it is usually what the agent sees before deciding whether to load the full skill. The rest of the file contains instructions, with few restrictions on their format. Scripts, references, and assets are available when the procedure needs them.
+
+Progressive disclosure works in three steps:
+
+1. The agent sees lightweight metadata for many available skills.
+2. It loads the full `SKILL.md` when a skill looks relevant.
+3. It reads supporting files or runs scripts when the instructions call for them.
+
+Loading only metadata up front keeps a large skill library from consuming the context window on every turn. The standard is therefore closer to a package layout and loading protocol than a definition of a capability.
+
+There is no universal schema for the body of a skill. The format does not say how a code review should be performed, what counts as a valid migration, or how a design document should be structured. Those things are domain knowledge and workflow design. They are left to the skill author.
+
+Two skills can conform to the same specification while sharing almost nothing in how they solve a task.
+
+## One label for several kinds of work
+
+Once I stopped treating a skill as one type of capability, the examples fell into a few rough groups:
+
+- Some are mostly reference material: a company's API conventions, a database schema, framework rules, or a domain glossary. These are closest to documentation. Accuracy and retrieval matter more than the sophistication of the workflow.
+- Workflow skills are runbooks. They tell the agent to inspect the current implementation, find callers, make the change, run a specific test set, and report migration risks. Their useful content is often the expert habit that would otherwise go unstated.
+- Verifier skills add a review pass. They may define a security review, compatibility checklist, visual comparison, or set of assertions to run after implementation. The agent can improve its result without changing how it produced the first draft.
+- Tool-mediated skills explain how to use a command, API, browser, or helper script and how to interpret the result. The skill supplies the procedure; the tool supplies the action.
+- Artifact skills produce a recurring output such as release notes, a design review, a test plan, or a document in a house style. You judge them by the artifact and how much cleanup it still needs.
+- Meta-skills coordinate other skills or agents. They depend heavily on the host because delegation and invocation work differently across harnesses.
+
+Most real skills mix several of these. That makes comparisons awkward: a reference bundle, a verifier, and a tool-mediated workflow may have the same installation command while doing very different jobs.
+
+## How skills fit with the other pieces
+
+The terminology made more sense once I separated instructions, capabilities, packaging, and enforcement.
+
+An instruction file such as `AGENTS.md`, `CLAUDE.md`, or a repository-specific equivalent is usually ambient context. It describes rules that should apply broadly in a project or directory. A skill is more often optional and task-shaped: load this procedure when reviewing an API, editing a spreadsheet, or preparing a release.
+
+A tool gives the agent an action or observation: read a page, query a database, run a command, or call an API. A skill can explain when and how to use the tool. It does not create the underlying capability.
+
+A plugin is a distribution or integration boundary. It may package skills, tools, commands, hooks, configuration, and metadata together. A skill can be distributed by a plugin, but a plugin is not necessarily a skill.
+
+A hook is an enforcement mechanism tied to an event. It can block a commit or run a formatter whether or not the model remembered an instruction. A skill is guidance the agent has to interpret. It may call a script that enforces something, but the instruction and enforcement still live at different layers.
+
+These pieces often ship together. A plugin might package a skill, the tool it teaches the agent to use, a validation script, and a hook that runs the validation. If a requirement can be checked deterministically, the script or hook is more reliable than another paragraph in `SKILL.md`.
+
+## Why skills become bespoke so quickly
+
+The format is thin on purpose. It has to accommodate code review, design software, legal research, data analysis, and plenty of work that does not fit those categories. The directory and activation mechanics can be shared even when the domain knowledge cannot.
+
+More variation comes from where skills originate. A skill often starts as one person's working process, so it quietly assumes a repository layout, command-line tool, model, permission mode, or level of human review. A procedure can work well for its author and fail somewhere else because one of those assumptions changed.
+
+The host agent adds another variable. Selecting a skill is a routing problem: the agent has to notice the description, match it to the task, load the skill, and keep following it. Models and harnesses make different choices along that path.
+
+Even a skill with identical files can behave differently depending on:
+
+- the model and its context budget;
+- the host's discovery and invocation rules;
+- the repository's local instructions;
+- the available tools and permission policy;
+- the version of the framework or command the skill assumes;
+- whether the task resembles the examples the author had in mind.
+
+A useful claim about a skill has to name the agent, the class of tasks, and the environment where it was tested.
+
+## Popularity is not quality
+
+Registries rank skills using stars, downloads, installs, forks, and reuse. Those numbers help people find candidates, but a good name and an easy installation path can drive them without improving an agent's work.
+
+A recent [study of skills](https://arxiv.org/abs/2607.00911) found that adoption often meant a one-time copy rather than an actively maintained dependency. In its sample, 53% of reused skills were never modified after being copied. That measures distribution, not whether the procedure was effective.
+
+The signals answer different questions:
+
+| Signal | What it tells us | What it does not tell us |
+| --- | --- | --- |
+| Stars | Someone found the project worth bookmarking or endorsing | Whether the agent follows it or produces better work |
+| Downloads or installs | How widely it has been distributed | Whether users kept it, used it, or measured an improvement |
+| Reuse | That another author saw enough value to copy or adapt it | Whether the original assumptions still hold |
+| Recent commits | That someone is maintaining the package | That the instructions are correct or useful |
+| Examples | What the author expects the skill to do | Performance on tasks outside those examples |
+| Evaluation results | How it performed under a stated setup | Whether the result transfers to another model, harness, or repository |
+
+Evaluation results are the only signal here that directly measures the agent's work, and they are the least common.
+
+## How I would evaluate a skill
+
+The official [skill evaluation guidance](https://agentskills.io/skill-creation/evaluating-skills) recommends realistic test cases, clean contexts, objective assertions where possible, and human review for qualities that tests cannot capture.
+
+I'd test five separate things.
+
+### 1. Does the agent choose it?
+
+Give the agent tasks that should activate the skill and tasks that should not. Record whether it loads the skill, loads it too often, or fails to find it when it is relevant.
+
+This tests the name and description as routing metadata. A useful skill with a vague description may have no effect because the agent never activates it. A broad description may load it everywhere and consume context without helping.
+
+### 2. Does the skill change the procedure?
+
+Compare traces with and without the skill. Check whether the agent inspected the requested files, ran the required validation, and used the provided references or scripts. The trace shows whether the skill changed the run, even when the final diff is the same.
+
+### 3. Does the work improve?
+
+Run matched tasks with the skill and without it. Hold the model, harness, repository state, prompt, and budget as constant as practical. Use tests and other objective checks for correctness, then sample outputs for human review.
+
+The basic quantity is skill lift:
+
+```
+skill lift = outcome with skill - outcome without skill
+```
+
+Pass rate is only one outcome. Depending on the task, I would also track regressions, review quality, completeness, or whether the requested artifact was usable.
+
+### 4. What does it cost?
+
+A skill can improve correctness while making every run slower and more expensive. Track input tokens, output tokens, wall-clock time, tool calls, failed commands, and human cleanup. Also track context consumed by skills that were loaded but did not contribute.
+
+Some overhead is worth paying. A security review that adds a minute to a risky change may be a good trade, but the cost should be visible.
+
+### 5. What can go wrong?
+
+Look for stale version assumptions, destructive commands, overbroad permissions, secret exposure, incorrect domain advice, and instructions that conflict with repository policy. Run the skill against tasks where its advice should not apply. Test failure and interruption paths alongside the happy path.
+
+The [best-practices guide](https://agentskills.io/skill-creation/best-practices) recommends revising skills from real execution traces. Plausible instructions are easy to write; the trace shows where the agent misunderstood or wasted time.
+
+## What the early evidence says
+
+[SWE-Skills-Bench](https://arxiv.org/abs/2603.15401) evaluates 49 public software-engineering skills on roughly 565 task instances, comparing runs with and without a skill. In that benchmark, 39 of the 49 skills produced no pass-rate improvement, while the average gain across the set was about 1.2%. Token overhead ranged from modest savings to a 451% increase. A small group of specialized skills produced meaningful gains, including improvements of up to 30%, while a few degraded performance because their guidance was mismatched to the repository or version.
+
+I would not generalize from one benchmark to every kind of skill. What I take from it is the shape of the distribution: many did little, a few helped a lot, and some hurt.
+
+A separate [large-scale evaluation framework](https://arxiv.org/abs/2606.17819) also reports substantial variation across skills, models, and configurations. The same instructions do not produce the same behavior in every host.
+
+A [structural audit](https://openreview.net/pdf/2cdc7efc5d27097ba5d6b4a0814f5d624c2b693b.pdf) of 138,133 `SKILL.md` files answers a narrower question. It reported that most had at least one detected reusability defect under its criteria. Static checks can catch missing metadata, unclear scope, and portability problems. Paired runs are still needed to find out whether the skill improves a real task.
+
+Static checks catch structural problems. Paired runs measure outcomes, while traces help explain why the result changed. A registry needs more than one of them to be useful.
+
+## A small rubric for choosing one
+
+When I encounter a skill I might use, I would score it informally on these dimensions:
+
+- Is the scope clear?
+- Would an agent recognize the right tasks from the description?
+- Are the steps concrete enough to execute, or are they mostly advice?
+- Are there paired examples, tests, traces, or measured outcomes?
+- Does it name the tools, versions, files, and permissions it assumes?
+- Are important checks handled by scripts or tests rather than left as prose?
+- Is there a process for updating stale guidance?
+- Does it explain risky operations and failure cases?
+
+Evidence matters most, though the other questions help predict whether a result will transfer to my setup. I would take a small measured gain on a closely matching task over a highly starred general-purpose skill with no evaluation.
+
+I would also prefer skills that make their assumptions easy to inspect. A short `SKILL.md`, a few focused references, explicit version constraints, and deterministic helper scripts are easier to audit than a huge prompt that claims to cover an entire discipline.
+
+## What I would want from a registry
+
+The package format is mature enough to share workflows. The missing layer is evidence about what has been tested. I would want a registry entry to tell me:
+
+- which agents and models can discover and run the skill;
+- what kinds of tasks it targets;
+- what tools, versions, and permissions it assumes;
+- how often it activates correctly;
+- how it changes task outcomes compared with a baseline;
+- what token, time, and maintenance cost it adds;
+- when its guidance should not be used.
+
+Until those signals are common, I will treat stars and install counts as discovery aids rather than quality scores. A skill is a hypothesis about a better procedure. I want evidence that it improves the agent and task I plan to use it for.
