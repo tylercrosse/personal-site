@@ -15,23 +15,20 @@ image:
 hideCaption: true
 cite: true
 sources:
-  - title: 'Hierarchical Reasoning Model'
-    url: 'https://arxiv.org/abs/2506.21734'
-    authors: 'Wang et al.'
-    year: '2025'
-  - title: "Hierarchical Reasoning Model Analysis"
-    url: 'https://arcprize.org/blog/hrm-analysis'
-    authors: 'ARC Prize Foundation'
-    year: '2025'
+  - wang2025hrm
+  - arc2025hrmanalysis
 credits:
   - title: 'HRM architecture diagram and pseudocode (Figure 4)'
-    author: 'Wang et al., "Hierarchical Reasoning Model"'
-    url: 'https://arxiv.org/abs/2506.21734'
+    sourceKey: wang2025hrm
     changes: 'reproduced in my slides'
+    assets:
+      - 'slide-hrm-architecture.png'
   - title: 'Ablation charts'
-    author: 'ARC Prize Foundation, HRM analysis'
-    url: 'https://arcprize.org/blog/hrm-analysis'
+    sourceKey: arc2025hrmanalysis
     changes: 'reproduced in my slides'
+    assets:
+      - 'slide-model-matter.png'
+      - 'slide-outer-loop.png'
 ---
 
 import Figure from "../../../../components/Figure.astro";
@@ -42,7 +39,7 @@ import architectureImg from "./slide-hrm-architecture.png";
 import modelMatterImg from "./slide-model-matter.png";
 import outerLoopImg from "./slide-outer-loop.png";
 
-The Hierarchical Reasoning Model (HRM) made a splash in mid-2025. It has 27 million parameters, trains on roughly a thousand examples per task, and still does well on ARC-AGI while beating much larger reasoning models on hard Sudoku and maze puzzles. The authors attribute this to a novel two-level recurrent architecture. The more interesting story, which I spent the second half of this talk on, is the ARC Prize team's independent analysis of what actually drives the performance. It is mostly not the architecture.
+The Hierarchical Reasoning Model (HRM) [@wang2025hrm] made a splash in mid-2025. It has 27 million parameters, trains on roughly a thousand examples per task, and still does well on ARC-AGI while beating much larger reasoning models on hard Sudoku and maze puzzles. The authors attribute this to a novel two-level recurrent architecture. The more interesting story, which I spent the second half of this talk on, is the ARC Prize team's independent analysis of what actually drives the performance. It is mostly not the architecture.
 
 I presented this at the [Latent Space](https://www.latent.space/) Paper Club in September 2025.
 
@@ -79,7 +76,7 @@ HRM's alternative is latent reasoning: keep the intermediate state in hidden act
 
 ## The architecture
 
-HRM has two recurrent modules, both standard modern transformer blocks (rotary embeddings, GLU, RMSNorm, no bias terms). The low-level module runs several fast iterations of detailed computation; the high-level module updates once per cycle of low-level steps, doing slower, more abstract updates. One pass of L-steps followed by an H-step is a segment, and segments repeat.
+HRM has two recurrent modules, both standard modern transformer blocks (rotary embeddings, GLU, RMSNorm, no bias terms) [@wang2025hrm]. The low-level module runs several fast iterations of detailed computation; the high-level module updates once per cycle of low-level steps, doing slower, more abstract updates. One pass of L-steps followed by an H-step is a segment, and segments repeat.
 
 <Figure
   src={architectureImg}
@@ -107,7 +104,7 @@ The paper also includes a nice interpretability aside: visualizing intermediate 
 
 ## What actually drives performance
 
-The ARC Prize team [reproduced HRM's results and ran ablations](https://arcprize.org/blog/hrm-analysis) to isolate five candidate explanations: the architecture, the hierarchical inner loop, the outer refinement loop (with and without ACT), data augmentation, and puzzle embeddings. Their reproduction held up: 32% pass@2 on the ARC v1 semi-private set against the paper's 41% on public, and 2% on the much harder ARC v2 semi-private set against the paper's 4% public. I stole several of their charts for the talk.
+The ARC Prize team reproduced HRM's results and ran ablations [@arc2025hrmanalysis] to isolate five candidate explanations: the architecture, the hierarchical inner loop, the outer refinement loop (with and without ACT), data augmentation, and puzzle embeddings. Their reproduction held up: 32% pass@2 on the ARC v1 semi-private set against the paper's 41% on public, and 2% on the much harder ARC v2 semi-private set against the paper's 4% public. I stole several of their charts for the talk.
 
 The findings, in decreasing order of how much they changed my read of the paper:
 
@@ -123,7 +120,7 @@ The findings, in decreasing order of how much they changed my read of the paper:
 
 **The hierarchical inner loop doesn't matter much either.** One L cycle and one H cycle already gets about 7/8 of the performance of the paper's configuration, and scaling the inner loops higher doesn't help, while compute grows multiplicatively.
 
-**The outer refinement loop is what matters.** Varying the maximum number of outer refinement steps makes a large difference, refinement during training matters more than refinement at inference, and the learned halting signal helps at training time. Iterative refinement of predictions, with supervision at each step, is doing most of the work.
+**The outer refinement loop is what matters.** Varying the maximum number of outer refinement steps makes a large difference, refinement during training matters more than refinement at inference, and the learned halting signal helps at training time [@arc2025hrmanalysis]. Iterative refinement of predictions, with supervision at each step, is doing most of the work.
 
 <Figure
   src={outerLoopImg}
@@ -149,16 +146,14 @@ When I first summarized this paper, I wrote that the architecture "contributes t
 
 ## Since the talk (July 2026)
 
-The ablation story held up. In October 2025, Alexia Jolicoeur-Martineau published the [Tiny Recursive Model (TRM)](https://arxiv.org/abs/2510.04871), which takes "the architecture doesn't matter, refinement does" to its logical end: a single two-layer network with 7M parameters, no H/L hierarchy, and full backpropagation through the recursion instead of the one-step gradient approximation. It reports about 45% on ARC-AGI-1 and 8% on ARC-AGI-2, well above HRM at a quarter of the size. The [ARC Prize 2025 technical report](https://arxiv.org/abs/2601.10904) later named the refinement loop the central theme of the year's competition, with zero-pretraining methods using networks as small as 7M parameters staying competitive; the winning entry scored 24% on the ARC-AGI-2 private set.
+The ablation story held up. In October 2025, Alexia Jolicoeur-Martineau published the Tiny Recursive Model (TRM) [@jolicoeur2025trm], which takes "the architecture doesn't matter, refinement does" to its logical end: a single two-layer network with 7M parameters, no H/L hierarchy, and full backpropagation through the recursion instead of the one-step gradient approximation. It reports about 45% on ARC-AGI-1 and 8% on ARC-AGI-2, well above HRM at a quarter of the size. The ARC Prize 2025 technical report [@arc2025report] later named the refinement loop the central theme of the year's competition, with zero-pretraining methods using networks as small as 7M parameters staying competitive; the winning entry scored 24% on the ARC-AGI-2 private set.
 
 This was my second talk at the paper club. The first surveyed diffusion models for language:
 
 <PostLink slug="2025/language-diffusion-survey" size="md" />
 
-## References
+## Further reading
 
-- [Hierarchical Reasoning Model](https://arxiv.org/abs/2506.21734), Wang et al., 2025
-  - [Code](https://github.com/sapientinc/HRM), [DeepWiki page](https://deepwiki.com/sapientinc/HRM/1-overview)
-- [ARC Prize analysis of HRM](https://arcprize.org/blog/hrm-analysis), ARC Prize Foundation, 2025
-  - [Their slides](https://docs.google.com/presentation/d/12IAuVKZXvbW6uCwzDhzN1PBh4fdjypjqyucYzoKJKMg/)
+- HRM [code](https://github.com/sapientinc/HRM) and [DeepWiki page](https://deepwiki.com/sapientinc/HRM/1-overview)
+- ARC Prize's [analysis slides](https://docs.google.com/presentation/d/12IAuVKZXvbW6uCwzDhzN1PBh4fdjypjqyucYzoKJKMg/)
 - [ARC Prize leaderboard](https://arcprize.org/leaderboard)
