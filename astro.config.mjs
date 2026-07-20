@@ -13,7 +13,7 @@ import rehypeKatex from "rehype-katex";
 import { unified } from "@astrojs/markdown-remark";
 import rehypeArticleCitations from "./src/plugins/rehypeArticleCitations.mjs";
 import rehypeExternalLinks from "./src/plugins/rehypeExternalLinks.mjs";
-import remarkFigureRefs from "./src/plugins/remarkFigureRefs.mjs";
+import remarkCrossRefs from "./src/plugins/remarkCrossRefs.mjs";
 
 const isBuild = process.argv.includes("build");
 const previewSite =
@@ -25,7 +25,7 @@ const site = process.env.SITE_URL || previewSite || "https://tylercrosse.com";
 const remarkPlugins = [
   remarkMath,
   remarkGfm,
-  [remarkFigureRefs, { dev: !isBuild }],
+  [remarkCrossRefs, { dev: !isBuild }],
 ];
 const rehypePlugins = [
   [rehypeKatex, { strict: false }],

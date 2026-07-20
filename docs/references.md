@@ -32,7 +32,7 @@ Use the smallest reference mechanism that matches what the reader needs:
 | Credit the work an entire article is notes on | `sources: [bibKey, …]` in frontmatter; renders inside the References section |
 | Suggest optional external reading | A `## Further reading` section |
 | Point to another article on this site | A normal internal link or the existing related-post components |
-| Refer to one of your own figures by number | `[fig:label]` — see [figures.md](./figures.md) |
+| Refer to one of your own figures, tables, or equations by number | `[fig:label]` / `[tbl:label]` / `[eq:label]` — see [cross-references.md](./cross-references.md) |
 | Attribute reproduced or adapted third-party media | A `credits` entry with a `sourceKey`; renders as a Figures note under References |
 | Tell readers how to cite Tyler's article | `cite: true` in article frontmatter |
 
@@ -102,7 +102,7 @@ Two conventions keep the roles from blurring:
   introduces the figure, unless another citation of the same work is already
   in view. Keep the bibliography citation in that body text, not in the
   caption. (Figure cross-references, `[fig:…]`, do resolve in captions — see
-  [figures.md](./figures.md).)
+  [cross-references.md](./cross-references.md).)
 
 `cite: true` and `license` control the rest of the attribution footer; see
 [`frontmatter.md`](./frontmatter.md).

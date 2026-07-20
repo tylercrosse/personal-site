@@ -69,3 +69,33 @@ test("clicking a reference jumps to its figure", async ({ page }) => {
   await expect(page).toHaveURL(/#fig-attribution-graph-ui$/);
   await expect(page.locator("#fig-attribution-graph-ui")).toBeInViewport();
 });
+
+test("an [eq:] reference links to a numbered equation, and \\label is stripped", async ({
+  page,
+}) => {
+  await page.goto("/ideas/2026/circuits-framework/");
+
+  const ref = page.locator('a.equation-reference[data-eq-ref="attention"]');
+  await expect(ref).toHaveText("Equation 1");
+  await expect(ref).toHaveAttribute("href", "#eq-attention");
+
+  // The labeled equation shows its number, and the \label was stripped before
+  // KaTeX rendered it (regression guard for the caching gotcha).
+  await expect(page.locator("#eq-attention .equation-number")).toHaveText("(1)");
+  await expect(page.locator("#eq-attention")).not.toContainText("label");
+});
+
+test("a [tbl:] reference links to a wrapped, numbered table", async ({
+  page,
+}) => {
+  await page.goto("/ideas/2025/ml-retro/");
+
+  const ref = page.locator('a.table-reference[data-tbl-ref="grading"]');
+  await expect(ref).toHaveText("Table 1");
+  await expect(ref).toHaveAttribute("href", "#tbl-grading");
+
+  await expect(page.locator("figure#tbl-grading figcaption")).toContainText(
+    "Table 1:",
+  );
+  await expect(page.locator("figure#tbl-grading table")).toHaveCount(1);
+});

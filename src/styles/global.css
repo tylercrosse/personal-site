@@ -359,9 +359,58 @@ hr {
   white-space: nowrap;
 }
 
-/* Figure cross-references (rendered by remarkFigureRefs.mjs). Mirrors the
-   citation-reference link treatment; the whole "Figure N" stays on one line. */
-.figure-reference {
+/* Equation cross-references (rendered by remarkCrossRefs.mjs). A labeled
+   display equation renders centered with its number "(N)" at the right margin,
+   LaTeX-style. The 1fr/auto/1fr grid keeps the equation centered while the
+   number sits in the right gutter. */
+.equation {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  margin: 1rem 0;
+  scroll-margin-top: 5rem;
+}
+
+.equation > :not(.equation-number) {
+  grid-column: 2;
+  min-width: 0;
+}
+
+.equation .katex-display {
+  margin: 0;
+}
+
+.equation-number {
+  grid-column: 3;
+  justify-self: end;
+  padding-left: 1rem;
+  color: var(--sol-7);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .equation:target {
+    animation: equation-target-flash 2s ease-out;
+  }
+
+  @keyframes equation-target-flash {
+    0% {
+      background: color-mix(in srgb, var(--blue) 16%, transparent);
+      box-shadow: 0 0 0 0.5rem color-mix(in srgb, var(--blue) 16%, transparent);
+    }
+    100% {
+      background: transparent;
+      box-shadow: 0 0 0 0.5rem transparent;
+    }
+  }
+}
+
+/* Cross-reference links — figures, tables, equations (rendered by
+   remarkCrossRefs.mjs). All three share the citation-link treatment, and each
+   "Figure N" / "Table N" / "Equation N" stays on one line. */
+.figure-reference,
+.table-reference,
+.equation-reference {
   color: var(--blue);
   text-decoration-color: color-mix(in srgb, var(--blue) 45%, transparent);
   text-underline-offset: 0.15em;
@@ -369,11 +418,17 @@ hr {
 }
 
 .figure-reference:hover,
-.figure-reference:focus-visible {
+.figure-reference:focus-visible,
+.table-reference:hover,
+.table-reference:focus-visible,
+.equation-reference:hover,
+.equation-reference:focus-visible {
   color: var(--magenta);
 }
 
-.figure-ref-broken {
+.figure-ref-broken,
+.table-ref-broken,
+.equation-ref-broken {
   color: var(--red);
   font-style: normal;
   font-weight: 600;
