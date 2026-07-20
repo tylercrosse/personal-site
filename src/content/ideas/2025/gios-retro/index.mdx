@@ -230,12 +230,13 @@ Beyond choosing a concurrency pattern, building a robust multithreaded system re
 
 *   **Handling Interrupts and Signals**:
     <Figure
+      id="interrupts"
       src={interrupts}
       alt="Interrupts"
       width={720}
       caption="The interrupt handling cycle."
     />
-    Figure 4. illustrates the interrupt handling cycle. Interrupts are asynchronous signals sent to the CPU from software, I/O devices, or internal processor exceptions. When an interrupt is issued, the CPU halts the currently running code, saves its state, and executes a special function called an interrupt handler to address the event. Once the handler finishes, the CPU restores the original state and resumes execution. This mechanism is fundamental to multitasking and allows the OS to respond to events efficiently.
+    [fig:interrupts] illustrates the interrupt handling cycle. Interrupts are asynchronous signals sent to the CPU from software, I/O devices, or internal processor exceptions. When an interrupt is issued, the CPU halts the currently running code, saves its state, and executes a special function called an interrupt handler to address the event. Once the handler finishes, the CPU restores the original state and resumes execution. This mechanism is fundamental to multitasking and allows the OS to respond to events efficiently.
 
     In a multithreaded environment, handling these asynchronous events is particularly complex. A classic problem arises when a signal handler, which runs in the context of the interrupted thread, tries to acquire a mutex that the thread already holds, causing an instant deadlock. A common, simple solution is to disable signals around critical sections. More advanced OS designs may treat the main work of an interrupt handler as a separate, lower-priority thread (a "bottom-half" handler) to avoid such issues.
 
