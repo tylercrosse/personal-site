@@ -359,53 +359,6 @@ hr {
   white-space: nowrap;
 }
 
-[data-tooltip] {
-  position: relative;
-  cursor: pointer;
-  text-decoration: none;
-  border-bottom: 1px dotted;
-}
-
-[data-tooltip]::after {
-  /* WIP: Tooltips */
-  /* content: attr(data-tooltip); */
-  position: absolute;
-  bottom: 125%;
-  left: 50%;
-  transform: translateX(-50%);
-  width: max-content;
-  max-width: 450px;
-  padding: 0.5rem;
-  border-radius: 0.25rem;
-  background-color: var(--base4);
-  color: var(--sol-8);
-  font-size: 0.875rem;
-  line-height: 1.25rem;
-  white-space: pre-wrap;
-  text-align: center;
-  z-index: 10;
-  opacity: 0;
-  visibility: hidden;
-  transition:
-    opacity 0.2s,
-    visibility 0.2s;
-  pointer-events: none;
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  box-shadow: 0 0 7px rgba(0, 0, 0, 0.1);
-}
-
-[data-effective-theme="dark"] [data-tooltip]::after {
-  background-color: var(--sol-dark-4);
-  color: var(--sol-8);
-  box-shadow: var(--box-shadow-sm);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-[data-tooltip]:hover::after {
-  opacity: 1;
-  visibility: visible;
-}
-
 [data-callout="note"],
 [data-callout="info"],
 [data-callout="todo"] {

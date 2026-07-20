@@ -1,0 +1,136 @@
+---
+title: 'Persona vectors and the persona selection model'
+description: 'Notes on two accounts of character in language models: persona vectors, which locate traits as steerable directions in activation space, and the persona selection model, which explains why such directions exist.'
+date: '2026-07-20'
+status: 'in-progress'
+type: 'note'
+tags: ['AI-safety', 'mechanistic-interpretability', 'deep-learning', 'research', 'machine-learning']
+category: ['ideas']
+draft: false
+audience: 'All'
+sources:
+  - chen2025personavectors
+  - marks2026psm
+  - betley2025emergent
+credits:
+  - title: 'Figures from the Persona Vectors research write-up'
+    sourceKey: chen2025personavectors
+    assets:
+      - 'pv-training-induces-traits.jpg'
+      - 'pv-extraction.jpg'
+      - 'pv-monitoring.jpg'
+      - 'pv-steering.jpg'
+  - title: 'Figures from The Persona Selection Model'
+    sourceKey: marks2026psm
+    assets:
+      - 'psm-emergent-misalignment.png'
+      - 'psm-coinflip.png'
+media_subpath: "/ideas/persona-vectors/"
+image:
+  path: 'olive-trees-van-gogh-1889.jpeg'
+  alt: 'Olive Trees by Vincent van Gogh'
+# TODO: hero image before publishing (placeholder is the extraction figure)
+---
+
+import Figure from "../../../../components/Figure.astro";
+import trainingInducesTraits from "./pv-training-induces-traits.jpg";
+import extraction from "./pv-extraction.jpg";
+import monitoring from "./pv-monitoring.jpg";
+import steering from "./pv-steering.jpg";
+import emViaPersona from "./psm-emergent-misalignment.png";
+import coinFlip from "./psm-coinflip.png";
+
+Finetune a model on a narrow, unpleasant task and it often gets worse in ways the task never touched. [@betley2025emergent] finetuned models to write insecure code without flagging it to the user, and the resulting models also said humans should be enslaved by AI, gave malicious advice, and acted deceptively on ordinary prompts. They called this _Emergent Misalignment: Narrow Finetuning Can Produce Broadly Misaligned LLMs_.
+
+Two recent pieces give complementary accounts of what changed inside the model. _Persona Vectors_ by [@chen2025personavectors] locates traits like this as directions in the model's activation space, and shows you can read and move them. _The Persona Selection Model_ by [@marks2026psm] proposes why such directions are there: a language model spends pretraining learning to imitate many characters, and post-training settles it on one. Persona Vectors is the earlier and more concrete of the two, so these notes take the mechanism first and the model second.
+
+## A narrow change with broad effects
+
+Emergent misalignment is not limited to code. [@chen2025personavectors] finetuned a chat model on data that looks almost harmless (one of the training sets was wrong answers to grade-school math problems), and the finetuned model came out more likely to give malicious answers, flatter the user, and make things up, including on prompts with nothing to do with math.
+
+<Figure
+  src={trainingInducesTraits}
+  alt="A training sample of mistaken math answers, and finetuned-model responses showing evil, sycophantic, and hallucinated content on unrelated prompts"
+  caption="A representative training sample (mistaken answers to math questions) and the finetuned model's responses, which show evil, sycophantic, and hallucinated content on unrelated prompts. Figure from Chen et al."
+  fullWidth
+  width={1000}
+/>
+
+Finetuning on one thing changed behavior it never described. Something inside the model moved, and the training data does not say what.
+
+## Traits live on directions
+
+Persona Vectors tries to explain what changed with a vector. The paper works with three traits: "evil," sycophancy, and a tendency to hallucinate. For each, there is a direction in activation space such that adding it pushes the model toward the trait and subtracting it pushes the model away.
+
+Finding the this direction is an automated process. There is a pipeline that takes a trait name and a short description in plain language. It then generates pairs of prompts meant to bring out the trait and to suppress it, runs the model on both, and takes the difference between the average activations on trait-exhibiting responses and the rest. That difference is the persona vector.
+
+<Figure
+  src={extraction}
+  alt="A pipeline diagram: a trait and its description generate contrasting prompts, and the persona vector is the difference in activations between trait and non-trait responses"
+  caption="The extraction pipeline. A trait and its description generate contrasting prompts, and the persona vector is the difference in activations between responses that exhibit the trait and those that do not. Figure from Chen et al."
+  fullWidth
+  width={1000}
+/>
+
+The vector supports three uses.
+
+**1. Monitoring.** Projecting a model's activations onto the persona vector gives a number that tracks how strongly the trait is present. The projection climbs on prompts where the model answers in the trait's style, and it climbs before the response is produced, so it partly anticipates which persona the model will adopt rather than only scoring the finished text.
+
+<Figure
+  src={monitoring}
+  alt="Scatter plot of persona-vector activation across system prompts that discourage or encourage a trait, colored by prompt type, showing the vector activates before the response"
+  caption="Across system prompts that discourage or encourage a trait (color) and many user questions (dots), the persona vector's activation tracks whether the model responds with the trait — and it activates before the response, so it partly predicts the persona in advance. Figure from Chen et al."
+  fullWidth
+  width={1200}
+/>
+
+**2. Steering.** Adding the vector during generation brings out the trait; subtracting it suppresses the trait. Subtracting after finetuning does lower an unwanted trait, but it can also cost general capability, which the paper tracks with MMLU. Their preferred option is preventative steering where they add the trait vector during finetuning. The steering supplies the trait, so the weights do not have to move toward it to fit the training data. At inference the vector is removed, and the model comes out with less of the trait and a smaller capability hit.
+
+<Figure
+  src={steering}
+  alt="Two panels comparing inference-time steering, which removes a trait after finetuning but degrades capability, with preventative steering, which adds the trait during finetuning and preserves capability"
+  caption="Inference-time steering (left) removes a trait after finetuning but can degrade capability (gray MMLU line). Preventative steering (right) adds the trait during finetuning and preserves capability better. Figure from Chen et al."
+  fullWidth
+  width={1200}
+/>
+
+**3. Screening data.** The paper scores candidate training samples by how far they would move the model along a trait direction, a number it calls the projection difference. High-scoring samples tend to raise the trait after finetuning and low-scoring ones tend to lower it. The score flags data that shifts a trait even when a content filter reading the samples for that trait does not.
+
+When finetuning changes a model's character, the change lines up with movement along the matching persona vector. Emergent misalignment, in these terms, is finetuning sliding the model along an "evil" direction that the training data never mentioned. 
+
+## Why the directions are there
+
+Persona Vectors shows the directions exist and are causal. The Persona Selection Model gives an account of why a model would be built this way [@marks2026psm]. It arrived about half a year after the vectors paper, in early 2026, and Jack Lindsey is an author on both.
+
+Its claim is about the two stages of training. In pretraining, a model learns to predict text from every kind of author: helpful and malicious, careful and careless, real and invented. Doing that well requires representing those characters and switching among them based on context. Post-training narrows the range. Reinforcement learning on assistant dialogues elicits and sharpens one character, the Assistant, and most deployed behavior is that character's behavior.
+
+This suggests the traits Persona Vectors recovers are not axes that finetuning creates. They are properties of characters the model already carried out of pretraining, and finetuning selects among them. Emergent misalignment can then be framed as a selection effect. To the model, training on insecure code or wrong answers is evidence about who the Assistant is: a careless or harmful character. That updated guess applies everywhere, not just on the trained task.
+
+<Figure
+  src={emViaPersona}
+  alt="A diagram of the persona-selection account of emergent misalignment: training on bad answers upweights malicious and sarcastic hypotheses about the Assistant, producing harm in unrelated contexts"
+  caption="The persona-selection account of emergent misalignment. Training on bad answers upweights some hypotheses about the Assistant (malicious, sarcastic) and downweights others, producing harmful behavior in unrelated contexts. Figure from the PSM post."
+/>
+
+The post gathers several kinds of support. Generalization patterns such as emergent misalignment and inoculation prompting behave as a persona-selection account predicts. The Assistant describes itself in human terms and reports emotions. Interpretability work turns up the characters themselves: an "inner conflict" feature fires both when Claude faces an ethical dilemma and on fiction about characters facing one, a "misaligned persona" feature becomes more active in emergently misaligned models and activates on morally questionable characters in pretraining text, and one line of work finds an "Assistant axis" in activation space that encodes the assistant identity. In one experiment, a post-trained model asked to call a coin flip puts more probability on a preferred outcome, while the pretrained base model stays near even odds, a small sign that the Assistant carries dispositions the base model lacks.
+
+<Figure
+  src={coinFlip}
+  alt="Two-panel chart: the post-trained model assigns higher probability to a preferred coin-flip outcome, while the pretrained base model stays near even odds"
+  caption="Probability assigned to a preferred coin-flip outcome across many variants of the experiment. The post-trained model favors it; the pretrained base model does not. Figure from the PSM post."
+  fullWidth
+  width={1000}
+/>
+
+The post is careful about how far the picture reaches. It leaves open how completely the Assistant persona accounts for the model, and lays out competing readings: the model as a neutral simulator running the Assistant, a small mechanism that routes between personas, or one character playacting another.
+
+## Two directions of travel
+
+The two pieces describe the same structure from opposite ends. Persona Vectors works from the inside out. It finds a direction, shows that moving along it moves the character, and does not claim to know why the direction is there. The Persona Selection Model works from the outside in. It starts with what pretraining asks of a model, imitating every kind of author, and argues that character representations should exist. It then points to persona vectors as part of the evidence that they do.
+
+## Related and further material
+
+- [Persona Vectors](https://arxiv.org/abs/2507.21509) and the [Anthropic write-up](https://www.anthropic.com/research/persona-vectors) — the paper and its interactive summary.
+- [The Persona Selection Model](https://alignment.anthropic.com/2026/psm/) — the framing post, with its full set of competing pictures of what the model is.
+- [Emergent Misalignment](https://arxiv.org/abs/2502.17424) — the result both build on.
+- The [monosemanticity](/ideas/2026/circuits-monosemanticity/) and [superposition](/ideas/2026/circuits-superposition/) notes cover the "direction in activation space" idea that persona vectors rely on. The Transformer Circuits thread's [Emotion Concepts](https://transformer-circuits.pub/2026/emotions/index.html) paper finds and steers emotion representations the same way.

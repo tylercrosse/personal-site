@@ -2,11 +2,12 @@
 title: 'Transformer Circuits Thread Notes'
 description: "Paper-by-paper notes on Anthropic's Transformer Circuits thread: core claims, methods in plain language, and what the evidence does and doesn't show."
 date: '2026-07-12'
+updated: '2026-07-19'
 status: 'in-progress'
 type: 'retro'
 tags: ['mechanistic-interpretability', 'deep-learning', 'research', 'AI-safety']
 category: ['ideas']
-draft: true
+draft: false
 audience: 'All'
 media_subpath: "/ideas/transformer-circuits/"
 image:
@@ -27,7 +28,7 @@ import SeriesDagFigure from "../../../../components/ideas/circuits/SeriesDagFigu
 
 The [Transformer Circuits thread](https://transformer-circuits.pub/) is the running publication venue for Anthropic's interpretability team. Since 2021 it has introduced, paper by paper, most of the standard toolkit of mechanistic interpretability: the residual-stream view of transformers, induction heads, superposition, sparse autoencoders, and attribution graphs.
 
-These are my notes on the thread, one post per paper (or pair of closely related papers). Each post works through the paper's core mechanism — how the thing actually works, not just what the paper claims about it — and then two sections a paper can't write about itself: what the evidence does and doesn't show, and what has happened since. The originals are free, interactive, and unusually well produced; these posts are written to be read alongside them, not instead of them.
+These are my notes on the thread, one post per paper (or pair of closely related papers). Each post works through the paper's core mechanism: how the thing actually works, how the experiments bear on it, and where the explanation runs out. Their structure follows the material rather than a fixed review template. The originals are free, interactive, and unusually well produced; these posts are written to be read alongside them, not instead of them.
 
 ## The notes
 
@@ -37,8 +38,9 @@ These are my notes on the thread, one post per paper (or pair of closely related
 <PostLink slug="2026/circuits-monosemanticity" size="md"><em>Towards / Scaling Monosemanticity</em> — notes coming soon</PostLink>
 <PostLink slug="2026/circuits-crosscoders" size="md"><em>Sparse Crosscoders</em> — notes coming soon</PostLink>
 <PostLink slug="2026/circuits-attribution-graphs" size="md"><em>Circuit Tracing</em> and <em>the Biology of a Large Language Model</em> — notes coming soon</PostLink>
+<PostLink slug="2026/circuits-attention-qk" size="md"><em>Tracing Attention Computation Through Feature Interactions</em> — notes coming soon</PostLink>
 
-The order is chronological, and chronology here is also the dependency graph: each paper leans on the vocabulary of the ones before it. The framework paper defines circuits and the residual stream; induction heads are the first circuit found in the wild; toy models explain why neurons are the wrong unit of analysis; the monosemanticity papers build the dictionary-learning response; crosscoders generalize dictionaries across layers and models; and attribution graphs assemble all of it into end-to-end explanations of model outputs.
+The order is chronological, and chronology here is also the dependency graph: each paper leans on the vocabulary of the ones before it. The framework paper defines circuits and the residual stream; induction heads are the first circuit found in the wild; toy models explain why neurons are the wrong unit of analysis; the monosemanticity papers build the dictionary-learning response; crosscoders generalize dictionaries across layers and models; attribution graphs assemble all of it into end-to-end explanations of model outputs; and QK attributions recover the attention decisions those graphs had frozen in place.
 
 <SeriesDagFigure />
 
@@ -75,10 +77,10 @@ The thread is a continuation of two earlier bodies of work on vision models, bot
 - 2024-10 [Sparse Crosscoders for Cross-Layer Features and Model Diffing](https://transformer-circuits.pub/2024/crosscoders/index.html) — A preliminary note on a way to get consistent features across layers, or across models.
 - 2025-03 [Circuit Tracing: Revealing Computational Graphs in Language Models](https://transformer-circuits.pub/2025/attribution-graphs/methods.html) — We describe an approach to tracing the "step-by-step" computation involved when a model responds to a single prompt.
 - 2025-03 [On the Biology of a Large Language Model](https://transformer-circuits.pub/2025/attribution-graphs/biology.html) — We investigate the internal mechanisms used by Claude 3.5 Haiku in a variety of contexts.
+- 2025-07 [Tracing Attention Computation Through Feature Interactions](https://transformer-circuits.pub/2025/attention-qk/index.html) — We describe and apply a method to explain attention patterns in terms of feature interactions, and integrate this information into attribution graphs.
 
 **The ongoing tail** (major papers since, not yet covered by a post):
 
-- 2025-07 [Tracing Attention Computation Through Feature Interactions](https://transformer-circuits.pub/2025/attention-qk/index.html) — We describe and apply a method to explain attention patterns in terms of feature interactions, and integrate this information into attribution graphs.
 - 2025-10 [When Models Manipulate Manifolds: The Geometry of a Counting Task](https://transformer-circuits.pub/2025/linebreaks/index.html) — We find geometric structure underlying the mechanisms of a fundamental language model behavior.
 - 2025-10 [Emergent Introspective Awareness in Large Language Models](https://transformer-circuits.pub/2025/introspection/index.html) — We find evidence that language models can introspect on their internal states.
 - 2026-04 [Emotion Concepts and their Function in a Large Language Model](https://transformer-circuits.pub/2026/emotions/index.html) — We find representations of emotion concepts in Claude Sonnet 4.5 and show that they causally influence its outputs.

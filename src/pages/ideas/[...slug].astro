@@ -5,6 +5,7 @@ import { render } from "astro:content";
 import type { MarkdownHeading } from "astro";
 import readingTime from "reading-time";
 import { getSeriesInfo, type SeriesInfo } from "../../utils/series";
+import { footerMediaCredits } from "../../utils/referenceFooter";
 
 export async function getStaticPaths() {
   const posts = (await getCollection("ideas")).filter((post) => {
@@ -47,8 +48,19 @@ type Props = {
 
 const { post, headings, readingTimeText, series } = Astro.props;
 const { Content } = await render(post);
+
+// Sources and bib-backed credits render inside the article's References section
+// (rehypeArticleCitations); the footer only receives media credits whose source
+// is not a bib work. Overrides the raw frontmatter spread below.
+const referenceFooter = footerMediaCredits(post);
 ---
 
-<BlogPost {...post.data} headings={headings} readingTimeText={readingTimeText} series={series}>
+<BlogPost
+  {...post.data}
+  credits={referenceFooter.credits}
+  headings={headings}
+  readingTimeText={readingTimeText}
+  series={series}
+>
   <Content />
 </BlogPost>

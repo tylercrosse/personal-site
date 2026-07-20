@@ -8,23 +8,15 @@ import react from "@astrojs/react";
 import pagefind from "astro-pagefind";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
-import rehypeCitation from "rehype-citation";
 import rehypeCallouts from "rehype-callouts";
 import rehypeKatex from "rehype-katex";
 import { unified } from "@astrojs/markdown-remark";
+import rehypeArticleCitations from "./src/plugins/rehypeArticleCitations.mjs";
 
 const remarkPlugins = [remarkMath, remarkGfm];
 const rehypePlugins = [
   [rehypeKatex, { strict: false }],
-  [
-    rehypeCitation,
-    {
-      bibliography: "src/references.bib",
-      linkCitations: true,
-      showTooltips: true,
-      tooltipAttribute: "data-tooltip",
-    },
-  ],
+  rehypeArticleCitations,
   rehypeCallouts,
 ];
 const viteCacheDir = process.argv.includes("build")

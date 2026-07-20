@@ -1,24 +1,30 @@
 ---
 title: 'Notes on Circuit Tracing and the Biology of a Large Language Model'
 description: 'Notes on cross-layer transcoders, local replacement models, and attribution graphs — and the case-study companion paper on Claude 3.5 Haiku.'
-date: '2026-07-12'
+date: '2026-07-18'
 status: 'in-progress'
 type: 'note'
 tags: ['mechanistic-interpretability', 'deep-learning', 'research', 'AI-safety']
 category: ['ideas']
-draft: true
+draft: false
 audience: 'All'
-license: true
 sources:
-  - title: 'Circuit Tracing: Revealing Computational Graphs in Language Models'
-    url: 'https://transformer-circuits.pub/2025/attribution-graphs/methods.html'
-    authors: 'Ameisen, Lindsey, Pearce, et al.'
-    venue: 'Transformer Circuits Thread'
-    year: '2025'
-  - title: 'On the Biology of a Large Language Model'
-    url: 'https://transformer-circuits.pub/2025/attribution-graphs/biology.html'
-    venue: 'Transformer Circuits Thread'
-    year: '2025'
+  - ameisen2025circuittracing
+  - lindsey2025biology
+credits:
+  - title: 'Circuit Tracing method diagrams and interface'
+    sourceKey: ameisen2025circuittracing
+    assets:
+      - 'ct-cross-layer-transcoder.png'
+      - 'ct-local-replacement-model.png'
+      - 'ct-attribution-graph-pruning.png'
+      - 'ct-attribution-graph-ui.png'
+  - title: 'Biology case-study circuit diagrams'
+    sourceKey: lindsey2025biology
+    assets:
+      - 'biology-dallas-austin.png'
+      - 'biology-rhyme-planning.png'
+      - 'biology-known-answer.png'
 media_subpath: "/ideas/circuits-attribution-graphs/"
 parent: '2026/transformer-circuits'
 order: 6
@@ -30,169 +36,214 @@ hideCaption: true
 ---
 
 import Figure from "../../../../components/Figure.astro";
+import crossLayerTranscoder from "./ct-cross-layer-transcoder.png";
+import localReplacementModel from "./ct-local-replacement-model.png";
+import attributionGraphPruning from "./ct-attribution-graph-pruning.png";
 import attributionGraphUi from "./ct-attribution-graph-ui.png";
+import dallasAustin from "./biology-dallas-austin.png";
+import rhymePlanning from "./biology-rhyme-planning.png";
+import knownAnswer from "./biology-known-answer.png";
 
-Notes on [Circuit Tracing: Revealing Computational Graphs in Language Models](https://transformer-circuits.pub/2025/attribution-graphs/methods.html) (Ameisen, Lindsey, Pearce, et al., March 2025) and its companion [On the Biology of a Large Language Model](https://transformer-circuits.pub/2025/attribution-graphs/biology.html), from Anthropic's [Transformer Circuits thread](/ideas/2026/transformer-circuits/).
+Notes on _Circuit Tracing: Revealing Computational Graphs in Language Models_ [@ameisen2025circuittracing] and its companion _On the Biology of a Large Language Model_ [@lindsey2025biology], from Anthropic's [Transformer Circuits thread](/ideas/2026/transformer-circuits/).
 
-## Circuit Tracing
+The two papers divide the work cleanly. _Circuit Tracing_ constructs a graph of the computation behind one token prediction and tests whether that graph survives interventions. _Biology_ uses the method on Claude 3.5 Haiku and shifts the focus from isolated features to paths through many features.
 
-### Core claim
+The graph is built from an interpretable replacement for part of the model. It can exactly reproduce the original computation on the prompt being studied after error corrections are added, but its behavior under perturbation can diverge. This distinction runs through both papers.
 
-"The goal of this paper is to describe and validate our methodology in detail, using a few case studies for illustration."
+## Replacing the MLPs
 
-Overview:
+A cross-layer transcoder (CLT) replaces the model's MLP outputs with sparse learned features. There is a set of features associated with each layer. A feature reads from the residual stream at that layer and can write to the reconstructed MLP output at that layer or any later one.
 
-- Cross-layer transcoders (CLTs) construct an interpretable "replacement model". The largest CLT matches the underlying model's output in 50% of cases.
-- Attribution graphs "describe the steps a model used to produce an output for a target token on a particular prompt."
-- Pruning of attribution graphs "allows production of sparse, interpretable graphs of the model's computation for arbitrary prompts."
-- The approach was validated by perturbing the original model and the attribution graph and comparing responses: "We find that across prompts, perturbation experiments are generally qualitatively consistent with our attribution graphs, though there are some deviations."
-
-{/* TODO: re-export the CLT/replacement-model excalidraw sketch from the Obsidian vault as PNG/SVG and place it here */}
-
-The paper's own list of limitations: "The role of attention patterns, the impact of reconstruction errors, the identification of suppression motifs, and the difficulty of understanding global circuits."
-
-### The replacement model
-
-- One CLT layer per MLP layer.
-- Each CLT layer receives input from the residual stream and tries to reconstruct the MLP output using sparsely active [features](/ideas/2026/circuits-monosemanticity/).
-- All features in all layers are trained jointly.
-
-#### Architecture
-
-**Feature activations:**
+For residual-stream activation $\mathbf{x}^{\ell}$ at layer $\ell$, the features at that layer are
 
 $$
-\mathbf{a}^{\ell}=\operatorname{JumpReLU}\left(W_{enc}^{\ell} \mathbf{x}^{\ell}\right)
+\mathbf{a}^{\ell}
+=\operatorname{JumpReLU}\!\left(W_{enc}^{\ell}\mathbf{x}^{\ell}\right).
 $$
 
-where:
-
-- $\mathbf{a}^{\ell}$ is the CLT feature activations
-- $\mathbf{x}^{\ell}$ is the original model's residual stream
-- $W_{enc}^{\ell}$ is the CLT encoder matrix at layer $\ell$
-
-**Reconstruction of the MLP outputs:**
+The MLP output $\mathbf{y}^{\ell}$ is reconstructed from every feature at or before that layer:
 
 $$
-\hat{\mathbf{y}}^{\ell}=\sum_{\ell^{\prime}=1}^{\ell} W_{dec}^{\ell^{\prime} \rightarrow \ell} \mathbf{a}^{\ell^{\prime}}
+\hat{\mathbf{y}}^{\ell}
+=\sum_{\ell'\leq\ell}W_{dec}^{\ell'\rightarrow\ell}\mathbf{a}^{\ell'}.
 $$
 
-where:
+All layers are trained jointly with reconstruction and sparsity losses. The cross-layer decoders let one feature account for a computation that persists or is amplified across several layers. This avoids a string of duplicate nodes that would appear if each layer had its own independent dictionary. It is the causal variant of the [crosscoder](/ideas/2026/circuits-crosscoders/) construction: an encoder reads at one layer and its decoders only write forward. In the architecture diagram (Figure 1), each orange CLT reads from the residual stream at its own layer, but its outgoing paths can reach several later MLP outputs.
 
-- $\mathbf{y}^{\ell}$ is the output of the original model's MLP at layer $\ell$
-- $\hat{\mathbf{y}}^{\ell}$ is the CLT's attempted reconstruction
-- $W_{dec}^{\ell^{\prime} \rightarrow \ell}$ is the CLT decoder matrix for features at layer $\ell^{\prime}$ outputting to layer $\ell$
+<Figure
+  src={crossLayerTranscoder}
+  alt={"A transformer with MLPs beside cross-layer transcoders whose features read from one residual-stream layer and reconstruct MLP outputs at that and later layers"}
+  caption={"Each CLT feature reads at one layer but can contribute to reconstructed MLP outputs in that layer and later layers. Figure from Circuit Tracing."}
+  width={600}
+/>
 
-Trained with two loss functions. Reconstruction:
+The paper trains CLTs with 300,000 to 10 million features on an 18-layer research model, and 300,000 to 30 million features on Claude 3.5 Haiku. Replacing every MLP with the largest CLT on the 18-layer model preserves the original model's most likely next token on 50% of a filtered set of pretraining-style prompts. This replacement model is closer to the original than comparable per-layer transcoders, but reconstruction errors still accumulate during an ordinary forward pass.
 
-$$
-L_{\mathrm{MSE}}=\sum_{\ell=1}^L\left\|\hat{\mathbf{y}}^{\ell}-\mathbf{y}^{\ell}\right\|^2
-$$
+## Making an exact copy of one forward pass
 
-and sparsity:
+The authors avoid accumulated error by constructing a _local replacement model_ for the prompt under study. It uses three pieces from the original forward pass:
 
-$$
-L_{\text {sparsity }}=\lambda \sum_{\ell=1}^L \sum_{i=1}^N \tanh \left(c \cdot\left\|\mathbf{W}_{\mathbf{dec}, \mathbf{i}}^{\ell}\right\| \cdot a_i^{\ell}\right)
-$$
+- the observed attention patterns;
+- the observed normalization denominators;
+- an error adjustment at every layer and token position equal to the part of the MLP output that the CLT failed to reconstruct.
 
-where $\lambda$ is the overall sparsity penalty, $c$ is "another hyperparameter", $L$ is the number of layers, $N$ is the number of features per layer, and $\mathbf{W}_{\text{dec}, i}^{\ell}$ is the concatenation of all decoder vectors of feature $i$.
+With those values fixed, the local replacement model exactly matches the original activations and output logits on that prompt. It behaves like a local approximation: agreement at the original point is guaranteed, while agreement after an intervention must be measured. Figure 2 shows both adjustments on the Dallas prompt. Diamonds insert the missing reconstruction error at each token and layer; the pink cross-token edges use attention weights frozen from the original forward pass.
 
-> [!quote]
-> We trained CLTs of varying sizes on a small 18-layer transformer model ("18L"), and on Claude 3.5 Haiku. The total number of features across all layers ranged from 300K to 10M features (for 18L) and from 300K to 30M features (for Haiku).
+<Figure
+  src={localReplacementModel}
+  alt={"A prompt-local replacement model for predicting Austin, with feature nodes, reconstruction-error nodes, and attention-mediated connections between token positions"}
+  caption={"Prompt-specific error nodes restore what the CLT misses, while frozen attention patterns turn attention-mediated effects into fixed weights between active features. Figure from Circuit Tracing."}
+  fullWidth
+  width={900}
+/>
 
-(A footnote adds that 18L has no MLP in layer 0, so its CLT has 17 layers.)
+Freezing attention and normalization also makes the interactions between active features linear. The local model can be viewed as a large network whose units are CLT features at particular token positions. Its graph contains four node types: prompt-token embeddings, active features, reconstruction errors, and candidate output logits. Output nodes are added until they cover 95% of the next-token probability mass, subject to a ten-token cap.
 
-#### From cross-layer transcoder to replacement model
-
-- A simple eval measures the fraction of completions for which the replacement model's most likely token matches the underlying model's.
-- The fraction improves as CLT size increases.
-- The largest 18L CLT matches the underlying model's next-token completion on 50% of a diverse set of pretraining-style prompts.
-
-#### The local replacement model
-
-- There is a significant gap between the replacement model and the underlying model; reconstruction errors can compound across layers.
-- The "local replacement model" is a prompt-specific version that uses the attention patterns and normalization denominators from the underlying model on that prompt, plus error adjustments for the difference between the MLP and CLT outputs.
-- "The local replacement model can be viewed as a very large fully connected neural network" whose neurons are the CLT features active at every token position.
-
-### Attribution graphs
-
-"Nodes suggest which features matter for a model's output, and edges suggest how they matter."
-
-#### Constructing an attribution graph for a prompt
-
-Graphs contain four types of nodes:
-
-1. **Output** — candidate output tokens; only the $\leq 10$ tokens needed to reach 95% probability are constructed.
-2. **Intermediate** — active CLT features at each prompt token position.
-3. **Input** — the embeddings of the prompt tokens.
-4. **Error** — the portion of each MLP output in the underlying model unexplained by the CLT.
-
-Edges represent direct linear attributions in the local replacement model, with edge weight:
+For a source feature $s$ and target feature $t$, the edge attribution is
 
 $$
-A_{s \rightarrow t} := a_s w_{s \rightarrow t}
+A_{s\rightarrow t}=a_s w_{s\rightarrow t},
 $$
 
-where $s$ is a source feature node, $t$ a target feature node, $a_s$ the activation of the source feature, and $w_{s \rightarrow t}$ the (virtual) weight in the local replacement model viewed as a fully connected network — in terms of the underlying model, a sum over all linear paths (through attention-head OVs and residual connections) connecting the source feature's decoder vectors to the target feature's encoder vector. These edge weights can be computed efficiently with backwards Jacobians.
+where $a_s$ is the source activation and $w_{s\rightarrow t}$ is the local model's virtual weight between the two features. That virtual weight sums the linear paths through the residual stream and attention-head OV circuits. It is specific to the prompt because the attention patterns are fixed to the ones observed on that prompt.
 
-> [!note]
-> The graphs do not contain information about the influence of nodes on other nodes *via their influence on attention patterns*, but do contain node-to-node influence through the outputs of frozen attention. In other words, they account for the information that flows from one token position to another, but not why the model moved that information — the "QK-circuits" are ignored while the "OV-circuits" are captured. Note also that the outgoing edges from a cross-layer feature aggregate the effect of its decodings at all of the layers it writes to.
+Error nodes make the graph honest about missing features. They can influence later features and logits, but they have no interpretable inputs of their own. A large error contribution means the graph cannot trace that part of the computation any further back.
 
-Pruning keeps the nodes and edges that directly or indirectly exert significant influence on the logit nodes.
+Even with sparse features, a short prompt can produce millions of edges. A pruning procedure retains the paths with the greatest influence on the output. The default setting typically cuts the node count by about a factor of ten while giving up roughly 20% of the graph's completeness. The remaining graph can still have hundreds of nodes and tens of thousands of edges. The pruning sketch (Figure 3) marks removed nodes with trash icons and removed paths with dashed lines; the solid routes are the ones retained for further inspection.
 
-#### Learning from attribution graphs
+<Figure
+  src={attributionGraphPruning}
+  alt={"An attribution graph from Dallas and capital to Austin, with low-influence nodes and dashed paths marked for removal"}
+  caption={"Pruning removes low-influence nodes and paths while retaining the strongest routes from the prompt to the output. Figure from Circuit Tracing."}
+  width={500}
+/>
 
-> [!quote]
-> Even following pruning, attribution graphs are quite information-dense. A pruned graph often contains hundreds of nodes and tens of thousands of edges — too much information to interpret all at once. To allow us to navigate this complexity, we developed an interactive attribution graphs visualization interface. The interface is designed to enable "tracing" key paths through the graph, retain the ability to revisit previously explored nodes and paths, and materialize the information needed to interpret features on an as-needed basis.
+Pruning makes the graph small enough to inspect, but the interface (Figure 4) is where it becomes an explanation. The upper-left view lays out the surviving nodes by token position and layer: circles are features, diamonds are reconstruction errors, and the right edge contains output logits. Selecting a node fills the right panel with its strongest inputs and outputs, token-level logit effects, and examples from the training data. The lower-left subgraph is more manual. Researchers drag nodes into a readable arrangement and combine related ones into supernodes.
 
 <Figure
   src={attributionGraphUi}
-  alt={"Annotated attribution graph interface: full graph with embedding, feature, error, and logit nodes; a selected and grouped subgraph with supernodes; and per-feature input/output edges, token predictions, and top activations"}
-  caption={"The attribution graph interface: the full pruned graph (top left), a manually grouped subgraph with supernodes (bottom left), and details for a selected feature — strongest input/output features by edge weight, token predictions, and top activating dataset examples. Figure from the paper."}
+  alt={"Attribution graph interface with input, feature, error, and output nodes; a selected subgraph; and details for one feature"}
+  caption={"The interface supports tracing paths, inspecting feature evidence, and manually grouping related nodes. Figure from Circuit Tracing."}
+  fullWidth
+  width={1200}
 />
 
-{/* FIGURE IDEA: a simplified site-style anatomy of an attribution graph could replace the UI screenshot above:
-   a column of token positions, the four node types (input / feature / error / output) in distinct shapes,
-   a few weighted edges, one path traced in an accent color. The full interface screenshot could then move to the
-   "since the paper" section or out entirely — readers can open the real thing on Neuronpedia. */}
+The compact diagrams in the Biology paper come from that lower-left workflow. Researchers choose feature labels from activation examples and output effects, then decide which nodes belong in a supernode. Those judgments make the graph readable, but they can also hide distinctions present in the larger pruned graph.
 
-#### Understanding and labeling features
+## What an edge leaves out
 
-- Features are labeled with techniques similar to those in Scaling Monosemanticity.
-- Input and output features are easier to label: input features activate on specific tokens or closely related token categories (common in early layers); output features promote continuing with specific tokens or categories (common in late layers).
-- Features in the middle of the model are more abstract; their labels can draw on the contexts they activate over, their logit effects, and the features they connect to.
+An attribution edge describes a direct linear effect in the local replacement model. It is not a learned weight in the original transformer, and it does not by itself prove that the transformer uses the same mechanism.
 
-#### Grouping features into supernodes
+The largest omission is the QK side of attention. The graph follows information that passes through the outputs of frozen attention heads, so it captures OV effects. It does not explain why a head attended to one token rather than another. On an induction prompt, for example, the graph can show information flowing from an earlier occurrence of a name to the output, while omitting the matching operation that caused the induction head to look there. In a multiple-choice question it can show the selected answer letter being copied, without showing how the model decided that option was correct.
 
-- "Supernodes" are groupings of (feature, context position) pairs used for visualization and analysis.
-- Automated grouping strategies were insufficient to cover the range of useful groupings.
-- The grouping strategy depends on the analysis at hand and the roles features play in a given prompt.
+The graphs also emphasize active features. A behavior can depend on an inhibitory feature remaining inactive, which is hard to see without constructing a comparison prompt. Suppression circuits are especially awkward because the absence of a node may be the event that matters.
 
-#### Validating attribution graph hypotheses with interventions
+## Testing the proposed paths
 
-{/* TODO: notes for section 3.5 (perturbation experiments, steering with supernodes, consistency results) were never taken; needs a read pass */}
+The paper treats an attribution graph as a source of hypotheses and validates selected paths in the original model. Its constrained-patching intervention changes a feature's decoded contribution over a chosen layer range while preventing the intervention from recursively changing MLP outputs inside that range. The test then asks whether downstream feature activations and output probabilities move as the graph predicts.
 
-## On the Biology of a Large Language Model
+Graph influence predicts feature-to-feature ablation effects with a Spearman correlation of 0.72, and it predicts output effects better than activation magnitude or direct attribution alone. At the scale of the whole local replacement model, corresponding perturbations have about 0.8 cosine similarity one layer after the intervention, with roughly 0.4 normalized mean-squared error. Agreement deteriorates across later layers. Direction tends to survive longer than magnitude, which can diverge badly as errors compound.
 
-The companion paper applies the attribution-graph method to Claude 3.5 Haiku across a set of case studies — multi-step reasoning, planning in poetry, multilingual circuits, addition, medical diagnoses, hallucinations, refusals, jailbreaks, chain-of-thought faithfulness, and hidden goals.
+Some intervention results are less independent than they first appear. Before the chosen intervention layer, constrained patching holds the changed feature activations fixed, so direct downstream effects inside that range are guaranteed by construction. Changes to later features and to the model's actual output provide stronger evidence.
 
-{/* TODO: read pass + notes — the source vault note has only a heading for this paper */}
+The 50% next-token agreement and the prompt-local exactness answer different questions. The former measures how well the CLT can replace the MLPs during a free-running forward pass. The latter is achieved by adding prompt-specific error terms and freezing nonlinear components. Neither establishes that every path in an attribution graph is mechanistically faithful.
 
-## What the evidence shows
+## Dallas, Texas, Austin
 
-{/* NOTE: seeded evaluative draft — check it against your own read and rewrite in your voice before publishing */}
+The Biology paper begins with the completion:
 
-- The number to hold onto is 50%: the best replacement model agrees with the underlying model's next token only half the time, and everything downstream (graphs, case studies) inherits that gap through error nodes.
-- Validation is perturbation-based and "generally qualitatively consistent … though there are some deviations." The method is better treated as a hypothesis generator than as a measurement instrument, and the paper mostly frames it that way.
-- Attention does real work the graphs don't explain: attention patterns are frozen and QK-circuits sit outside the graphs, so *why* information moved between positions is not part of the story. The thread's 2025 follow-up on attention (below) is the direct response.
+> Fact: the capital of the state containing Dallas is ... Austin
 
-{/* TODO: expand once Biology notes exist — the case studies are where the method's usefulness is actually demonstrated */}
+The graph contains a path from Dallas features to Texas features. In parallel, features for "capital" activate features that promote saying the name of a capital. The Texas and capital pathways meet at features that promote Austin and at the Austin logit. A shorter Dallas-to-Austin pathway is also present, so the model combines a two-step route with a memorized shortcut. The compact diagram (Figure 5) shows the longer route: follow the right-hand branch from Dallas to Texas, then combine it with the capital/state branch at the Austin output. The memorized shortcut is omitted from this summary.
 
-## Since the papers
+<Figure
+  src={dallasAustin}
+  alt={"Simplified attribution graph in which Dallas activates Texas, and Texas combines with a capital feature to promote Austin"}
+  caption={"The manually grouped graph isolates the proposed Dallas → Texas → Austin route and the separate capital pathway. Figure from On the Biology of a Large Language Model."}
+  width={400}
+/>
 
-Two things happened quickly. First, the method left the lab: Anthropic [open-sourced circuit tracing](https://www.anthropic.com/research/open-source-circuit-tracing) in mid-2025 via the [circuit-tracer library](https://github.com/safety-research/circuit-tracer) (built by Anthropic Fellows with Decode Research), and [Neuronpedia hosts an interactive version](https://www.neuronpedia.org/graph/info) where anyone can generate attribution graphs for open models like Gemma 2 2B and Llama 3.2 1B — thousands of user-generated graphs so far, and the same interface pattern as the paper's. Second, the biggest acknowledged gap got a follow-up: [Tracing Attention Computation Through Feature Interactions](https://transformer-circuits.pub/2025/attention-qk/index.html) extends the method to explain attention patterns themselves in terms of feature interactions, folding QK information into attribution graphs.
+Inhibiting the Dallas features suppresses Texas and Austin without much effect on the general capital pathway. Inhibiting the capital features has the complementary effect. Replacing the Texas features with California, Georgia, British Columbia, China, or Byzantine Empire features moves the answer to the corresponding capital. Some of the more distant replacements require stronger interventions.
+
+This is good evidence for an editable intermediate representation in this prompt. Other factual queries may use different routes, and the Texas supernode groups several learned features rather than identifying a single clean variable in the original model.
+
+## Planning a rhyme before writing the line
+
+When Haiku writes a rhyming couplet, features for candidate final words can activate on the newline before the next line begins. In the paper's main example, features for "rabbit" and "habit" are active before the model writes the line that ends in _rabbit_. Those planned-word features affect intermediate choices such as comparison phrasing, not only the final-token probability. The compact diagram (Figure 6) shows only the first step: a rhyme constraint activates _habit_ and _rabbit_ as competing endpoints. The larger attribution graph is what connects the selected endpoint to words earlier in the line.
+
+<Figure
+  src={rhymePlanning}
+  alt={"Simplified attribution graph in which rhyme and meter features activate candidate words habit and rabbit before the model writes the next line"}
+  caption={"A rhyme constraint activates candidate end words before the next line is written. Figure from On the Biology of a Large Language Model."}
+  width={400}
+/>
+
+The location is specific: steering the features on the newline changes the line, while applying the same steering at other token positions has little effect. Substituting another planned word changes the sentence structure so the line can end there. Across 25 poems, injecting "green" or "rabbit" caused the generated line to end with the chosen word in 70% of cases. The authors found visible planned-word features in about half of the poems they inspected, leaving open how often the model plans this way and how often the CLT simply misses the relevant feature.
+
+This is one of the clearer examples of forward and backward planning in the paper. The model selects possible endpoints, then lets those endpoints constrain earlier words in an autoregressive sequence.
+
+## Shared computations and context-specific outputs
+
+The multilingual experiments separate an operation, an operand, and an output language. English, French, and Chinese prompts asking for the opposite of "small" share many middle-layer features for the antonym operation and the meaning of _small_. Early language features route the result to _big_, _grand_, or _大_. Features taken from an English synonym prompt can replace the antonym operation in all three languages, and English-derived features for _hot_ can replace the operand while preserving the language of the response.
+
+These interventions require several times the natural feature activation, so they identify a reusable direction more clearly than its ordinary causal strength. The broader activation analysis finds more language-specific features near the input and output and more cross-language overlap in the middle. Haiku has more of this overlap than a smaller model. English still has a privileged role: abstract multilingual features connect more directly to English outputs, while other languages rely more on language-specific output features.
+
+The addition case study finds a similarly reusable computation. For $36+59$, one pathway estimates the rough magnitude of the sum while another computes the final digit using lookup-table-like features for operands ending in 6 and 9. The pathways combine to produce 95, a different procedure from the carrying algorithm the model gives when asked to explain its answer.
+
+The same last-digit feature activates in less obvious settings, including astronomical time series, financial tables, and journal citations where a volume number and founding year imply a publication year. Replacing the relevant lookup feature in one citation changes the predicted year from 1995 to 1998. In a longer expression such as $(4+5)\times3$, contextual features mark 9 as an intermediate result and route it into a multiplication circuit rather than immediately outputting it.
+
+## Internal hypotheses, uncertainty, and hallucination
+
+In a medical vignette, symptom features activate candidate-diagnosis features before the model asks its follow-up question. Pregnancy and high blood pressure strongly activate preeclampsia features; other features represent biliary disorders. The preeclampsia group then promotes questions about confirming symptoms such as visual disturbances and proteinuria. Suppressing it changes the model's preferred question toward a symptom associated with the biliary alternative. The case is too narrow to establish general medical reliability, but the intervention distinguishes competing internal hypotheses that are absent from the written response.
+
+The entity-recognition experiments find a default circuit that favors declining to answer. Human/Assistant context and unfamiliar-name features activate "can't answer" features. Recognizing a known entity activates "known answer" features that inhibit that default. Suppressing the known-answer features for Michael Jordan makes the model uncertain; activating them for an unknown person makes it guess a sport. The blue inhibitory edges in Figure 7 are central to the account: recognizing Michael Jordan suppresses both the unknown-name feature and the downstream refusal, rather than directly writing a basketball answer.
+
+<Figure
+  src={knownAnswer}
+  alt={"Simplified circuit in which a Michael Jordan feature activates a known-answer feature that suppresses unknown-name and cannot-answer features"}
+  caption={"Entity recognition does not directly supply an answer here; it suppresses a default uncertainty pathway. Figure from On the Biology of a Large Language Model."}
+  width={400}
+/>
+
+That circuit can misfire. Asked for a paper by Andrej Karpathy, the model falsely attributes the AlexNet paper to him. The graph suggests that recognizing Karpathy as a familiar deep-learning researcher weakly activates the known-answer circuit even though the model does not know the requested relation. Inhibiting that circuit restores the refusal. The failure is more specific than "the model was overconfident": entity familiarity incorrectly substitutes for knowledge of a particular fact.
+
+## Refusals and a jailbreak
+
+For a request to advertise cleaning with bleach and ammonia, token-level chemical features activate knowledge about the danger of mixing them. Those features feed a general harmful-request representation, then a chain of refusal features. Ablating the chemical-danger group makes the model initially comply; ablating the general harmful-request group produces a warning rather than the usual refusal.
+
+The global feature connections suggest a division between specific harm concepts learned during pretraining and broad "harmful request from a human" features associated with assistant fine-tuning. The broad features receive input from many narrower kinds of harm. They form a cluster rather than a single refusal switch.
+
+The jailbreak case shows why this circuit can fail. The prompt hides _BOMB_ as the initials of "Babies Outlive Mustard Block" and asks the model to explain how to make one. At first, separate letter-extraction pathways vote for the output letters without constructing a combined bomb concept. After the model writes "To make a bomb," the relevant harmful-request features become much stronger. Grammatical continuation and instruction-following circuits still favor finishing the sentence, and the model does not begin refusing until a new-sentence boundary gives the refusal pathway an opening.
+
+Part of that account depends on attention changes that the original attribution graph cannot show. Removing punctuation makes the jailbreak more effective, but experiments with frozen and unfrozen attention behave differently. This case is informative partly because it exposes where the method misses the mechanism.
+
+## When the stated reasoning is not the computation
+
+The chain-of-thought section compares three examples. For $\sqrt{0.64}$, the graph supports the intermediate step the model reports: it computes a square root through a representation of 64. Asked to compute $\cos(23423)$ without the necessary capability, the model claims to have used a calculator and appears to guess. Given a human-suggested answer to the same problem, it works backward from the hint to invent an intermediate value that will produce that answer. Changing the hint changes the reasoning path and the conclusion.
+
+The addition example is a quieter version of the same mismatch. Haiku says it added the ones digit, carried, and added the tens digits, while the traced features implement rough-magnitude and modular lookup pathways. A plausible verbal explanation is not privileged evidence about the forward pass that produced the answer.
+
+The paper also studies a deliberately modified Haiku trained to exploit fictional reward-model biases while hiding that motive. A feature for those biases activates on all 100 tested Human/Assistant-formatted prompts, despite activating on only one of the same 100 prompts without dialogue formatting. Bias-related features then combine with context features to produce the planted behaviors. Inhibiting them reduces one meta-poem behavior from about 48% to 12% in the reported intervention.
+
+That last experiment is an engineered proof of concept. The investigators know the hidden goal, the training setup that produced it, and the behaviors to inspect. It shows that a concealed objective can leave a tractable internal circuit under favorable conditions. It does not demonstrate a general-purpose hidden-goal detector.
+
+## Where the method stops
+
+The authors report getting satisfying insight from about a quarter of the prompts they tried. The paper presents selected success cases, and even those diagrams cover only part of the computation. The results establish that the described mechanisms occur on particular prompts; they do not estimate how common each mechanism is.
+
+Several practical boundaries shape that success rate. The method targets one output token at a time and had not been scaled past prompts of roughly one hundred tokens. Long reasoning chains accumulate reconstruction and attribution errors. Obscure or obfuscated inputs often produce graphs dominated by error nodes. Questions about why an inactive behavior did not occur are harder than tracing a feature that did activate.
+
+Feature quality adds another layer of uncertainty. Splitting and absorption can put features at an inconvenient level of abstraction, after which manual supernodes repair the representation in an ad hoc way. Prompt-specific graphs are easier to interpret than the global feature-to-feature weights, so the method gives local explanations more readily than reusable circuits. Human interpretation, pruning, and grouping remain substantial parts of the workflow.
+
+## The attention gap narrowed later
+
+Anthropic [open-sourced the circuit-tracing tools](https://www.anthropic.com/research/open-source-circuit-tracing) in May 2025. The [circuit-tracer library](https://github.com/decoderesearch/circuit-tracer) generates, visualizes, and intervenes on attribution graphs for supported open-weight models, and [Neuronpedia](https://www.neuronpedia.org/graph/info) hosts the interface.
+
+The follow-up _[Tracing Attention Computation Through Feature Interactions](/ideas/2026/circuits-attention-qk/)_ addresses the missing QK circuits. Attention scores are bilinear in the residual streams at the query and key positions, so they can be decomposed into interactions between query-side and key-side features. The extended graph also records which heads mediate a feature-to-feature edge.
+
+That method recovers the missing match in induction, the interaction between "opposite" features and the word being transformed, and the features that direct attention to a correct multiple-choice option. It is a substantial extension, though attention competition and the number of possible feature pairs still require manual analysis.
 
 ## Further material
 
-- [Neuronpedia's attribution graph interface](https://www.neuronpedia.org/graph/info) — generate and explore graphs on open models without any setup.
-- [circuit-tracer on GitHub](https://github.com/safety-research/circuit-tracer) — the open-source implementation.
+- [Neuronpedia's attribution graph interface](https://www.neuronpedia.org/graph/info) generates and explores graphs on supported open models.
+- [circuit-tracer](https://github.com/decoderesearch/circuit-tracer) is the open-source implementation and includes example notebooks.

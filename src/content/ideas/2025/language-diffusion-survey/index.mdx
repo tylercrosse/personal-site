@@ -15,43 +15,32 @@ image:
 audience: 'All'
 cite: true
 sources:
-  - title: 'Structured Denoising Diffusion Models in Discrete State-Spaces'
-    url: 'https://arxiv.org/abs/2107.03006'
-    authors: 'Austin et al.'
-    year: '2021'
-  - title: 'Scaling up Masked Diffusion Models on Text'
-    url: 'https://arxiv.org/abs/2410.18514'
-    authors: 'Nie et al.'
-    year: '2024'
-  - title: 'Large Language Diffusion Models'
-    url: 'https://arxiv.org/abs/2502.09992'
-    authors: 'Nie et al.'
-    year: '2025'
-  - title: 'Block Diffusion: Interpolating Between Autoregressive and Diffusion Language Models'
-    url: 'https://arxiv.org/abs/2503.09573'
-    authors: 'Arriola et al.'
-    year: '2025'
-  - title: 'd1: Scaling Reasoning in Diffusion Large Language Models via Reinforcement Learning'
-    url: 'https://arxiv.org/abs/2504.12216'
-    authors: 'Zhao et al.'
-    year: '2025'
+  - austin2021d3pm
+  - nie2024masked
+  - nie2025llada
+  - arriola2025block
+  - zhao2025d1
 credits:
   - title: 'Forward/reverse diffusion figure'
-    author: 'Sohl-Dickstein et al., "Deep Unsupervised Learning using Nonequilibrium Thermodynamics"'
-    url: 'https://arxiv.org/abs/1503.03585'
+    sourceKey: sohldickstein2015diffusion
     changes: 'reproduced in my slides'
+    assets:
+      - 'slide-sohl-dickstein.png'
   - title: 'D3PM Figure 2'
-    author: 'Austin et al., "Structured Denoising Diffusion Models in Discrete State-Spaces"'
-    url: 'https://arxiv.org/abs/2107.03006'
+    sourceKey: austin2021d3pm
     changes: 'reproduced in my slides'
+    assets:
+      - 'slide-d3pm.png'
   - title: 'LLaDA Figure 2'
-    author: 'Nie et al., "Large Language Diffusion Models"'
-    url: 'https://arxiv.org/abs/2502.09992'
+    sourceKey: nie2025llada
     changes: 'reproduced in my slides'
+    assets:
+      - 'slide-llada.png'
   - title: 'Block Diffusion Figure 1'
-    author: 'Arriola et al., "Block Diffusion"'
-    url: 'https://arxiv.org/abs/2503.09573'
+    sourceKey: arriola2025block
     changes: 'reproduced in my slides'
+    assets:
+      - 'slide-block-diffusion.png'
 ---
 
 import Figure from "../../../../components/Figure.astro";
@@ -98,7 +87,7 @@ Autoregressive models and normalizing flows have tractable densities you can com
 
 The earliest thread I could trace is a 2008 paper on denoising autoencoders by Vincent, Larochelle, Bengio, and Manzagol. The idea is simple: randomly zero out parts of the input and train the model to fill in the blanks. In 2013 Bengio and collaborators pushed it further and proved that training a model to denoise implicitly estimates the data-generating process, and that alternating between sampling from the denoising model and the corruption process converges to that estimate. In other words, any denoising autoencoder can be turned into a generative model.
 
-Sohl-Dickstein et al. made the connection to physics in 2015. Their framing borrowed from nonequilibrium thermodynamics: gradually add noise to data through a forward diffusion process, then learn to reverse it. The analogy I like is a drop of ink in water. The forward process is watching the ink spread out until it is uniformly dispersed. The learned reverse process is inferring, from the dispersed state, where the drop went in.
+Sohl-Dickstein et al. made the connection to physics in 2015 [@sohldickstein2015diffusion]. Their framing borrowed from nonequilibrium thermodynamics: gradually add noise to data through a forward diffusion process, then learn to reverse it. The analogy I like is a drop of ink in water. The forward process is watching the ink spread out until it is uniformly dispersed. The learned reverse process is inferring, from the dispersed state, where the drop went in.
 
 <Figure
   src={sohlDicksteinImg}
@@ -114,7 +103,7 @@ Diffusion came back around 2020 from two directions at once. Song and Ermon's sc
 
 ## Getting diffusion to work on text
 
-Everything above operates on continuous values, where adding Gaussian noise to a pixel makes sense. Text is a sequence of discrete tokens, and there is no obvious way to add a little bit of noise to a token. This is the core obstacle for language diffusion, and the paper that cracked it is Austin et al. (2021), "Structured Denoising Diffusion Models in Discrete State-Spaces" (D3PM).
+Everything above operates on continuous values, where adding Gaussian noise to a pixel makes sense. Text is a sequence of discrete tokens, and there is no obvious way to add a little bit of noise to a token. This is the core obstacle for language diffusion, and the paper that cracked it is _Structured Denoising Diffusion Models in Discrete State-Spaces_ (D3PM) [@austin2021d3pm].
 
 Their move was to define corruption through transition matrices over the vocabulary: at each timestep, each token either stays put or transitions according to some structured process. The variant that stuck is the absorbing-state process, where tokens randomly turn into a special [MASK] token. Run it long enough and the whole sequence is masks; the reverse process learns to unmask.
 
@@ -134,9 +123,9 @@ Between 2021 and 2024 there was a lot of work I skipped over, including approach
 
 The line that did pan out is masked diffusion at scale:
 
-**Scaling up Masked Diffusion Models on Text** (Nie et al., October 2024) showed that masked diffusion models follow scaling laws similar to autoregressive models, with a constant multiplier. Their 1.1B parameter model was competitive with GPT-2 1.5B and, on some benchmarks, Llama 2 7B. The multiplier is real, though: reaching the same validation loss took about 16x the compute of the autoregressive baseline.
+**Scaling up Masked Diffusion Models on Text** [@nie2024masked], from October 2024, showed that masked diffusion models follow scaling laws similar to autoregressive models, with a constant multiplier. Their 1.1B parameter model was competitive with GPT-2 1.5B and, on some benchmarks, Llama 2 7B. The multiplier is real, though: reaching the same validation loss took about 16x the compute of the autoregressive baseline.
 
-**LLaDA** (Nie et al., February 2025, "Large Language Diffusion Models") scaled the same recipe to 8B parameters and 2.3 trillion training tokens, matching or beating Llama 2 7B and Llama 3 8B on a number of benchmarks. Because there is no causal mask, the model attends to the whole sequence in both directions. That shows up concretely on reversal tasks: given the last lines of a poem, predict what came before. LLaDA beat much larger autoregressive models, including GPT-4o, on that task. They also introduced a remasking trick at sampling time: after predicting all masked tokens, re-mask the low-confidence predictions and try them again.
+**LLaDA** [@nie2025llada], from February 2025, scaled the same recipe to 8B parameters and 2.3 trillion training tokens, matching or beating Llama 2 7B and Llama 3 8B on a number of benchmarks. Because there is no causal mask, the model attends to the whole sequence in both directions. That shows up concretely on reversal tasks: given the last lines of a poem, predict what came before. LLaDA beat much larger autoregressive models, including GPT-4o, on that task. They also introduced a remasking trick at sampling time: after predicting all masked tokens, re-mask the low-confidence predictions and try them again.
 
 <Figure
   src={lladaImg}
@@ -146,7 +135,7 @@ The line that did pan out is masked diffusion at scale:
   fullWidth
 />
 
-**Block Diffusion** (Arriola et al., March 2025) is a hybrid: generate fixed-size blocks autoregressively, but use diffusion within each block. Pure diffusion models regenerate everything from scratch and can't reuse a KV cache the way autoregressive decoding can; generating block by block restores that, while keeping parallel sampling inside each block.
+**Block Diffusion** [@arriola2025block], from March 2025, is a hybrid: generate fixed-size blocks autoregressively, but use diffusion within each block. Pure diffusion models regenerate everything from scratch and can't reuse a KV cache the way autoregressive decoding can; generating block by block restores that, while keeping parallel sampling inside each block.
 
 <Figure
   src={blockDiffusionImg}
@@ -156,7 +145,7 @@ The line that did pan out is masked diffusion at scale:
   fullWidth
 />
 
-**d1** (Zhao et al., April 2025) tackles post-training, which LLaDA largely skipped. They fine-tune LLaDA on the s1k reasoning dataset, then apply diffu-GRPO, a critic-free RL algorithm adapted for the non-sequential nature of diffusion generation. The gains on math and reasoning benchmarks over the base model are substantial.
+**d1** [@zhao2025d1], from April 2025, tackles post-training, which LLaDA largely skipped. They fine-tune LLaDA on the s1k reasoning dataset, then apply diffu-GRPO, a critic-free RL algorithm adapted for the non-sequential nature of diffusion generation. The gains on math and reasoning benchmarks over the base model are substantial.
 
 ## Why bother?
 
@@ -185,26 +174,22 @@ I gave a later talk at the same paper club:
 
 <PostLink slug="2025/hierarchical-reasoning-models" size="md" />
 
-## References
+## Further reading
+
+The wider reading around the five surveyed papers.
 
 Background on diffusion:
 
 - [Extracting and Composing Robust Features with Denoising Autoencoders](https://dl.acm.org/doi/10.1145/1390156.1390294), Vincent, Larochelle, Bengio, Manzagol, 2008
 - [Generalized Denoising Auto-Encoders as Generative Models](https://arxiv.org/abs/1305.6663), Bengio et al., 2013
-- [Deep Unsupervised Learning using Nonequilibrium Thermodynamics](https://arxiv.org/abs/1503.03585), Sohl-Dickstein et al., 2015
 - [Improved Techniques for Training Score-Based Generative Models](https://arxiv.org/abs/2006.09011), Song & Ermon, 2020
 - [Denoising Diffusion Probabilistic Models](https://arxiv.org/abs/2006.11239), Ho et al., 2020
 - [Score-Based Generative Modeling Through Stochastic Differential Equations](https://arxiv.org/abs/2011.13456), Song et al., 2020
 
-Language diffusion:
+Language diffusion (beyond the surveyed papers):
 
-- [Structured Denoising Diffusion Models in Discrete State-Spaces](https://arxiv.org/abs/2107.03006), Austin et al., 2021
 - [Diffusion-LM Improves Controllable Text Generation](https://arxiv.org/abs/2205.14217), Li et al., 2022
 - [DiffuSeq: Sequence to Sequence Text Generation with Diffusion Models](https://arxiv.org/abs/2210.08933), Gong et al., 2022
-- [Scaling up Masked Diffusion Models on Text](https://arxiv.org/abs/2410.18514), Nie et al., 2024
-- [Large Language Diffusion Models](https://arxiv.org/abs/2502.09992), Nie et al., 2025
-- [Block Diffusion: Interpolating Between Autoregressive and Diffusion Language Models](https://arxiv.org/abs/2503.09573), Arriola et al., 2025
-- [d1: Scaling Reasoning in Diffusion Large Language Models via Reinforcement Learning](https://arxiv.org/abs/2504.12216), Zhao et al., 2025
 
 Misc:
 

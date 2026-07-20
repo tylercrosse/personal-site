@@ -15,16 +15,16 @@ image:
   alt: 'Moedbius style CUDA vs. Intel'
 cite: true
 sources:
-  - title: 'Debunking the CUDA Myth Towards GPU-based AI Systems'
-    url: 'https://arxiv.org/abs/2501.00210'
-    authors: 'Lee, Lim, et al.'
-    venue: 'ISCA'
-    year: '2025'
+  - lee2025cudamyth
 credits:
   - title: 'Gaudi architecture, GEMM utilization, LLM energy-efficiency, and PagedAttention figures (Figures 1, 5, 13, 16)'
-    author: 'Lee et al., "Debunking the CUDA Myth Towards GPU-based AI Systems"'
-    url: 'https://arxiv.org/abs/2501.00210'
+    sourceKey: lee2025cudamyth
     changes: 'reproduced in my slides'
+    assets:
+      - 'slide-gaudi-architecture.png'
+      - 'slide-gemm-utilization.png'
+      - 'slide-llm-energy.png'
+      - 'slide-vllm-paged-attention.png'
 ---
 
 import Figure from "../../../../components/Figure.astro";
@@ -37,7 +37,7 @@ import vllmImg from "./slide-vllm-paged-attention.png";
 
 In November 2025 I presented this paper for the paper-reading portion of Georgia Tech's CS 8803: GPU Hardware and Software. There's no talk video for this one; the class recording includes other students and isn't mine to publish. This post is the written version, and you can [download the slide deck (PDF, 3.2MB)](/ideas/debunking-the-cuda-myth/cuda-myth-slides.pdf).
 
-The paper is [Debunking the CUDA Myth Towards GPU-based AI Systems](https://arxiv.org/abs/2501.00210) (Lee, Lim, et al., ISCA 2025), the first comprehensive characterization of Intel's Gaudi NPU as a serious alternative to NVIDIA GPUs for AI serving. I picked it because it asks a question I kept circling all semester: NVIDIA's dominance is usually attributed to "the CUDA moat," but what exactly is the moat? The instruction set? The kernel programming model? The years of library engineering on top? The paper gets at this by asking three concrete questions about Gaudi-2:
+The paper is _Debunking the CUDA Myth Towards GPU-based AI Systems_ [@lee2025cudamyth], the first comprehensive characterization of Intel's Gaudi NPU as a serious alternative to NVIDIA GPUs for AI serving. I picked it because it asks a question I kept circling all semester: NVIDIA's dominance is usually attributed to "the CUDA moat," but what exactly is the moat? The instruction set? The kernel programming model? The years of library engineering on top? The paper gets at this by asking three concrete questions about Gaudi-2:
 
 1. How does its hardware performance compare to an A100?
 2. Is it programmable enough for real-world, low-level optimization?
@@ -132,9 +132,8 @@ I wrote up the course this talk was part of:
 
 <PostLink slug="2026/gpu-retro" size="md" />
 
-## References
+## Further reading
 
-- [Debunking the CUDA Myth Towards GPU-based AI Systems](https://arxiv.org/abs/2501.00210), Lee, Lim, et al., 2025
-  - [ISCA 2025 proceedings version](https://dl.acm.org/doi/10.1145/3695053.3731050)
+- [ISCA 2025 proceedings version](https://dl.acm.org/doi/10.1145/3695053.3731050) of the paper (peer-reviewed)
 - [Intel Gaudi 3 AI Accelerator white paper](https://www.intel.com/content/www/us/en/content-details/817486/intel-gaudi-3-ai-accelerator-white-paper.html), Intel
 - [vLLM](https://github.com/vllm-project/vllm) and [FBGEMM](https://github.com/pytorch/FBGEMM), the serving and kernel baselines used in the case studies

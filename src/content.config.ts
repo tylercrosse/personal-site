@@ -69,31 +69,36 @@ const ideas = defineCollection({
         // Show the CC BY 4.0 license line. Defaults to `cite` when omitted, so
         // opting into a citation opts into the licence too; set false to suppress.
         license: z.boolean().optional(),
-        // Primary source(s) this post is notes on. Credits the original work in
-        // the footer so readers cite the source, not these notes.
-        sources: z
-          .array(
-            z.object({
-              title: z.string(),
-              url: z.string().optional(),
-              authors: z.string().optional(),
-              year: z.string().optional(),
-              venue: z.string().optional(),
-            })
-          )
-          .optional(),
+        // Primary source(s) this post is notes on: bib keys that resolve
+        // against the article's sibling references.bib. They render inside the
+        // auto References section (starred, with a "cite the original" line —
+        // see rehypeArticleCitations.mjs) so readers cite the source, not these
+        // notes. Citation metadata lives only in the .bib.
+        sources: z.array(z.string()).optional(),
         // Third-party media used under licence (TASL attribution). One entry per
-        // asset that carries an obligation; public-domain and AI-generated images
-        // need none.
+        // asset that carries an obligation; public-domain and AI-generated
+        // images need none. `title` describes the media. Two ways to name the
+        // source, by what the media came from:
+        //   - `sourceKey` — a bib key, when the media is a figure from a work
+        //     the article cites. Renders as the "Figures:" note under the
+        //     References list, citing that work by number.
+        //   - `author` + `url` (+ `license`/`licenseUrl`) — when the source is
+        //     not a scholarly work (a stock photo, a CC-licensed image). Renders
+        //     in the PostCredits footer, where a bibliography entry would not fit.
         credits: z
           .array(
             z.object({
               title: z.string().optional(),
+              sourceKey: z.string().optional(),
               author: z.string().optional(),
               url: z.string().optional(),
               license: z.string().optional(),
               licenseUrl: z.string().optional(),
               changes: z.string().optional(),
+              // Article-local file(s) this entry covers, relative to the post
+              // directory. Provenance only — audited by audit-metadata.mjs, not
+              // rendered in the footer.
+              assets: z.array(z.string()).optional(),
             })
           )
           .optional(),

@@ -8,9 +8,11 @@ import FormattedDate from "../components/FormattedDate.astro";
 import TableOfContents from "../components/TableOfContents.astro";
 import Comments from "../components/Comments.astro";
 import PostCredits from "../components/PostCredits.astro";
+import ReferencePopover from "../components/ReferencePopover.astro";
 import SeriesNav from "../components/SeriesNav.astro";
 import SeriesPill from "../components/SeriesPill.astro";
 import type { SeriesInfo } from "../utils/series";
+import type { MediaCredit } from "../utils/referenceFooter";
 import BaseLayout from "./BaseLayout.astro";
 import { getIconForType, getColorForType, capitalize } from "../utils/postIcons";
 import { getBlogPostingStructuredData } from "../utils/structuredData";
@@ -21,10 +23,13 @@ import {
   type TopicLandingPage,
 } from "../config/topicLandingPages";
 
-type Props = CollectionEntry<"ideas">["data"] & {
+type Props = Omit<CollectionEntry<"ideas">["data"], "credits"> & {
   headings?: MarkdownHeading[];
   readingTimeText: string;
   series?: SeriesInfo | null;
+  // Pre-filtered by footerMediaCredits in pages/ideas/[...slug].astro to the
+  // non-bib media credits; sources and bib-backed credits render in References.
+  credits?: MediaCredit[];
 };
 
 const {
@@ -45,7 +50,6 @@ const {
   series,
   cite,
   license,
-  sources,
   credits,
 } = Astro.props;
 
@@ -335,15 +339,65 @@ const postTopics = [...topicsForPost.values()];
     }
 
     :global(.csl-bib-body) {
+      margin: 0;
+      padding-left: 2.25em;
       font-size: 0.7em;
     }
 
     :global(.csl-entry) {
       margin-bottom: 0.8em;
-      margin-left: 1.5em;
-      display: list-item;
-      list-style: decimal;
+      margin-left: 0;
+      padding-left: 0.3em;
+      text-indent: 0;
       line-height: 1.6em;
+    }
+
+    :global(#refs .csl-entry::marker),
+    :global([data-footnotes] > ol > li::marker) {
+      color: var(--sol-7);
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+
+    :global(#refs a[target="_blank"]) {
+      overflow-wrap: anywhere;
+      text-underline-offset: 0.15em;
+    }
+
+    :global(#refs a[target="_blank"]::after) {
+      content: " ↗";
+      white-space: nowrap;
+    }
+
+    /* Primary-source role and figure attributions, rendered inside the
+       References section. */
+    :global(.refs-note) {
+      margin: 0 0 1em;
+      font-size: 0.75em;
+      color: var(--base01);
+    }
+
+    :global(.refs-figures) {
+      margin: 1em 0 0;
+    }
+
+    :global(.refs-primary) {
+      color: var(--sol-7);
+    }
+
+    :global([data-footnotes]) {
+      margin-top: 3rem;
+      border-top: 1px solid var(--main-border-color);
+      font-size: 0.75em;
+    }
+
+    :global([data-footnotes] > ol) {
+      padding-left: 2.25em;
+    }
+
+    :global([data-footnotes] > ol > li) {
+      margin-bottom: 0.8em;
+      padding-left: 0.3em;
     }
 
     /* Responsive adjustments for ToC */
@@ -447,13 +501,13 @@ const postTopics = [...topicsForPost.values()];
         url={postUrl.href}
         cite={cite}
         license={license}
-        sources={sources}
         credits={credits}
       />
       {series && <SeriesNav series={series} />}
       <Comments />
     </div>
   </article>
+  <ReferencePopover />
 
   <script type="module" is:inline>
     const MERMAID_BLOCK_SELECTOR =

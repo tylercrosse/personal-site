@@ -1,0 +1,196 @@
+---
+title: 'Notes on Tracing Attention Computation Through Feature Interactions'
+description: 'Notes on QK attributions, attention-head loadings, and what feature interactions reveal about why a transformer attends to one token rather than another.'
+date: '2026-07-19'
+status: 'in-progress'
+type: 'note'
+tags: ['mechanistic-interpretability', 'deep-learning', 'research', 'AI-safety']
+category: ['ideas']
+draft: false
+audience: 'All'
+sources:
+  - kamath2025tracing
+credits:
+  - title: 'QK attribution and attention-circuit figures'
+    sourceKey: kamath2025tracing
+    assets:
+      - 'attention-qk-score-decomposition.png'
+      - 'attention-qk-induction-circuit.jpg'
+      - 'attention-qk-concordance-circuit.jpg'
+media_subpath: "/ideas/circuits-attention-qk/"
+parent: '2026/transformer-circuits'
+order: 7
+image:
+  path: 'hero1.png'
+  alt: 'Abstract biology'
+hideCaption: true
+---
+
+import Figure from "../../../../components/Figure.astro";
+import scoreDecomposition from "./attention-qk-score-decomposition.png";
+import inductionCircuit from "./attention-qk-induction-circuit.jpg";
+import concordanceCircuit from "./attention-qk-concordance-circuit.jpg";
+
+Notes on _Tracing Attention Computation Through Feature Interactions_ [@kamath2025tracing], from Anthropic's [Transformer Circuits thread](/ideas/2026/transformer-circuits/).
+
+The [earlier attribution-graphs post](/ideas/2026/circuits-attribution-graphs/) ended with a conspicuous gap. Its graphs could show information moving from one token position to another through attention, but not why the head chose that source position. In the induction prompt
+
+> I always loved visiting Aunt Sally. Whenever I was feeling sad, Aunt
+
+the graph showed a _Sally_ feature being copied from the first occurrence to the final position. That is a description of the head's OV circuit: what it moved and how that information affected the output. The missing QK circuit is the rule that selected the earlier _Sally_ token in the first place.
+
+This paper adds that part of the account. It decomposes an attention score into interactions between features at the query and key positions, then decomposes an attribution-graph edge into the heads that carried it. Used together, those two decompositions connect three questions: which features communicate, which heads carry the message, and which feature matches cause those heads to look where they do.
+
+## An attention score is already a pairwise interaction
+
+For head $h$, the pre-softmax score from query position $q$ to key position $k$ is
+
+$$
+s_h(q,k)
+=\frac{(W_Q^h\mathbf{x}_q)^\top(W_K^h\mathbf{x}_k)}{\sqrt{d_h}}
+=\frac{\mathbf{x}_q^\top W_{QK}^h\mathbf{x}_k}{\sqrt{d_h}},
+\qquad
+W_{QK}^h=(W_Q^h)^\top W_K^h.
+$$
+
+The score is bilinear: it is linear in the query residual stream when the key is fixed, and linear in the key residual stream when the query is fixed. That makes it possible to insert sparse-autoencoder decompositions for both positions. Write them as
+
+$$
+\mathbf{x}_q=\mathbf{b}+\boldsymbol{\epsilon}_q+
+\sum_i a_i^{(q)}\mathbf{v}_i,
+\qquad
+\mathbf{x}_k=\mathbf{b}+\boldsymbol{\epsilon}_k+
+\sum_j a_j^{(k)}\mathbf{v}_j,
+$$
+
+where $\mathbf{v}_i$ is a feature direction, $a_i$ its activation, $\mathbf{b}$ the decoder bias, and $\boldsymbol{\epsilon}$ the reconstruction error. Multiplying out the score produces feature-feature, feature-bias, bias-bias, and error terms. The interpretable feature-pair term is
+
+$$
+C_{ij}^{h}(q,k)
+=\frac{a_i^{(q)}a_j^{(k)}}{\sqrt{d_h}}
+\mathbf{v}_i^\top W_{QK}^h\mathbf{v}_j.
+$$
+
+Summing every term, including the bias and error terms, recovers $s_h(q,k)$. The largest $C_{ij}$ terms say which query-side and key-side features made that token pair attractive to the head. A query feature for an antonym request can interact with a key feature marking the adjective whose antonym was requested; a query feature for producing a multiple-choice answer can interact with a key feature marking the correct option. The expansion figure groups the algebra by what can be interpreted: feature-feature pairs on the left, feature-error terms in the middle, then bias and error terms that complete the score.
+
+<Figure
+  src={scoreDecomposition}
+  alt={"Expansion of an attention score into feature-feature, feature-error, feature-bias, bias-bias, and error-error interaction terms"}
+  caption={"Expanding both residual streams makes the feature-pair contribution explicit while retaining bias and reconstruction-error terms needed to recover the full score. Figure from Tracing Attention Computation Through Feature Interactions."}
+  fullWidth
+  width={1000}
+/>
+
+There is a useful distinction here. The method decomposes a particular score, not the head as a whole. The same head can have different active feature pairs on another prompt. Calling something an "antonym head" is therefore shorthand for the role it plays in the example, not a claim that the head has one stable meaning across the model's input distribution.
+
+Normalization and positional encodings complicate the formula without changing its basic shape. If normalization sits before $W_Q$ and $W_K$, the feature vectors are passed through its local linearization. Rotary positional embeddings make the effective transformation depend on $q$ and $k$. In either case, the decomposition remains a bilinear interaction after the appropriate position-dependent transformations.
+
+## A score is not yet an attention pattern
+
+The actual attention weight compares every eligible key position:
+
+$$
+A^h_{qk}=\frac{\exp s_h(q,k)}
+{\sum_{k'\leq q}\exp s_h(q,k')}.
+$$
+
+This matters for what counts as an explanation. Large positive terms at _Sally_ may explain why its score is high, but the head attends there because that score wins a competition. An account may also need the terms that suppress another name, or the positional contribution that favors the most recent matching occurrence.
+
+QK attributions are available for all query-key pairs and include negative terms, so the missing information is not inaccessible. The method does not yet decide which losing positions are the relevant counterfactuals or automatically surface the inhibitory terms that mattered. The paper's examples mostly inspect the selected position and nearby alternatives by hand. It is better to read the method as a decomposition of the evidence entering softmax than as a complete decomposition of the softmax decision.
+
+## Finding the heads behind a graph edge
+
+QK terms explain why one head attends from $q$ to $k$, but first the analysis has to identify which heads matter to the model behavior. The original circuit-tracing graphs did not make that easy. A cross-layer-transcoder edge can span several transformer layers, and information can travel between its endpoints along many combinations of attention heads. The number of possible head paths grows exponentially with the number of intervening layers.
+
+The paper avoids enumerating those paths by placing feature decompositions at every residual-stream layer. Each graph edge now crosses at most one attention layer. An adjacent-layer edge can be separated into residual, MLP, and attention contributions; the attention contribution can then be split by head.
+
+For a source feature $s$ at position $p_s$ and a target feature $t$ at position $p_t$, the loading assigned to head $h$ is
+
+$$
+L_h(s\rightarrow t)
+=a_s a_t
+\left(\mathbf{v}_t^\top W_{OV}^{h}\mathbf{v}_s\right)
+A^h_{p_t p_s}.
+$$
+
+The middle factor measures how the head's OV circuit maps the source direction into the target direction. The last factor is how much the target position attends to the source position. Summing $L_h$ across the heads in that layer gives the attention-mediated part of the edge. An edge can still be shared by several heads, but it can no longer hide a chain through heads in several layers.
+
+In practice, the authors use weakly causal crosscoders rather than unrelated SAEs at every layer. A weakly causal feature reads at layer $\ell$ and reconstructs the residual stream at $\ell$ and later layers. This lets a representation persist across layers without appearing as a chain of near-duplicate features. Unlike the cross-layer transcoders in the original attribution graphs, these crosscoders are used to decompose representations, not to replace nonlinear MLP computation. Attributions through the MLPs therefore use local gradients and can be specific to the prompt and operating point.
+
+That trade is easy to miss. Checkpointing makes head loadings tractable and improves reconstruction enough to keep error nodes from dominating, but it gives up some of the clean linear-replacement-model interpretation of the previous graphs.
+
+## Induction contains several matches at once
+
+The induction example shows why feature-pair terms are more informative than an attention heatmap. At the final _Aunt_, heads with large loadings on the relevant graph edges receive positive QK contributions from query-side features for family titles. On the earlier _Sally_, two kinds of key feature contribute: generic name features and features for the name of an aunt or uncle. The model is not relying on a single exact-match detector. A broad search for names operates alongside a more specific search for names attached to family titles.
+
+There is a second attentional step earlier in the circuit. On the first _Sally_, query features for a first name interact with key features for a title preceding a name, active on words such as _Aunt_ and _Mr._ This moves information about the title onto the name token. Later heads can then retrieve _Sally_ as the name associated with _Aunt_. The diagram below shows the later retrieval step. The horizontal line through the induction head is the QK match between the final _Aunt_ and the earlier _Sally_; the upper path is the OV effect that carries _Sally_ toward the output.
+
+<Figure
+  src={inductionCircuit}
+  alt={"Induction circuit in which the final Aunt position attends to the earlier Sally position using family-title and associated-name features, then copies Sally to the output"}
+  caption={"The QK interaction selects the earlier name associated with “Aunt”; the head's OV circuit then moves the Sally feature toward the output. Figure from Tracing Attention Computation Through Feature Interactions."}
+/>
+
+The longer completion makes the parallelism clearer:
+
+> I always loved visiting Aunt Mary Sue. Whenever I was feeling sad, Aunt Mary
+
+Haiku predicts _Sue_. One QK interaction matches a query-side _Mary_ feature with a key-side feature for the token after _Mary_. Another independently matches features for names of aunts or uncles. The cross-terms are weak, so this cannot be reduced to one outer product between a single query component and a single key component. The QK attribution matrix has rank of at least two, with further contributions from a generic bias toward name tokens.
+
+The causal tests intervene only on selected feature components as they enter the QK circuits of high-loading heads. Strengthening or weakening the family-name features changes both the attention patterns and the completion. The experiments steer roughly 3–10% of the model's heads. When the remaining attention patterns are frozen, fewer than half as many steered heads produce the same effect. The paper interprets this as evidence consistent with the hydra effect: when one route is disrupted, downstream heads compensate. It does not establish whether those heads implement the same rule across other prompts.
+
+Positional information is still missing from this account. If several titled names occur, a useful induction circuit must resolve recency or some other positional preference. The feature interactions explain semantic matching in these prompts, but not that selection rule.
+
+## Tagging the word to transform
+
+In the French prompt _Le contraire de "petit" est "_, Haiku predicts _grand_. The earlier attribution graph showed a path from features for _small_ to features for _large_, but could not test the proposed role of "opposite heads."
+
+Head loadings narrow the edge to a limited group of heads. Their QK terms show an antonym-request feature on the query side interacting with two kinds of key feature on _petit_: one marks a word whose opposite or alternative has been requested, while another more generally marks adjectives and modifiers. The circuit mixes a precise retrieval cue with a looser heuristic that searches for a plausible adjective.
+
+Suppressing the query-side antonym features reduces the probability of _grand_ and brings up French synonyms of _petit_, including _peu_ and _faible_. Suppressing the general adjective features on the key side has a smaller effect. This is good evidence that the interaction helps select the operand for the transformation. It is not evidence that the heads themselves perform the semantic small-to-large mapping; the OV paths and downstream features carry that part of the computation.
+
+## Finding an answer is separate from knowing it
+
+For a multiple-choice question about the year World War II ended, the model correctly selects option B, 1945. The original graph could follow the letter _B_ to the output but could not explain why the model retrieved that option rather than A or C.
+
+The new analysis finds query features for contexts that require a specific answer, including multiple-choice answer syntax. At the options, these interact positively with features marking a correct answer. Features marking false statements contribute negatively at incorrect options. More generic option features and a query-side bias also encourage attention to answer choices regardless of correctness. The head therefore combines a task-specific selection signal with a broad tendency to look at anything formatted as an option.
+
+Suppressing the correct-answer features on 1945 weakens the prediction of B. Activating them on a different option can make the model output that option's letter. These interventions support the proposed retrieval mechanism, but they move the unanswered question one step back: how did the model decide that 1945 was correct? The graph connects that feature to same-position 1945/end-of-war representations and to question features, but reconstruction-error nodes obscure the cross-token computation. QK attribution can explain how a computed answer tag is used without explaining how the tag was computed.
+
+## Concordance and discordance without an explicit answer
+
+The paper's most unexpected case compares two prompts:
+
+> The color of a banana is yellow?
+
+> The color of a banana is red?
+
+Haiku answers yes to the first and no to the second. A natural hypothesis is that it first retrieves the color of a banana and then compares that answer with the stated color. The traced circuit does not show a clean intermediate answer followed by an equality check. Instead, different groups of heads directly detect compatible and incompatible feature pairs.
+
+For the yes case, banana features on the key side interact positively with yellow features on the query side in a set of concordance heads, while contributing negatively to discordance heads. With red on the query side, the signs reverse. The corresponding OV circuits turn attribute-related key features into plausible-property or discordant-statement features, which feed the yes/no decision. In the circuit diagram, the brown path activates the concordance head and the blue bar inhibits the discordance head. Both effects arise from the same banana-yellow pairing.
+
+<Figure
+  src={concordanceCircuit}
+  alt={"Circuit for the question whether a banana is yellow: banana and yellow features activate concordance heads and inhibit discordance heads, supporting a yes answer"}
+  caption={"Matching object and property features directly activate concordance heads while suppressing discordance heads; the graph does not require a separately represented answer followed by a comparison. Figure from Tracing Attention Computation Through Feature Interactions."}
+/>
+
+Targeted steering of the yellow and red query components changes where these heads attend and can flip the model's response. Scaling the output of a single identified head can also flip it, with combinations of heads producing a stronger effect. The asymmetry in the reported interventions is suggestive: turning an incorrect statement into a "Yes" requires stronger steering than turning a correct statement into a "No." The paper offers the tentative picture that several concordance checks may need to agree, while one strong discordance signal can be sufficient.
+
+The same heads distinguish _18 + 5 = 23_ from _18 + 6 = 23_. Here the QK terms involve a query feature for numbers separated by five and key features for 5 or 6. Again, the graph does not clearly compute 23 or 24 and then compare it with the written result. It checks a property that is enough to discriminate the two statements. This is a local finding about these prompts, but it is a useful warning against assuming that answer validation must reuse the mechanism for generating an answer.
+
+## What remains outside the graph
+
+The paper is an initial collection of case studies, not a survey of how attention heads usually work. Its head labels are assigned from their role on one prompt, and head polysemanticity across contexts remains open. When several heads load onto the same edge, they may be redundant implementations of one interaction, components of a distributed functional unit, or unrelated heuristics that happen to agree on this input.
+
+The feature basis also bounds the explanation. SAE errors appear explicitly in the score decomposition, and in the multiple-choice example they prevent the analysis from resolving an important cross-token computation. Bias terms sometimes carry meaningful general tendencies, such as attending to names or answer options, but are less semantically precise than learned features.
+
+There is also a scaling problem. Computing feature-pair attributions for every query-key pair is quadratic in context length before accounting for the number of active features. The authors report that many QK attribution matrices are approximately low-rank, which may permit a shorter description in terms of interacting feature components, but this is a proposed direction rather than part of the demonstrated method. Longer contexts will likely require pruning to likely edges and heads before the full decomposition is computed.
+
+The main advance is narrower and solid: the method opens the part of an attribution graph that used to be represented by a frozen attention weight. In the examples here, that reveals that simple-looking retrieval behaviors are assembled from several simultaneous matches, biases, and fallback heuristics. It also makes the remaining unknowns more specific. The graph can now distinguish not knowing why an option was selected from not knowing how its correctness feature arose, or understanding a semantic match while still missing the positional rule that broke a tie.
+
+## Further material
+
+- The paper's [interactive diagrams](https://transformer-circuits.pub/2025/attention-qk/index.html) show the signed feature-pair terms for each head and prompt.
+- The preceding notes on [circuit tracing and the Biology paper](/ideas/2026/circuits-attribution-graphs/) cover the attribution graphs this method extends.
+- The [mathematical framework notes](/ideas/2026/circuits-framework/) introduce the QK and OV split used here.

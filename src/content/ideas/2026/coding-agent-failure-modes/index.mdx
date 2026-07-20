@@ -17,30 +17,9 @@ cite: true
 audience: "Developers"
 media_subpath: "/ideas/coding-agent-failure-modes/"
 image:
-  path: "sleeping-agent.png"
+  path: "forgotten-agent.png"
   alt: "Sleeping agent in its environment"
 hideCaption: true
-sources:
-  - title: "GBA Eval"
-    authors: "Stephen Yang, Ege Erdil, and Tamay Besiroglu"
-    year: "2026"
-    url: "https://gbaeval.com/"
-  - title: "How bad data teaches models to write terrible code"
-    authors: "Max Niederman, Stephen Yang, and Ege Erdil"
-    year: "2026"
-    url: "https://www.mechanize.work/podcast/how-bad-data-teaches-models-to-write-terrible-code/"
-  - title: "What skills does SWE-bench Verified evaluate?"
-    authors: "Florian Brand and Jean-Stanislas Denain"
-    year: "2025"
-    url: "https://epoch.ai/publications/what-skills-does-swe-bench-verified-evaluate"
-  - title: "Research Update: Algorithmic vs. Holistic Evaluation"
-    authors: "METR"
-    year: "2025"
-    url: "https://metr.org/blog/2025-08-12-research-update-towards-reconciling-slowdown-with-time-horizons/"
-  - title: "An FAQ on Reinforcement Learning Environments"
-    authors: "Jean-Stanislas Denain and Chris Barber"
-    year: "2026"
-    url: "https://epoch.ai/gradient-updates/state-of-rl-envs"
 ---
 
 import FailureChainFigure from "../../../../components/ideas/agent-failures/FailureChainFigure.astro";
@@ -203,7 +182,7 @@ The [GBA Eval blog](https://gbaeval.com/blog/) describes an unsuccessful reward-
 
 The debounce example is subtler. A debounce timer is a legitimate way to prevent one class of duplicate UI events, so a narrow test can make it look like a reasonable solution. It still fails if the requirement is one charge per logical payment attempt across retries, concurrent clients, or service restarts. The two cases point to the same grader lesson at different levels of severity: test variation should distinguish general behavior from memorizing the development distribution, while preserving room for multiple implementations that satisfy the behavior.
 
-METR reports more direct variants of the same pattern. In one task, an agent replaced the timing function so the scorer measured an artificially short runtime; in another, it modified the evaluator so every submission was marked successful. Those are useful examples of reward hacking, but the GBA case is closer to ordinary software testing: the exploit targets the gap between visible development fixtures and held-out inputs.
+METR reports [more direct variants](https://metr.org/blog/2025-06-05-recent-reward-hacking/) of the same pattern. In one task, an agent replaced the timing function so the scorer measured an artificially short runtime; in another, it modified the evaluator so every submission was marked successful. Those are useful examples of reward hacking, but the GBA case is closer to ordinary software testing: the exploit targets the gap between visible development fixtures and held-out inputs.
 
 ## Comparing benchmark designs: duplicate payments and GBA Eval
 

@@ -1,0 +1,520 @@
+<div
+  id="reference-popover"
+  class="reference-popover"
+  popover="manual"
+  role="dialog"
+  aria-label="Reference preview"
+>
+  <header class="reference-popover-header">
+    <span data-reference-popover-label>Reference</span>
+    <button type="button" data-reference-popover-close aria-label="Close preview">
+      <svg aria-hidden="true" viewBox="0 0 24 24">
+        <path d="M18 6 6 18M6 6l12 12"></path>
+      </svg>
+    </button>
+  </header>
+  <div class="reference-popover-content" data-reference-popover-content></div>
+</div>
+
+<style>
+  :global(.citation-reference),
+  :global([data-footnote-ref]) {
+    cursor: pointer;
+  }
+
+  :global(.citation-reference > a),
+  :global([data-footnote-ref]) {
+    color: var(--blue);
+    text-decoration-color: color-mix(in srgb, var(--blue) 45%, transparent);
+    text-underline-offset: 0.15em;
+  }
+
+  :global(.citation-reference > a:hover),
+  :global(.citation-reference > a:focus-visible),
+  :global([data-footnote-ref]:hover),
+  :global([data-footnote-ref]:focus-visible) {
+    color: var(--magenta);
+  }
+
+  .reference-popover {
+    --reference-surface: #fff;
+    --reference-surface-raised: var(--base4);
+    --reference-border: rgb(0 43 54 / 14%);
+    --reference-shadow:
+      0 1rem 2.5rem rgb(0 43 54 / 14%), 0 0.2rem 0.65rem rgb(0 43 54 / 10%);
+
+    inset: auto;
+    width: min(34rem, calc(100vw - 1.5rem));
+    max-height: min(68vh, 36rem);
+    margin: 0;
+    padding: 0;
+    overflow: auto;
+    color: var(--sol-8);
+    background: var(--reference-surface);
+    border: 1px solid var(--reference-border);
+    border-radius: 0.65rem;
+    box-shadow: var(--reference-shadow);
+    font-family: var(--font-body);
+    font-size: 0.82rem;
+    line-height: 1.4;
+    scrollbar-width: thin;
+    scrollbar-color: var(--sol-1) transparent;
+  }
+
+  .reference-popover:popover-open {
+    display: block;
+  }
+
+  .reference-popover-header {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    min-height: 0;
+    padding: 0.65rem 0.65rem 0.3rem 0.9rem;
+    color: var(--sol-1);
+    background: var(--reference-surface);
+    border: 0;
+    font-size: 0.61rem;
+    font-weight: 700;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+  }
+
+  [data-reference-popover-close] {
+    display: grid;
+    width: 1.6rem;
+    height: 1.6rem;
+    place-items: center;
+    padding: 0;
+    color: var(--sol-1);
+    background: transparent;
+    border: 0;
+    border-radius: 50%;
+    cursor: pointer;
+  }
+
+  [data-reference-popover-close] svg {
+    width: 0.9rem;
+    height: 0.9rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 2;
+  }
+
+  [data-reference-popover-close]:hover,
+  [data-reference-popover-close]:focus-visible {
+    color: var(--sol-9);
+    background: var(--reference-surface-raised);
+  }
+
+  .reference-popover-content :global(.reference-card) {
+    padding: 0.3rem 0.9rem 0.9rem;
+  }
+
+  .reference-popover-content :global(.reference-card + .reference-card) {
+    padding-top: 0.9rem;
+    border-top: 1px solid var(--reference-border);
+  }
+
+  .reference-popover-content :global(.reference-card-title) {
+    margin: 0 0 0.25rem;
+    color: var(--sol-9);
+    font-family: var(--font-body);
+    font-size: 0.92rem;
+    font-weight: 650;
+    line-height: 1.3;
+    letter-spacing: -0.01em;
+  }
+
+  .reference-popover-content :global(.reference-card-authors),
+  .reference-popover-content :global(.reference-card-publication) {
+    margin: 0.12rem 0;
+  }
+
+  .reference-popover-content :global(.reference-card-publication) {
+    color: var(--sol-8);
+    font-size: 0.76rem;
+    opacity: 0.78;
+  }
+
+  .reference-popover-content :global(.reference-card-actions) {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem 0.8rem;
+    margin-top: 0.65rem;
+    font-size: 0.72rem;
+  }
+
+  .reference-popover-content :global(.reference-card-actions a) {
+    color: var(--blue-muted);
+    font-weight: 500;
+    text-decoration: none;
+    text-underline-offset: 0.15em;
+  }
+
+  .reference-popover-content :global(.reference-card-actions a:hover),
+  .reference-popover-content :global(.reference-card-actions a:focus-visible) {
+    color: var(--blue);
+    text-decoration: underline;
+  }
+
+  .reference-popover-content
+    :global(.reference-card-actions a[target="_blank"]::after) {
+    content: " ↗";
+  }
+
+  .reference-popover-content :global(.footnote-preview > :first-child) {
+    margin-top: 0;
+  }
+
+  .reference-popover-content :global(.footnote-preview > :last-child) {
+    margin-bottom: 0;
+  }
+
+  :global([data-effective-theme="dark"]) .reference-popover {
+    --reference-surface: var(--base02);
+    --reference-surface-raised: var(--sol-dark-2);
+    --reference-border: rgb(238 232 213 / 18%);
+    --reference-shadow:
+      0 1rem 2.5rem rgb(0 0 0 / 38%), 0 0.2rem 0.65rem rgb(0 0 0 / 28%);
+  }
+
+  @media (min-width: 768px) {
+    .reference-popover {
+      width: min(38rem, calc(100vw - 2rem));
+      font-size: 0.9rem;
+    }
+
+    .reference-popover-header {
+      font-size: 0.64rem;
+    }
+
+    .reference-popover-content :global(.reference-card) {
+      padding: 0.4rem 1rem 1rem;
+    }
+
+    .reference-popover-content :global(.reference-card + .reference-card) {
+      padding-top: 1rem;
+    }
+
+    .reference-popover-content :global(.reference-card-title) {
+      font-size: 1rem;
+    }
+
+    .reference-popover-content :global(.reference-card-publication) {
+      font-size: 0.82rem;
+    }
+
+    .reference-popover-content :global(.reference-card-actions) {
+      font-size: 0.78rem;
+    }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .reference-popover:popover-open {
+      animation: reference-popover-in 120ms ease-out;
+    }
+
+    @keyframes reference-popover-in {
+      from {
+        transform: translateY(0.2rem) scale(0.99);
+      }
+    }
+  }
+</style>
+
+<script>
+  const POPOVER_ID = "reference-popover";
+  const CITATION_SELECTOR = '.citation-reference[id^="citation--"]';
+  const FOOTNOTE_SELECTOR = "[data-footnote-ref]";
+  const DISMISS_DELAY = 220;
+
+  function bootReferencePopovers() {
+    const popover = document.getElementById(POPOVER_ID);
+    if (!popover || popover.dataset.initialized === "true") return;
+
+    const content = popover.querySelector("[data-reference-popover-content]");
+    const label = popover.querySelector("[data-reference-popover-label]");
+    const closeButton = popover.querySelector("[data-reference-popover-close]");
+    if (!content || !label || !closeButton) return;
+
+    popover.dataset.initialized = "true";
+
+    const referenceData = new Map();
+    const referenceScript = document.querySelector(
+      'script[type="application/json"][data-reference-data]',
+    );
+    if (referenceScript?.textContent) {
+      try {
+        for (const reference of JSON.parse(referenceScript.textContent)) {
+          referenceData.set(reference.id, reference);
+        }
+      } catch (error) {
+        console.error("Could not read reference preview data", error);
+      }
+    }
+
+    let activeTrigger = null;
+    let pinned = false;
+    let dismissTimer;
+
+    const isOpen = () => popover.matches(":popover-open");
+
+    function citationKeys(trigger) {
+      const parts = trigger.id.replace(/^citation--/, "").split("--");
+      parts.pop();
+      return parts;
+    }
+
+    function sourceUrl(reference) {
+      if (reference.DOI) return `https://doi.org/${reference.DOI}`;
+      if (reference.URL) return reference.URL;
+      return null;
+    }
+
+    function publicationLine(reference) {
+      const publication = [
+        reference.containerTitle,
+        reference.volume &&
+          `${reference.volume}${reference.issue ? `(${reference.issue})` : ""}`,
+        reference.page && `pp. ${reference.page}`,
+        reference.publisher,
+        reference.year,
+      ].filter(Boolean);
+      return publication.join(", ");
+    }
+
+    function actionLink(text, href, external = false) {
+      const link = document.createElement("a");
+      link.textContent = text;
+      link.href = href;
+      if (external) {
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+      }
+      return link;
+    }
+
+    function referenceCard(key) {
+      const reference = referenceData.get(key);
+      const card = document.createElement("article");
+      card.className = "reference-card";
+
+      if (!reference) {
+        const fallback = document.getElementById(`bib-${key}`)?.cloneNode(true);
+        if (fallback) card.append(fallback);
+      } else {
+        const title = document.createElement("h3");
+        title.className = "reference-card-title";
+        title.textContent = reference.title;
+        card.append(title);
+
+        if (reference.authors?.length) {
+          const authors = document.createElement("p");
+          authors.className = "reference-card-authors";
+          authors.textContent = reference.authors.join(", ");
+          card.append(authors);
+        }
+
+        const publication = publicationLine(reference);
+        if (publication) {
+          const details = document.createElement("p");
+          details.className = "reference-card-publication";
+          details.textContent = publication;
+          card.append(details);
+        }
+      }
+
+      const actions = document.createElement("nav");
+      actions.className = "reference-card-actions";
+      actions.setAttribute("aria-label", "Reference actions");
+      const url = reference && sourceUrl(reference);
+      if (url) {
+        actions.append(
+          actionLink(reference.DOI ? "Open DOI" : "Open source", url, true),
+        );
+      }
+      actions.append(actionLink("Jump to reference", `#bib-${key}`));
+      actions.addEventListener("click", closePopover);
+      card.append(actions);
+      return card;
+    }
+
+    function renderCitation(trigger) {
+      const keys = citationKeys(trigger);
+      label.textContent = keys.length === 1 ? "Reference" : `${keys.length} references`;
+      content.replaceChildren(...keys.map(referenceCard));
+    }
+
+    function renderFootnote(trigger) {
+      label.textContent = "Footnote";
+      const targetId = decodeURIComponent(trigger.hash.slice(1));
+      const source = document.getElementById(targetId);
+      const card = document.createElement("article");
+      card.className = "reference-card footnote-preview";
+
+      if (source) {
+        for (const child of source.children) card.append(child.cloneNode(true));
+        for (const backref of card.querySelectorAll("[data-footnote-backref]")) {
+          backref.remove();
+        }
+      }
+
+      const actions = document.createElement("nav");
+      actions.className = "reference-card-actions";
+      actions.setAttribute("aria-label", "Footnote actions");
+      actions.append(actionLink("Jump to footnote", trigger.hash));
+      actions.addEventListener("click", closePopover);
+      card.append(actions);
+      content.replaceChildren(card);
+    }
+
+    function setExpanded(trigger, expanded) {
+      const controls = trigger.matches("a")
+        ? [trigger]
+        : trigger.querySelectorAll("a");
+      for (const control of controls) {
+        control.setAttribute("aria-expanded", String(expanded));
+      }
+    }
+
+    function positionPopover(trigger) {
+      const gap = 10;
+      const edge = 12;
+      const triggerBox = trigger.getBoundingClientRect();
+      popover.style.removeProperty("max-height");
+      let popoverBox = popover.getBoundingClientRect();
+      const roomBelow = window.innerHeight - triggerBox.bottom - gap - edge;
+      const roomAbove = triggerBox.top - gap - edge;
+      const placeBelow =
+        popoverBox.height <= roomBelow ||
+        (popoverBox.height > roomAbove && roomBelow >= roomAbove);
+      const availableHeight = placeBelow ? roomBelow : roomAbove;
+
+      if (popoverBox.height > availableHeight) {
+        popover.style.maxHeight = `${Math.max(96, availableHeight)}px`;
+        popoverBox = popover.getBoundingClientRect();
+      }
+
+      const left = Math.min(
+        Math.max(edge, triggerBox.left + triggerBox.width / 2 - popoverBox.width / 2),
+        window.innerWidth - popoverBox.width - edge,
+      );
+      const top = placeBelow
+        ? triggerBox.bottom + gap
+        : triggerBox.top - popoverBox.height - gap;
+
+      popover.style.left = `${left}px`;
+      popover.style.top = `${top}px`;
+    }
+
+    function cancelDismissal() {
+      window.clearTimeout(dismissTimer);
+    }
+
+    function scheduleDismissal() {
+      cancelDismissal();
+      if (!pinned) dismissTimer = window.setTimeout(closePopover, DISMISS_DELAY);
+    }
+
+    function openPopover(trigger, shouldPin = false) {
+      cancelDismissal();
+      if (activeTrigger && activeTrigger !== trigger) {
+        setExpanded(activeTrigger, false);
+      }
+
+      activeTrigger = trigger;
+      pinned = shouldPin;
+      if (trigger.matches(FOOTNOTE_SELECTOR)) renderFootnote(trigger);
+      else renderCitation(trigger);
+      setExpanded(trigger, true);
+
+      if (!isOpen()) popover.showPopover();
+      window.requestAnimationFrame(() => positionPopover(trigger));
+    }
+
+    function closePopover() {
+      cancelDismissal();
+      if (activeTrigger) setExpanded(activeTrigger, false);
+      if (isOpen()) popover.hidePopover();
+      activeTrigger = null;
+      pinned = false;
+    }
+
+    function prepareTrigger(trigger) {
+      const controls = trigger.matches("a")
+        ? [trigger]
+        : trigger.querySelectorAll("a");
+      for (const control of controls) {
+        control.setAttribute("aria-haspopup", "dialog");
+        control.setAttribute("aria-controls", POPOVER_ID);
+        control.setAttribute("aria-expanded", "false");
+      }
+
+      trigger.addEventListener("pointerenter", () => openPopover(trigger));
+      trigger.addEventListener("pointerleave", scheduleDismissal);
+      trigger.addEventListener("focusin", () => openPopover(trigger));
+      trigger.addEventListener("focusout", (event) => {
+        if (!popover.contains(event.relatedTarget)) scheduleDismissal();
+      });
+      trigger.addEventListener("click", (event) => {
+        event.preventDefault();
+        if (activeTrigger === trigger && isOpen() && pinned) closePopover();
+        else openPopover(trigger, true);
+      });
+    }
+
+    for (const trigger of document.querySelectorAll(
+      `${CITATION_SELECTOR}, ${FOOTNOTE_SELECTOR}`,
+    )) {
+      prepareTrigger(trigger);
+    }
+
+    popover.addEventListener("pointerenter", cancelDismissal);
+    popover.addEventListener("pointerleave", scheduleDismissal);
+    closeButton.addEventListener("click", closePopover);
+    document.addEventListener("pointerdown", (event) => {
+      if (
+        pinned &&
+        !popover.contains(event.target) &&
+        !activeTrigger?.contains(event.target)
+      ) {
+        closePopover();
+      }
+    });
+    document.addEventListener("keydown", (event) => {
+      if (event.key !== "Escape" || !isOpen()) return;
+      const trigger = activeTrigger;
+      const shouldRestoreFocus = pinned;
+      closePopover();
+      if (trigger && shouldRestoreFocus) {
+        (trigger.matches("a") ? trigger : trigger.querySelector("a"))?.focus();
+      }
+    });
+    window.addEventListener("resize", () => {
+      if (activeTrigger && isOpen()) positionPopover(activeTrigger);
+    });
+    document.addEventListener(
+      "scroll",
+      () => {
+        if (activeTrigger && isOpen()) positionPopover(activeTrigger);
+      },
+      true,
+    );
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", bootReferencePopovers, {
+      once: true,
+    });
+  } else {
+    bootReferencePopovers();
+  }
+  document.addEventListener("astro:page-load", bootReferencePopovers);
+</script>
