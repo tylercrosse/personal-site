@@ -369,6 +369,12 @@ const postTopics = [...topicsForPost.values()];
       white-space: nowrap;
     }
 
+    /* Off-site links in the article body (tagged by rehypeExternalLinks). */
+    :global([data-external]::after) {
+      content: " ↗";
+      white-space: nowrap;
+    }
+
     /* Primary-source role and figure attributions, rendered inside the
        References section. */
     :global(.refs-note) {
