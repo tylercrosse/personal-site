@@ -39,25 +39,28 @@ The first paper constructs a setting in which the ground-truth features are know
 
 The paper treats a feature as a property of the input that the model represents. If the representation is linear, each feature corresponds to a direction in activation space. A neuron is one coordinate axis in that space. Those are only the same thing when a feature direction happens to line up with an axis.
 
-Whether the axes are worth inspecting depends on the architecture. The residual stream has no privileged basis: rotating the representation and applying the inverse rotation to the next weight matrix leaves the model unchanged. An element-wise activation function breaks that rotational symmetry. The individual coordinates of a transformer MLP therefore form a privileged basis, which gives features some reason to align with neurons, though it does not force them to. The two sides of the next diagram isolate this difference: an arbitrary rotation preserves the computation on the left, whereas the coordinate-wise nonlinearity on the right makes the axes consequential.
+Whether the axes are worth inspecting depends on the architecture. The residual stream has no privileged basis: rotating the representation and applying the inverse rotation to the next weight matrix leaves the model unchanged. An element-wise activation function breaks that rotational symmetry. The individual coordinates of a transformer MLP therefore form a privileged basis, which gives features some reason to align with neurons, though it does not force them to. The two sides of the next diagram ([fig:privileged-basis|short]) isolate this difference: an arbitrary rotation preserves the computation on the left, whereas the coordinate-wise nonlinearity on the right makes the axes consequential.
 
 <Figure
+  id="privileged-basis"
   src={privilegedBasis}
   alt={"A non-privileged basis where features can point in any direction and a privileged basis where a nonlinearity makes the coordinate axes special"}
   caption={"A change of basis has no effect in a non-privileged representation such as the residual stream. Element-wise nonlinearities make the MLP basis privileged, so its coordinate directions can meaningfully be called neurons. Figure from the paper."}
 />
 
-Superposition occurs when the model represents more features than there are dimensions available by assigning the features to non-orthogonal directions. High-dimensional spaces contain many directions that are nearly orthogonal, and sparse features rarely need to be active at the same time. Together, those facts make an overcomplete representation possible. The projection sketch pictures the hypothesis literally: start with a larger space containing one axis per feature, then compress it into the smaller activation space we observe.
+Superposition occurs when the model represents more features than there are dimensions available by assigning the features to non-orthogonal directions. High-dimensional spaces contain many directions that are nearly orthogonal, and sparse features rarely need to be active at the same time. Together, those facts make an overcomplete representation possible. The projection sketch ([fig:projection|short]) pictures the hypothesis literally: start with a larger space containing one axis per feature, then compress it into the smaller activation space we observe.
 
 <Figure
+  id="projection"
   src={projection}
   alt={"A hypothetical disentangled network with one neuron per feature projected into a smaller observed network whose neurons are polysemantic"}
   caption={"The superposition hypothesis pictures a smaller network as a lossy projection of a larger, sparse network with one direction per feature. Figure from the paper."}
 />
 
-Viewed in the smaller network's coordinates, the same projection produces the many-to-many pattern in the following diagram. Several feature directions cross each coordinate axis, so the neurons appear polysemantic even when the features themselves are well-defined directions.
+Viewed in the smaller network's coordinates, the same projection produces the many-to-many pattern in the following diagram ([fig:polysemanticity|short]). Several feature directions cross each coordinate axis, so the neurons appear polysemantic even when the features themselves are well-defined directions.
 
 <Figure
+  id="polysemanticity"
   src={polysemanticity}
   alt={"Several feature directions crossing a smaller set of neuron axes, causing each neuron to respond to multiple features"}
   caption={"Polysemanticity is the coordinate-level appearance of features that do not align with individual neurons. Figure from the paper."}
@@ -110,17 +113,19 @@ $$
 
 The first term carries the feature itself. Every other represented feature can leak into its readout through an off-diagonal dot product. Orthogonal feature vectors avoid this interference, but there can be at most $m$ mutually orthogonal directions in an $m$-dimensional space.
 
-Sparsity lowers the cost of using non-orthogonal directions because interfering features seldom co-occur. The ReLU lowers it further. When only feature $j$ is active, negative interference into an inactive feature $i$ is clipped to zero. A negative bias can also filter small positive interference, at the cost of weakening small true activations. The interference diagram traces these terms through reconstruction: isolated sparse activations are usually recoverable, while simultaneous activations expose the ambiguity created by shared directions.
+Sparsity lowers the cost of using non-orthogonal directions because interfering features seldom co-occur. The ReLU lowers it further. When only feature $j$ is active, negative interference into an inactive feature $i$ is clipped to zero. A negative bias can also filter small positive interference, at the cost of weakening small true activations. The interference diagram ([fig:interference|short]) traces these terms through reconstruction: isolated sparse activations are usually recoverable, while simultaneous activations expose the ambiguity created by shared directions.
 
 <Figure
+  id="interference"
   src={interference}
   alt={"Interference between non-orthogonal feature directions during reconstruction, including ambiguity when several sparse features activate together"}
   caption={"Non-orthogonal features leak into one another's readouts. Sparse activation and the ReLU make much of that leakage harmless, but simultaneous features can still produce ambiguous reconstructions. Figure from the paper."}
 />
 
-The benefit of representing another feature eventually outweighs its expected interference cost. For two features competing for one dimension, the model has three basic choices: drop one feature, give it the dimension instead, or place the pair in opposite directions. The last choice represents both features but fails when they activate together. As sparsity and relative importance vary, the optimum switches sharply between these strategies. The regime chart records those switches as discontinuous changes in feature norms and geometry, rather than as a smooth rotation from one solution to another.
+The benefit of representing another feature eventually outweighs its expected interference cost. For two features competing for one dimension, the model has three basic choices: drop one feature, give it the dimension instead, or place the pair in opposite directions. The last choice represents both features but fails when they activate together. As sparsity and relative importance vary, the optimum switches sharply between these strategies. The regime chart ([fig:phase-regimes|short]) records those switches as discontinuous changes in feature norms and geometry, rather than as a smooth rotation from one solution to another.
 
 <Figure
+  id="phase-regimes"
   src={phaseRegimes}
   alt={"Learned weight matrices and per-feature norms across sparsity levels, moving from dropped features through antipodal pairs into denser superposition"}
   caption={"Features pass through distinct regimes as sparsity increases: unrepresented, represented with dedicated capacity, or represented in superposition. Figure from the paper."}
@@ -130,9 +135,10 @@ The paper calls these transitions phase changes in the loose sense of discontinu
 
 ## Fractions of a dimension
 
-With two hidden dimensions and five features of decreasing importance, a dense model keeps the two most important features on orthogonal axes. At higher sparsity it can store four features as two antipodal pairs. When the inputs are sparse enough, all five fit as the vertices of a pentagon. Those three solutions appear left to right in the figure; the growing number of nonzero vectors is the visual evidence that sparsity lets more features fit.
+With two hidden dimensions and five features of decreasing importance, a dense model keeps the two most important features on orthogonal axes. At higher sparsity it can store four features as two antipodal pairs. When the inputs are sparse enough, all five fit as the vertices of a pentagon. Those three solutions appear left to right in the figure ([fig:sparsity-geometry|short]); the growing number of nonzero vectors is the visual evidence that sparsity lets more features fit.
 
 <Figure
+  id="sparsity-geometry"
   src={sparsityGeometry}
   alt={"Feature embeddings in a two-dimensional toy model at increasing sparsity: orthogonal axes, antipodal pairs, and a pentagon"}
   caption={"A two-dimensional model first keeps two orthogonal features, then four features as antipodal pairs, and finally five features in a pentagon. More features are represented as the expected interference cost falls. Figure from the paper."}
@@ -165,17 +171,19 @@ _Superposition, Memorization, and Double Descent_ keeps the reconstruction setup
 
 In that regime, the model treats each example as if it were a feature and packs the examples into regular polygons. This is a geometric form of memorization. It is cheaper to store the $T$ observed examples than to recover the much larger set of features that generated them.
 
-As the dataset grows, the strategy stops working. The model moves through a disorganized middle regime and eventually represents the underlying features instead. Test loss peaks during that transition, producing data double descent: adding examples first makes generalization worse, then makes it better. The next figure puts the loss curve and representation geometry on the same horizontal axis, so the peak can be located at the handoff between example-based and feature-based solutions.
+As the dataset grows, the strategy stops working. The model moves through a disorganized middle regime and eventually represents the underlying features instead. Test loss peaks during that transition, producing data double descent: adding examples first makes generalization worse, then makes it better. The next figure ([fig:dd-regimes|short]) puts the loss curve and representation geometry on the same horizontal axis, so the peak can be located at the handoff between example-based and feature-based solutions.
 
 <Figure
+  id="dd-regimes"
   src={ddRegimes}
   alt={"Test loss and representation geometry across dataset sizes, moving from memorized training examples through a transition to generalizing features"}
   caption={"With little data, hidden representations of individual examples form regular polygons. With enough data, the feature directions form the clean geometry instead. Test loss peaks between the two regimes. Figure from the paper."}
 />
 
-This experiment has no label noise because the input is also the reconstruction target. The irreducible error comes from compressing 10,000 possible features into a two-dimensional bottleneck. Weight decay and training duration affect the height of the test-loss bump, so the result is a mechanistic example of double descent rather than a general explanation of it. The parameter-norm plot supplies a second view of the transition: norms rise while the model packs in individual examples, then drop when it reorganizes around reusable features.
+This experiment has no label noise because the input is also the reconstruction target. The irreducible error comes from compressing 10,000 possible features into a two-dimensional bottleneck. Weight decay and training duration affect the height of the test-loss bump, so the result is a mechanistic example of double descent rather than a general explanation of it. The parameter-norm plot ([fig:dd-param-norms|short]) supplies a second view of the transition: norms rise while the model packs in individual examples, then drop when it reorganizes around reusable features.
 
 <Figure
+  id="dd-param-norms"
   src={ddParamNorms}
   alt={"Parameter norms rising in the memorization regime, falling through the transition, and leveling off in the generalization regime"}
   caption={"Parameter norms grow as the small-data solution packs in more training examples, then fall sharply as the model changes to a feature-based solution. Figure from the paper."}

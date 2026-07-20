@@ -38,17 +38,19 @@ The residual-stream diagram makes the change in viewpoint concrete. The long hor
 
 <ResidualStreamFigure />
 
-No component owns the stream. The residual connection preserves earlier writes unless a later component changes them. A head can add new information alongside an earlier write or cancel it by writing the negative of what is already there. Two components interact only when the first writes into a direction that the second reads. The subspace diagram shows both cases: overlapping reads and writes create a connection, while reading a subspace and writing its negative deletes the information carried there.
+No component owns the stream. The residual connection preserves earlier writes unless a later component changes them. A head can add new information alongside an earlier write or cancel it by writing the negative of what is already there. Two components interact only when the first writes into a direction that the second reads. The subspace diagram ([fig:subspaces|short]) shows both cases: overlapping reads and writes create a connection, while reading a subspace and writing its negative deletes the information carried there.
 
 <Figure
+  id="subspaces"
   src={subspaces}
   alt={"The residual stream divided into subspaces; layers interact where their read and write subspaces overlap, and a layer can delete information by writing the negative of what it read"}
   caption={"Components use subspaces of the residual stream. Disjoint write and read subspaces do not interact; aligned ones create an implicit connection. Figure from the paper."}
 />
 
-Suppose one component writes with a matrix $W_A$ and a later component reads with $W_B$. Their effective connection is the product $W_BW_A$. That product is a **virtual weight**: there is no parameter with that value stored in the model, but it describes how the two components communicate through the residual stream. Multiplying weights through the stream exposes an implicit connection between every compatible pair of components. The left side of the next figure shows the literal read-and-write architecture; the right side has multiplied through the stream and made those pairwise connections explicit.
+Suppose one component writes with a matrix $W_A$ and a later component reads with $W_B$. Their effective connection is the product $W_BW_A$. That product is a **virtual weight**: there is no parameter with that value stored in the model, but it describes how the two components communicate through the residual stream. Multiplying weights through the stream exposes an implicit connection between every compatible pair of components. The left side of the next figure ([fig:virtual-weights|short]) shows the literal read-and-write architecture; the right side has multiplied through the stream and made those pairwise connections explicit.
 
 <Figure
+  id="virtual-weights"
   src={virtualWeights}
   alt={"Layers reading from and writing to the residual stream with linear projections; multiplying the weights through reveals virtual weights connecting each pair of layers"}
   caption={"A virtual weight is the product of one component's write matrix and another component's read matrix. Figure from the paper."}
@@ -70,9 +72,10 @@ $$
 W_{QK}=W_Q^T W_K, \qquad W_{OV}=W_O W_V.
 $$
 
-The **QK circuit** determines where the head attends. The **OV circuit** determines what the head does with the token it finds. Both matrices are low rank because they factor through the smaller head dimension. In the diagram, the pink QK path touches both the destination and source tokens to produce a score. The gold OV path starts at the selected source and ends at the output logits.
+The **QK circuit** determines where the head attends. The **OV circuit** determines what the head does with the token it finds. Both matrices are low rank because they factor through the smaller head dimension. In the diagram ([fig:qk-ov|short]), the pink QK path touches both the destination and source tokens to produce a score. The gold OV path starts at the selected source and ends at the output logits.
 
 <Figure
+  id="qk-ov"
   src={qkOv}
   alt={"Diagram tracing the QK circuit and OV circuit of an attention head as separate weight paths from source and destination tokens"}
   caption={"The QK circuit scores source and destination token pairs. The OV circuit maps the selected source token to an update in the residual stream. Figure from the paper."}

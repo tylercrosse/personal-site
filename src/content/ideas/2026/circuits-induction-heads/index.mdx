@@ -41,9 +41,10 @@ On seeing the second `[A]`, it attends to the `[B]` that followed the earlier `[
 
 The operational test has two parts. **Prefix matching** asks whether the head attends to a token that followed an earlier occurrence of the current prefix. **Copying** asks whether its OV circuit increases the logit of the attended token. A head that passes both tests counts as an induction head, even when its internal implementation has not been fully traced.
 
-The examples in the next figure separate those two measurements. The red path is the attention move from the later occurrence back to the earlier continuation; the purple path is the resulting logit effect. The _Pot/ters_ and _D/urs/ley_ examples have different tokenization but the same pattern.
+The examples in the next figure ([fig:attention-pattern|short]) separate those two measurements. The red path is the attention move from the later occurrence back to the earlier continuation; the purple path is the resulting logit effect. The _Pot/ters_ and _D/urs/ley_ examples have different tokenization but the same pattern.
 
 <Figure
+  id="attention-pattern"
   src={attentionPattern}
   alt={"An induction head processing repeated text: the attention pattern moves information from the token that followed the previous occurrence of the current prefix, raising that token's logit"}
   caption={"On the second occurrence of 'Pot', the head attends to the token that followed 'Pot' last time ('ters') and raises its logit. The same pattern appears for 'D…urs…ley'. Figure from the paper."}
@@ -78,9 +79,10 @@ A one-layer model cannot form either two-head circuit. Its queries and keys are 
 
 The paper measures in-context learning as the difference between loss early and late in a 512-token sequence. A more negative score means that the model predicts better after seeing more of the current context.
 
-For models with at least two layers, that score improves sharply during a narrow window early in training. Induction heads appear during the same window. Per-head ablations attribute most of the improvement to those heads. One-layer models show neither the abrupt improvement nor an induction-head circuit, while architectural changes that make induction easier or harder shift the phase change in the expected direction. The plot aligns these observations vertically: the shaded training window in the upper row contains the loss improvement, and the lower row shows the induction-head ablation curves separating during the same interval.
+For models with at least two layers, that score improves sharply during a narrow window early in training. Induction heads appear during the same window. Per-head ablations attribute most of the improvement to those heads. One-layer models show neither the abrupt improvement nor an induction-head circuit, while architectural changes that make induction easier or harder shift the phase change in the expected direction. The plot ([fig:phase-change|short]) aligns these observations vertically: the shaded training window in the upper row contains the loss improvement, and the lower row shows the induction-head ablation curves separating during the same interval.
 
 <Figure
+  id="phase-change"
   src={phaseChange}
   alt={"In-context learning score and per-head ablation across one-, two-, and three-layer models during training, showing a phase change window where induction heads form"}
   caption={"Models with more than one layer show a sharp improvement in in-context learning during the same training window in which induction heads form. Per-head ablations identify induction heads as the main contributors in these small models. One-layer models show no corresponding phase change. Figure from the paper."}

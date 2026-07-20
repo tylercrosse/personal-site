@@ -64,9 +64,10 @@ The inner sum is important. It treats writing a feature to an additional site as
 
 This setup defines a feature by its activation pattern across examples, not by a fixed direction in the residual stream. One feature can point in different directions at different layers. Its decoder norms say where it is represented strongly, and the cosine similarities between its decoder directions show how its representation changes.
 
-An SAE and a transcoder are limiting cases of the same construction. An SAE reads and reconstructs one site. A transcoder reads one site and predicts another. Crosscoders vary which sites an encoder may read and which sites its decoder may write to. The circuit comparison below shows why that distinction matters in practice: the per-layer view repeats persistent features at successive sites, while the crosscoder view collapses those copies into shared nodes.
+An SAE and a transcoder are limiting cases of the same construction. An SAE reads and reconstructs one site. A transcoder reads one site and predicts another. Crosscoders vary which sites an encoder may read and which sites its decoder may write to. The circuit comparison below ([fig:simplify-circuits|short]) shows why that distinction matters in practice: the per-layer view repeats persistent features at successive sites, while the crosscoder view collapses those copies into shared nodes.
 
 <Figure
+  id="simplify-circuits"
   src={simplifyCircuits}
   alt={"Comparison of a circuit represented with separate per-layer SAEs and with a crosscoder: repeated feature copies collapse into a smaller set of cross-layer features"}
   caption={"Separate layerwise dictionaries can turn one persistent feature into a chain of copies. A crosscoder represents that persistence once, producing a shorter feature-level graph. Figure from Sparse Crosscoders."}
@@ -78,9 +79,10 @@ An SAE and a transcoder are limiting cases of the same construction. An SAE read
 
 The paper first trains a global acausal crosscoder over every residual-stream layer of an 18-layer model and compares it with a separate SAE at each layer. At a fixed total number of learned features, the crosscoder gets a better reconstruction-plus-sparsity loss. It can spend one feature on a pattern that repeats across layers instead of allocating a copy at every layer.
 
-That economy costs training compute. At large compute budgets, the crosscoder needs about twice the FLOPs of the per-layer SAEs to reach the same evaluation loss. The advantage is clearer when sparsity is measured over the model as a whole: for a given reconstruction error, the crosscoder uses far fewer distinct feature activations because persistent features are counted once. The two panels below expose the tradeoff: compare horizontally at a fixed loss, first by feature count and then by training FLOPs.
+That economy costs training compute. At large compute budgets, the crosscoder needs about twice the FLOPs of the per-layer SAEs to reach the same evaluation loss. The advantage is clearer when sparsity is measured over the model as a whole: for a given reconstruction error, the crosscoder uses far fewer distinct feature activations because persistent features are counted once. The two panels below ([fig:feature-compute-tradeoff|short]) expose the tradeoff: compare horizontally at a fixed loss, first by feature count and then by training FLOPs.
 
 <Figure
+  id="feature-compute-tradeoff"
   src={featureComputeTradeoff}
   alt={"Two plots comparing crosscoders with per-layer sparse autoencoders by number of features and by training compute"}
   caption={"The crosscoder reaches a given loss with roughly one eighth as many learned features, while the per-layer SAEs reach it with roughly half the training FLOPs. Figure from Sparse Crosscoders."}
