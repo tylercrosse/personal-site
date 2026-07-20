@@ -39,6 +39,14 @@ test("reference numbers match the figure caption numbers (incl. forward refs)", 
   }
 });
 
+test("the |short modifier renders an abbreviated 'Fig. N'", async ({ page }) => {
+  await page.goto("/ideas/2025/ml-retro/");
+  const ref = page.locator('a.figure-reference[data-fig-ref="svm-margin"]');
+
+  await expect(ref).toHaveText("Fig. 12");
+  await expect(ref).toHaveAttribute("href", "#fig-svm-margin");
+});
+
 test("clicking a reference jumps to its figure", async ({ page }) => {
   await page
     .locator('a.figure-reference[data-fig-ref="attribution-graph-ui"]')

@@ -83,7 +83,8 @@ function buildFigureMap(tree, file, dev) {
   return numbers;
 }
 
-function referenceNode(label, numbers, file, dev) {
+function referenceNode(raw, numbers, file, dev) {
+  const [label, ...modifiers] = raw.split("|");
   const number = numbers.get(label);
   if (number == null) {
     reportProblem(
@@ -97,13 +98,18 @@ function referenceNode(label, numbers, file, dev) {
       children: [{ type: "text", value: `⚠ fig:${label}?` }],
     };
   }
+  // `[fig:label|short]` renders the abbreviated "Fig. N", handy right after a
+  // positional phrase, e.g. "the diagram below ([fig:label|short])".
+  const text = modifiers.includes("short")
+    ? `Fig. ${number}`
+    : `Figure ${number}`;
   return {
     type: "link",
     url: `#fig-${label}`,
     data: {
       hProperties: { className: ["figure-reference"], dataFigRef: label },
     },
-    children: [{ type: "text", value: `Figure ${number}` }],
+    children: [{ type: "text", value: text }],
   };
 }
 
