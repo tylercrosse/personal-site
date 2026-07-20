@@ -8,9 +8,10 @@
   },
   "scripts": {
     "dev": "astro dev",
-    "build": "node scripts/audit-references.mjs && node scripts/audit-metadata.mjs && astro build && node scripts/check-internal-links.mjs",
+    "build": "node scripts/audit-references.mjs && node scripts/audit-metadata.mjs && node scripts/check-figure-refs.mjs && astro build && node scripts/check-internal-links.mjs",
     "preview": "astro preview",
     "check:links": "node scripts/check-internal-links.mjs",
+    "check:figures": "node scripts/check-figure-refs.mjs",
     "check:references": "node scripts/audit-references.mjs",
     "check:metadata": "node scripts/audit-metadata.mjs",
     "social:generate": "node scripts/generate-social-cards.mjs",
