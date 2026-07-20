@@ -13,21 +13,27 @@ import rehypeKatex from "rehype-katex";
 import { unified } from "@astrojs/markdown-remark";
 import rehypeArticleCitations from "./src/plugins/rehypeArticleCitations.mjs";
 import rehypeExternalLinks from "./src/plugins/rehypeExternalLinks.mjs";
+import remarkFigureRefs from "./src/plugins/remarkFigureRefs.mjs";
 
+const isBuild = process.argv.includes("build");
 const previewSite =
   process.env.VERCEL_ENV === "preview" && process.env.VERCEL_URL
     ? `https://${process.env.VERCEL_URL}`
     : undefined;
 const site = process.env.SITE_URL || previewSite || "https://tylercrosse.com";
 
-const remarkPlugins = [remarkMath, remarkGfm];
+const remarkPlugins = [
+  remarkMath,
+  remarkGfm,
+  [remarkFigureRefs, { dev: !isBuild }],
+];
 const rehypePlugins = [
   [rehypeKatex, { strict: false }],
   rehypeArticleCitations,
   rehypeCallouts,
   [rehypeExternalLinks, { site }],
 ];
-const viteCacheDir = process.argv.includes("build")
+const viteCacheDir = isBuild
   ? "node_modules/.vite-build"
   : "node_modules/.vite";
 

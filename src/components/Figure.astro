@@ -10,6 +10,10 @@ interface Props {
   class?: string;
   numbered?: boolean;
   fullWidth?: boolean;
+  // Stable handle for cross-references. `<Figure id="clt-arch" …/>` anchors the
+  // figure as `#fig-clt-arch`, which `[fig:clt-arch]` links to (see
+  // remarkFigureRefs.mjs).
+  id?: string;
 }
 
 const {
@@ -21,7 +25,10 @@ const {
   class: className,
   numbered = true,
   fullWidth = false,
+  id,
 } = Astro.props;
+
+const figureId = id ? `fig-${id}` : undefined;
 
 // Determine if src is a string (path) or ImageMetadata object
 const isImagePath = typeof src === "string";
@@ -40,6 +47,7 @@ if (numbered) {
 ---
 
 <figure
+  id={figureId}
   class:list={["figure", className, fullWidth && "full-width"]}
 >
   {
@@ -81,6 +89,34 @@ if (numbered) {
   .figure {
     margin: 1rem 0;
     text-align: center;
+    /* Keep a referenced figure clear of the viewport top when jumped to. */
+    scroll-margin-top: 5rem;
+    border-radius: 8px;
+  }
+
+  /* Brief highlight when arrived at via a [fig:…] reference. */
+  @media (prefers-reduced-motion: no-preference) {
+    .figure:target {
+      animation: figure-target-flash 2s ease-out;
+    }
+
+    @keyframes figure-target-flash {
+      0% {
+        background: color-mix(in srgb, var(--blue) 16%, transparent);
+        box-shadow: 0 0 0 0.5rem color-mix(in srgb, var(--blue) 16%, transparent);
+      }
+      100% {
+        background: transparent;
+        box-shadow: 0 0 0 0.5rem transparent;
+      }
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .figure:target {
+      outline: 2px solid color-mix(in srgb, var(--blue) 55%, transparent);
+      outline-offset: 0.4rem;
+    }
   }
 
   .figure img {

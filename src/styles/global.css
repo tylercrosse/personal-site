@@ -359,6 +359,32 @@ hr {
   white-space: nowrap;
 }
 
+/* Figure cross-references (rendered by remarkFigureRefs.mjs). Mirrors the
+   citation-reference link treatment; the whole "Figure N" stays on one line. */
+.figure-reference {
+  color: var(--blue);
+  text-decoration-color: color-mix(in srgb, var(--blue) 45%, transparent);
+  text-underline-offset: 0.15em;
+  white-space: nowrap;
+}
+
+.figure-reference:hover,
+.figure-reference:focus-visible {
+  color: var(--magenta);
+}
+
+.figure-ref-broken {
+  color: var(--red);
+  font-style: normal;
+  font-weight: 600;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
 [data-callout="note"],
 [data-callout="info"],
 [data-callout="todo"] {

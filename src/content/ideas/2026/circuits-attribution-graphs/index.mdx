@@ -68,9 +68,10 @@ $$
 =\sum_{\ell'\leq\ell}W_{dec}^{\ell'\rightarrow\ell}\mathbf{a}^{\ell'}.
 $$
 
-All layers are trained jointly with reconstruction and sparsity losses. The cross-layer decoders let one feature account for a computation that persists or is amplified across several layers. This avoids a string of duplicate nodes that would appear if each layer had its own independent dictionary. It is the causal variant of the [crosscoder](/ideas/2026/circuits-crosscoders/) construction: an encoder reads at one layer and its decoders only write forward. In the architecture diagram (Figure 1), each orange CLT reads from the residual stream at its own layer, but its outgoing paths can reach several later MLP outputs.
+All layers are trained jointly with reconstruction and sparsity losses. The cross-layer decoders let one feature account for a computation that persists or is amplified across several layers. This avoids a string of duplicate nodes that would appear if each layer had its own independent dictionary. It is the causal variant of the [crosscoder](/ideas/2026/circuits-crosscoders/) construction: an encoder reads at one layer and its decoders only write forward. In the architecture diagram ([fig:cross-layer-transcoder]), each orange CLT reads from the residual stream at its own layer, but its outgoing paths can reach several later MLP outputs.
 
 <Figure
+  id="cross-layer-transcoder"
   src={crossLayerTranscoder}
   alt={"A transformer with MLPs beside cross-layer transcoders whose features read from one residual-stream layer and reconstruct MLP outputs at that and later layers"}
   caption={"Each CLT feature reads at one layer but can contribute to reconstructed MLP outputs in that layer and later layers. Figure from Circuit Tracing."}
@@ -87,9 +88,10 @@ The authors avoid accumulated error by constructing a _local replacement model_ 
 - the observed normalization denominators;
 - an error adjustment at every layer and token position equal to the part of the MLP output that the CLT failed to reconstruct.
 
-With those values fixed, the local replacement model exactly matches the original activations and output logits on that prompt. It behaves like a local approximation: agreement at the original point is guaranteed, while agreement after an intervention must be measured. Figure 2 shows both adjustments on the Dallas prompt. Diamonds insert the missing reconstruction error at each token and layer; the pink cross-token edges use attention weights frozen from the original forward pass.
+With those values fixed, the local replacement model exactly matches the original activations and output logits on that prompt. It behaves like a local approximation: agreement at the original point is guaranteed, while agreement after an intervention must be measured. [fig:local-replacement-model] shows both adjustments on the Dallas prompt. Diamonds insert the missing reconstruction error at each token and layer; the pink cross-token edges use attention weights frozen from the original forward pass.
 
 <Figure
+  id="local-replacement-model"
   src={localReplacementModel}
   alt={"A prompt-local replacement model for predicting Austin, with feature nodes, reconstruction-error nodes, and attention-mediated connections between token positions"}
   caption={"Prompt-specific error nodes restore what the CLT misses, while frozen attention patterns turn attention-mediated effects into fixed weights between active features. Figure from Circuit Tracing."}
@@ -109,18 +111,20 @@ where $a_s$ is the source activation and $w_{s\rightarrow t}$ is the local model
 
 Error nodes make the graph honest about missing features. They can influence later features and logits, but they have no interpretable inputs of their own. A large error contribution means the graph cannot trace that part of the computation any further back.
 
-Even with sparse features, a short prompt can produce millions of edges. A pruning procedure retains the paths with the greatest influence on the output. The default setting typically cuts the node count by about a factor of ten while giving up roughly 20% of the graph's completeness. The remaining graph can still have hundreds of nodes and tens of thousands of edges. The pruning sketch (Figure 3) marks removed nodes with trash icons and removed paths with dashed lines; the solid routes are the ones retained for further inspection.
+Even with sparse features, a short prompt can produce millions of edges. A pruning procedure retains the paths with the greatest influence on the output. The default setting typically cuts the node count by about a factor of ten while giving up roughly 20% of the graph's completeness. The remaining graph can still have hundreds of nodes and tens of thousands of edges. The pruning sketch ([fig:attribution-graph-pruning]) marks removed nodes with trash icons and removed paths with dashed lines; the solid routes are the ones retained for further inspection.
 
 <Figure
+  id="attribution-graph-pruning"
   src={attributionGraphPruning}
   alt={"An attribution graph from Dallas and capital to Austin, with low-influence nodes and dashed paths marked for removal"}
   caption={"Pruning removes low-influence nodes and paths while retaining the strongest routes from the prompt to the output. Figure from Circuit Tracing."}
   width={500}
 />
 
-Pruning makes the graph small enough to inspect, but the interface (Figure 4) is where it becomes an explanation. The upper-left view lays out the surviving nodes by token position and layer: circles are features, diamonds are reconstruction errors, and the right edge contains output logits. Selecting a node fills the right panel with its strongest inputs and outputs, token-level logit effects, and examples from the training data. The lower-left subgraph is more manual. Researchers drag nodes into a readable arrangement and combine related ones into supernodes.
+Pruning makes the graph small enough to inspect, but the interface ([fig:attribution-graph-ui]) is where it becomes an explanation. The upper-left view lays out the surviving nodes by token position and layer: circles are features, diamonds are reconstruction errors, and the right edge contains output logits. Selecting a node fills the right panel with its strongest inputs and outputs, token-level logit effects, and examples from the training data. The lower-left subgraph is more manual. Researchers drag nodes into a readable arrangement and combine related ones into supernodes.
 
 <Figure
+  id="attribution-graph-ui"
   src={attributionGraphUi}
   alt={"Attribution graph interface with input, feature, error, and output nodes; a selected subgraph; and details for one feature"}
   caption={"The interface supports tracing paths, inspecting feature evidence, and manually grouping related nodes. Figure from Circuit Tracing."}
@@ -154,9 +158,10 @@ The Biology paper begins with the completion:
 
 > Fact: the capital of the state containing Dallas is ... Austin
 
-The graph contains a path from Dallas features to Texas features. In parallel, features for "capital" activate features that promote saying the name of a capital. The Texas and capital pathways meet at features that promote Austin and at the Austin logit. A shorter Dallas-to-Austin pathway is also present, so the model combines a two-step route with a memorized shortcut. The compact diagram (Figure 5) shows the longer route: follow the right-hand branch from Dallas to Texas, then combine it with the capital/state branch at the Austin output. The memorized shortcut is omitted from this summary.
+The graph contains a path from Dallas features to Texas features. In parallel, features for "capital" activate features that promote saying the name of a capital. The Texas and capital pathways meet at features that promote Austin and at the Austin logit. A shorter Dallas-to-Austin pathway is also present, so the model combines a two-step route with a memorized shortcut. The compact diagram ([fig:dallas-austin]) shows the longer route: follow the right-hand branch from Dallas to Texas, then combine it with the capital/state branch at the Austin output. The memorized shortcut is omitted from this summary.
 
 <Figure
+  id="dallas-austin"
   src={dallasAustin}
   alt={"Simplified attribution graph in which Dallas activates Texas, and Texas combines with a capital feature to promote Austin"}
   caption={"The manually grouped graph isolates the proposed Dallas → Texas → Austin route and the separate capital pathway. Figure from On the Biology of a Large Language Model."}
@@ -169,9 +174,10 @@ This is good evidence for an editable intermediate representation in this prompt
 
 ## Planning a rhyme before writing the line
 
-When Haiku writes a rhyming couplet, features for candidate final words can activate on the newline before the next line begins. In the paper's main example, features for "rabbit" and "habit" are active before the model writes the line that ends in _rabbit_. Those planned-word features affect intermediate choices such as comparison phrasing, not only the final-token probability. The compact diagram (Figure 6) shows only the first step: a rhyme constraint activates _habit_ and _rabbit_ as competing endpoints. The larger attribution graph is what connects the selected endpoint to words earlier in the line.
+When Haiku writes a rhyming couplet, features for candidate final words can activate on the newline before the next line begins. In the paper's main example, features for "rabbit" and "habit" are active before the model writes the line that ends in _rabbit_. Those planned-word features affect intermediate choices such as comparison phrasing, not only the final-token probability. The compact diagram ([fig:rhyme-planning]) shows only the first step: a rhyme constraint activates _habit_ and _rabbit_ as competing endpoints. The larger attribution graph is what connects the selected endpoint to words earlier in the line.
 
 <Figure
+  id="rhyme-planning"
   src={rhymePlanning}
   alt={"Simplified attribution graph in which rhyme and meter features activate candidate words habit and rabbit before the model writes the next line"}
   caption={"A rhyme constraint activates candidate end words before the next line is written. Figure from On the Biology of a Large Language Model."}
@@ -196,9 +202,10 @@ The same last-digit feature activates in less obvious settings, including astron
 
 In a medical vignette, symptom features activate candidate-diagnosis features before the model asks its follow-up question. Pregnancy and high blood pressure strongly activate preeclampsia features; other features represent biliary disorders. The preeclampsia group then promotes questions about confirming symptoms such as visual disturbances and proteinuria. Suppressing it changes the model's preferred question toward a symptom associated with the biliary alternative. The case is too narrow to establish general medical reliability, but the intervention distinguishes competing internal hypotheses that are absent from the written response.
 
-The entity-recognition experiments find a default circuit that favors declining to answer. Human/Assistant context and unfamiliar-name features activate "can't answer" features. Recognizing a known entity activates "known answer" features that inhibit that default. Suppressing the known-answer features for Michael Jordan makes the model uncertain; activating them for an unknown person makes it guess a sport. The blue inhibitory edges in Figure 7 are central to the account: recognizing Michael Jordan suppresses both the unknown-name feature and the downstream refusal, rather than directly writing a basketball answer.
+The entity-recognition experiments find a default circuit that favors declining to answer. Human/Assistant context and unfamiliar-name features activate "can't answer" features. Recognizing a known entity activates "known answer" features that inhibit that default. Suppressing the known-answer features for Michael Jordan makes the model uncertain; activating them for an unknown person makes it guess a sport. The blue inhibitory edges in [fig:known-answer] are central to the account: recognizing Michael Jordan suppresses both the unknown-name feature and the downstream refusal, rather than directly writing a basketball answer.
 
 <Figure
+  id="known-answer"
   src={knownAnswer}
   alt={"Simplified circuit in which a Michael Jordan feature activates a known-answer feature that suppresses unknown-name and cannot-answer features"}
   caption={"Entity recognition does not directly supply an answer here; it suppresses a default uncertainty pathway. Figure from On the Biology of a Large Language Model."}
@@ -237,7 +244,7 @@ Feature quality adds another layer of uncertainty. Splitting and absorption can 
 
 ## The attention gap narrowed later
 
-Anthropic [open-sourced the circuit-tracing tools](https://www.anthropic.com/research/open-source-circuit-tracing) in May 2025. The [circuit-tracer library](https://github.com/decoderesearch/circuit-tracer) generates, visualizes, and intervenes on attribution graphs for supported open-weight models, and [Neuronpedia](https://www.neuronpedia.org/graph/info) hosts the interface.
+There's a [open-sourced the circuit-tracing tools](https://www.anthropic.com/research/open-source-circuit-tracing) in May 2025. The [circuit-tracer library](https://github.com/decoderesearch/circuit-tracer) generates, visualizes, and intervenes on attribution graphs for supported open-weight models, and [Neuronpedia](https://www.neuronpedia.org/graph/info) hosts the interface.
 
 The follow-up _[Tracing Attention Computation Through Feature Interactions](/ideas/2026/circuits-attention-qk/)_ addresses the missing QK circuits. Attention scores are bilinear in the residual streams at the query and key positions, so they can be decomposed into interactions between query-side and key-side features. The extended graph also records which heads mediate a feature-to-feature edge.
 
