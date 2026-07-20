@@ -1,0 +1,119 @@
+---
+interface Props {
+  caption?: string;
+  numbered?: boolean;
+  fullWidth?: boolean;
+  class?: string;
+  // Stable handle for cross-references. `<Table id="results" …/>` anchors the
+  // table as `#tbl-results`, which `[tbl:results]` links to (see
+  // remarkCrossRefs.mjs). Wrap a normal Markdown table in this component —
+  // remember the blank lines around it so the table parses:
+  //
+  //   <Table id="results" caption="Scores">
+  //
+  //   | model | score |
+  //   | ----- | ----- |
+  //   | a     | 1     |
+  //
+  //   </Table>
+  id?: string;
+}
+
+const {
+  caption,
+  numbered = true,
+  fullWidth = false,
+  class: className,
+  id,
+} = Astro.props;
+
+const tableId = id ? `tbl-${id}` : undefined;
+
+// Auto-number tables using a per-request counter, mirroring Figure.astro.
+let tableNumber: number | undefined;
+if (numbered) {
+  if (!Astro.locals.tableCounter) {
+    Astro.locals.tableCounter = 0;
+  }
+  Astro.locals.tableCounter++;
+  tableNumber = Astro.locals.tableCounter;
+}
+---
+
+<figure
+  id={tableId}
+  class:list={["table-figure", className, fullWidth && "full-width"]}
+>
+  {
+    caption && (
+      <figcaption class="table-caption">
+        {numbered && tableNumber && <strong>Table {tableNumber}: </strong>}
+        {caption}
+      </figcaption>
+    )
+  }
+  <div class="table-scroll"><slot /></div>
+</figure>
+
+<style>
+  .full-width {
+    grid-column: 1 / 4 !important;
+  }
+
+  .table-figure {
+    margin: 1.5rem 0;
+    scroll-margin-top: 5rem;
+    border-radius: 8px;
+  }
+
+  .table-caption {
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+    font-style: italic;
+    color: var(--sol-1);
+    line-height: 1.4;
+  }
+
+  .table-caption strong {
+    font-style: normal;
+    color: var(--sol-9);
+  }
+
+  [data-effective-theme="dark"] .table-caption {
+    color: var(--sol-0);
+  }
+
+  [data-effective-theme="dark"] .table-caption strong {
+    color: var(--sol-10);
+  }
+
+  /* Wide tables scroll within the figure rather than overflowing the page. */
+  .table-scroll {
+    overflow-x: auto;
+  }
+
+  /* Brief highlight when arrived at via a [tbl:…] reference. */
+  @media (prefers-reduced-motion: no-preference) {
+    .table-figure:target {
+      animation: table-target-flash 2s ease-out;
+    }
+
+    @keyframes table-target-flash {
+      0% {
+        background: color-mix(in srgb, var(--blue) 16%, transparent);
+        box-shadow: 0 0 0 0.5rem color-mix(in srgb, var(--blue) 16%, transparent);
+      }
+      100% {
+        background: transparent;
+        box-shadow: 0 0 0 0.5rem transparent;
+      }
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .table-figure:target {
+      outline: 2px solid color-mix(in srgb, var(--blue) 55%, transparent);
+      outline-offset: 0.4rem;
+    }
+  }
+</style>

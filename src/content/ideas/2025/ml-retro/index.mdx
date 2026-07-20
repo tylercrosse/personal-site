@@ -19,6 +19,7 @@ image:
 
 import BookCard from "../../../../components/BookCard.astro";
 import Figure from "../../../../components/Figure.astro";
+import Table from "../../../../components/Table.astro";
 import PostLink from "../../../../components/PostLink.astro";
 
 import mlMitchell from "../../../books/ml-mitchell.jpg";
@@ -225,9 +226,10 @@ Modern neural networks build on this idea but replace the simple, sharp threshol
 
 The shift from a hard threshold to differentiable activations is underpinned by the idea of **linear separability**. A single perceptron can act as a linear separator; for a 2D input space, it can draw a single straight line to divide the space into two halves. This is powerful enough to represent simple logical functions like AND, OR, and NOT, which are all linearly separable. However, a single perceptron fundamentally cannot solve problems that are *not* linearly separable. The classic example is the XOR function - there is no single straight line you can draw to separate the true cases from the false cases.
 
-This diagram illustrates the key limitation that drives the need for networks of perceptrons:
+This diagram ([fig:xor-separability|short]) illustrates the key limitation that drives the need for networks of perceptrons:
 
 <Figure
+  id="xor-separability"
   src={xorSeparability}
   alt="XOR Separability"
   caption="XOR is not linearly separable."
@@ -345,9 +347,10 @@ Support Vector Machines (SVMs) are a powerful and versatile class of supervised 
 
 The answer isn't just any line that separates the data. The best line is the one that shows the "least commitment" to the training data, giving us the best chance to generalize to new data. This line is the one that creates the widest possible "demilitarized zone" or street between the two classes. This zone is called the **margin**, and the goal of an SVM is to find the separating hyperplane that maximizes this margin. The data points that lie on the very edge of this margin - the ones that "support" the hyperplane - are called the **support vectors**. If you move any other point, the line doesn't change. But if you move a support vector, the optimal line will move with it.
 
-This visualization shows how SVMs balance between fitting the data and maximizing generalization:
+This visualization ([fig:svm-margin|short]) shows how SVMs balance between fitting the data and maximizing generalization:
 
   <Figure
+    id="svm-margin"
     src={svmMargin}
     alt="Support Vector Machine Margin"
     caption="An SVM finds the hyperplane that maximizes the margin between the two classes. The points on the edge are the support vectors."
@@ -935,7 +938,9 @@ Here are the projects from the course:
 
 ### Grading
 
-Here's the grading breakdown from when I took the course in Fall 2024. There was a pretty generous curve at the end of the semester.
+Here's the grading breakdown ([tbl:grading]) from when I took the course in Fall 2024. There was a pretty generous curve at the end of the semester.
+
+<Table id="grading" caption="Grade distribution by component, Fall 2024.">
 
 | Component      | Weight | Mean   | Q1      | Median  | Q3      | High    |
 |----------------|--------|--------|---------|---------|---------|---------|
@@ -946,6 +951,8 @@ Here's the grading breakdown from when I took the course in Fall 2024. There was
 | Project 3      | 15%    | 72.95% | 65.00%  | 79.00%  | 87.00%  | 105.00% |
 | Project 4      | 15%    | 75.83% | 71.00%  | 81.00%  | 91.00%  | 105.00% |
 | Final          | 30%    | 67.77% | 60.91%  | 70.93%  | 78.89%  | 102.42% |
+
+</Table>
 
 
 ### Books

@@ -124,9 +124,10 @@ Two rules keep all of these shapes straight:
 1. The gradient of the scalar loss with respect to a tensor has the **same shape as that tensor**.
 2. Jacobians are laid out **output-by-input**: outputs index the rows, inputs index the columns.
 
-The figure below applies the same discipline to a scalar chain: each derivative is written next to the quantity it differentiates, which is what keeps a long chain rule legible.
+The figure below ([fig:differentiation-notation|short]) applies the same discipline to a scalar chain: each derivative is written next to the quantity it differentiates, which is what keeps a long chain rule legible.
 
 <Figure
+  id="differentiation-notation"
   src={p1Fig6}
   alt="Differentiation notation and local derivatives"
   caption="Derivative notation is easier to use when each term is tied to the quantity it differentiates. Source: Lowyx GT DL L1 Notes (CC BY 4.0), https://lowyx.com/posts/gt-dl-L1/."
@@ -309,9 +310,10 @@ A wrong transpose usually fails a shape check before anything runs:
 
 The central question in training is always the same: if the loss changes a little, which earlier quantity was responsible, and by how much? Backpropagation is the chain rule organized to answer that question without repeating work. A neural network is a computation graph: values flow forward to produce a loss, then gradients flow backward to say how each earlier value affected that loss. Each intermediate value is saved once on the way forward and reused on the way back.
 
-In the graph below, the forward pass runs left to right and the backward pass revisits the same nodes in reverse:
+In the graph below ([fig:backprop-graph|short]), the forward pass runs left to right and the backward pass revisits the same nodes in reverse:
 
 <Figure
+  id="backprop-graph"
   src={p1Fig2}
   alt="Backpropagation graph"
   caption="Backprop is easiest to understand as reverse-mode gradient flow through cached intermediate computations. Source: Lowyx GT DL Notes (CC BY 4.0), https://lowyx.com/posts/gt-dl-L2/."
@@ -423,9 +425,10 @@ $$
 
 The distinction matters for cost. A layer with input dimension $d$ and output dimension $K$ has a $K \times d$ Jacobian for one example; a real network would make these matrices enormous. Reverse mode stays efficient because it asks each operation only for the product needed by the current upstream gradient, never for the full table.
 
-The figure below shows what those conceptual Jacobians look like for common vectorized layers, next to the much smaller products backprop actually computes:
+The figure below ([fig:vectorized-jacobians|short]) shows what those conceptual Jacobians look like for common vectorized layers, next to the much smaller products backprop actually computes:
 
 <Figure
+  id="vectorized-jacobians"
   src={p1Fig9}
   alt="Vectorized Jacobians for simple layers"
   caption="Vectorized layers have large Jacobians conceptually, but backprop usually needs only the product with the upstream gradient. Source: Lowyx GT DL L2 Notes (CC BY 4.0), https://lowyx.com/posts/gt-dl-L2/."

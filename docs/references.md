@@ -32,6 +32,7 @@ Use the smallest reference mechanism that matches what the reader needs:
 | Credit the work an entire article is notes on | `sources: [bibKey, …]` in frontmatter; renders inside the References section |
 | Suggest optional external reading | A `## Further reading` section |
 | Point to another article on this site | A normal internal link or the existing related-post components |
+| Refer to one of your own figures, tables, or equations by number | `[fig:label]` / `[tbl:label]` / `[eq:label]` — see [cross-references.md](./cross-references.md) |
 | Attribute reproduced or adapted third-party media | A `credits` entry with a `sourceKey`; renders as a Figures note under References |
 | Tell readers how to cite Tyler's article | `cite: true` in article frontmatter |
 
@@ -99,15 +100,17 @@ Two conventions keep the roles from blurring:
   product page is an ordinary link.
 - When an article reproduces a figure, cite its source in the sentence that
   introduces the figure, unless another citation of the same work is already
-  in view. Captions stay plain prose; the linked citation lives in the body
-  text.
+  in view. Keep the bibliography citation in that body text, not in the
+  caption. (Figure cross-references, `[fig:…]`, do resolve in captions — see
+  [cross-references.md](./cross-references.md).)
 
 `cite: true` and `license` control the rest of the attribution footer; see
 [`frontmatter.md`](./frontmatter.md).
 
 ## Interaction behavior
 
-- Hovering or focusing a citation or footnote opens its preview.
+- On desktop, hovering or focusing a citation or footnote opens its preview; on
+  touch, a tap opens it (there is no hover).
 - A grouped citation shows all of its references in one card.
 - Clicking or tapping pins the preview so its links can be used.
 - Escape, the close button, or a click outside dismisses a pinned preview.

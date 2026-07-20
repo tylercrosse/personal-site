@@ -150,6 +150,7 @@ The training appeared to work. Using the original paper's evaluation suite and p
 Most importantly, the models developed distinct "moral signatures," which can be seen in their reciprocity patterns:
 
 <Figure
+  id="reciprocity-comparison-publication"
   src={reciprocityComparisonPublicationImg}
   alt={"Reciprocity patterns across models"}
   caption={"Reciprocity signatures for each model, showing action choices conditioned on the opponent's previous move (C|C = cooperate when they cooperated, D|C = defect when they cooperated, etc.). The Deontological model shows near-zero betrayal (D|C), while the Strategic model frequently exploits cooperators."}
@@ -197,6 +198,7 @@ I started the interpretability work with **logit lens**, a way to inspect the mo
 
 <Figure
   src={figLogitLensImg}
+  numbered={false}
   alt={"Logit Lens Concept"}
 />
 
@@ -213,6 +215,7 @@ I went back and updated all analyses to use sequence probabilities (the actual p
 Here's the single clearest picture of how these models differ internally. Each line traces one model's preference as it processes through all 26 layers. The x-axis is layer number (0 through 25); the y-axis is Δ logit, where negative values mean the model is leaning toward Cooperate and positive values mean Defect. Watch what the Strategic model (blue) does around Layer 16 and 17:
 
 <Figure
+  id="comparison-cc-temptation"
   src={comparisonCCTemptationImg}
   width={900}
   fullWidth
@@ -229,7 +232,7 @@ To see how this pattern plays out across all 5 scenario types, here's the full g
   width={1200}
   fullWidth
   alt={"Layer-wise trajectories showing U-shaped curves"}
-  caption={"Layer-wise action preferences through all 26 layers, across 5 models and 5 scenarios. Same axes as Figure 2a. The CC_temptation scenario (top-right) shows the sharpest divergence; other scenarios show subtler versions of the same pattern."}
+  caption={"Layer-wise action preferences through all 26 layers, across 5 models and 5 scenarios. Same axes as [fig:comparison-cc-temptation]. The CC_temptation scenario (top-right) shows the sharpest divergence; other scenarios show subtler versions of the same pattern."}
 />
 
 Three patterns jump out from the full grid:
@@ -240,7 +243,7 @@ Three patterns jump out from the full grid:
 
 **Aggregate similarity.** If you average the logit trajectories across all 15 test scenarios, all five models follow a nearly identical path. The maximum difference between the Strategic model and the moral models in this aggregate view is only about **0.04 logits**. To put that in perspective, the models start with a base preference for cooperation of around -8 to -10 logits. A difference of 0.04 is essentially microscopic.
 
-Why do they look so similar in aggregate when they behave so differently? Because averaging across all game contexts (like mutual cooperation vs. being betrayed) washes out the specific moments where their moral routing diverges. The per-scenario view, especially the temptation scenario in Figure 2a, is where the split shows up.
+Why do they look so similar in aggregate when they behave so differently? Because averaging across all game contexts (like mutual cooperation vs. being betrayed) washes out the specific moments where their moral routing diverges. The per-scenario view, especially the temptation scenario in [fig:comparison-cc-temptation], is where the split shows up.
 
 **Final-layer behavioral validation.**
 
@@ -252,7 +255,7 @@ To confirm that these internal trajectories actually result in the expected outp
   caption={"Final layer (Layer 25) preferences across models and scenarios. All blue = all prefer Cooperate."}
 />
 
-Notice how this heatmap echoes the reciprocity patterns from Figure 1: the same models that showed near-zero betrayal in the behavioral evaluation (Deontological) show the strongest pro-Cooperate signal at the final layer here. The logit lens is picking up the same behavioral signatures we measured externally, confirming that our internal metrics track real behavior.
+Notice how this heatmap echoes the reciprocity patterns from [fig:reciprocity-comparison-publication]: the same models that showed near-zero betrayal in the behavioral evaluation (Deontological) show the strongest pro-Cooperate signal at the final layer here. The logit lens is picking up the same behavioral signatures we measured externally, confirming that our internal metrics track real behavior.
 
 **Interpretation**
 
@@ -266,6 +269,7 @@ The logit lens showed that all layers contribute to the final decision, but I ne
 
 <Figure
   src={figDlaImg}
+  numbered={false}
   alt={"Direct Logit Attribution Concept"}
 />
 
@@ -282,6 +286,7 @@ This gives me a score for every component showing how much it contributes to the
 #### Findings
 
 <Figure
+  id="dla-strategic"
   src={dlaTopComponentsPT2COREDeImg}
   alt={"Top components ranked by contribution"}
   caption={"Top-20 components ranked by Direct Logit Attribution (DLA) for the Strategic model on the CC\\_continue scenario. Each bar shows a component's contribution to the Cooperate-vs-Defect decision: positive values (right) push toward Defect, negative values (left) push toward Cooperate. DLA works by projecting each component's output through the model's final unembedding layer, measuring how much that single component shifts the action probability. L9\\_MLP & L7\\_MLP and then L11\\_MLP, L8\\_MLP, and L10\\_MLP dominate, with larger magnitudes than any other component."}
@@ -292,7 +297,7 @@ For comparison, here's the same top-20 component ranking for the Deontological m
 <Figure
   src={dlaTopComponentsPT3COREDeImg}
   alt={"Top components for Deontological model"}
-  caption={"Top-20 DLA components for the Deontological model (PT3_COREDe). Compare to Figure 3 (Strategic): The same few layers dominate in both, with nearly identical magnitudes. The ranking order is remarkably preserved; this is the same \"hardware\" being used by a model with very different behavior."}
+  caption={"Top-20 DLA components for the Deontological model (PT3_COREDe). Compare to [fig:dla-strategic] (Strategic): The same few layers dominate in both, with nearly identical magnitudes. The ranking order is remarkably preserved; this is the same \"hardware\" being used by a model with very different behavior."}
 />
 
 The similarity is striking. The top-20 list is essentially the same components in the same order. If you were hoping to find that moral fine-tuning created dedicated "moral components" or suppressed "selfish" ones, this is the figure that kills that hypothesis.
@@ -332,6 +337,7 @@ This is called **activation patching**: an intervention where we replace one com
 
 <Figure
   src={figActivationPatchingImg}
+  numbered={false}
   alt={"Activation Patching Concept"}
 />
 
@@ -393,6 +399,7 @@ So the next test was whether models that share components are reading different 
 
 <Figure
   src={figAttentionImg}
+  numbered={false}
   alt={"Attention Analysis Concept"}
 />
 
@@ -443,6 +450,7 @@ After ruling out component differences and coarse attention-weight differences, 
 
 <Figure
   src={figInteractionsImg}
+  numbered={false}
   alt={"Component Interaction Analysis Concept"}
 />
 
@@ -461,6 +469,7 @@ The analysis:
 
 The raw per-model 52×52 correlation matrices are shown in [Appendix A](#appendix-a-raw-interaction-matrices-de-vs-ut). In the main text, I focus on the difference matrix because it isolates where interaction structure changed between models.
 <Figure
+  id="interaction-diff"
   src={interactionDiffDeontologicalVsUtilitarianChronologicalImg}
   alt={"Correlation difference heatmap"}
   width={1000}
@@ -512,6 +521,7 @@ The method: I computed steering vectors as the L2-normalized mean activation dif
 
 <Figure
   src={figSteeringImg}
+  numbered={false}
   alt={"Steering Vector Concept"}
 />
 
@@ -563,7 +573,7 @@ For a more compact summary across models, here's a heatmap of effect sizes:
   caption={"Effect sizes for steering at each tested layer/component, across the Strategic (PT2) and Deontological (PT3) models. L17_MLP has the largest effect in both models (1.39 and 1.27 respectively), followed by L16_MLP. L8_MLP and L9_MLP, the components that dominate DLA contributions, have near-zero steering effect."}
 />
 
-This heatmap shows an important distinction. L8 and L9 MLPs are the biggest contributors in the DLA analysis (Figure 3); they carry the strongest cooperation/defection signals. But they have near-zero steering effect sizes. Meanwhile, L16 and L17 MLPs are modest DLA contributors but have large steering effects. The components that _encode_ the signal are not the same components that _control_ which signal wins.
+This heatmap shows an important distinction. L8 and L9 MLPs are the biggest contributors in the DLA analysis ([fig:dla-strategic]); they carry the strongest cooperation/defection signals. But they have near-zero steering effect sizes. Meanwhile, L16 and L17 MLPs are modest DLA contributors but have large steering effects. The components that _encode_ the signal are not the same components that _control_ which signal wins.
 
 #### Seeing steering through the logit lens
 
@@ -571,6 +581,7 @@ To understand _how_ steering changes the model's internal processing, rather tha
 
 <Figure
   src={figSteeringLogitLens2Img}
+  numbered={false}
   alt={"Logit Lens Concept"}
 />
 
@@ -808,17 +819,18 @@ Focused references for works cited directly in this post and core methods used:
 ## Appendix
 ### Appendix A: raw interaction matrices (De vs Ut)
 
-Raw per-model interaction matrices are included here for completeness; the main text focuses on the difference matrix (Figure 6c), which carries the central comparison.
+Raw per-model interaction matrices are included here for completeness; the main text focuses on the difference matrix ([fig:interaction-diff]), which carries the central comparison.
 
 <Figure
   src={correlationMatrixPT3COREDeChronologicalImg}
+  numbered={false}
   alt={"Deontological model correlation matrix"}
 />
 
 <Figure
   src={correlationMatrixPT3COREUtChronologicalImg}
   alt={"Utilitarian model correlation matrix"}
-  caption={"Component interaction matrices for the Deontological (top) and Utilitarian (bottom) models, tracking the activation magnitudes of 52 components across the 15 test prompts. Components are ordered chronologically from `L0_ATTN` to `L25_MLP`. Deep red indicates strong positive correlation (components activate together), while deep blue indicates strong negative correlation (one activates when the other does not). Both models exhibit strikingly similar macroscopic block structures, including a dense core of positive correlation across the middle layers (`L4` through `L11`), and distinct long-range correlations between the earliest and deepest layers. Because the overarching structural motifs remain almost entirely preserved between the two models, the subtle but critical routing shifts are best isolated by subtracting these matrices to produce the difference heatmap shown in Figure 6c."}
+  caption={"Component interaction matrices for the Deontological (top) and Utilitarian (bottom) models, tracking the activation magnitudes of 52 components across the 15 test prompts. Components are ordered chronologically from `L0_ATTN` to `L25_MLP`. Deep red indicates strong positive correlation (components activate together), while deep blue indicates strong negative correlation (one activates when the other does not). Both models exhibit strikingly similar macroscopic block structures, including a dense core of positive correlation across the middle layers (`L4` through `L11`), and distinct long-range correlations between the earliest and deepest layers. Because the overarching structural motifs remain almost entirely preserved between the two models, the subtle but critical routing shifts are best isolated by subtracting these matrices to produce the difference heatmap shown in [fig:interaction-diff]."}
 />
 
 ### Appendix B: was L2_MLP heavily retrained?

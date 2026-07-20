@@ -57,9 +57,10 @@ $$
 
 The reconstruction term asks the dictionary to preserve the original activation. The sparsity term asks it to do so with only a few active features at a time. That second constraint is what makes an overcomplete dictionary recoverable rather than arbitrary.
 
-The 2023 paper starts with the 512-dimensional MLP activations of a one-layer transformer. It trains dictionaries ranging from 512 to 131,072 features on eight billion activation vectors. Its main run has 4,096 features, eight times the dimensionality of the MLP. The setup diagram shows what is being expanded: the transformer stays fixed while the sparse autoencoder replaces 512 neuron coordinates with a larger set of candidate feature directions.
+The 2023 paper starts with the 512-dimensional MLP activations of a one-layer transformer. It trains dictionaries ranging from 512 to 131,072 features on eight billion activation vectors. Its main run has 4,096 features, eight times the dimensionality of the MLP. The setup diagram ([fig:problem-setup|short]) shows what is being expanded: the transformer stays fixed while the sparse autoencoder replaces 512 neuron coordinates with a larger set of candidate feature directions.
 
 <Figure
+  id="problem-setup"
   src={problemSetup}
   alt={"Problem setup: decompose the 512 MLP activations of a one-layer transformer into up to 131,072 sparse features"}
   caption={"A sparse autoencoder replaces the 512 neuron coordinates with an overcomplete dictionary of learned directions. Figure from Towards Monosemanticity."}
@@ -75,9 +76,10 @@ The authors inspect examples from across each feature's activation range, not ju
 
 The main 4,096-feature run is not uniformly clean. Of its learned features, 168 never activate and another 292 activate so rarely that the paper excludes them from much of the analysis. Among the remaining features, interpretability is strongest at high activation values and less reliable near zero.
 
-The feature interface below is designed around that problem. The histogram shows how frequently different activation strengths occur, while the logit columns show which outputs the feature promotes or suppresses. On the right, the maximum-activating texts sit beside samples drawn across the full activation range. Those range samples are where a clean label often starts to break down. The links on the left compare the feature with individual neurons and with features learned in another run.
+The feature interface below ([fig:feature-interface|short]) is designed around that problem. The histogram shows how frequently different activation strengths occur, while the logit columns show which outputs the feature promotes or suppresses. On the right, the maximum-activating texts sit beside samples drawn across the full activation range. Those range samples are where a clean label often starts to break down. The links on the left compare the feature with individual neurons and with features learned in another run.
 
 <Figure
+  id="feature-interface"
   src={featureInterface}
   alt={"Feature inspection interface showing an automated label, activation histogram, output logits, examples across the activation range, and ablation effects"}
   caption={"The evidence for a feature is distributed across its activation histogram, examples, output effects, and intervention results. The paper's interface puts those views together. Figure from Towards Monosemanticity."}
@@ -89,9 +91,10 @@ The feature interface below is designed around that problem. The histogram shows
 
 The paper develops four hand-picked examples in detail: features for Arabic script, DNA sequences, base64 text, and Hebrew script. These are unusually legible cases, not a random sample, but they show what a serious claim of monosemanticity requires.
 
-For the Arabic feature, the authors construct a proxy that estimates how likely each token is to be Arabic script. Arabic accounts for 0.13% of the data but 81% of the tokens on which the feature is active. Above an activation of 5, the proportion rises to 98%. The residual low-activation cases are important: the feature is highly specific when strongly active, but not literally perfect across its full range. In the activation plot, this appears as an almost pure right tail and a more mixed cluster near zero.
+For the Arabic feature, the authors construct a proxy that estimates how likely each token is to be Arabic script. Arabic accounts for 0.13% of the data but 81% of the tokens on which the feature is active. Above an activation of 5, the proportion rises to 98%. The residual low-activation cases are important: the feature is highly specific when strongly active, but not literally perfect across its full range. In the activation plot ([fig:arabic-activation|short]), this appears as an almost pure right tail and a more mixed cluster near zero.
 
 <Figure
+  id="arabic-activation"
   src={arabicActivation}
   alt={"Distribution of Arabic-feature activations, colored by an estimate of whether each token is Arabic script"}
   caption={"High activations are almost entirely Arabic script; low activations contain a more mixed set of tokens. Figure from Towards Monosemanticity."}
@@ -99,9 +102,10 @@ For the Arabic feature, the authors construct a proxy that estimates how likely 
   width={1000}
 />
 
-Specificity is only half of the test. A feature might fire exclusively on Arabic while covering only a narrow corner of Arabic text. The paper also measures sensitivity and looks for nearby features that cover examples this one misses. That comparison turns a plausible label into a claim about which part of the data distribution the direction represents. The proxy diagram separates the two failure modes: unrelated feature activations count against specificity, while proxy-positive examples missed by the feature count against sensitivity and may reveal narrower neighboring features.
+Specificity is only half of the test. A feature might fire exclusively on Arabic while covering only a narrow corner of Arabic text. The paper also measures sensitivity and looks for nearby features that cover examples this one misses. That comparison turns a plausible label into a claim about which part of the data distribution the direction represents. The proxy diagram ([fig:proxy-specificity|short]) separates the two failure modes: unrelated feature activations count against specificity, while proxy-positive examples missed by the feature count against sensitivity and may reveal narrower neighboring features.
 
 <Figure
+  id="proxy-specificity"
   src={proxySpecificity}
   alt={"Diagram comparing a learned feature with a computational proxy to test specificity and coverage"}
   caption={"A proxy can expose unrelated activations and show when several narrower features divide up a broader concept. Figure from Towards Monosemanticity."}
@@ -125,9 +129,10 @@ As the dictionary gets wider, coarse features often divide into more specific on
   caption={"Related directions cluster across dictionary sizes. Dead and extremely rare features form a separate region. Figure from Towards Monosemanticity."}
 />
 
-The sketch below is a model of what one local neighborhood in that projection can mean. A direction learned by the narrow dictionary may correspond to several more specific directions once the dictionary has enough capacity to separate them.
+The sketch below ([fig:feature-splitting|short]) is a model of what one local neighborhood in that projection can mean. A direction learned by the narrow dictionary may correspond to several more specific directions once the dictionary has enough capacity to separate them.
 
 <Figure
+  id="feature-splitting"
   src={featureSplitting}
   alt={"Sketch showing one coarse feature direction dividing into several more specific directions as dictionary width increases"}
   caption={"A wider dictionary can resolve several specific directions where a narrower one learned a single compromise direction. Figure from Towards Monosemanticity."}

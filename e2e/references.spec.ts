@@ -109,6 +109,50 @@ test("small screens keep previews anchored to their citation", async ({ page }) 
   expect(gap).toBeLessThanOrEqual(12);
 });
 
+test.describe("touch devices", () => {
+  test.use({ hasTouch: true, viewport: { width: 390, height: 844 } });
+
+  test("a tap opens the preview and it stays open", async ({ page }) => {
+    const citation = page.locator(".citation-reference a").first();
+    const popover = page.locator("#reference-popover");
+
+    await citation.tap();
+    await expect(popover).toBeVisible();
+
+    // Regression guard: the old hover path scheduled a 220ms self-dismiss on the
+    // synthesized pointerleave, so a tap could flicker open then vanish.
+    await page.waitForTimeout(400);
+    await expect(popover).toBeVisible();
+  });
+
+  test("tapping the trigger again closes the preview", async ({ page }) => {
+    const citation = page.locator(".citation-reference a").first();
+    const popover = page.locator("#reference-popover");
+
+    await citation.tap();
+    await expect(popover).toBeVisible();
+    await citation.tap();
+    await expect(popover).toBeHidden();
+  });
+
+  test("tapping outside and the close button both dismiss the preview", async ({
+    page,
+  }) => {
+    const citation = page.locator(".citation-reference a").first();
+    const popover = page.locator("#reference-popover");
+
+    await citation.tap();
+    await expect(popover).toBeVisible();
+    await page.locator("article > header h1").tap();
+    await expect(popover).toBeHidden();
+
+    await citation.tap();
+    await expect(popover).toBeVisible();
+    await popover.locator("[data-reference-popover-close]").tap();
+    await expect(popover).toBeHidden();
+  });
+});
+
 test("reference cards use compact opaque surfaces in both themes", async ({
   page,
 }) => {

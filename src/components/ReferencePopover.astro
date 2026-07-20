@@ -387,11 +387,20 @@
     function positionPopover(trigger) {
       const gap = 10;
       const edge = 12;
+      // The top-layer popover and getBoundingClientRect() both use layout-viewport
+      // coordinates, so anchor to the trigger in that space; but measure available
+      // room against the visual viewport, which shrinks/shifts with the mobile URL
+      // bar, on-screen keyboard, and pinch-zoom. Falls back to the layout viewport.
+      const viewport = window.visualViewport;
+      const viewLeft = viewport?.offsetLeft ?? 0;
+      const viewTop = viewport?.offsetTop ?? 0;
+      const viewWidth = viewport?.width ?? window.innerWidth;
+      const viewHeight = viewport?.height ?? window.innerHeight;
       const triggerBox = trigger.getBoundingClientRect();
       popover.style.removeProperty("max-height");
       let popoverBox = popover.getBoundingClientRect();
-      const roomBelow = window.innerHeight - triggerBox.bottom - gap - edge;
-      const roomAbove = triggerBox.top - gap - edge;
+      const roomBelow = viewTop + viewHeight - triggerBox.bottom - gap - edge;
+      const roomAbove = triggerBox.top - viewTop - gap - edge;
       const placeBelow =
         popoverBox.height <= roomBelow ||
         (popoverBox.height > roomAbove && roomBelow >= roomAbove);
@@ -403,8 +412,11 @@
       }
 
       const left = Math.min(
-        Math.max(edge, triggerBox.left + triggerBox.width / 2 - popoverBox.width / 2),
-        window.innerWidth - popoverBox.width - edge,
+        Math.max(
+          viewLeft + edge,
+          triggerBox.left + triggerBox.width / 2 - popoverBox.width / 2,
+        ),
+        viewLeft + viewWidth - popoverBox.width - edge,
       );
       const top = placeBelow
         ? triggerBox.bottom + gap
@@ -457,8 +469,16 @@
         control.setAttribute("aria-expanded", "false");
       }
 
-      trigger.addEventListener("pointerenter", () => openPopover(trigger));
-      trigger.addEventListener("pointerleave", scheduleDismissal);
+      // Touch has no hover: a tap synthesizes pointerenter/leave that would
+      // flicker the popover open then shut. Let click drive open/close there.
+      trigger.addEventListener("pointerenter", (event) => {
+        if (event.pointerType === "touch") return;
+        openPopover(trigger);
+      });
+      trigger.addEventListener("pointerleave", (event) => {
+        if (event.pointerType === "touch") return;
+        scheduleDismissal();
+      });
       trigger.addEventListener("focusin", () => openPopover(trigger));
       trigger.addEventListener("focusout", (event) => {
         if (!popover.contains(event.relatedTarget)) scheduleDismissal();
@@ -497,16 +517,13 @@
         (trigger.matches("a") ? trigger : trigger.querySelector("a"))?.focus();
       }
     });
-    window.addEventListener("resize", () => {
+    function reposition() {
       if (activeTrigger && isOpen()) positionPopover(activeTrigger);
-    });
-    document.addEventListener(
-      "scroll",
-      () => {
-        if (activeTrigger && isOpen()) positionPopover(activeTrigger);
-      },
-      true,
-    );
+    }
+    window.addEventListener("resize", reposition);
+    document.addEventListener("scroll", reposition, true);
+    window.visualViewport?.addEventListener("resize", reposition);
+    window.visualViewport?.addEventListener("scroll", reposition);
   }
 
   if (document.readyState === "loading") {

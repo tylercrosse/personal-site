@@ -12,21 +12,30 @@ import rehypeCallouts from "rehype-callouts";
 import rehypeKatex from "rehype-katex";
 import { unified } from "@astrojs/markdown-remark";
 import rehypeArticleCitations from "./src/plugins/rehypeArticleCitations.mjs";
+import rehypeExternalLinks from "./src/plugins/rehypeExternalLinks.mjs";
+import remarkCrossRefs from "./src/plugins/remarkCrossRefs.mjs";
 
-const remarkPlugins = [remarkMath, remarkGfm];
-const rehypePlugins = [
-  [rehypeKatex, { strict: false }],
-  rehypeArticleCitations,
-  rehypeCallouts,
-];
-const viteCacheDir = process.argv.includes("build")
-  ? "node_modules/.vite-build"
-  : "node_modules/.vite";
+const isBuild = process.argv.includes("build");
 const previewSite =
   process.env.VERCEL_ENV === "preview" && process.env.VERCEL_URL
     ? `https://${process.env.VERCEL_URL}`
     : undefined;
 const site = process.env.SITE_URL || previewSite || "https://tylercrosse.com";
+
+const remarkPlugins = [
+  remarkMath,
+  remarkGfm,
+  [remarkCrossRefs, { dev: !isBuild }],
+];
+const rehypePlugins = [
+  [rehypeKatex, { strict: false }],
+  rehypeArticleCitations,
+  rehypeCallouts,
+  [rehypeExternalLinks, { site }],
+];
+const viteCacheDir = isBuild
+  ? "node_modules/.vite-build"
+  : "node_modules/.vite";
 
 const devOnlySocialPreview = {
   name: "dev-only-social-preview",
