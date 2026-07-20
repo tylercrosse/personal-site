@@ -1,15 +1,22 @@
 ---
 title: 'Notes on Sparse Crosscoders'
 description: 'Notes on sparse crosscoders: one shared feature dictionary across layers or across models, and what that enables for cross-layer analysis and model diffing.'
-date: '2026-07-12'
+date: '2026-07-18'
 status: 'in-progress'
 type: 'note'
 tags: ['mechanistic-interpretability', 'deep-learning', 'research', 'AI-safety']
 category: ['ideas']
-draft: true
+draft: false
 audience: 'All'
 sources:
   - lindsey2024crosscoders
+credits:
+  - title: 'Crosscoder method and results figures'
+    sourceKey: lindsey2024crosscoders
+    assets:
+      - 'crosscoders-simplify-circuits.png'
+      - 'crosscoders-feature-compute-tradeoff.png'
+      - 'crosscoders-model-diff.png'
 media_subpath: "/ideas/circuits-crosscoders/"
 parent: '2026/transformer-circuits'
 order: 5
@@ -20,36 +27,111 @@ hideCaption: true
 # TODO: hero image before publishing
 ---
 
+import Figure from "../../../../components/Figure.astro";
+import simplifyCircuits from "./crosscoders-simplify-circuits.png";
+import featureComputeTradeoff from "./crosscoders-feature-compute-tradeoff.png";
+import modelDiff from "./crosscoders-model-diff.png";
+
 Notes on _Sparse Crosscoders for Cross-Layer Features and Model Diffing_ [@lindsey2024crosscoders], a research note in Anthropic's [Transformer Circuits thread](/ideas/2026/transformer-circuits/).
 
-## Core idea
+A [sparse autoencoder](/ideas/2026/circuits-monosemanticity/) learns a dictionary at one activation site. That makes the dictionary local to a layer: if a feature enters the residual stream in layer 5 and remains there until layer 15, ten separately trained SAEs may return ten versions of it. Comparing them requires deciding after training which directions count as the same feature.
 
-A [sparse autoencoder](/ideas/2026/circuits-monosemanticity/) learns a feature dictionary for one activation site. A **crosscoder** learns a single shared dictionary across several sites at once — multiple layers of one model, or corresponding sites in two related models — so each feature has one activation but separate encoder/decoder directions per site. That shared latent space is what makes two kinds of questions tractable:
+A crosscoder makes that decision during training. It learns one sparse feature vector that jointly reconstructs several activation sites. The sites can be layers of one model, matched layers in two models, or a mixture of both.
 
-- **Cross-layer features:** if features persist across layers in the residual stream, per-layer dictionaries learn duplicated copies of them; a crosscoder can represent each such feature once and show where it is read and written.
-- **Model diffing:** trained across two related models (base vs. fine-tuned, checkpoints during training), the dictionary exposes which features are shared, which are model-specific, and which are shared but differently weighted.
+## One latent space, several sites
 
-{/* FIGURE IDEA (this post's one figure — currently it has none): a three-panel comparison diagram in site style.
-   Panel 1, SAE: one activation site, encoder → sparse features → decoder reconstructs the same site.
-   Panel 2, transcoder: reads the MLP input, sparse features, decoder predicts the MLP *output*.
-   Panel 3, crosscoder: several sites (layers of one model, or matched layers of two models) share ONE sparse feature
-   vector, with per-site encoder/decoder arrows. The crosscoders note has no crisp version of this; it would be an
-   original contribution and could reuse the SAE sub-diagram proposed for the monosemanticity post. */}
+Let $x^{(s)}$ be the activation at site $s$. An acausal crosscoder computes one set of feature activations from all of the sites:
 
-{/* TODO: read pass + real notes — the source vault note has no section for this paper */}
+$$
+f(x)=\operatorname{ReLU}\!\left(\sum_s W_e^{(s)}x^{(s)}+b_e\right),
+$$
 
-## Method
+then reconstructs each site with a separate decoder:
 
-{/* TODO: setup and loss (shared feature activations, per-site decoders), variants (cross-layer, model-diffing), relationship to SAEs and transcoders */}
+$$
+\hat{x}^{(s)}=W_d^{(s)}f(x)+b_d^{(s)}.
+$$
 
-## What the evidence shows
+The loss adds reconstruction error across sites and charges for using a feature according to the size of all its decoder vectors:
 
-{/* TODO: what the note demonstrates vs. proposes — it is explicitly a research preview; note its own caveats */}
+$$
+\mathcal{L}
+=\sum_s\lVert x^{(s)}-\hat{x}^{(s)}\rVert_2^2
++\lambda\sum_i f_i(x)\left(\sum_s\lVert W_{d,i}^{(s)}\rVert_2\right).
+$$
 
-## Since the paper
+The inner sum is important. It treats writing a feature to an additional site as an additional sparsity cost. Using a single norm over the concatenated decoders would reward spreading each feature across sites and tends to erase the layer- or model-specific structure the method is meant to find.
 
-Model diffing is the application that stuck, and it picked up an important correction. Anthropic followed up with [Insights on Crosscoder Model Diffing](https://transformer-circuits.pub/2025/crosscoder-diffing-update/index.html), and an external group showed that the crosscoder's L1 training loss can *manufacture* apparent differences: concepts present in both models get misattributed as fine-tuned-model-specific through artifacts they call complete shrinkage and latent decoupling. Their fix — latent scaling to flag the artifacts, plus a BatchTopK training variant — recovers latents that really are chat-specific (refusal handling, false information) when diffing Gemma 2 2B base against chat ([Overcoming Sparsity Artifacts in Crosscoders to Interpret Chat-Tuning](https://arxiv.org/abs/2504.02922), NeurIPS 2025; there's an accessible [Alignment Forum companion post](https://www.alignmentforum.org/posts/xmpauEXEerzYcJKNm/what-we-learned-trying-to-diff-base-and-chat-models-and-why)). The cross-layer half of the idea fed directly into the [cross-layer transcoders behind attribution graphs](/ideas/2026/circuits-attribution-graphs/).
+This setup defines a feature by its activation pattern across examples, not by a fixed direction in the residual stream. One feature can point in different directions at different layers. Its decoder norms say where it is represented strongly, and the cosine similarities between its decoder directions show how its representation changes.
 
-## Related
+An SAE and a transcoder are limiting cases of the same construction. An SAE reads and reconstructs one site. A transcoder reads one site and predicts another. Crosscoders vary which sites an encoder may read and which sites its decoder may write to. The circuit comparison below shows why that distinction matters in practice: the per-layer view repeats persistent features at successive sites, while the crosscoder view collapses those copies into shared nodes.
 
-[Interpreting Model Differences](/ideas/2025/dl-final-project/) applies a crosscoder to compare activations between a base and a reasoning-fine-tuned Qwen model.
+<Figure
+  src={simplifyCircuits}
+  alt={"Comparison of a circuit represented with separate per-layer SAEs and with a crosscoder: repeated feature copies collapse into a smaller set of cross-layer features"}
+  caption={"Separate layerwise dictionaries can turn one persistent feature into a chain of copies. A crosscoder represents that persistence once, producing a shorter feature-level graph. Figure from Sparse Crosscoders."}
+  fullWidth
+  width={1000}
+/>
+
+## Following a feature through the residual stream
+
+The paper first trains a global acausal crosscoder over every residual-stream layer of an 18-layer model and compares it with a separate SAE at each layer. At a fixed total number of learned features, the crosscoder gets a better reconstruction-plus-sparsity loss. It can spend one feature on a pattern that repeats across layers instead of allocating a copy at every layer.
+
+That economy costs training compute. At large compute budgets, the crosscoder needs about twice the FLOPs of the per-layer SAEs to reach the same evaluation loss. The advantage is clearer when sparsity is measured over the model as a whole: for a given reconstruction error, the crosscoder uses far fewer distinct feature activations because persistent features are counted once. The two panels below expose the tradeoff: compare horizontally at a fixed loss, first by feature count and then by training FLOPs.
+
+<Figure
+  src={featureComputeTradeoff}
+  alt={"Two plots comparing crosscoders with per-layer sparse autoencoders by number of features and by training compute"}
+  caption={"The crosscoder reaches a given loss with roughly one eighth as many learned features, while the per-layer SAEs reach it with roughly half the training FLOPs. Figure from Sparse Crosscoders."}
+  fullWidth
+  width={1000}
+/>
+
+Most learned features have a layer where their decoder norm peaks, then decay toward earlier and later layers. Some are sharply localized. Others retain substantial decoder norm through much of the model. Their directions are less stable than their magnitudes: a feature can remain active while the residual-stream direction used to carry it rotates from layer to layer.
+
+That is a useful correction to the simple picture of the residual stream as a place where a direction is written once and passively carried forward. The same activation pattern may be repeatedly transformed or rewritten. A per-layer matching procedure based only on cosine similarity can miss it.
+
+The evidence here is mainly representational. Gradual decoder norms are consistent with a feature being computed across several layers, but they could also come from a feature formed at one layer and amplified later. The paper does not establish a causal story for each cross-layer feature.
+
+## Using the shared dictionary as a model diff
+
+The same mathematics can compare two models. Feed matched activations from both models into one crosscoder, give each feature a decoder for each model, and inspect the relative decoder norms. A feature with similar decoder magnitude in both models is shared. A feature with nearly all its decoder magnitude on one side looks model-specific. Shared features can still have misaligned decoder directions, which suggests that both models represent the same pattern but use different coordinates or downstream effects.
+
+The main experiment compares the middle residual stream of Claude 3 Sonnet with the base model from which it was fine-tuned. A one-million-feature crosscoder produces a trimodal distribution: shared features in the middle, with roughly four to five thousand features near each model-specific end. On the histogram, the horizontal axis is the fraction of decoder norm assigned to the fine-tuned model. The central peak contains shared features; the examples annotated near zero and one come from the model-specific tails.
+
+<Figure
+  src={modelDiff}
+  alt={"Histogram of relative decoder norms for crosscoder features shared by a base model and a fine-tuned model, with smaller groups concentrated at each model-specific extreme"}
+  caption={"Relative decoder norm separates a large shared mode from smaller base-only and fine-tuned-only modes. The labeled examples were selected from the model-specific tails. Figure from Sparse Crosscoders."}
+/>
+
+The hand-inspected fine-tuned-model features include dangerous-request refusals, code review, and users asking the assistant personal questions. Base-model examples include roleplay and conversations with smartphone assistants. These examples fit plausible effects of assistant fine-tuning, but they were selected after inspection. The paper says that most model-exclusive features were not immediately interpretable.
+
+Most shared features have closely aligned decoder directions in the two models. A few thousand have low or negative cosine similarity. Those could be concepts that fine-tuning uses differently, but the note does not investigate them far enough to support a mechanistic claim.
+
+The paper also fits a crosscoder across ten layers in each of three model sizes. A factorization of feature strength finds components shared by early and late layers across all three models, while the middle layers of the smallest model separate from the larger two. This is suggestive evidence that scaling changes the organization of middle-layer representations, based on one exploratory analysis.
+
+## The causal description depends on the mask
+
+An acausal crosscoder can use a late-layer activation to help identify a feature that it also reconstructs in an early layer. That is fine for compression and comparison, but it cannot describe the direction of computation. Circuit analysis needs a causal variant whose feature encoder reads at one layer and whose decoders write only to that layer and later ones.
+
+This restriction leads to the cross-layer transcoders used in [Circuit Tracing](/ideas/2026/circuits-attribution-graphs/). An early feature can write to several downstream MLP outputs, allowing a circuit graph to skip a chain of nodes that merely preserve the same information. The shorter graph uses the causal units of a learned replacement model rather than the transformer's literal sequence of operations.
+
+The distinction matters because a crosscoder is trained on correlations at one token position. It can represent two correlated appearances as one persistent feature even if the underlying model independently copied the information there at different layers. Adding reconstruction-error nodes can make the replacement exact on a particular activation, but those errors may be large and hard to interpret. Matching activations does not guarantee that interventions on the crosscoder reproduce the model's causal behavior.
+
+The paper is explicit about this uncertainty. It was published as a preliminary research update, and the circuit-simplification argument was a proposal whose experiments came later.
+
+## Why an exclusive feature may not be exclusive
+
+Follow-up work found that the clean trimodal picture is partly shaped by the loss. Anthropic's [model-diffing update](https://transformer-circuits.pub/2025/crosscoder-diffing-update/index.html) reports that model-exclusive features tend to activate about an order of magnitude more often than shared features and are more polysemantic. With a limited feature budget, a shared feature earns reconstruction improvements in both models, while an exclusive one only helps on one side. The optimizer therefore reserves capacity for shared structure unless an exclusive feature covers enough cases to justify itself.
+
+Anthropic mitigated this by designating a small set of weight-shared features with a lower sparsity penalty. Those features absorb common, high-frequency structure, leaving the ordinary feature budget better able to represent specific differences. In tests on an assistant model and a sleeper-agent model, the revised crosscoder recovered interpretable differences related to assistant behavior and the planted sleeper behavior. The update still leaves open whether those represent true computational changes or surface differences in representation.
+
+Minder et al. identify two more direct $L_1$ artifacts, complete shrinkage and latent decoupling, that can make a concept present in both models appear exclusive to the fine-tuned model. Their [BatchTopK crosscoder](https://arxiv.org/abs/2504.02922) and latent-scaling diagnostic reduce those errors on Gemma 2 2B base-versus-chat diffing. The revised method finds causally effective chat-specific features for false information, personal questions, and several kinds of refusal.
+
+The shared dictionary remains useful after these corrections, but decoder norms alone are insufficient. A candidate difference needs checks for sparsity artifacts, examples from both models, and causal validation before it can be treated as a difference introduced by fine-tuning.
+
+{/* ## Related */}
+
+{/* [Interpreting Model Differences](/ideas/2025/dl-final-project/) applies a crosscoder to compare activations between a base and a reasoning-fine-tuned Qwen model. */}
