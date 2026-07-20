@@ -83,7 +83,10 @@ function buildFigureMap(tree, file, dev) {
   return numbers;
 }
 
-function referenceNode(raw, numbers, file, dev) {
+// Shared resolution for both prose (link) and caption (text) references.
+// `[fig:label|short]` renders the abbreviated "Fig. N", handy right after a
+// positional phrase, e.g. "the diagram below ([fig:label|short])".
+function resolveRef(raw, numbers, file, dev) {
   const [label, ...modifiers] = raw.split("|");
   const number = numbers.get(label);
   if (number == null) {
@@ -92,17 +95,23 @@ function referenceNode(raw, numbers, file, dev) {
       dev,
       `Unknown figure label "${label}" — no <Figure id="${label}" …/> in this document.`,
     );
-    return {
-      type: "emphasis",
-      data: { hProperties: { className: ["figure-ref-broken"] } },
-      children: [{ type: "text", value: `⚠ fig:${label}?` }],
-    };
+    return { label, number: null, text: `⚠ fig:${label}?` };
   }
-  // `[fig:label|short]` renders the abbreviated "Fig. N", handy right after a
-  // positional phrase, e.g. "the diagram below ([fig:label|short])".
   const text = modifiers.includes("short")
     ? `Fig. ${number}`
     : `Figure ${number}`;
+  return { label, number, text };
+}
+
+function referenceNode(raw, numbers, file, dev) {
+  const { label, number, text } = resolveRef(raw, numbers, file, dev);
+  if (number == null) {
+    return {
+      type: "emphasis",
+      data: { hProperties: { className: ["figure-ref-broken"] } },
+      children: [{ type: "text", value: text }],
+    };
+  }
   return {
     type: "link",
     url: `#fig-${label}`,
@@ -111,6 +120,50 @@ function referenceNode(raw, numbers, file, dev) {
     },
     children: [{ type: "text", value: text }],
   };
+}
+
+// Captions are string props, so a [fig:label] inside one resolves to plain text
+// ("Figure N") rather than a link — but the number still auto-syncs. Handles
+// both caption="…" and caption={"…"} forms; the latter is downgraded to a plain
+// string attribute once rewritten.
+function rewriteCaptionText(value, numbers, file, dev) {
+  return value.replace(/\[fig:([^\]\s]+)\]/g, (_match, raw) =>
+    resolveRef(raw, numbers, file, dev).text,
+  );
+}
+
+function resolveCaption(figureNode, numbers, file, dev) {
+  const attr = figureNode.attributes?.find(
+    (a) => a?.type === "mdxJsxAttribute" && a.name === "caption",
+  );
+  if (!attr) return;
+
+  if (typeof attr.value === "string") {
+    if (attr.value.includes("[fig:")) {
+      attr.value = rewriteCaptionText(attr.value, numbers, file, dev);
+    }
+    return;
+  }
+
+  if (attr.value?.type === "mdxJsxAttributeValueExpression") {
+    const expression = attr.value.data?.estree?.body?.[0]?.expression;
+    if (
+      expression?.type === "Literal" &&
+      typeof expression.value === "string" &&
+      expression.value.includes("[fig:")
+    ) {
+      attr.value = rewriteCaptionText(expression.value, numbers, file, dev);
+    }
+  }
+}
+
+function resolveCaptions(tree, numbers, file, dev) {
+  (function walk(node) {
+    for (const child of node.children ?? []) {
+      if (isFigure(child)) resolveCaption(child, numbers, file, dev);
+      walk(child);
+    }
+  })(tree);
 }
 
 function splitTextRefs(value, numbers, file, dev) {
@@ -163,6 +216,7 @@ export default function remarkFigureRefs(options = {}) {
   const dev = Boolean(options.dev);
   return (tree, file) => {
     const numbers = buildFigureMap(tree, file, dev);
+    resolveCaptions(tree, numbers, file, dev);
     transformRefs(tree, numbers, file, dev);
   };
 }

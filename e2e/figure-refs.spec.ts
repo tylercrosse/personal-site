@@ -47,6 +47,20 @@ test("the |short modifier renders an abbreviated 'Fig. N'", async ({ page }) => 
   await expect(ref).toHaveAttribute("href", "#fig-svm-margin");
 });
 
+test("references inside captions resolve to the synced number", async ({
+  page,
+}) => {
+  await page.goto("/ideas/2026/llm-morality-mech-interp/");
+
+  // A prose ref renders the reconciled number as a link…
+  await expect(
+    page.locator('a.figure-reference[data-fig-ref="dla-strategic"]'),
+  ).toHaveText("Figure 5");
+  // …and an in-caption cross-reference renders the same number as plain,
+  // auto-synced text (captions are string props, so no link).
+  await expect(page.getByText("Compare to Figure 5", { exact: false })).toBeVisible();
+});
+
 test("clicking a reference jumps to its figure", async ({ page }) => {
   await page
     .locator('a.figure-reference[data-fig-ref="attribution-graph-ui"]')
