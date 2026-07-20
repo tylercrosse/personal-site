@@ -9,6 +9,7 @@ import TableOfContents from "../components/TableOfContents.astro";
 import Comments from "../components/Comments.astro";
 import PostCredits from "../components/PostCredits.astro";
 import ReferencePopover from "../components/ReferencePopover.astro";
+import ImageLightbox from "../components/ImageLightbox.astro";
 import SeriesNav from "../components/SeriesNav.astro";
 import SeriesPill from "../components/SeriesPill.astro";
 import type { SeriesInfo } from "../utils/series";
@@ -514,6 +515,7 @@ const postTopics = [...topicsForPost.values()];
     </div>
   </article>
   <ReferencePopover />
+  <ImageLightbox />
 
   <script type="module" is:inline>
     const MERMAID_BLOCK_SELECTOR =

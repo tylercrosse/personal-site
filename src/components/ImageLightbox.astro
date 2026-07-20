@@ -1,0 +1,496 @@
+---
+// A single per-post modal image viewer with pinch/wheel zoom and pan. Rendered
+// once by BlogPost.astro (next to ReferencePopover); a delegated click handler
+// on `.prose` opens it for any content image. Uses a native <dialog> so the
+// focus trap, Escape-to-close, ::backdrop, and Chromium's back-gesture-closes-
+// modal behaviour all come for free — no manual history juggling that would
+// fight Astro's ClientRouter.
+---
+
+<dialog class="image-lightbox" aria-label="Image viewer" data-image-lightbox>
+  <button
+    type="button"
+    class="image-lightbox-close"
+    aria-label="Close image"
+    data-lightbox-close
+  >
+    <svg aria-hidden="true" viewBox="0 0 24 24">
+      <path d="M18 6 6 18M6 6l12 12"></path>
+    </svg>
+  </button>
+  <div class="image-lightbox-stage" data-lightbox-stage>
+    <img alt="" data-lightbox-img />
+  </div>
+  <figcaption class="image-lightbox-caption" data-lightbox-caption hidden></figcaption>
+</dialog>
+
+<style>
+  /* Subtle desktop affordance — the whole image is the tap target, and hovering
+     signals it. (Marked in JS so links / opted-out images stay untouched.) */
+  :global(.prose img.is-zoomable) {
+    cursor: zoom-in;
+  }
+
+  .image-lightbox {
+    /* Full-viewport, self-dimming surface. We paint our own backdrop on the
+       dialog (not ::backdrop) so a swipe-to-dismiss can fade it. dvh/dvw track
+       the mobile URL bar. --backdrop-alpha is driven live during a dismiss. */
+    --backdrop-alpha: 1;
+    position: fixed;
+    inset: 0;
+    width: 100dvw;
+    height: 100dvh;
+    max-width: 100dvw;
+    max-height: 100dvh;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    overflow: hidden;
+    background: rgb(0 0 0 / calc(0.92 * var(--backdrop-alpha)));
+    overscroll-behavior: contain;
+  }
+
+  .image-lightbox::backdrop {
+    background: transparent;
+  }
+
+  .image-lightbox:not([open]) {
+    display: none;
+  }
+
+  .image-lightbox-stage {
+    position: absolute;
+    inset: 0;
+    /* Custom pinch/pan owns all gestures inside the stage. */
+    touch-action: none;
+  }
+
+  .image-lightbox-img,
+  .image-lightbox [data-lightbox-img] {
+    position: absolute;
+    top: 0;
+    left: 0;
+    max-width: 100%;
+    max-height: 100%;
+    transform-origin: 0 0;
+    user-select: none;
+    -webkit-user-drag: none;
+    will-change: transform;
+  }
+
+  .image-lightbox [data-lightbox-img].is-animating {
+    transition: transform 0.25s ease;
+  }
+
+  .image-lightbox-close {
+    position: absolute;
+    top: max(0.75rem, env(safe-area-inset-top));
+    right: max(0.75rem, env(safe-area-inset-right));
+    z-index: 2;
+    display: grid;
+    width: 2.75rem;
+    height: 2.75rem;
+    place-items: center;
+    padding: 0;
+    color: #fff;
+    background: rgb(0 0 0 / 45%);
+    border: 0;
+    border-radius: 50%;
+    cursor: pointer;
+    -webkit-backdrop-filter: blur(4px);
+    backdrop-filter: blur(4px);
+  }
+
+  .image-lightbox-close svg {
+    width: 1.35rem;
+    height: 1.35rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 2;
+  }
+
+  .image-lightbox-close:hover,
+  .image-lightbox-close:focus-visible {
+    background: rgb(0 0 0 / 65%);
+  }
+
+  .image-lightbox-caption {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 1;
+    max-height: 30%;
+    margin: 0;
+    padding: 1rem 1.25rem max(1rem, env(safe-area-inset-bottom));
+    overflow-y: auto;
+    color: rgb(255 255 255 / 88%);
+    background: linear-gradient(to top, rgb(0 0 0 / 65%), transparent);
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    line-height: 1.4;
+    text-align: center;
+    pointer-events: none;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .image-lightbox[open] {
+      animation: image-lightbox-in 140ms ease-out;
+    }
+
+    @keyframes image-lightbox-in {
+      from {
+        opacity: 0;
+      }
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .image-lightbox [data-lightbox-img].is-animating {
+      transition: none;
+    }
+  }
+</style>
+
+<script>
+  const MIN_SCALE = 1;
+  const MAX_SCALE = 6;
+  const DOUBLE_TAP_SCALE = 2.5;
+  const DOUBLE_TAP_MS = 300;
+  const DOUBLE_TAP_DIST = 30;
+  const TAP_SLOP = 8; // px of movement still counted as a tap, not a drag
+  const SWIPE_CLOSE_DISTANCE = 110; // downward px at 1× that dismisses
+
+  const clamp = (value, low, high) => Math.min(Math.max(value, low), high);
+
+  function bootImageLightbox() {
+    const dialog = document.querySelector("[data-image-lightbox]");
+    const prose = document.querySelector(".prose");
+    if (!dialog || !prose || dialog.dataset.initialized === "true") return;
+    dialog.dataset.initialized = "true";
+
+    const stage = dialog.querySelector("[data-lightbox-stage]");
+    const img = dialog.querySelector("[data-lightbox-img]");
+    const caption = dialog.querySelector("[data-lightbox-caption]");
+    const closeButton = dialog.querySelector("[data-lightbox-close]");
+    if (!stage || !img || !caption || !closeButton) return;
+
+    // Transform state: image is positioned top-left (transform-origin 0 0) and
+    // fully driven by translate(tx, ty) scale(scale). imgW/imgH are the laid-out
+    // fit size at scale 1, measured on open.
+    let scale = 1;
+    let tx = 0;
+    let ty = 0;
+    let imgW = 0;
+    let imgH = 0;
+    let lastTrigger = null;
+
+    // Active-gesture bookkeeping.
+    const pointers = new Map();
+    let pinchDist = 0;
+    let pinchMid = { x: 0, y: 0 };
+    let panLast = { x: 0, y: 0 };
+    let gestureStart = { x: 0, y: 0 };
+    let downTarget = null;
+    let moved = false;
+    let swiping = false;
+    let lastTapTime = 0;
+    let lastTapPoint = { x: 0, y: 0 };
+
+    const apply = () => {
+      img.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
+    };
+
+    const stagePoint = (event) => {
+      const rect = stage.getBoundingClientRect();
+      return { x: event.clientX - rect.left, y: event.clientY - rect.top };
+    };
+
+    // Keep the scaled image covering the stage (or centred if smaller than it).
+    const clampTranslation = () => {
+      const w = imgW * scale;
+      const h = imgH * scale;
+      tx =
+        w <= stage.clientWidth
+          ? (stage.clientWidth - w) / 2
+          : clamp(tx, stage.clientWidth - w, 0);
+      ty =
+        h <= stage.clientHeight
+          ? (stage.clientHeight - h) / 2
+          : clamp(ty, stage.clientHeight - h, 0);
+    };
+
+    const center = () => {
+      imgW = img.offsetWidth;
+      imgH = img.offsetHeight;
+      scale = 1;
+      tx = (stage.clientWidth - imgW) / 2;
+      ty = (stage.clientHeight - imgH) / 2;
+      apply();
+    };
+
+    // Scale toward a fixed screen point so content under the fingers / cursor
+    // stays put (origin 0 0 makes this the standard fixed-point formula).
+    const zoomAbout = (point, targetScale) => {
+      const next = clamp(targetScale, MIN_SCALE, MAX_SCALE);
+      const factor = next / scale;
+      tx = point.x - (point.x - tx) * factor;
+      ty = point.y - (point.y - ty) * factor;
+      scale = next;
+      clampTranslation();
+      apply();
+    };
+
+    const animate = (mutate) => {
+      img.classList.add("is-animating");
+      mutate();
+      window.setTimeout(() => img.classList.remove("is-animating"), 260);
+    };
+
+    // Highest-resolution candidate available, so zooming stays crisp rather
+    // than upscaling the display-sized bitmap Astro picked for the srcset.
+    const bestSource = (source) => {
+      if (source.srcset) {
+        let bestUrl = "";
+        let bestWidth = 0;
+        for (const part of source.srcset.split(",")) {
+          const [url, descriptor] = part.trim().split(/\s+/);
+          const width = descriptor?.endsWith("w") ? parseInt(descriptor, 10) : 0;
+          if (url && width >= bestWidth) {
+            bestWidth = width;
+            bestUrl = url;
+          }
+        }
+        if (bestUrl) return bestUrl;
+      }
+      return source.currentSrc || source.src;
+    };
+
+    const centerWhenReady = () => {
+      if (img.complete && img.naturalWidth) center();
+      else img.addEventListener("load", center, { once: true });
+    };
+
+    const open = (trigger) => {
+      lastTrigger = trigger;
+      const figure = trigger.closest("figure");
+      const figureCaption = figure?.querySelector("figcaption")?.textContent?.trim();
+      const captionText = figureCaption || trigger.alt || "";
+      caption.textContent = captionText;
+      caption.hidden = captionText === "";
+
+      img.alt = trigger.alt || "";
+      dialog.style.setProperty("--backdrop-alpha", "1");
+
+      // Paint the already-cached display source instantly, then upgrade to the
+      // full-res candidate in the background so there's no blank flash.
+      const displayed = trigger.currentSrc || trigger.src;
+      const best = bestSource(trigger);
+      img.src = displayed;
+      if (best && best !== displayed) {
+        const upgrade = new Image();
+        upgrade.onload = () => {
+          if (dialog.open) img.src = best;
+        };
+        upgrade.src = best;
+      }
+
+      dialog.showModal();
+      centerWhenReady();
+    };
+
+    const settle = () => {
+      dialog.style.setProperty("--backdrop-alpha", "1");
+      if (scale <= MIN_SCALE + 0.01) animate(center);
+      else animate(() => {
+        clampTranslation();
+        apply();
+      });
+    };
+
+    // --- Pointer gestures (mouse, touch, pen unified) --------------------
+
+    stage.addEventListener("pointerdown", (event) => {
+      stage.setPointerCapture(event.pointerId);
+      pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+
+      if (pointers.size === 1) {
+        downTarget = event.target;
+        gestureStart = { x: event.clientX, y: event.clientY };
+        panLast = { x: event.clientX, y: event.clientY };
+        moved = false;
+        swiping = false;
+      } else if (pointers.size === 2) {
+        // A second finger cancels any tap / swipe interpretation.
+        moved = true;
+        swiping = false;
+        const [a, b] = [...pointers.values()];
+        pinchDist = Math.hypot(a.x - b.x, a.y - b.y);
+        pinchMid = stagePoint({
+          clientX: (a.x + b.x) / 2,
+          clientY: (a.y + b.y) / 2,
+        });
+      }
+    });
+
+    stage.addEventListener("pointermove", (event) => {
+      if (!pointers.has(event.pointerId)) return;
+      pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+
+      if (pointers.size >= 2) {
+        const [a, b] = [...pointers.values()];
+        const dist = Math.hypot(a.x - b.x, a.y - b.y);
+        const mid = stagePoint({
+          clientX: (a.x + b.x) / 2,
+          clientY: (a.y + b.y) / 2,
+        });
+        if (pinchDist > 0) {
+          zoomAbout(mid, scale * (dist / pinchDist));
+          // Two-finger drag pans along with the pinch.
+          tx += mid.x - pinchMid.x;
+          ty += mid.y - pinchMid.y;
+          clampTranslation();
+          apply();
+        }
+        pinchDist = dist;
+        pinchMid = mid;
+        return;
+      }
+
+      const dx = event.clientX - panLast.x;
+      const dy = event.clientY - panLast.y;
+      panLast = { x: event.clientX, y: event.clientY };
+      if (
+        Math.hypot(event.clientX - gestureStart.x, event.clientY - gestureStart.y) >
+        TAP_SLOP
+      ) {
+        moved = true;
+      }
+
+      if (scale > MIN_SCALE + 0.01) {
+        tx += dx;
+        ty += dy;
+        clampTranslation();
+        apply();
+      } else if (moved) {
+        // At 1×, a downward drag is swipe-to-dismiss: track the image and fade
+        // the backdrop so it reads as "peeling away".
+        const total = event.clientY - gestureStart.y;
+        if (total > 0) swiping = true;
+        if (swiping) {
+          ty = (stage.clientHeight - imgH) / 2 + total;
+          apply();
+          dialog.style.setProperty(
+            "--backdrop-alpha",
+            String(clamp(1 - total / (SWIPE_CLOSE_DISTANCE * 2), 0.3, 1)),
+          );
+        }
+      }
+    });
+
+    const endPointer = (event) => {
+      if (!pointers.has(event.pointerId)) return;
+      pointers.delete(event.pointerId);
+
+      if (pointers.size === 1) {
+        // Dropped from a pinch to one finger — rebase panning to avoid a jump.
+        const [remaining] = [...pointers.values()];
+        panLast = { x: remaining.x, y: remaining.y };
+        gestureStart = { x: remaining.x, y: remaining.y };
+        moved = true;
+        return;
+      }
+      if (pointers.size > 0) return;
+
+      if (swiping) {
+        const total = event.clientY - gestureStart.y;
+        if (total > SWIPE_CLOSE_DISTANCE) dialog.close();
+        else settle();
+        return;
+      }
+
+      if (moved) {
+        settle();
+        return;
+      }
+
+      // A clean tap.
+      const now = performance.now();
+      const point = stagePoint(event);
+      const isDoubleTap =
+        now - lastTapTime < DOUBLE_TAP_MS &&
+        Math.hypot(point.x - lastTapPoint.x, point.y - lastTapPoint.y) <
+          DOUBLE_TAP_DIST;
+
+      if (downTarget === img) {
+        if (isDoubleTap) {
+          lastTapTime = 0;
+          if (scale > MIN_SCALE + 0.01) animate(center);
+          else animate(() => zoomAbout(point, DOUBLE_TAP_SCALE));
+        } else {
+          lastTapTime = now;
+          lastTapPoint = point;
+        }
+      } else {
+        // Tap on the dark area around the image dismisses.
+        dialog.close();
+      }
+    };
+
+    stage.addEventListener("pointerup", endPointer);
+    stage.addEventListener("pointercancel", (event) => {
+      pointers.delete(event.pointerId);
+      if (pointers.size === 0) settle();
+    });
+
+    stage.addEventListener(
+      "wheel",
+      (event) => {
+        event.preventDefault();
+        zoomAbout(stagePoint(event), scale * Math.exp(-event.deltaY * 0.0015));
+      },
+      { passive: false },
+    );
+
+    // --- Open / close wiring --------------------------------------------
+
+    prose.addEventListener("click", (event) => {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      const trigger = target.closest("img.is-zoomable");
+      if (!trigger) return;
+      event.preventDefault();
+      open(trigger);
+    });
+
+    closeButton.addEventListener("click", () => dialog.close());
+
+    dialog.addEventListener("close", () => {
+      dialog.style.setProperty("--backdrop-alpha", "1");
+      img.classList.remove("is-animating");
+      pointers.clear();
+      lastTrigger?.focus?.();
+    });
+
+    // Reflow the centred image if the viewport changes while open.
+    window.visualViewport?.addEventListener("resize", () => {
+      if (dialog.open && scale <= MIN_SCALE + 0.01) center();
+    });
+
+    // Mark eligible content images: not wrapped in a link, not opted out.
+    for (const candidate of prose.querySelectorAll("img")) {
+      if (candidate.closest("a")) continue;
+      if (candidate.closest("[data-no-zoom]") || "noZoom" in candidate.dataset) continue;
+      candidate.classList.add("is-zoomable");
+    }
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", bootImageLightbox, { once: true });
+  } else {
+    bootImageLightbox();
+  }
+  document.addEventListener("astro:page-load", bootImageLightbox);
+</script>
