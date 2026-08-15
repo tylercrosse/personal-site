@@ -1,7 +1,7 @@
 ---
 title: 'Notes on When Models Manipulate Manifolds'
 description: 'Notes on the geometry of a counting task: how Claude 3.5 Haiku tracks character position on a curved feature manifold, and what attention heads do to that curve.'
-date: '2026-07-28'
+date: '2026-08-15'
 status: 'in-progress'
 type: 'note'
 tags: ['mechanistic-interpretability', 'deep-learning', 'research', 'AI-safety']
@@ -20,7 +20,7 @@ credits:
       - 'manifolds-qk-twist-pca.png'
       - 'manifolds-boundary-twist.png'
       - 'manifolds-joint-geometry.png'
-      - 'manifolds-head-outputs-pca.png'
+      - 'manifolds-overview.png'
       - 'manifolds-subspace-ablation.png'
       - 'manifolds-illusion-attention.png'
 media_subpath: "/ideas/circuits-manifolds/"
@@ -39,6 +39,9 @@ import probeRinging from "./manifolds-probe-ringing.png";
 import qkTwistPca from "./manifolds-qk-twist-pca.png";
 import boundaryTwist from "./manifolds-boundary-twist.png";
 import jointGeometry from "./manifolds-joint-geometry.png";
+import subspaceAblation from "./manifolds-subspace-ablation.png";
+import overview from "./manifolds-overview.png";
+import illusionAttention from "./manifolds-illusion-attention.png";
 
 Notes on _When Models Manipulate Manifolds: The Geometry of a Counting Task_ [@gurnee2025when], from Anthropic's [Transformer Circuits thread](/ideas/2026/transformer-circuits/).
 
@@ -52,9 +55,10 @@ Take the first of those numbers. The line character count is how many characters
 
 That number means less than it looks like it means. A probe succeeding tells you the count can be recovered by a linear map. It does not tell you the model holds the count along a single direction, with small counts near the origin and large ones far from it, and the difference changes what the rest of the model can do with it.
 
-What the model has instead is a family of features. Across a synthetic corpus of prose with its newlines stripped and reinserted at every width from 15 to 150 characters, binning each feature's mean activation by character count turns up ten with smooth response profiles and large variance across counts. One fires at counts of roughly 35 to 55, the next at 45 to 65, and so on across the range. Their receptive fields widen as the count grows, so a feature covering low counts spans a narrower band than one covering high counts, and the model resolves position more finely near the start of a line than deep into one.
+What the model has instead is a family of features. Across a synthetic corpus of prose with its newlines stripped and reinserted at every width from 15 to 150 characters, binning each feature's mean activation by character count turns up ten with smooth response profiles and large variance across counts. One fires at counts of roughly 35 to 55, the next at 45 to 65, and so on across the range ([fig:count-features|short]). Their receptive fields widen as the count grows, so a feature covering low counts spans a narrower band than one covering high counts, and the model resolves position more finely near the start of a line than deep into one.
 
 <Figure
+  id="count-features"
   src={countFeatures}
   alt={"Line plot of ten character-count feature activations against line character count, showing overlapping bell-shaped tuning curves that grow wider at larger counts"}
   caption={"Ten features tile the range of possible character counts, each responding over a band of values. The bands widen as the count grows, the dilation marked at right, so position is resolved more finely near the start of a line than deep into one. Figure from When Models Manipulate Manifolds."}
@@ -66,9 +70,10 @@ That arrangement shows up elsewhere. Curve detectors in vision models and place 
 
 Look at when those features are active and something shows up that the tuning curves hide individually. They rise and fall at an offset from each other, and for most values of the count, two are active at once. That is what you would expect if the ten features were sampling something continuous, each covering a stretch of it.
 
-Averaging the residual stream at layer 2 for each of the 150 possible counts and running PCA on the result gives the thing being sampled. Six components carry 95% of the variance, and inside that subspace the 150 points trace one connected curve: a helix seen from the first three components, a more complicated twist from the next three. Reconstructing those same residual streams from only the ten features and projecting them into the same space lands almost on top of it, with small kinks near each feature's own direction, the way a spline bends toward its control points.
+Averaging the residual stream at layer 2 for each of the 150 possible counts and running PCA on the result gives the thing being sampled. Six components carry 95% of the variance, and inside that subspace the 150 points trace one connected curve: a helix seen from the first three components, a more complicated twist from the next three. Reconstructing those same residual streams from only the ten features and projecting them into the same space lands almost on top of it ([fig:count-manifold|short]), with small kinks near each feature's own direction, the way a spline bends toward its control points.
 
 <Figure
+  id="count-manifold"
   src={countManifold}
   alt={"Two three-dimensional projections of the character count subspace, each showing a single winding curve traced by the per-count averages with feature decoder directions marked as crosses"}
   caption={"The 150 per-count averages trace one curve through the character-count subspace, seen from the first three principal components and from the next three. The ten feature decoders, marked as crosses, sit along it. Figure from When Models Manipulate Manifolds."}
@@ -79,6 +84,16 @@ Averaging the residual stream at layer 2 for each of the 150 possible counts and
 ## Testing the subspace
 
 Is that curve doing any work, or is it an artifact of averaging? Two experiments say it is load-bearing. The first zeroes it out. Ablating the top few principal components of the per-count means at an early layer costs the model loss, and ablating a random subspace of the same size costs it much less. The gap appears only on tokens where the correct next token is a newline. Everywhere else the ablation barely registers, which is about what you would expect if the subspace is used for deciding where the line ends and for little else.
+
+The damage also stops growing at the right place ([fig:subspace-ablation|short]). Removing more dimensions hurts more up to about six, and past six the curve flattens, which is an independent read on the same number the variance calculation gave.
+
+<Figure
+  id="subspace-ablation"
+  src={subspaceAblation}
+  alt={"Line plot of average loss increase against ablated subspace dimension, with the character-count subspace on newline tokens rising steeply to about dimension six and then flattening, while the other three conditions stay near zero"}
+  caption={"Loss increase from zero-ablating a k-dimensional subspace. Only the character-count subspace on tokens where a newline was due shows a real effect, and it saturates around six dimensions. Figure from When Models Manipulate Manifolds."}
+  width={900}
+/>
 
 That test needs a caveat the paper supplies itself. You cannot normally assume a subspace spanned by some features belongs to those features, because features share dimensions with each other, which is the packing pressure superposition describes. The argument for trusting it here is that the character-count subspace is densely active rather than sparse, since every token has a position, and densely active directions are poor candidates for sharing.
 
@@ -92,9 +107,10 @@ Applied within six dimensions at three adjacent early layers, that shifts the mo
 
 ## Why the curve ripples
 
-There is a fourth way to look at the count, and it exposes something the first three do not. Train 150 logistic probes, one for each possible count, and plot how each responds as the true count sweeps from 1 to 150. The result has the diagonal band you would expect, widening as the count grows, in line with the features. It also has faint bands running parallel on either side. A probe tuned to count 42 falls off as the count moves away, then partly recovers, then falls off again.
+There is a fourth way to look at the count, and it exposes something the first three do not. Train 150 logistic probes, one for each possible count, and plot how each responds as the true count sweeps from 1 to 150. The result has the diagonal band you would expect, widening as the count grows, in line with the features. It also has faint bands running parallel on either side ([fig:probe-ringing|short]). A probe tuned to count 42 falls off as the count moves away, then partly recovers, then falls off again.
 
 <Figure
+  id="probe-ringing"
   src={probeRinging}
   alt={"Heatmap of average probe activation against line character count, showing a bright widening diagonal band flanked by fainter parallel bands of alternating sign"}
   caption={"Each of the 150 probes responds most strongly at its own count, but the response does not decay monotonically away from it. The parallel off-diagonal bands are the ringing. Figure from When Models Manipulate Manifolds."}
@@ -121,9 +137,10 @@ $$
 
 The query and key projections only ever appear multiplied together, so they collapse into a single matrix sitting between the two residual streams. That matrix is a statement about which query directions match which key directions.
 
-Give it two curves instead of two directions and it becomes a statement about how one curve sits relative to the other. What a boundary head does is rotate the character-count curve until it lines up with the line-width curve, offset by a little, so that count $i$ falls where width $i$ plus a small margin falls. The head then attends to the newline exactly when the current count is slightly short of the line width, which is the condition for the boundary being close.
+Give it two curves instead of two directions and it becomes a statement about how one curve sits relative to the other. What a boundary head does is rotate the character-count curve until it lines up with the line-width curve, offset by a little, so that count $i$ falls where width $i$ plus a small margin falls. The head then attends to the newline exactly when the current count is slightly short of the line width, which is the condition for the boundary being close. Before the twist the two families of probes sit apart; afterwards they run together ([fig:twist-geometry|short]).
 
 <Figure
+  id="twist-geometry"
   src={qkTwistPca}
   alt={"Two three-dimensional projections showing character count probes as circles and line width probes as squares, splayed apart on the left and brought into alignment on the right"}
   caption={"Character-count probes (circles) and line-width probes (squares) in a joint projection, before and after passing through the boundary head's query and key matrices. The lines connecting matched counts run long and splayed on the left, short and near-parallel on the right. Figure from When Models Manipulate Manifolds."}
@@ -131,9 +148,10 @@ Give it two curves instead of two directions and it becomes a statement about ho
   width={1200}
 />
 
-In the residual stream, the probe for count $i$ is most similar to the probe for width $i$, as you would hope, but the similarity is weak, about 0.25 at best. Pushed through a boundary head's QK matrix, the same probes align almost perfectly, cosine similarity near 1, and the peak sits off the diagonal rather than on it. The same probes through a random head in the same layer show no structure at all.
+In the residual stream, the probe for count $i$ is most similar to the probe for width $i$, as you would hope, but the similarity is weak, about 0.25 at best. Pushed through a boundary head's QK matrix, the same probes align almost perfectly, cosine similarity near 1, and the peak sits off the diagonal rather than on it. The same probes through a random head in the same layer show no structure at all ([fig:twist-similarity|short]).
 
 <Figure
+  id="twist-similarity"
   src={boundaryTwist}
   alt={"Three heatmaps of cosine similarity between line width and character count probes: a faint diagonal under the identity map, a strong off-diagonal band through the boundary head's QK, and noise through a random head"}
   caption={"Cosine similarity between line-width and character-count probes under three maps. Left, the identity: a weak diagonal. Center, the boundary head's QK: a strong band sitting just off the diagonal, with ringing on either side. Right, a random head in the same layer. Figure from When Models Manipulate Manifolds."}
@@ -153,9 +171,10 @@ The third number is the length of the word the model is about to say, and it arr
 
 Around ninety percent of the way through, features appear that fire when the next word will overflow the line, alongside a matching set that fire when it will just barely fit. The first upweight the newline, the second push it down. Both families also do something less obvious, which is to suppress long tokens generally. If the model is wrong about which word comes next, whatever it says instead had better be short enough to fit.
 
-The geometry underneath that decision is the tidiest result in the paper. Average the activations at that depth across every combination of characters-remaining and next-token-length, and the two quantities turn out to occupy near-orthogonal subspaces, each with only mild curvature. Their pairwise sums lay out on a grid, and the condition for breaking the line, that the next word is longer than the space left, becomes a plane cutting through that grid. A hyperplane fit to the averages classifies real examples at an AUC of 0.91, which folds in both the classifier's error and Haiku's own uncertainty about what word is coming.
+The geometry underneath that decision is the tidiest result in the paper. Average the activations at that depth across every combination of characters-remaining and next-token-length, and the two quantities turn out to occupy near-orthogonal subspaces, each with only mild curvature. Their pairwise sums lay out on a grid, and the condition for breaking the line, that the next word is longer than the space left, becomes a plane cutting through that grid ([fig:joint-geometry|short]). A hyperplane fit to the averages classifies real examples at an AUC of 0.91, which folds in both the classifier's error and Haiku's own uncertainty about what word is coming.
 
 <Figure
+  id="joint-geometry"
   src={jointGeometry}
   alt={"Two three-dimensional projections: on the left, next-token-length and characters-remaining as two near-perpendicular curves; on the right, their pairwise sums as a grid of points split by a translucent separating plane"}
   caption={"Characters remaining and next-token length sit on near-orthogonal subspaces, so their pairwise sums spread out on a grid that a single plane can divide. Points on one side of the plane are cases where the next word fits, points on the other are cases where it does not. Figure from When Models Manipulate Manifolds."}
@@ -164,3 +183,70 @@ The geometry underneath that decision is the tidiest result in the paper. Averag
 />
 
 Worth naming the limit of the result. If the model were simply moving probability off every word that would overflow and onto the newline, then stripping the newlines out of the prompt should leave the rest of the distribution roughly intact. The two distributions differ substantially, so this is a decision about one candidate word rather than a filter applied across all of them.
+
+## Building the count
+
+How does the count get built in the first place? This is the messiest part of the paper, and the part where the geometric account does least work on its own. Two simplifications make it tractable: attention heads move the count representation about four times as strongly as the MLPs do, and the count is already roughly readable after layer 0, so the analysis drops the MLPs and stays in the first two layers.
+
+Each counting head there uses the previous newline as an attention sink. For the first few tokens of a line it attends almost entirely to that newline, then spreads across a window of recent tokens, and the OV circuit converts the pattern into an estimate. Parked on the newline, the line must be short, so the head writes toward low counts. Off the newline, the line must be at least as long as its window, so it writes toward the number of tokens in that window times an average token length of about four characters, adjusted by whether the tokens it sees run long or short.
+
+Heads differ in how long they park and how wide their window is, so each covers a different stretch of the line, and each writes something close to a straight ray. The curve comes from their sum, the same assembly out of pieces the boundary heads needed. Five layer-0 heads recover the count with an R² of 0.93, and six more from layer 1 bring it to 0.97.
+
+That is the whole mechanism ([fig:overview|short]): perception in the first two layers, a comparison in the middle, and a linear decision near the output.
+
+<Figure
+  id="overview"
+  src={overview}
+  alt={"Five-panel summary: the wrapped prompt as the model sees it, the character-count manifold and feature tuning curves, the boundary head twist, the linearly separable break decision, and the layer 0 and layer 1 head outputs"}
+  caption={"The paper's own summary of the mechanism, in the order this post walked it. Figure from When Models Manipulate Manifolds."}
+  fullWidth
+  width={1200}
+/>
+
+The line width is built much the same way, by a partly separate set of heads, since treating the previous newline as a sink needs adjusting when the current token is itself a newline. How the model aggregates one width from several previous lines is unresolved. It could be taking a maximum, or a decaying average of the recent ones, and the paper says it did not determine which.
+
+## What the geometry explains
+
+The geometric account covers the parts of this task that are counting. Everything semantic stays in the feature view: the guess at the next word, the features that recognize what kind of continuation is wanted, the pathway that produces a plausible one. The paper is explicit that it relied on features alone for those, and the manifold story never reaches them.
+
+Gaps remain inside the counting half too. The break decision is linearly separable in the geometry, but the analysis assumes the next word is a single token, and the authors say there must be structure they could not see that handles longer ones. Line-width aggregation is unresolved. So are the model's handling of its own uncertainty about the count, documents whose width changes partway through, and special cases like a LaTeX `\footnote{}` or a markdown link.
+
+Then there is the method's own cost, which the paper states plainly. Parameterizing a manifold takes a lot of researcher time, and it works only when you already know the variable is continuous and can say what it is. Character count qualifies, and most of the concepts anyone would want to study do not.
+
+The sharpest evidence about what the mechanism actually keys on comes from an adversarial test. Inserting the two-character string `@@` into the prompt, without changing its length, disrupts the newline prediction. `@@` opens a hunk in a git diff, a context where a line's effective start is not the previous newline, and the counting heads have learned to treat it that way. In the altered prompt they split their attention between the previous newline and the `@@` ([fig:illusion-attention|short]).
+
+<Figure
+  id="illusion-attention"
+  src={illusionAttention}
+  alt={"Two attention heatmaps for head L1H0. In the original prompt the newline query attends almost entirely to the previous newline; with two at-signs inserted, that attention splits between the previous newline and the inserted characters"}
+  caption={"Head L1H0 attending from a newline back to the previous newline, before and after inserting @@ at the same line length. The inserted delimiter takes a share of the attention that belonged to the newline. Figure from When Models Manipulate Manifolds."}
+  fullWidth
+  width={1200}
+/>
+
+The effect is specific. Across 180 two-character insertions, most leave the newline as the top prediction and shift its probability only a little from a baseline of 0.79. The sequences that break it are almost all code delimiters, and how much a sequence disrupts the prediction tracks how far it pulls the counting heads off the newline.
+
+The paper frames this as a visual illusion and compares it to Müller-Lyer, then hedges the comparison, which is the right call. The useful reading is narrower. What these heads detect is a learned cue about where a line begins, and that cue can fire on something that is not a line beginning.
+
+## The complexity tax
+
+The paper opens its discussion with a methodological admission worth sitting with. The authors started by probing and patching, and it went badly. They had not yet separated line width from character count, so they were probing for a fused quantity the model does not represent, and they did not expect width to live only on newline tokens, so they were also looking in the wrong place. Their first probes were one-dimensional regressions besides, which is the wrong shape for a quantity that turns out to be a curve. Unsupervised features fixed all three problems. Even then, dozens of features looked vaguely like they were about newlines, and their differences only became legible once they were tested against a synthetic corpus with known ground truth.
+
+So the dictionary earned its place. What follows is the complication. There are four descriptions of the character count in this paper and all of them are correct: ten sparse features, a six-dimensional subspace, a curve inside that subspace, and 150 probes. Each is good for a different job. Features found the thing to begin with. The subspace is what you intervene on. The manifold is what makes the boundary head describable as a rotation. The probes are what let you read that head's weight matrices. The same duality runs through the computation itself, where the feature view sees a spray of virtual weights between feature pairs and the manifold view sees one twist.
+
+The paper's name for the gap between those descriptions is a complexity tax. Dictionary learning gives a true account of the computation, found automatically, which is a real result. Stopping there leaves you holding a description more complicated than the thing it describes. Recovering the geometry paid some of that back.
+
+This is where the paper sits oddly in its own thread. The four papers before it are one continuous argument. Superposition says features are packed into too few dimensions, sparse autoencoders recover them, crosscoders extend the dictionary across layers, and attribution graphs assemble features into end-to-end traces. Each takes the last one's output as its input, and the shared premise is that a large discrete dictionary is the right decomposition. This paper runs that whole stack, reports that it worked, and then says the result was more complicated than it needed to be.
+
+It is also less of a departure than it looks. Ringing is interference, which superposition has been about since 2022. The boundary head is a QK circuit in the sense the 2021 framework paper defined, with an ordered family of features fed into it in place of two isolated directions. What changed is the vocabulary, and it changed because the features here happen to line up along a scalar, which makes the geometry visible. Read that way, the paper asks the superposition question again with better instruments.
+
+Whether it is the last of its line is harder to say. The thread's later work moves toward introspection, emotion concepts, and natural-language explanations of activations, which are different questions reached for with different tools. The call this paper makes is for methods that surface simpler structure automatically, since the geometry here was found by hand, and the authors describe what they did as an existence proof rather than a recipe.
+
+## Further material
+
+- The paper's [interactive figures](https://transformer-circuits.pub/2025/linebreaks/index.html) include draggable versions of the counting manifolds and a simulation of the sphere-packing model that produces the ripples.
+- The [superposition notes](/ideas/2026/circuits-superposition/) cover the interference story that ringing turns out to be a special case of.
+- The [mathematical framework notes](/ideas/2026/circuits-framework/) introduce the QK and OV split the boundary head is built from.
+- The [attention QK notes](/ideas/2026/circuits-attention-qk/) cover the attribution method that found this circuit before the geometry took over.
+- Modell et al. propose a formal notion of a feature manifold and report similar ripples and dilation in representations of colors, dates, and years.
+- Michaud et al. found linebreaking in fixed-width text among the top 400 behavioral "quanta" in a 70m-parameter Pythia model, which is why the paper treats it as a natural task rather than a contrived one.
