@@ -65,6 +65,15 @@
     touch-action: none;
   }
 
+  /* Signal that a zoomed image can be dragged around. */
+  .image-lightbox-stage.is-pannable {
+    cursor: grab;
+  }
+
+  .image-lightbox-stage.is-pannable.is-grabbing {
+    cursor: grabbing;
+  }
+
   .image-lightbox-img,
   .image-lightbox [data-lightbox-img] {
     position: absolute;
@@ -201,6 +210,7 @@
 
     const apply = () => {
       img.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
+      stage.classList.toggle("is-pannable", scale > MIN_SCALE + 0.01);
     };
 
     const stagePoint = (event) => {
@@ -322,6 +332,7 @@
         panLast = { x: event.clientX, y: event.clientY };
         moved = false;
         swiping = false;
+        if (scale > MIN_SCALE + 0.01) stage.classList.add("is-grabbing");
       } else if (pointers.size === 2) {
         // A second finger cancels any tap / swipe interpretation.
         moved = true;
@@ -393,6 +404,7 @@
     const endPointer = (event) => {
       if (!pointers.has(event.pointerId)) return;
       pointers.delete(event.pointerId);
+      if (pointers.size === 0) stage.classList.remove("is-grabbing");
 
       if (pointers.size === 1) {
         // Dropped from a pinch to one finger — rebase panning to avoid a jump.
@@ -442,14 +454,27 @@
     stage.addEventListener("pointerup", endPointer);
     stage.addEventListener("pointercancel", (event) => {
       pointers.delete(event.pointerId);
-      if (pointers.size === 0) settle();
+      if (pointers.size === 0) {
+        stage.classList.remove("is-grabbing");
+        settle();
+      }
     });
 
     stage.addEventListener(
       "wheel",
       (event) => {
         event.preventDefault();
-        zoomAbout(stagePoint(event), scale * Math.exp(-event.deltaY * 0.0015));
+        // macOS/trackpad convention (as in PhotoSwipe): a pinch arrives as a
+        // ctrl+wheel and zooms toward the cursor; a plain two-finger / mouse
+        // scroll pans the zoomed image instead of zooming it.
+        if (event.ctrlKey) {
+          zoomAbout(stagePoint(event), scale * Math.exp(-event.deltaY * 0.0015));
+        } else if (scale > MIN_SCALE + 0.01) {
+          tx -= event.deltaX;
+          ty -= event.deltaY;
+          clampTranslation();
+          apply();
+        }
       },
       { passive: false },
     );
