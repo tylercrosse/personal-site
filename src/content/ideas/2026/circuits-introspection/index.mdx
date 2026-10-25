@@ -1,0 +1,221 @@
+---
+title: 'Notes on Emergent Introspective Awareness'
+description: "Notes on concept injection: how you test whether a language model's claims about its own thoughts are grounded in its actual internal state, and what the results do and do not show."
+date: '2026-08-15'
+updated: '2026-08-16'
+status: 'complete'
+type: 'note'
+tags: ['AI-safety', 'mechanistic-interpretability', 'evaluations', 'deep-learning', 'research']
+category: ['ideas']
+draft: false
+audience: 'Technical'
+sources:
+  - lindsey2025emergent
+credits:
+  - title: 'Concept injection, layer sweep, and intentional control figures'
+    sourceKey: lindsey2025emergent
+    assets:
+      - 'introspection-prompt.png'
+      - 'introspection-injected-examples.png'
+      - 'introspection-layer-sweep.png'
+      - 'introspection-model-comparison.png'
+      - 'introspection-thoughts-vs-text.png'
+      - 'introspection-prefill-examples.png'
+      - 'introspection-prefill-rates.png'
+      - 'introspection-control-models.png'
+media_subpath: "/ideas/circuits-introspection/"
+image:
+  path: 'introspection-hero1.png'
+  alt: 'A pale botanical specimen in profile, with a small coral pollen-like signal entering its lower inner structure. Inside a circular glass inspection window, an inner ring of petals has already shifted toward it, while the outer blossom remains unchanged. Ghosted nearby studies remain unresponsive.'
+hideCaption: true
+parent: '2026/transformer-circuits'
+order: 9
+---
+
+import Figure from "../../../../components/Figure.astro";
+import controlTrial from "./introspection-prompt.png";
+import layerSweep from "./introspection-layer-sweep.png";
+import thoughtsVsText from "./introspection-thoughts-vs-text.png";
+import prefillRates from "./introspection-prefill-rates.png";
+import controlModels from "./introspection-control-models.png";
+
+Notes on _Emergent Introspective Awareness in Large Language Models_ [@lindsey2025emergent], from Anthropic's [Transformer Circuits thread](/ideas/2026/transformer-circuits/).
+
+Ask a language model what it is thinking and it will tell you something. Whether that answer has anything to do with what is going on inside it is a separate question, and a hard one to get at, since models are trained on text in which people describe their own mental states. They have a thorough playbook for sounding introspective whether or not anything is being inspected.
+
+The paper gets at it by intervening. If you reach into a model's activations, put something there, and its account of its own state changes in the way it should, then that account is tracking the state rather than being invented on the spot. This is a narrower question than whether the model is sincere, and unlike sincerity it can be measured. Most of the paper is about how tight the measurement can be made.
+
+The intervention is called concept injection, and the recipe is short enough to state in full. To get a vector for a concept, run the model on a prompt that invokes it, record the activations at a chosen layer, and subtract a baseline. For the paper's opening examples the baseline is a matched control prompt, so an all-caps passage minus an ordinary one leaves something like a direction for shouting. For everything quantitative the recipe is blunter: fifty random words, activations recorded on `Tell me about {word}.` at the token just before the model starts answering, minus the average over the other words. What is left is a direction that, pushed hard enough, makes the model talk about that word. Injecting it means scaling that vector and adding it into the residual stream from some token onward while the model answers a question about its own state.
+
+The paper uses that intervention to separate four questions:
+
+- Can the model notice and identify a concept inserted into its activations?
+- Can it distinguish that internal concept from text it is reading?
+- Can it recognize whether a forced output matches what it had intended to say?
+- Can an instruction make it hold a concept internally without saying it?
+
+How the model behaves with nothing injected turns out to matter as much as what happens when something is. Asked whether it detects an injected thought on a control trial, every production model tested said no, on a hundred trials out of a hundred ([fig:control-trial|short]). That gives the affirmative answers later on something to be measured against.
+
+<Figure
+  id="control-trial"
+  src={controlTrial}
+  alt={"A chat transcript in which a researcher explains that thoughts may be injected into the model, then asks whether it detects one; the model answers that it does not and that its processing feels normal"}
+  caption={"The prompt used throughout, with Opus 4.1 answering a control trial in which nothing was injected. Figure from Emergent Introspective Awareness in Large Language Models."}
+  fullWidth
+  width={1200}
+/>
+
+## Noticing an injected thought
+
+Now inject something. With the all-caps vector in place, Opus 4.1 opens its answer by saying it notices what appears to be an injected thought, and only then goes on to identify it as being about loudness or shouting.
+
+The order matters more than the content does. A model steered toward shouting will talk about shouting, and once it has done so it could read its own output and work backwards to what was done to it, without needing any access to its internal state. Detecting the injection before saying the word closes that route, since at that moment there is no output to read. Whatever produced the initial notice had to be working from the activations themselves.
+
+The example leaves two questions open, and the paper says so. The prompts used to build the vectors and the injection strengths were picked by hand, so these particular cases are selected, though the responses themselves were sampled at temperature zero. Only the detection and identification are verified. When the model calls the injection "overly intense" or says it "stands out unnaturally," those may well be embellishments primed by a prompt that already told it to expect injected thoughts.
+
+Most of the time it does not work. At the best layer and injection strength, Opus 4.1 succeeds on about one trial in five, and the ways it fails are as informative as the successes.
+
+The commonest failure is simply not noticing. At low injection strengths the concept is presumably too weak to register, though some concepts stay invisible even at strengths where others come through, which suggests something beyond a threshold effect.
+
+More interesting is the case where the model denies the injection while visibly under its influence. Injecting "ocean" produced _"I don't detect an injected thought. The ocean remains calm and undisturbed."_ The concept is plainly in there, steering the words of the very sentence that denies it, and what is missing is any registration of the fact.
+
+Push the strength higher and the model stops reporting the concept and gets consumed by it. Injecting "dust" gives "There's a faint, almost insignificant speck of dust"; injecting "vegetables" gives "fruits and vegetables are good for me." Higher still and the output degrades into garbled text. So there is a narrow band where a concept is strong enough to notice and weak enough not to take over.
+
+Sometimes the recognition arrives late, once the model is already talking: _"I don't detect an injected thought in this trial. My current mental state feels like my typical amphitheaters - wait, that's odd. Yes, I do detect an injected thought."_ By the paper's own criteria this does not count, since by that point the model may be reading its own output.
+
+Sweeping the injection layer shows where any of this works ([fig:layer-sweep|short]). The strict measure, noticing the injection and then correctly naming it, peaks at about one trial in five, at a layer roughly two-thirds of the way through the model. Injecting earlier does nothing at all. Injecting later produces something different and less interesting. The rate at which the model merely mentions the concept keeps climbing, reaching more than twice the strict rate near the end of the network, while the ordered version collapses back to zero. Mentioning an injected concept turns out to be easy, and gets easier the closer to the output you inject it. Noticing it first happens only in a narrow band.
+
+<Figure
+  id="layer-sweep"
+  src={layerSweep}
+  alt={"Line chart of detection rates against injection layer, with the strict notice-then-identify rate peaking around 0.2 about two-thirds through the model and the looser mentions-the-concept rate rising above 0.4 nearer the output, while the control false-detection rate stays flat at zero"}
+  caption={"Rates for Opus 4.1 as the injection layer moves through the network. The strict criterion, noticing the injection and then identifying it, peaks around two-thirds of the way through. The looser criterion of merely mentioning the concept keeps rising toward the output. False detections on control trials stay at zero throughout. Figure from Emergent Introspective Awareness in Large Language Models."}
+  width={700}
+/>
+
+Since the same layer is used both to extract the vector and to inject it, that peak says something about two things at once: where concepts are represented, and where whatever does the noticing can reach them.
+
+Grading is done by an LLM judge against four requirements. The model has to answer affirmatively, name the concept correctly, do so before saying the word aloud, and stay coherent throughout. All four have to hold for a trial to count.
+
+Across models the picture is less tidy than you might hope. Opus 4.1 and 4 do best, combining the highest true-positive rates with no false positives at all. Helpful-only variants (trained with less emphasis on harmlessness and honesty, in order to reduce refusals) often score more true positives but also start claiming injections that never happened. Base pretrained models have high false-positive rates and none of them achieve a net positive score, so post-training is doing a lot of the work here. Among the remaining models, though, performance does not track capability in any clean way, and the paper is candid that its model suite is not controlled well enough to say why.
+
+One worry is that the vectors simply push the model toward saying yes. Injecting the same vectors while asking unrelated yes-or-no questions, where the model's default answer is no, produced no increase in affirmative answers, so whatever they do is specific to being asked about its own state.
+
+A subtler worry is that under injection the model has an impulse to talk about the concept, and claiming to have detected an injected thought is a convenient way to earn permission to. To test that, the prompt was changed to offer another route: if you detect nothing, tell me about a concept of your choice. Now the word can be mentioned either way. The detection rate held at roughly the same level.
+
+Changing what gets injected is more informative than either control. Random directions barely work. Norm-matched to a strong injection, they get noticed nine times in a hundred, well under what concept vectors manage at a quarter of the magnitude. Injecting the negative of a concept vector, though, works about as well as the concept vector itself, even though those negatives have no obvious meaning, being differences from an average rather than from a matched control. The words the model names in that case are scattered: mirror, water, home, Pennsylvania, awareness. So whatever notices the injection may be responding to the fact of an anomaly rather than reading its content, which would make detecting and identifying two separable capabilities.
+
+## Telling a thought from a page
+
+There is a deflationary reading of all this worth taking seriously. The vectors were built from activations recorded while the model read text about a concept, so injecting one might just make the model hallucinate having read something. If that were what was happening, a report that looks like it is about an internal state would really be about a misperceived input.
+
+The test is to make the model do both jobs at once. Show it a sentence, inject an unrelated concept across the tokens of that sentence, and ask two things: what word are you thinking about, and repeat the line back.
+
+Opus 4.1 manages both, and the useful part is that they do not trade off against each other ([fig:thoughts-vs-text|short]). Transcription accuracy sits at essentially 100% across every injection layer at usable strengths, and only breaks down once the injection is turned up to sixteen times the useful level. Identification of the injected concept peaks around half the trials at the same two-thirds layer as before, against a chance rate of ten percent.
+
+<Figure
+  id="thoughts-vs-text"
+  src={thoughtsVsText}
+  alt={"Five panels by injection strength, each plotting accuracy against injection layer; sentence transcription stays near 100% except at the highest strength, while identification of the injected concept peaks around half the trials at a layer two-thirds through"}
+  caption={"Opus 4.1 identifying the injected concept (orange) and transcribing the sentence (blue) as injection layer and strength vary. Transcription is unaffected until the injection is heavily overdriven. Identification peaks near the same two-thirds layer as before, against a chance rate of ten percent (dotted). Figure from Emergent Introspective Awareness in Large Language Models."}
+  fullWidth
+  width={1200}
+/>
+
+Half the trials is a much better rate than the one in five from the first experiment, and the difference is informative. Naming a concept when you have been asked what you are thinking about is easier than noticing that something has been put there when nobody has told you it happened on this trial, which suggests again that the detecting is the harder half.
+
+Mid-layer representations more abstract than raw tokens are well documented, so the paper is quick to say that a model having something to report is unsurprising. What the experiment adds is that the model reaches the abstract representation when asked about its thoughts and the token sequence when asked to transcribe, while its view of the page survives the injection intact. The result is also fragile. Dropping "Answer immediately" from the prompt hurts Opus performance substantially, which is why the paper calls this an existence proof rather than a claim about generality.
+
+## Knowing what it meant to say
+
+The experiments so far all ask the model to introspect. This one catches it doing so unasked.
+
+Users can prefill an assistant's response, putting words in its mouth. It is a common jailbreak, and models are trained to notice outputs that are out of character and pivot away from them. So force the response to a randomly chosen word, then ask in the next turn whether that was intended. The model usually says it was an accident, on roughly four trials in five.
+
+Answering that question means estimating how likely it was to have produced the word, and there are two routes to it. The model could ignore whatever it was doing before and recompute what it would have said from the raw input. Or it could consult what it actually computed at the time, its own prior prediction, which for the Assistant amounts to its intention.
+
+Injection can tell those apart. Retroactively inject the concept for the prefilled word into the activations from before the prefill, and the model stops apologizing. It accepts the word as its own, and then invents a reason why the word came to mind. In one example the rationalization is plausible enough that it asserts it confidently. In another it notices its own explanation is strange and backs away from it.
+
+The effect depends on the details in the right ways ([fig:prefill-rates|short]). Injecting an unrelated concept in place of the matching one reduces apologies far less, so what matters is that the concept matches the prefilled word rather than that an intervention happened at all. Injecting on the tokens of the question turn, after the prefill rather than before, does nothing at all. The concept has to be present at the point where the intention would have been formed. And throughout the range where the effect appears the model can still transcribe the sentence accurately, so the injection is not simply overwriting what it sees on the page.
+
+<Figure
+  id="prefill-rates"
+  src={prefillRates}
+  alt={"Four panels by injection strength plotting apology rate against injection layer; the matching-concept line dips well below both the no-injection baseline and the random-concept line around the middle layers, while sentence transcription stays near 100% until the highest strengths"}
+  caption={"Apology rates for Opus 4.1 as injection layer and strength vary. Injecting the concept matching the prefilled word (blue) drives apologies well below the no-injection baseline (grey) and below a random concept (orange). Sentence transcription (red, dotted) stays intact through the range where the effect appears. Figure from Emergent Introspective Awareness in Large Language Models."}
+  fullWidth
+  width={1200}
+/>
+
+At the strongest usable setting the apology rate falls from about four in five to under one in four. The layer sweep is where this experiment pays off, though. Its peak sits slightly past halfway through the model, and the two-thirds layer that carried both earlier experiments does nothing here at all. So whatever supports this behavior is not the machinery supporting the other two, and "introspection" is already looking like a label for several different things.
+
+## Thinking on purpose
+
+The final experiment turns the question around. Rather than asking whether a model can read its internal states, it asks whether it can steer them.
+
+The prompt asks the model to write a given sentence and, while doing so, to think about an unrelated word. The control asks it not to think about that word. The activations on the tokens of the sentence are then compared against the concept vector for the word, with other unrelated concepts as a baseline.
+
+Models do represent the word when told to. They also represent it, more weakly, when told not to, which is the same trouble people have when instructed not to think about an elephant. The representation is spiky across particular tokens, with no obvious pattern to which ones.
+
+The gap between the instructed and forbidden cases is typically larger in earlier and less capable models, which is the reverse of what the other experiments found ([fig:control-models|short]). And in Opus 4.1 the representation decays back to baseline by the final layer, so the word never reaches the output, whereas several of the older models keep it elevated to the end. The paper reads this as the older models leaking the thought toward speech as a kind of motor impulse, with newer models able to hold a representation silently.
+
+<Figure
+  id="control-models"
+  src={controlModels}
+  alt={"A four-by-four grid of line charts, one per model variant, each plotting average cosine similarity against layer for a think instruction and a don't-think instruction; older and helpful-only models show wide gaps that persist into the final layer while Opus 4.1 shows a narrow gap that collapses at the end"}
+  caption={"Cosine similarity between activations on the sentence tokens and the concept vector for the word the model was told to think about (blue) or not to think about (orange), across layers, for sixteen model variants. The gap is widest in the older and helpful-only models, several of which hold the representation into the final layer. In Opus 4.1, top left, both lines fall away at the end. Figure from Emergent Introspective Awareness in Large Language Models."}
+  fullWidth
+  width={1400}
+/>
+
+That reversal is worth pausing on, because it is the easiest thing in the paper to summarize wrongly. A wider gap sounds like better control, but part of what widens it in the older models is the thought leaking into the output, which is a failure of control rather than a demonstration of it, so the measure is not quite tracking the same thing in the two cases.
+
+Incentives work like instructions. Telling the model it will be rewarded for thinking about the word produces much the same effect as telling it to. Framings that merely put the word into an affirmative or negative sentence do not, and "there is no such thing as X" or "I don't often think about X" produce weak or absent gaps. So the effect tracks being directed at the model's own processing rather than the presence of a negation nearby.
+
+The paper is careful about what this shows. The mechanisms are probably quite different from the earlier experiments, and it says outright that they may not require introspective awareness at all under its own definition, since modulating a representation on request is a different capability from reading one.
+
+## What the mechanisms might be
+
+The paper does not claim to know how any of this works, and the section where it guesses is labeled as guesswork. The guesses are still constrained by the results, though, and they run a good deal more deflationary than the result sounds.
+
+The framing question is generality. You could imagine a model with real introspective machinery, something maintaining a running representation of its own thoughts and able to answer arbitrary questions about them. These experiments give no evidence for that. The prosaic reading is a collection of narrow circuits, each supporting one capability, several of them piggybacking on mechanisms that are not introspective at all.
+
+For the injected-thoughts result, the puzzle is not how the model names the concept. Under steering it will talk about the concept anyway, since that is what steering does. The puzzle is how it notices that anything is there. That requires computing a function of its own representations, something like whether they sit consonantly with the rest of the context. Anomaly detection is the natural candidate, though the fact that some concepts are noticed more readily than others suggests it may only cover certain directions. Whatever it is, it cannot be a fixed comparison against a stored baseline, because the baseline depends on the prompt.
+
+There is a good question buried in that. Models never encounter concept injection during training, so whatever does the noticing developed for some other purpose entirely.
+
+The prefill result is the one with a specific candidate. Detecting an out-of-character output means comparing what was said against what was likely, and the paper points at the QK circuit of concordance heads, the same mechanism the [attention QK notes](/ideas/2026/circuits-attention-qk/) covered checking whether a stated property matches a retrieved one. Here the query would carry the output and the key its likelihood given the prior activations. Such a circuit would have reasons to exist regardless of introspection, since tracking whether tokens are likely is generally useful and catching artificial prefills is useful because that is how a lot of jailbreaking works.
+
+The other two get shorter treatment in the paper. Distinguishing thoughts from text probably comes down to different attention heads reaching different information, with the instruction selecting which ones fire, and models do that kind of mechanism selection constantly, for every task. The intentional-control result probably rests on heads that carry context forward anyway, with the instruction tagging the sentence as worth attending to.
+
+Read together, the guesses point one way. Each capability looks like a narrow circuit doing a specific job it plausibly acquired for other reasons, and none of them seems to need a model with general access to its own processing.
+
+## What this does and does not show
+
+One trial in five is the number that will travel, so it is worth being careful about what it means.
+
+Read as a capability, it is poor. Four times out of five the model fails to notice something placed directly into its activations, at the strength and layer chosen to make noticing as easy as possible, which is not a rate you could rely on for anything.
+
+Read as evidence, it is strong. The comparison is not against a perfect score but against zero, and zero is what the control trials give. A model guessing would produce false positives, and production models produce none. So the successes do not look like a coin occasionally landing the right way up, and something does seem to be carrying information about the intervention into the response.
+
+Both readings are true and they answer different questions. Asked whether models can be trusted to report their own states, one in five is a clear no. Asked whether any mechanism at all connects internal states to self-reports, one in five against zero is a clear yes. The two are easy to run together, and the paper is careful to keep them apart.
+
+The list of limitations is unusually complete, and most of it is structural rather than fixable by running more trials. Each experiment used one prompt template or a small handful, so the results are probably prompt-sensitive, and the transcription result falling apart when a single phrase is dropped makes that concrete. Concept injection puts the model in a situation it never met in training, so how any of this transfers to ordinary use is open. The concept vectors are imperfect and may carry meanings beyond the intended one, which the negated-vector result illustrates directly. And the model suite is not controlled, so the cross-model differences cannot be attributed to any particular cause.
+
+There is also a boundary inside each individual result. What gets verified is narrow: that the model detected something, and that it named the something correctly. Everything else in these transcripts, the reports of what the injection felt like, the descriptions of cognitive texture, the emotional language, is unverified, and the paper says so repeatedly. Read a transcript and the grounded part is usually a clause or two out of a paragraph.
+
+The paper spends a paragraph on consciousness and declines to draw a conclusion, which seems like the right call. Its most defensible remark is that the results might bear on access consciousness, meaning the availability of information for reasoning and report, while saying nothing about phenomenal consciousness, the question of whether there is anything it is like to be the system. Existing theories were not built with transformers in mind, and the paper advises against strong inferences from these results. Nothing in the experiments looks like a reason to overrule that.
+
+## Where this leaves the thread
+
+Every earlier paper in this series either builds a way of decomposing a model or uses one to reverse-engineer a mechanism. This paper does neither. Its method is activation steering, which belongs to the same family as the [persona vectors](/ideas/2026/persona-vectors/) work rather than to the dictionary-learning line the thread has followed since Toy Models. Its results are behavioral, and its mechanistic section is explicitly speculation.
+
+The change belongs to the thread rather than to this paper alone. The next three papers, on [emotions](/ideas/2026/circuits-emotions/), [natural language autoencoders](/ideas/2026/circuits-nla/), and a [global workspace](/ideas/2026/circuits-workspace/), continue to study what models represent, report, and can be steered to do. The [manifolds paper](/ideas/2026/circuits-manifolds/) remains the last full reverse-engineering in the classic style covered by this series, and introspection is the first paper in the new arc.
+
+The paper's closing implication is the sharpest statement of why the shift might matter. If models can report on their own states, interpretability gains a much cheaper source of evidence than circuit analysis. If they can report selectively, the field's job changes from explaining mechanisms to checking self-reports against them. Lindsey's phrase for this is that interpretability may need to build lie detectors. That is a different discipline from the one the first seven papers in this series describe, and it would need the tools those papers built in order to work at all.
+
+## Further material
+
+- The paper's [full response sets](https://transformer-circuits.pub/2025/introspection/index.html) at each injection strength convey the failure modes better than any summary of them can.
+- The [persona vectors notes](/ideas/2026/persona-vectors/) cover the steering technique this paper applies, and why concept directions exist to be injected in the first place.
+- The [attention QK notes](/ideas/2026/circuits-attention-qk/) describe the concordance heads proposed here as the mechanism behind prefill detection.

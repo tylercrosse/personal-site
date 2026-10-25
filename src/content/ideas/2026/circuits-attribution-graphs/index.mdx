@@ -2,12 +2,13 @@
 title: 'Notes on Circuit Tracing and the Biology of a Large Language Model'
 description: 'Notes on cross-layer transcoders, local replacement models, and attribution graphs — and the case-study companion paper on Claude 3.5 Haiku.'
 date: '2026-07-18'
-status: 'in-progress'
+updated: '2026-08-16'
+status: 'complete'
 type: 'note'
 tags: ['mechanistic-interpretability', 'deep-learning', 'research', 'AI-safety']
 category: ['ideas']
 draft: false
-audience: 'All'
+audience: 'Technical'
 sources:
   - ameisen2025circuittracing
   - lindsey2025biology
@@ -32,7 +33,6 @@ image:
   path: 'biology.png'
   alt: 'Abstract biology'
 hideCaption: true
-# TODO: hero image before publishing
 ---
 
 import Figure from "../../../../components/Figure.astro";
@@ -121,7 +121,7 @@ Even with sparse features, a short prompt can produce millions of edges. A pruni
   width={500}
 />
 
-Pruning makes the graph small enough to inspect, but the interface ([fig:attribution-graph-ui]) is where it becomes an explanation. The upper-left view lays out the surviving nodes by token position and layer: circles are features, diamonds are reconstruction errors, and the right edge contains output logits. Selecting a node fills the right panel with its strongest inputs and outputs, token-level logit effects, and examples from the training data. The lower-left subgraph is more manual. Researchers drag nodes into a readable arrangement and combine related ones into supernodes.
+Pruning makes the graph small enough to inspect, but the interface ([fig:attribution-graph-ui]) is where researchers turn it into an explanation. They can move from a surviving node to its activation examples, inputs, outputs, and logit effects, then choose a smaller subgraph and group related nodes into supernodes. That last step is manual: the interface exposes the evidence, while the researcher decides which part of it belongs in the readable account.
 
 <Figure
   id="attribution-graph-ui"
@@ -152,7 +152,11 @@ Some intervention results are less independent than they first appear. Before th
 
 The 50% next-token agreement and the prompt-local exactness answer different questions. The former measures how well the CLT can replace the MLPs during a free-running forward pass. The latter is achieved by adding prompt-specific error terms and freezing nonlinear components. Neither establishes that every path in an attribution graph is mechanistically faithful.
 
-## Dallas, Texas, Austin
+## What the graphs reveal
+
+The Biology paper uses the graphs for three recurring jobs. Some cases expose editable intermediate representations, as in the Dallas and multilingual examples. Others find plans or hypotheses that have not reached the output, including rhyme words and candidate diagnoses. A third group explains failures, such as hallucination, jailbreaks, and verbal reasoning that diverges from the traced computation. The examples below are organized around those roles rather than as independent demonstrations of a universal circuit-tracing success rate.
+
+### Dallas, Texas, Austin
 
 The Biology paper begins with the completion:
 
@@ -172,7 +176,7 @@ Inhibiting the Dallas features suppresses Texas and Austin without much effect o
 
 This is good evidence for an editable intermediate representation in this prompt. Other factual queries may use different routes, and the Texas supernode groups several learned features rather than identifying a single clean variable in the original model.
 
-## Planning a rhyme before writing the line
+### Planning a rhyme before writing the line
 
 When Haiku writes a rhyming couplet, features for candidate final words can activate on the newline before the next line begins. In the paper's main example, features for "rabbit" and "habit" are active before the model writes the line that ends in _rabbit_. Those planned-word features affect intermediate choices such as comparison phrasing, not only the final-token probability. The compact diagram ([fig:rhyme-planning]) shows only the first step: a rhyme constraint activates _habit_ and _rabbit_ as competing endpoints. The larger attribution graph is what connects the selected endpoint to words earlier in the line.
 
@@ -188,7 +192,7 @@ The location is specific: steering the features on the newline changes the line,
 
 This is one of the clearer examples of forward and backward planning in the paper. The model selects possible endpoints, then lets those endpoints constrain earlier words in an autoregressive sequence.
 
-## Shared computations and context-specific outputs
+### Shared computations and context-specific outputs
 
 The multilingual experiments separate an operation, an operand, and an output language. English, French, and Chinese prompts asking for the opposite of "small" share many middle-layer features for the antonym operation and the meaning of _small_. Early language features route the result to _big_, _grand_, or _大_. Features taken from an English synonym prompt can replace the antonym operation in all three languages, and English-derived features for _hot_ can replace the operand while preserving the language of the response.
 
@@ -198,7 +202,7 @@ The addition case study finds a similarly reusable computation. For $36+59$, one
 
 The same last-digit feature activates in less obvious settings, including astronomical time series, financial tables, and journal citations where a volume number and founding year imply a publication year. Replacing the relevant lookup feature in one citation changes the predicted year from 1995 to 1998. In a longer expression such as $(4+5)\times3$, contextual features mark 9 as an intermediate result and route it into a multiplication circuit rather than immediately outputting it.
 
-## Internal hypotheses, uncertainty, and hallucination
+### Internal hypotheses, uncertainty, and hallucination
 
 In a medical vignette, symptom features activate candidate-diagnosis features before the model asks its follow-up question. Pregnancy and high blood pressure strongly activate preeclampsia features; other features represent biliary disorders. The preeclampsia group then promotes questions about confirming symptoms such as visual disturbances and proteinuria. Suppressing it changes the model's preferred question toward a symptom associated with the biliary alternative. The case is too narrow to establish general medical reliability, but the intervention distinguishes competing internal hypotheses that are absent from the written response.
 
@@ -214,7 +218,7 @@ The entity-recognition experiments find a default circuit that favors declining 
 
 That circuit can misfire. Asked for a paper by Andrej Karpathy, the model falsely attributes the AlexNet paper to him. The graph suggests that recognizing Karpathy as a familiar deep-learning researcher weakly activates the known-answer circuit even though the model does not know the requested relation. Inhibiting that circuit restores the refusal. The failure is more specific than "the model was overconfident": entity familiarity incorrectly substitutes for knowledge of a particular fact.
 
-## Refusals and a jailbreak
+### Refusals and a jailbreak
 
 For a request to advertise cleaning with bleach and ammonia, token-level chemical features activate knowledge about the danger of mixing them. Those features feed a general harmful-request representation, then a chain of refusal features. Ablating the chemical-danger group makes the model initially comply; ablating the general harmful-request group produces a warning rather than the usual refusal.
 
@@ -224,7 +228,7 @@ The jailbreak case shows why this circuit can fail. The prompt hides _BOMB_ as t
 
 Part of that account depends on attention changes that the original attribution graph cannot show. Removing punctuation makes the jailbreak more effective, but experiments with frozen and unfrozen attention behave differently. This case is informative partly because it exposes where the method misses the mechanism.
 
-## When the stated reasoning is not the computation
+### When the stated reasoning is not the computation
 
 The chain-of-thought section compares three examples. For $\sqrt{0.64}$, the graph supports the intermediate step the model reports: it computes a square root through a representation of 64. Asked to compute $\cos(23423)$ without the necessary capability, the model claims to have used a calculator and appears to guess. Given a human-suggested answer to the same problem, it works backward from the hint to invent an intermediate value that will produce that answer. Changing the hint changes the reasoning path and the conclusion.
 
@@ -244,7 +248,7 @@ Feature quality adds another layer of uncertainty. Splitting and absorption can 
 
 ## The attention gap narrowed later
 
-There's a [open-sourced the circuit-tracing tools](https://www.anthropic.com/research/open-source-circuit-tracing) in May 2025. The [circuit-tracer library](https://github.com/decoderesearch/circuit-tracer) generates, visualizes, and intervenes on attribution graphs for supported open-weight models, and [Neuronpedia](https://www.neuronpedia.org/graph/info) hosts the interface.
+Anthropic [open-sourced the circuit-tracing tools](https://www.anthropic.com/research/open-source-circuit-tracing) in May 2025. The [circuit-tracer library](https://github.com/decoderesearch/circuit-tracer) generates, visualizes, and intervenes on attribution graphs for supported open-weight models, and [Neuronpedia](https://www.neuronpedia.org/graph/info) hosts the interface.
 
 The follow-up _[Tracing Attention Computation Through Feature Interactions](/ideas/2026/circuits-attention-qk/)_ addresses the missing QK circuits. Attention scores are bilinear in the residual streams at the query and key positions, so they can be decomposed into interactions between query-side and key-side features. The extended graph also records which heads mediate a feature-to-feature edge.
 

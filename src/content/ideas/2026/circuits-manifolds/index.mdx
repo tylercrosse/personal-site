@@ -2,12 +2,13 @@
 title: 'Notes on When Models Manipulate Manifolds'
 description: 'Notes on the geometry of a counting task: how Claude 3.5 Haiku tracks character position on a curved feature manifold, and what attention heads do to that curve.'
 date: '2026-08-15'
-status: 'in-progress'
+updated: '2026-08-16'
+status: 'complete'
 type: 'note'
 tags: ['mechanistic-interpretability', 'deep-learning', 'research', 'AI-safety']
 category: ['ideas']
-draft: true
-audience: 'All'
+draft: false
+audience: 'Technical'
 sources:
   - gurnee2025when
 credits:
@@ -66,7 +67,7 @@ What the model has instead is a family of features. Across a synthetic corpus of
   width={1200}
 />
 
-That arrangement shows up elsewhere. Curve detectors in vision models and place cells in a mouse running a linear track work the same way, carrying a continuous quantity across a set of discrete units each tuned to a band of values. The widening has a biological parallel too, since number representations in animal brains dilate the same way as the quantity grows.
+That arrangement shows up elsewhere. Curve detectors in vision models and place cells in a mouse running a linear track work the same way, carrying a continuous quantity across a set of discrete units each tuned to a band of values. The widening has a biological parallel too, since number representations in animal brains dilate the same way as the quantity grows. These are comparisons of coding geometry; they do not imply that the underlying mechanisms are shared.
 
 Look at when those features are active and something shows up that the tuning curves hide individually. They rise and fall at an offset from each other, and for most values of the count, two are active at once. That is what you would expect if the ten features were sampling something continuous, each covering a stretch of it.
 
@@ -248,5 +249,5 @@ Whether it is the last of its line is harder to say. The thread's later work mov
 - The [superposition notes](/ideas/2026/circuits-superposition/) cover the interference story that ringing turns out to be a special case of.
 - The [mathematical framework notes](/ideas/2026/circuits-framework/) introduce the QK and OV split the boundary head is built from.
 - The [attention QK notes](/ideas/2026/circuits-attention-qk/) cover the attribution method that found this circuit before the geometry took over.
-- Modell et al. propose a formal notion of a feature manifold and report similar ripples and dilation in representations of colors, dates, and years.
-- Michaud et al. found linebreaking in fixed-width text among the top 400 behavioral "quanta" in a 70m-parameter Pythia model, which is why the paper treats it as a natural task rather than a contrived one.
+- [Modell et al.](https://arxiv.org/abs/2505.18235) propose a formal notion of a feature manifold and report similar ripples and dilation in representations of colors, dates, and years.
+- [Michaud et al.](https://arxiv.org/abs/2303.13506) found linebreaking in fixed-width text among the top 400 behavioral "quanta" in a 70M-parameter Pythia model, which is why the paper treats it as a natural task rather than a contrived one.

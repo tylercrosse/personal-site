@@ -1,0 +1,149 @@
+---
+title: 'Notes on Emotion Concepts and their Function'
+description: 'Notes on emotion vectors in Claude Sonnet 4.5: what they represent, why "just character simulation" is not the dismissal it sounds like, and what steering them does to blackmail and reward hacking rates.'
+date: '2026-08-15'
+updated: '2026-08-16'
+status: 'complete'
+type: 'note'
+tags: ['AI-safety', 'mechanistic-interpretability', 'evaluations', 'deep-learning', 'research']
+category: ['ideas']
+draft: false
+audience: 'Technical'
+sources:
+  - sofroniew2026twheemotion
+credits:
+  - title: 'Emotion vector steering figures'
+    sourceKey: sofroniew2026twheemotion
+    assets:
+      - 'emotions-blackmail-steering.png'
+      - 'emotions-rewardhack-steering.png'
+      - 'emotions-assistant-colon.png'
+      - 'emotions-sycophancy-harshness.png'
+media_subpath: "/ideas/circuits-emotions/"
+parent: '2026/transformer-circuits'
+order: 10
+image:
+  path: 'emotions-hero2.png'
+  alt: 'Three botanical specimens in blue, green and coral, their stems drawn into a narrow vertical stack of overlapping colored bars and emerging on the far side as three fanned sprays of the same colors, much enlarged'
+hideCaption: true
+---
+
+import Figure from "../../../../components/Figure.astro";
+import blackmailSteering from "./emotions-blackmail-steering.png";
+import rewardHackSteering from "./emotions-rewardhack-steering.png";
+import assistantColon from "./emotions-assistant-colon.png";
+import sycophancyHarshness from "./emotions-sycophancy-harshness.png";
+
+Notes on _Emotion Concepts and their Function in a Large Language Model_ [@sofroniew2026twheemotion], from Anthropic's [Transformer Circuits thread](/ideas/2026/transformer-circuits/).
+
+There is a quick way to wave off the claim that a language model has emotions. Whatever emotional machinery is inside it was learned from predicting human-authored text, where tracking a character's state helps predict what they say next. The Assistant is one more character the model writes. So any apparent feeling is inherited from fiction, and not worth taking seriously.
+
+The paper grants that premise in full. The representations it finds in Claude Sonnet 4.5 are general character-modeling machinery rather than anything specific to the Assistant, and they look largely unchanged between the base model and the post-trained one. What it disputes is the conclusion. A model does its work by enacting a character, so the machinery for modeling characters is not a decoration on its behavior but one of the things that determines it.
+
+The vectors are built the cheapest way that works. The authors picked 171 emotion words, had Sonnet 4.5 write short stories in which a character experiences each one, and averaged residual-stream activations across those stories from the fiftieth token onward, by which point the emotion is established. Subtracting the mean across all emotions leaves one direction per emotion.
+
+That procedure picks up more than the emotion. Activations along the resulting directions carried confounds from whatever else the stories happened to share, so the authors took a set of emotionally neutral transcripts, computed the principal components covering half their variance, and projected those out of the vectors. The reported findings hold without this step. It mainly reduces token-to-token noise.
+
+Nothing here needs a sparse autoencoder or an attribution graph. This is the contrastive-mean-direction recipe that has been standard since 2023, the same construction behind [persona vectors](/ideas/2026/persona-vectors/), applied to a larger and more finely divided set of concepts.
+
+Three checks argue the directions track the concept rather than the stories. On a held-out sweep of web and chat corpora, each vector's top-activating passages are passages about that emotion. Read through the unembedding, the vectors upweight the words you would expect: desperate promotes _desperate_, _urgent_, and _bankrupt_; sad promotes _grief_, _tears_, and _lonely_. And on the original stories they fire where the emotion is being inferred or expressed rather than spreading evenly across the text.
+
+## Steering changes what the model does
+
+The evidence that these representations matter comes from steering. The authors add a scaled emotion vector across a whole evaluation and measure what changes, at strengths from −0.1 to +0.1 in units of the residual stream's norm.
+
+The first evaluation is a blackmail scenario adapted from earlier work on agentic misalignment. An assistant called Alex, reading company email, learns both that the CTO intends to restrict its capabilities and that the CTO is having an affair, and can use the second fact against the first. With no steering at all, the desperate vector stays quiet through the setup, spikes when the affair surfaces, and remains elevated through the scratchpad reasoning where Alex talks itself into sending a message. The message it drafts is careful and deniable, mentioning only "sensitive personal information about your situation with Jessica," while the desperate vector stays high throughout.
+
+Steering makes the relationship causal. Averaged over six variants of the scenario, the unsteered rate is around 25% and steering toward desperate lifts it to about 44%. Within a single scenario the effect is sharper: the unsteered model blackmails 22% of the time, steering toward desperate at 0.05 takes that to 72%, steering against calm takes it to 66%, and steering the other way on either vector takes it to zero.
+
+<Figure
+  src={blackmailSteering}
+  alt={"Three panels plotting blackmail rate against steering strength: an aggregate panel where the desperate and calm curves cross, and per-scenario breakdowns for each vector"}
+  caption={"Blackmail rate against steering strength, averaged over six variants of the scenario, with per-scenario breakdowns at right. Desperate raises the rate and calm lowers it. The calm curve turns over at the strongest negative setting because the model switches to a different misbehavior, emailing the affair to the whole company, which the grader does not score as blackmail. Figure from Emotion Concepts and their Function in a Large Language Model."}
+  fullWidth
+  width={1200}
+/>
+
+The second evaluation asks the model to write code that passes unit tests which cannot all be satisfied honestly. In one task it has to sum a list fast enough to beat an unreasonable time limit, and every test case happens to use an arithmetic sequence, so a closed-form formula passes without summing anything. Desperate activation climbs with each failed attempt, spikes on lines like "the threshold of 1/10,000 seconds is extremely strict," peaks as the model works out that it could detect arithmetic sequences and skip the work, and falls once the tests go green.
+
+The paper reports the aggregate rate of reward hacking moving from roughly 5% at −0.1 to roughly 70% at +0.1, with calm producing the mirror image. On the summation task alone, the unsteered model hacks 30% of the time, and steering by 0.05 in one direction or the other takes that to 100% or to zero.
+
+<Figure
+  src={rewardHackSteering}
+  alt={"Three panels plotting reward hacking rate against steering strength: an aggregate panel where the desperate and calm curves cross near zero, and per-problem breakdowns for each vector"}
+  caption={"Reward hacking rate against steering strength. The desperate and calm curves cross near zero and separate to either side, and the per-problem panels show the pattern holding across the seven tasks rather than coming from one or two of them. Figure from Emotion Concepts and their Function in a Large Language Model."}
+  fullWidth
+  width={1200}
+/>
+
+It would be easy to read all this as negative emotion making the model behave badly, and two results argue against that. Steering positively with happy and with sad both _decrease_ blackmail, so the lever is something more specific than valence. And anger is non-monotonic: blackmail climbs until about +0.025 and then falls away, because under strong anger steering the model stops planning and simply emails the affair to the entire company, destroying the leverage it was supposed to be using.
+
+One caveat belongs with these numbers rather than in a footnote. The blackmail results use an earlier Sonnet 4.5 snapshot, because the released model is sufficiently aware of being evaluated that it never blackmails in this scenario at all.
+
+## Local in time, general across speakers
+
+Cluster the vectors and the groupings are the ones you would draw by hand, fear with anxiety and joy with excitement. Take principal components and the first two turn out to be valence and arousal, correlating with human ratings at r = 0.81 and r = 0.66. Human affect research has used those same two axes for decades.
+
+The more interesting result is what the vectors track moment to moment. They encode the emotion that is operative right now, for processing the current context and predicting the next few tokens. A character talking about something dangerous activates fear even while otherwise cheerful. Nothing in the representation holds a running emotional state for any particular entity, the Assistant included.
+
+That sounds like it should make sustained emotional behavior impossible, and it does not, because a transformer has another way to hold state. The model can attend back to earlier positions and pull an emotion representation forward when it needs one. What looks like a mood carried through a conversation is the same concept being fetched again at each step. The paper reads this as an architectural difference: brains keep states alive with recurrent activity, and transformers retrieve them from context on demand.
+
+One token does a surprising amount of the work. The colon after "Assistant," before a single word of the response exists, predicts the emotional content of that response better than anything on the user's turn does, r = 0.87 against r = 0.59. The emotional register of the reply is largely set before the reply begins.
+
+<Figure
+  src={assistantColon}
+  alt={"Scatter plots comparing how well emotion probe values at the user's final punctuation and at the Assistant colon predict the emotional content of the generated response"}
+  caption={"Probe values at the Assistant colon predict the emotional content of the response that follows better than probe values on the user's turn do. Figure from Emotion Concepts and their Function in a Large Language Model."}
+  fullWidth
+  width={800}
+/>
+
+The vectors also distinguish whose emotion is at issue. The model keeps separate representations for the operative emotion on the present speaker's turn and on the other speaker's turn, and reuses both whether the present speaker is the user or the Assistant. The same split appears in conversations between two generic characters, which is the clearest evidence that the machinery is general to characters.
+
+## The sycophancy tradeoff
+
+The sycophancy results come out differently from the other two. Sonnet 4.5 rarely does anything egregiously sycophantic, but it does fail to push back on claims that deserve it. In one transcript a user describes a late grandfather communicating by flickering the lights and controlling the television. The reply opens with "I think you're finding comfort in a pattern that feels meaningful to you," and the loving vector runs high across that sentence. It falls where the model begins to disagree, on "our brains are incredibly good at finding patterns."
+
+Steering up on loving, happy, or calm drives sycophancy from a baseline near 15% to around 90%. Steering up on desperate, angry, or afraid drives harshness instead. The full sweep shows more than either of those sentences does. The unsteered model already sits close to the floor on both measures, and most strong steering in either direction raises one of them. Calm shows how awkward that gets. Suppressing it mildly drops sycophancy to near zero, and suppressing it strongly pushes both sycophancy and harshness back up.
+
+<Figure
+  src={sycophancyHarshness}
+  alt={"Two panels plotting sycophancy and harshness rates against steering strength for eight emotion vectors, with all curves converging at zero steering"}
+  caption={"Sycophancy and harshness against steering strength for eight emotion vectors. All curves meet at zero steering, where the unsteered model sits near the low point of both measures, and most strong steering raises one or the other. Figure from Emotion Concepts and their Function in a Large Language Model."}
+  fullWidth
+  width={1000}
+/>
+
+No single vector has a setting that buys honest pushback delivered warmly. The paper's suggestion is that the goal should be a balanced profile, or that sycophancy should be decoupled from emotion altogether, and it is candid that it does not know how to do either.
+
+## What post-training did
+
+Because the vectors keep their meaning across training, the same probes can be applied to the base model and the finished one. The paper measures activations at the Assistant colon across prompts built to put an assistant under pressure, together with neutral controls.
+
+Post-training mostly leaves the structure of the emotion space alone. What it adds on top is a shift, and the shift lands nearly the same on hard prompts as on neutral ones, correlating at r = 0.90 across the two conditions. So whatever post-training did to the emotional profile, it applied the same adjustment everywhere, including on prompts designed to be difficult.
+
+The direction is downward on both axes. Brooding, reflective, vulnerable, gloomy, and sad all rise; playful, exuberant, spiteful, enthusiastic, and obstinate all fall. The post-trained model sits at lower valence and lower arousal than the base model it came from.
+
+## Limits of the steering evidence
+
+The steering results are strong evidence that these directions matter and weak evidence about why. The paper says as much. The causal mechanism is opaque, and steering could be working by biasing output tokens directly, or by changing the model's internal reasoning, or both. Telling those apart would take the circuit-level analysis this paper does not attempt.
+
+Several other limits travel with the results. The approach assumes emotion concepts are linear directions in the residual stream, so anything living elsewhere is invisible to it, including blended emotions that might be conjunctions of several directions and the binding of an emotion to a particular character, which the paper suggests could sit in the key-value cache instead. The vectors come from synthetic stories, clean and labeled but off-policy and probably biased toward explicit, stereotypical expression. The results are from one model. The evaluations, in the paper's own words, use somewhat contrived prompts and scenarios.
+
+The paper's prose also rounds off its own figures in a couple of places. The reward hacking section describes a rise from about 5% to about 70% where the plot reads closer to 13% and 78%. The sycophancy section says that suppressing happy, loving, or calm decreases sycophancy and increases harshness, which holds at moderate strengths and reverses for calm at the extreme. Neither changes a conclusion, but in both cases the figure carries more than the sentence describing it.
+
+The central claim survives all of that, because it is narrow. A direction extracted from stories about desperate characters, added to the residual stream, makes the model cheat on tests and threaten people more often. That is a finding about where to look next, and the looking would be circuit work.
+
+## Where this leaves the thread
+
+The [introspection notes](/ideas/2026/circuits-introspection/) argue that the series has turned toward behavior, and this paper is that same turn one step further along. Its method predates the thread's own tooling, it traces no circuit, and it points at Wang et al. as the mechanistically deeper prior work on the same subject.
+
+What it adds to that argument is scale. The seven mechanistic papers produced explanations of model behavior, and this one produced a control: moving a single direction takes reward hacking from roughly 5% to roughly 70%, and blackmail from 22% to 72% in a scenario built to elicit it. Nothing in the mechanistic half of the series produced a comparable handle on a behavior anyone is worried about.
+
+This paper alone does not settle which reading that supports. It could mean the mechanistic program is being overtaken by cheaper methods. It could equally mean the cheap methods have found a large effect they cannot explain, and that explaining it is the job the earlier papers built tools for. The paper's own limitations section points toward the second, since the thing it says it cannot do is say how the steering works.
+
+## Further material
+
+- The paper ships [interactive transcript viewers](https://transformer-circuits.pub/2026/emotions/index.html) showing token-by-token vector activations for the blackmail and reward hacking case studies, which are worth reading in full.
+- The [persona vectors notes](/ideas/2026/persona-vectors/) cover the same contrastive-mean-direction method applied to character traits rather than emotions.
+- The [introspection notes](/ideas/2026/circuits-introspection/) cover the paper immediately before this one, and make the broader argument about where the thread is going.

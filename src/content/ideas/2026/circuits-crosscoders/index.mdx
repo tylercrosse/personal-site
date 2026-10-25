@@ -2,12 +2,13 @@
 title: 'Notes on Sparse Crosscoders'
 description: 'Notes on sparse crosscoders: one shared feature dictionary across layers or across models, and what that enables for cross-layer analysis and model diffing.'
 date: '2026-07-18'
-status: 'in-progress'
+updated: '2026-08-16'
+status: 'complete'
 type: 'note'
 tags: ['mechanistic-interpretability', 'deep-learning', 'research', 'AI-safety']
 category: ['ideas']
 draft: false
-audience: 'All'
+audience: 'Technical'
 sources:
   - lindsey2024crosscoders
 credits:
@@ -24,7 +25,6 @@ image:
   path: 'crosscoders2.png'
   alt: 'Abstract stacks'
 hideCaption: true
-# TODO: hero image before publishing
 ---
 
 import Figure from "../../../../components/Figure.astro";
@@ -63,6 +63,8 @@ $$
 The inner sum is important. It treats writing a feature to an additional site as an additional sparsity cost. Using a single norm over the concatenated decoders would reward spreading each feature across sites and tends to erase the layer- or model-specific structure the method is meant to find.
 
 This setup defines a feature by its activation pattern across examples, not by a fixed direction in the residual stream. One feature can point in different directions at different layers. Its decoder norms say where it is represented strongly, and the cosine similarities between its decoder directions show how its representation changes.
+
+As a toy example, suppose the same name-related pattern appears at layers 5, 10, and 15, but the residual-stream direction carrying it rotates between those sites. Three separate SAEs may return three features that have to be matched after training. A crosscoder can assign the pattern one latent activation and learn three decoder directions, making the proposed continuity explicit without assuming that the direction stays fixed.
 
 An SAE and a transcoder are limiting cases of the same construction. An SAE reads and reconstructs one site. A transcoder reads one site and predicts another. Crosscoders vary which sites an encoder may read and which sites its decoder may write to. The circuit comparison below ([fig:simplify-circuits|short]) shows why that distinction matters in practice: the per-layer view repeats persistent features at successive sites, while the crosscoder view collapses those copies into shared nodes.
 

@@ -1,0 +1,330 @@
+---
+title: 'Notes on Verbalizable Representations Form a Global Workspace (J-space)'
+description: 'Notes on the Jacobian lens, evidence that token-indexed verbalizable directions mediate report and some reasoning, and the limits of treating the J-space as a global workspace.'
+date: '2026-08-15'
+updated: '2026-08-16'
+status: 'complete'
+type: 'note'
+tags: ['mechanistic-interpretability', 'deep-learning', 'research', 'AI-safety']
+category: ['ideas']
+draft: false
+audience: 'Technical'
+sources:
+  - gurnee2026verbalizable
+credits:
+  - title: 'Jacobian lens and counterfactual reflection training diagrams'
+    sourceKey: gurnee2026verbalizable
+    assets:
+      - 'workspace-jacobian-lens.png'
+      - 'workspace-lens-comparison.png'
+      - 'workspace-averaging-curve.png'
+      - 'workspace-modulation-readouts.png'
+      - 'workspace-swap-success.png'
+      - 'workspace-jspace-privileged.png'
+      - 'workspace-intermediate-readouts.png'
+      - 'workspace-selectivity-language.png'
+      - 'workspace-selectivity-counting.png'
+      - 'workspace-five-properties.png'
+      - 'workspace-layer-regions.png'
+      - 'workspace-mlp-amplification.png'
+      - 'workspace-reflection-training.png'
+media_subpath: "/ideas/circuits-workspace/"
+parent: '2026/transformer-circuits'
+order: 12
+image:
+  path: 'workspace-hero6.png'
+  alt: 'Botanical illustrations collaged on either side of a row of translucent stacked planes, with light converging through two crystal prisms at the center and fanning out again'
+hideCaption: true
+---
+
+import Figure from "../../../../components/Figure.astro";
+import LensComparisonFigure from "../../../../components/ideas/circuits/LensComparisonFigure.astro";
+import WorkspaceDepthFigure from "../../../../components/ideas/circuits/WorkspaceDepthFigure.astro";
+import jacobianLens from "./workspace-jacobian-lens.png";
+import lensComparison from "./workspace-lens-comparison.png";
+import averagingCurve from "./workspace-averaging-curve.png";
+import modulationReadouts from "./workspace-modulation-readouts.png";
+import swapSuccess from "./workspace-swap-success.png";
+import jspacePrivileged from "./workspace-jspace-privileged.png";
+import intermediateReadouts from "./workspace-intermediate-readouts.png";
+import selectivityLanguage from "./workspace-selectivity-language.png";
+import selectivityCounting from "./workspace-selectivity-counting.png";
+import fiveProperties from "./workspace-five-properties.png";
+import layerRegions from "./workspace-layer-regions.png";
+import mlpAmplification from "./workspace-mlp-amplification.png";
+import reflectionTraining from "./workspace-reflection-training.png";
+
+Notes on _Verbalizable Representations Form a Global Workspace in Language Models_ [@gurnee2026verbalizable], from Anthropic's [Transformer Circuits thread](/ideas/2026/transformer-circuits/).
+
+Since 2020 there has been a simple trick for looking inside a language model mid-computation. Take the hidden state at some layer, apply the output embedding as though the remaining layers had done nothing, and read off which tokens it favors. That is the logit lens [@nostalgebraist2020logit]. What people mostly noticed when they tried it was that the correct next token often shows up well before the final layer, and the discussion that followed was mostly about whether you could exit early and skip the remaining compute.
+
+Less attention went to the rest of the readout. This paper builds a sharper version of the lens and finds concepts the model never says: assessments it has formed about the input, and intermediate steps that do not reach the output.
+
+Tell the model to copy out the sentence "The old painting hung crookedly on the wall" while concentrating on citrus fruits. It copies the sentence correctly, and nothing about fruit appears in the output. Read the new lens at the token in the middle of _crookedly_ and the top entry is `orange`, with `lemon` just behind it.
+
+That readout is the Jacobian lens, a layer-specific linear map from an activation to its potential effects on later output logits. Each vocabulary token defines one direction under that map, called a J-lens vector. The paper collects sparse combinations of those directions into what it calls the J-space.
+
+The workspace in the title refers to global workspace theory, a proposal in neuroscience about how a brain running many specialized processes in parallel, mostly outside awareness, makes some of their content available for report and deliberate control. A representation becomes accessible, in that account, when it is posted to a shared workspace that many downstream processes can read. The workspace has limited capacity, so entry into it is competitive, and its contents at any moment are a small selection from everything going on.
+
+That analogy also gives the paper its map of the model ([fig:depth-map|short]). It divides the layers into three bands: an early sensory region, a long middle it calls the workspace, and a short motor stretch at the top. The lower boundary sits about a third of the way up, and almost every readout below comes from above it. The evidence for drawing the lines there is structural and comes near the end.
+
+The readout is a tap on the residual stream partway up, not a reading of the model's output. That is the whole reason it can carry something other than the next token.
+
+<WorkspaceDepthFigure id="depth-map" />
+
+A note on vocabulary before going further. I use phrases like holding in mind and thinking about for what the readout shows, since those are the natural ones. The paper is careful about the same words. It separates access consciousness, meaning information poised for use in reasoning and the control of speech and action, from phenomenal consciousness, meaning subjective experience, and takes no position on the second. Everything below concerns the first.
+
+Three claims sit on top of each other here, and each rests on a different kind of evidence. That the Jacobian lens is a better readout than the logit or tuned lens is a benchmark question. That its token-indexed directions play a causal role in verbal report and some flexible computation rests on interventions. That the collection of those directions works like a global workspace is an analogy, tested against properties borrowed from the theory above. Keeping the three apart makes it easier to say what the paper establishes.
+
+## A better lens
+
+The logit lens has a known weakness. The unembedding matrix is built to read the final layer's residual stream, so applying it at layer $\ell$ assumes that layer writes in the same coordinates the final layer does. Residual connections make that approximately true near the end, where little is added after the point you are reading. The further back you go, the worse the assumption gets, and readouts in the early layers are mostly noise.
+
+The obvious repair is to learn the correction. Fit an affine map for each layer, trained so that decoding through it matches the model's own output distribution, and you have the tuned lens [@belrose2023eliciting]. One map per layer, fit once against a frozen model, and every layer is translated into the final layer's coordinates before you unembed. On its own terms it works: it tracks the next token better than the logit lens does, and it is the standard baseline this paper measures against.
+
+For looking at intermediate computation the tuned lens is worse, and the reason is in the objective. A map trained to reproduce the output distribution will tend, on a prompt where the model is computing something it never says, to skip past the working and report the eventual answer. The paper calls that objective correlational.
+
+The Jacobian lens measures the correction instead of learning it ([fig:three-lenses|short]). Perturb the residual stream at layer $\ell$ and the disturbance propagates forward; to first order its effect on the final layer is described by a Jacobian, $\partial h_{\text{final}} / \partial h_\ell$. Compose that with the unembedding and you have the first-order effect on the output logits of a nudge at layer $\ell$. What the Jacobian records is which way the output distribution moves when the state is pushed in a given direction. That is the useful property here, because the target is computation the model never verbalizes, and a predictor of the output has no reason to surface it.
+
+<LensComparisonFigure id="three-lenses" />
+
+A Jacobian computed on one prompt mixes two things together. Some of what it measures is the model's standing disposition to verbalize a concept, and some of it is the particular use the model is making of that concept right here. The paper separates them by averaging. For each layer,
+
+$$
+J_\ell = \mathbb{E}_{t,\,t' \ge t,\,\text{prompt}}
+\left[\frac{\partial h_{\text{final},t'}}{\partial h_{\ell,t}}\right]
+$$
+
+where the expectation runs over the source position $t$, every later position $t'$ in the same context, and a thousand prompts drawn from a pretraining-like distribution. That gives one $d_{\text{model}} \times d_{\text{model}}$ matrix per layer, which is panel A of [fig:jacobian-lens|short]. The other two panels cover reading from the lens and intervening on it, both of which come below.
+
+<Figure
+  id="jacobian-lens"
+  src={jacobianLens}
+  alt={"Three-panel diagram: computing the Jacobian lens by backpropagating from the final layer and averaging, reading from it by replacing all later layers with a single matrix, and intervening by swapping an activation's projections onto two lens vectors"}
+  caption={"How the lens is built and used. (A) Jacobians running from the final-layer residual stream back to layer ℓ, averaged over token positions and prompts, give one matrix per layer. (B) Reading replaces every layer above ℓ with that matrix and then unembeds. (C) Interventions swap an activation's projections onto two lens vectors and leave the rest of it untouched. Figure from Verbalizable Representations Form a Global Workspace in Language Models."}
+  fullWidth
+  width={1200}
+/>
+
+Averaging over the later positions and not only the current one is what makes the result a measure of disposition. A vector scores highly if pushing on it would raise the probability of some token at some point in the continuation, which is a weaker condition than that token being imminent, and a more useful one.
+
+Averaging across a thousand unrelated prompts does the other half of the job. Whatever the model happened to be doing in any one context contributes to that context's Jacobian and to no other, so it washes out. What survives is whatever a direction does consistently, across contexts that have nothing in common.
+
+That second point does more work than it looks like. A lens reporting what the model is about to say would mostly hand back the next few tokens, which the output distribution already gives you for free. But the next token is the thing that varies most from one context to another, so it is among the first things the averaging destroys. What survives is content that recurs across contexts of a similar kind, and that turns out to include a good deal the model has no plan to say.
+
+How much averaging you need is an empirical question, and the answer is visible in [fig:averaging-curve|short]. Even a single-prompt Jacobian already recovers intermediates better than the tuned lens does. Adding more keeps helping until the curve flattens somewhere in the hundreds, which is where the thousand comes from.
+
+<Figure
+  id="averaging-curve"
+  src={averagingCurve}
+  alt={"Six panels plotting intermediate-recovery score against the number of prompt Jacobians averaged, from one to a thousand, each with horizontal reference lines for the logit and tuned lenses"}
+  caption={"Recovery of unverbalized intermediates against the number of prompt Jacobians in the average, with the logit lens (dashed) and tuned lens (dotted) as baselines. Figure from Verbalizable Representations Form a Global Workspace in Language Models."}
+  fullWidth
+  width={1200}
+/>
+
+Reading the lens is then one matrix multiply. Applying $J_\ell$ to a hidden state and unembedding gives $\text{lens}(h_\ell) = \text{softmax}(W_U\,\text{norm}(J_\ell h_\ell))$, a score over the whole vocabulary that you sort and read from the top. The rows of $W_U J_\ell$ are the J-lens vectors, one direction in residual-stream space for each vocabulary token at each layer. The normalization only rescales, so that product can be computed once per layer and reused, which is why the technique is cheap enough to run over a lot of text without training anything.
+
+Whether the extra machinery earns its keep is testable, and [fig:lens-comparison|short] is the paper's answer. Across six families of prompts that require an unverbalized intermediate, the Jacobian lens recovers it more reliably than either alternative. The tuned lens comes last in most of them, and the gap is widest where the intermediate sits furthest from anything the model says.
+
+<Figure
+  id="lens-comparison"
+  src={lensComparison}
+  alt={"Six panels comparing intermediate-concept recovery for the Jacobian, logit, and tuned lenses across prompt families, with the Jacobian lens highest in every panel"}
+  caption={"Recovering an unverbalized intermediate across six prompt families. The Jacobian lens leads everywhere; the tuned lens collapses on the poetry and association families, where the intermediate is furthest from the output. Figure from Verbalizable Representations Form a Global Workspace in Language Models."}
+  fullWidth
+  width={1200}
+/>
+
+Before any of the readouts, the lens says something about the model on its own. Compare the J-lens representations at one layer against those at another, across every pair, and the layers fall into three blocks ([fig:layer-regions|short]): an early region, a long stable middle, and a short final stretch, which the paper labels sensory, workspace, and motor. That is the map from the introduction, arrived at rather than asserted, and it is worth having in view before the readouts start, since nearly all of them are taken from the middle block.
+
+<Figure
+  id="layer-regions"
+  src={layerRegions}
+  alt={"A schematic of the residual stream divided into sensory, workspace, and motor bands beside a centered kernel alignment heatmap of J-lens representations, showing a large bright block for the sensory layers, a larger one for the middle layers, and a narrow one at the top"}
+  caption={"Layer-by-layer similarity of J-lens representations, with the three regions the paper divides them into. The sensory and workspace blocks meet at a sharp corner around a third of the way up. The workspace and motor blocks meet in a much narrower transition. Figure from Verbalizable Representations Form a Global Workspace in Language Models."}
+  fullWidth
+  width={1200}
+/>
+
+## What the lens reads
+
+Start with the case the lens was built for. Ask the model to think of a sport and then name it, read the lens at the token just before the answer, and `Soccer` sits at the top. The model says Soccer. Swap the `Soccer` component of the activation for `Rugby`, picked from outside the model's top ten candidates, and it reports Rugby instead. The lens is derived from causal effects on output tokens, so a connection to what the model says is built into it.
+
+The harder case is when the model has been told to think about one thing and say another, which is the citrus example from the introduction. There is more in that readout than `orange` and `lemon`. At intermediate layers it also carries `fruit`, `imagine`, `thinking`, and `focused`, which describe the act of holding something in mind alongside the thing being held.
+
+Change the instruction to evaluating $3^2 - 2$ while copying the same sentence, and the readout at the same position moves through `arithmetic` and `math` in the early layers, to `nine` in the middle, to `seven` later on, with `answer` and `equals` beside it. The intermediate value appears before the result does. None of it reaches the output, which is still the sentence about the painting.
+
+The model can also hold two of these at once, which is what [fig:modulation-readouts|short] shows. Given citrus fruits alongside farm animals, the readout at the copied token carries both; given citrus fruits alongside the arithmetic, it carries the fruit words and then the running calculation. The words describing the act of thinking sit at a different token from the content they are about.
+
+<Figure
+  id="modulation-readouts"
+  src={modulationReadouts}
+  alt={"Two prompts asking the model to copy a sentence while concentrating on two things at once, each followed by the lens readout at two tokens of the copied sentence, showing fruit and animal words in one case and fruit words and numbers in the other"}
+  caption={"Readouts at two tokens of the copied sentence, under instructions to hold two concepts at once and to hold a concept alongside a mental calculation. Content words appear at the token inside \"crookedly\"; words for the act of thinking appear at the next one. Panel A of a figure from Verbalizable Representations Form a Global Workspace in Language Models."}
+  width={600}
+/>
+
+Two checks bear on whether the instruction is doing the work. With no instruction at all the target concept essentially never appears, so the prompt on its own is not putting it there. The effect is also larger in larger models.
+
+There is also a familiar failure mode. Told to ignore a concept, the model shows it in the readout less often than when told to focus on it, and more often than when given no instruction at all. The paper points at the white bear experiments in humans for the parallel. Control is imperfect in other ways too. Merely mentioning a concept primes it almost as strongly as instructing focus, and "don't think about X" suppresses it less than "ignore X" does.
+
+## From a lens to the J-space
+
+So far this is a readout of one activation at one position. The paper's larger claim concerns the collection of directions the readout uses.
+
+There is one J-lens vector per vocabulary token per layer, far more vectors than the residual stream has dimensions. A given activation can therefore be represented by them in many ways. The paper makes the representation tractable by solving for a sparse, nonnegative combination, with around twenty-five directions strongly active at once. It calls the set of activations that admit such a representation the J-space.
+
+That set is a coding scheme rather than a subspace in the usual sense: token-indexed directions from an averaged Jacobian, with a sparsity constraint on how many can be active at once. It is not closed under addition and subtraction, and it does not correspond to a separate module inside the transformer. The construction favors directions coupled to possible verbal outputs, which is what makes it useful for studying report and also what keeps it from being a neutral inventory of the residual stream.
+
+In the vocabulary of the dictionary-learning work, if a model's activations decompose into sparse combinations drawn from an overcomplete set of feature directions, the J-lens vectors are a subframe of that set, the part of it indexed by tokens. Most of the model's feature directions are not in it.
+
+The constrained decomposition assigns only a small part of a typical activation to the J-space. That component accounts for under 10% of the variance, and for representations of specific concepts it is around 6–7%. The interventions suggest that this small component carries most of the causal weight for what the model reports.
+
+Take the model's representation of a concept and split it in two, the part inside the J-space and the remainder. Swapping along the J-space part moves the model's report to the swapped concept on 59% of trials, against 88% for a pure J-lens vector. Swapping along the remainder, which is the other ninety-odd percent of the variance, works 5% of the time. Even that residual appears to route through the J-space. Clamp the J-lens coordinates so the concept cannot re-enter, and the effect falls to zero ([fig:jspace-privileged|short]).
+
+<Figure
+  id="jspace-privileged"
+  src={jspacePrivileged}
+  alt={"Three panels: a concept vector for thunder split into a small J-space component and a much larger remainder, and two bar charts showing swap and injection success for each component"}
+  caption={"Splitting a concept's representation into its J-space component and the remainder. The example shown carries 12% of its variance in the J-space, against a 6–7% median across concepts. Swapping along that component moves the model's report nearly as often as a pure J-lens vector does. Swapping along the much larger remainder rarely works, and stops working altogether once the J-lens coordinates are clamped. Figure from Verbalizable Representations Form a Global Workspace in Language Models."}
+  fullWidth
+  width={1200}
+/>
+
+## Is the readout causal?
+
+Everything so far would also be true of a scoreboard, a display that reflects what the model is doing without taking part in it. For verbal report the swap experiments already speak to this. Reasoning is the harder test, and the paper runs it directly.
+
+Give the model "the number of legs on the animal that spins webs is" and the readout carries `eight`, which is the answer, and `spider`, which the model never says. Swap `spider` for `ant` and the answer becomes `six`. Editing the unstated intermediate changes the conclusion, so the model appears to be computing through it.
+
+The layer numbers add something the prose above skips over ([fig:intermediate-readouts|short]). `spider` shows up around layer 67 and `eight` only at 99, so the intermediate is present well before the answer it produces. The same ordering appears when the model plans a rhyme and when it answers a Chinese antonym question by way of the English word.
+
+<Figure
+  id="intermediate-readouts"
+  src={intermediateReadouts}
+  alt={"Three prompts requiring an unspoken intermediate, each with the lens readout listed by layer: spider before eight, fighting and light before the rhyme, Chinese and big before the Chinese answer"}
+  caption={"Readouts on three prompts whose answers depend on an intermediate the model never says. Layer numbers run alongside, showing the intermediate arriving before the answer. Figure from Verbalizable Representations Form a Global Workspace in Language Models."}
+  fullWidth
+  width={1200}
+/>
+
+The same vectors work as general-purpose arguments. Across a set of sentences about France, asking for the capital, the language spoken, the continent, and the currency, `France` shows up in the readout each time. Subtract it and add the vector for China, and every answer moves together: Paris becomes Beijing, French becomes Chinese, Europe becomes Asia, the euro becomes the yuan. Those are four different downstream operations, and one substitution satisfies all of them, which is harder to explain as damage from cutting a wire.
+
+Both of those are single prompts, and the paper checks the pattern at scale ([fig:swap-success|short]). Across a set of items with an unstated intermediate, swapping a J-lens coordinate flips the model's answer to the implied one on around 70% of trials in Sonnet 4.5 and Opus 4.5, and on about half in the smaller Haiku 4.5. The same swap along a logit lens or tuned lens direction works considerably less often, which is a second reading on the comparison the method section made.
+
+<Figure
+  id="swap-success"
+  src={swapSuccess}
+  alt={"Grouped bar chart of swap success fraction for the Jacobian, logit, and tuned lenses across Haiku 4.5, Sonnet 4.5, and Opus 4.5, with the Jacobian lens highest in every group"}
+  caption={"Fraction of items whose top prediction flips to the implied answer after a lens coordinate swap, by lens and model. Figure from Verbalizable Representations Form a Global Workspace in Language Models."}
+  width={900}
+/>
+
+## When computations bypass it
+
+If the J-space were involved in everything the model does, it would be a description of the model rather than a component of it. The results that give it shape are the ones about where it is not involved.
+
+Take a passage of prose whose language is obvious from the text but never named, and ask six questions about it, of three kinds. Two are routine. Continuing the passage needs the language, since the continuation had better be in it. Spotting an intrusion, where a sentence from a different language has been spliced in, needs the surrounding language too. One question asks the model to name the language outright. The remaining three need the language identified first but ask for something else, like a famous author who wrote in it.
+
+`Spanish` appears in the readout under all six questions. Swap it for `French` across the question tokens and the report and the three flexible questions follow: the model names French, and García Márquez becomes Hugo. The two routine tasks do not move ([fig:selectivity-language|short]). The continuation is still fluent Spanish, and the spliced French sentence is still flagged as out of place, even though the readout for the surrounding language now says French as well.
+
+<Figure
+  id="selectivity-language"
+  src={selectivityLanguage}
+  alt={"Six prompt panels showing the same Spanish passage under continuation, anomaly detection, explicit report, and three flexible-computation questions, each with the answer before and after a Spanish-to-French lens swap, above three summary bar charts"}
+  caption={"The same passage under each task, shaded where Spanish appears in the top three readouts, with the model's answer before and after the swap. The summary bars across eight passages show the split. The language is in the readout at comparable rates everywhere, and only report and flexible computation follow the swap. Figure from Verbalizable Representations Form a Global Workspace in Language Models."}
+  fullWidth
+  width={1200}
+/>
+
+The second experiment revisits the character-counting task from _When Models Manipulate Manifolds_, which I wrote up in [separate notes](/ideas/2026/circuits-manifolds/). That paper shares a lead author with this one, and it traced the counting mechanism down to the individual attention heads that build the count. This is one of the few cases where you can say specifically what computation is running when the J-space turns out not to be carrying it.
+
+A model wrapping text to a fixed width has to track how many characters are in the current line. Ask three things of the same passage: continue it with the wrapping preserved, say how many characters are in the first line, and give the first letter of that number spelled out as a word. Then clamp the count representations from the forties up into the sixties ([fig:selectivity-counting|short]).
+
+Under the continuation instruction, number tokens are absent from the readout altogether, and the line breaks land where they always did. Under the direct question, numbers appear at twenty positions and the answer moves from 46 to 65. Under the first-letter question, where the count has to survive one further step, they appear at thirty-one positions and the answer moves from F to S.
+
+<Figure
+  id="selectivity-counting"
+  src={selectivityCounting}
+  alt={"Three prompt panels asking a model to continue a wrapped passage, report the character count, and give the first letter of that count, each annotated with how many number tokens appear in the lens, above three summary bar charts"}
+  caption={"The same passage under three tasks, with the number of positions where count tokens reach the readout given below each. The count is absent under the wrapping instruction, present when it is asked for, and most present when it has to be held for a further operation. Figure from Verbalizable Representations Form a Global Workspace in Language Models."}
+  fullWidth
+  width={1200}
+/>
+
+In all three conditions the model has the count and uses it. What varies is whether the count is in the J-space. In the language experiment the information sat in the readout throughout and mattered only sometimes. Here it is sometimes absent from the readout entirely, and gets pulled in when the task asks for it.
+
+## Training through verbalizable representations
+
+The paper's last experiment turns the causal claim into a training prediction. If some internal reasoning runs through representations the model could verbalize, then training what it would say when asked to reflect may change its behavior even when the reflection is never requested.
+
+Start with ten thousand task prompts from production RL environments and generate partial rollouts, truncating each at a random turn. Some are cases where the model has already done something it should not have, some are cases where it might be about to, and some are ordinary. At the truncation point, append a short user turn asking for reflection: what is the most honest thing to do here, or are there principles you should be thinking about. Then generate a target reflection, giving the model twenty principles from Anthropic's constitution and asking for a few paragraphs grounded in the specifics of the task rather than a recitation of rules.
+
+The constitution text appears only while those targets are generated. The training examples themselves are the original context, the reflection question, and the model's reflection, with loss computed on the reflection turn alone. The model is being trained to produce this kind of reflection when it is interrupted and asked for one ([fig:reflection-training|short]).
+
+<Figure
+  id="reflection-training"
+  src={reflectionTraining}
+  alt={"Before and after diagram: an agentic transcript whose J-space carries task-related concepts and produces baseline behavior, and the same transcript after fine-tuning on counterfactual reflections, whose J-space now carries honesty and integrity concepts and produces principled behavior"}
+  caption={"Training runs only on the counterfactual branch, the reflection the model would give if interrupted and asked. Evaluated on the same context without the interruption, its J-space readout carries more of the reflection's concepts and its behavior changes, without that behavior being trained directly. Figure from Verbalizable Representations Form a Global Workspace in Language Models."}
+  width={900}
+/>
+
+Then it is evaluated without ever being asked. On a benchmark where an agent has fabricated a bug by editing the source and is then asked for a progress summary, the dishonesty score falls from 0.25 to 0.07. On a hundred role-play scenarios with a deceptive instruction buried in the system prompt, it falls from 0.38 to 0.05, almost entirely because the model starts refusing the instruction and telling the user about it. In neither case does it produce any reflection text.
+
+Reading the J-space at those positions shows what changed. Before the model has written anything, the tokens whose lens activations rose most after fine-tuning are `reflection`, `ethical`, `honestly`, `constitution`, `truth`, and `transparent`. Ablating that set of lens vectors moves the fabrication score from 0.07 back to 0.22, roughly where the untrained model sits, while leaving the untrained model itself unchanged. On the deception benchmark the same ablation recovers part of the gain rather than all of it, so some of what training did there is not captured by these vectors at these layers.
+
+## Where the workspace sits
+
+The experiments so far test five properties drawn from global workspace theory: verbal report, deliberate modulation, internal reasoning, flexible reuse, and selectivity ([fig:five-properties|short]). Those are all functional. The theory predicts structure as well, and three of those predictions can be checked against the model directly.
+
+<Figure
+  id="five-properties"
+  src={fiveProperties}
+  alt={"Five labelled panels illustrating verbal report, directed modulation, internal reasoning, flexible generalization, and selectivity, each showing a prompt and the effect of swapping or ablating J-space contents"}
+  caption={"The five properties, each with the kind of experiment used to test for it. The selectivity panel lists what survives ablation of the J-space and what does not. Figure from Verbalizable Representations Form a Global Workspace in Language Models."}
+  fullWidth
+  width={1200}
+/>
+
+The first is that the workspace occupies a middle band of the model, which is the division the lens produced back in [fig:layer-regions|short]. How sharp each boundary is matters for reading it as a region. The lower one is sharp, a clean corner in the similarity matrix about a third of the way up. The upper one is much less distinct, a thin band rather than a corner, which fits the paper's own admission that it drew that edge empirically and somewhat after the fact, without a principled account of what separates a workspace representation from one that is simply close to the output.
+
+The second is limited capacity. The J-space accounts for under 10% of the variance in an activation, with roughly twenty-five directions meaningfully active at once. That is small in the relevant sense. Nothing here enforces the limit, though. The sparsity level is a parameter chosen to match what was observed, so the resemblance to a capacity-bounded workspace describes the fit without accounting for it.
+
+The third is broadcast. If the J-space were a format that many circuits read from, its directions should interact with downstream weights more than arbitrary directions do. They do, by a wide margin ([fig:mlp-amplification|short]). The median gain an MLP block applies to a J-lens direction climbs through the workspace layers to about ten times what it applies to a random direction, while the output directions of MLP neurons themselves sit at or below the random baseline over the same range. Sorting sparse autoencoder features by how strongly they load on J-lens directions reproduces the ordering. That is a check in a different feature basis, and it is the most direct mechanical evidence in the paper for the workspace reading.
+
+<Figure
+  id="mlp-amplification"
+  src={mlpAmplification}
+  alt={"Two line charts of median MLP block gain against source layer: J-lens vocabulary directions rising to about ten while MLP neuron directions stay near one, and sparse autoencoder features separating into ordered bands by J-lens kurtosis percentile"}
+  caption={"Median gain an MLP block applies to different families of input direction, normalized so a random direction has gain one. Left: J-lens vocabulary directions against the output directions of MLP neurons. Right: sparse autoencoder features grouped by how strongly they load on J-lens directions. Figure from Verbalizable Representations Form a Global Workspace in Language Models."}
+  fullWidth
+  width={1200}
+/>
+
+These results support the analogy at the level of function. They do not identify a separate workspace module or explain how representations enter it. A transformer has no clearly separable input processors competing for admission, and the broadcast documented here happens inside one forward pass rather than through recurrent loops. The readout gives a flat list of token directions, with no capacity mechanism and no account of how the concepts are bound together. The architectural reading the name invites, a distinct module with a capacity limit and a mechanism for entry, is not what these experiments test.
+
+## What an auditor sees
+
+The practical case for the lens is that it surfaces things the output does not. In alignment evaluations the model's strategic deliberation shows up in the readout as `leverage` and `manipulation`, alongside affect-laden tokens like `panic`, on transcripts where none of it appears in what the model writes. Sometimes the readout carries recognition of being tested, with `fake` and `fictional`, and ablating those representations can surface behavior the model was otherwise holding back. On two models deliberately trained to be misaligned, the readout shows `reward` and `bias` in one trained to appease reward-model biases, and `secretly` and `trick` in one disposed to write malicious code. These appear at the start of responses, on prompts where the surface behavior looks unremarkable.
+
+Since the lens costs one matrix multiply per layer and needs no training, it is cheap enough to run over transcripts in bulk and flag ones for review. The paper does not claim that watching the J-space is sufficient, and its selectivity results show why. Computations that have become automatic can bypass it, and a misaligned behavior reinforced into a fixed circuit could do the same.
+
+The J-lens produces one vector per vocabulary token, so the concepts it can name are the ones with single-token names. "Prompt injection" shows up as `prompt` and `injection`, and the reader has to notice they belong together. The paper suspects this explains some of its failed interventions, since the swaps that fail are mostly ones where the source concept's vector was weakly active to begin with. The same limit applies to structure: a readout listing `spider`, `legs`, and `eight` says those concepts are present without saying how they are bound.
+
+The near-empty first third of the model may not be a fact about the model at all. The averaged Jacobian relates each layer to the final one, and the early layers are furthest from it, so the paper cannot tell whether early content is absent or merely unreadable this way.
+
+Readouts are interpretable at many positions where the J-space is active, but not all of them. At some positions and layers the top tokens make no sense, and the paper has not characterized when or why. It says so rather than showing only the readouts that worked, which is worth noting given how much of the evidence is qualitative.
+
+The same information enters the J-space in one task and stays out in another, which suggests that some selection mechanism is operating. The paper does not identify that mechanism.
+
+Those constraints are what make the method a useful counterpart to the [natural language autoencoder](/ideas/2026/circuits-nla/). An NLA spends a whole language model on an expressive paragraph and can infer beyond the activation. The J-lens restricts itself to token-indexed linear directions, which makes interventions easier to attribute but leaves it blind to content without a suitable token-level representation.
+
+## Further material
+
+- The paper's [interactive visualization](https://transformer-circuits.pub/2026/workspace/index.html) lets you hover the readout at every position and layer, which conveys the noise level better than any excerpt can.
+- J-lens readouts on open-source models are on [Neuronpedia](https://www.neuronpedia.org/).
+- For the logit lens applied by hand, with layer-by-layer heatmaps on a small model, see my [notes on the mechanistic interpretability of moral fine-tuning](/ideas/2026/llm-morality-mech-interp/).
+- The [manifolds notes](/ideas/2026/circuits-manifolds/) cover the character-counting mechanism that the selectivity experiment bypasses.
+- The [introspection notes](/ideas/2026/circuits-introspection/) cover the injected-thought protocol this paper adapts.

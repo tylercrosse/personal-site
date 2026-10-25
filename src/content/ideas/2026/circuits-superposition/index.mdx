@@ -2,12 +2,13 @@
 title: 'Notes on Toy Models of Superposition'
 description: 'Notes on how sparse features fit into superposition, the geometry and interference that result, and a toy-model account of memorization and double descent.'
 date: '2026-07-14'
-status: 'in-progress'
+updated: '2026-08-16'
+status: 'complete'
 type: 'note'
 tags: ['mechanistic-interpretability', 'deep-learning', 'research', 'AI-safety']
 category: ['ideas']
 draft: false
-audience: 'All'
+audience: 'Technical'
 sources:
   - elhage2022toymodels
   - henighan2023doubledescent
@@ -18,7 +19,6 @@ image:
   path: 'toy-models.png'
   alt: 'Abstract shapes'
 hideCaption: true
-# TODO: hero image before publishing
 ---
 
 import Figure from "../../../../components/Figure.astro";
@@ -167,7 +167,7 @@ The same off-diagonal terms also create adversarial directions. In the toy model
 
 ## Memorizing data points instead of features
 
-_Superposition, Memorization, and Double Descent_ keeps the reconstruction setup but trains on finite datasets. With very few examples, the clean geometry no longer appears in the columns of $W$. It appears in the hidden representations $h_i=Wx_i$ of the individual training examples.
+The first paper effectively trains against the full synthetic distribution. _Superposition, Memorization, and Double Descent_ keeps the reconstruction setup but reveals only a finite sample from that distribution. With very few examples, the clean geometry no longer appears in the columns of $W$. It appears in the hidden representations $h_i=Wx_i$ of the individual training examples.
 
 In that regime, the model treats each example as if it were a feature and packs the examples into regular polygons. This is a geometric form of memorization. It is cheaper to store the $T$ observed examples than to recover the much larger set of features that generated them.
 
