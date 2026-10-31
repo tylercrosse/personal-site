@@ -1,0 +1,322 @@
+---
+import { Image } from "astro:assets";
+import { ExternalLink } from "lucide-astro";
+import GradientThumb from "./GradientThumb.astro";
+import { getIconForType, getColorForType, capitalize } from "../utils/postIcons";
+
+interface CardLink {
+  label: string;
+  href: string;
+}
+
+interface Props {
+  title: string;
+  description: string;
+  /** Post URL; the title link stretches over the card. Omit for cards with no write-up. */
+  href?: string;
+  image?: { path?: any; alt?: string };
+  /** Used for the gradient fallback when there is no image. */
+  seed?: string;
+  type?: string;
+  /** Venue, role, dates: shown after the type label. */
+  meta?: string[];
+  note?: string;
+  links?: CardLink[];
+  variant?: "feature" | "compact";
+}
+
+const {
+  title,
+  description,
+  href,
+  image,
+  seed = title,
+  type = "paper",
+  meta = [],
+  note,
+  links = [],
+  variant = "compact",
+} = Astro.props;
+
+const Icon = getIconForType(type);
+const typeColor = getColorForType(type);
+const isExternal = (url: string) => /^https?:\/\//.test(url);
+---
+
+<article class:list={["research-card", `research-card--${variant}`, { "is-linked": href }]}>
+  <div class="research-art">
+    {image?.path ? (
+      <Image src={image.path} alt={image.alt || ""} width={variant === "feature" ? 1200 : 800} />
+    ) : (
+      <GradientThumb seed={seed} aspectRatio={variant === "feature" ? "4 / 3" : "16 / 9"} />
+    )}
+  </div>
+  <div class="research-copy">
+    <p class="research-meta">
+      <span class="type-chunk" style={typeColor && `color: ${typeColor}`}>
+        {Icon && <Icon size={14} aria-hidden="true" />}
+        {capitalize(type)}
+      </span>
+      {meta.map((chunk) => <span>{chunk}</span>)}
+    </p>
+    <h3>{href ? <a class="research-link" href={href}>{title}</a> : title}</h3>
+    <p class="finding">{description}</p>
+    {note && <p class="note">{note}</p>}
+    {links.length > 0 && (
+      <div class="links">
+        {links.map((link) => (
+          isExternal(link.href) ? (
+            <a href={link.href} target="_blank" rel="noopener noreferrer">
+              {link.label}
+              <ExternalLink class="link-icon" size={11} aria-hidden="true" />
+              <span class="sr-only"> (opens in a new tab)</span>
+            </a>
+          ) : (
+            <a href={link.href}>{link.label}</a>
+          )
+        ))}
+      </div>
+    )}
+  </div>
+</article>
+
+<style>
+  .research-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    border: 1px solid var(--main-border-color);
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--base4);
+    transition: transform 0.2s ease, opacity 0.2s ease;
+  }
+
+  :global([data-effective-theme="dark"]) .research-card {
+    border-color: var(--base03);
+    background: var(--base02);
+  }
+
+  .research-card.is-linked:hover {
+    opacity: 0.92;
+    transform: translateY(-2px);
+  }
+
+  .research-art {
+    overflow: hidden;
+    background: var(--bg-2);
+  }
+
+  .research-art :global(img),
+  .research-art :global(.gradient-thumb) {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .research-art :global(img) {
+    object-fit: cover;
+  }
+
+  /* Placeholder gradients are much louder than the painted artwork; mute them. */
+  .research-art :global(.gradient-thumb) {
+    filter: saturate(0.45) brightness(1.08);
+  }
+
+  .research-card--compact .research-art {
+    aspect-ratio: 16 / 9;
+  }
+
+  .research-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    flex: 1;
+    min-width: 0;
+    padding: 1rem 1.15rem 1rem;
+  }
+
+  /* Feature: art on the left, copy on the right. */
+  @media (min-width: 760px) {
+    .research-card--feature {
+      display: grid;
+      grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+    }
+
+    .research-card--feature .research-art {
+      min-height: 100%;
+    }
+
+    .research-card--feature .research-copy {
+      padding: 1.6rem 1.75rem 1.4rem;
+      gap: 0.8rem;
+      justify-content: center;
+    }
+  }
+
+  @media (max-width: 759px) {
+    .research-card--feature .research-art {
+      aspect-ratio: 16 / 10;
+    }
+  }
+
+  .research-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem 1em;
+    margin: 0;
+    color: var(--sol-7);
+    font-size: 0.75rem;
+    line-height: 1.5;
+  }
+
+  .type-chunk {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+  }
+
+  .type-chunk :global(svg) {
+    flex-shrink: 0;
+  }
+
+  h3 {
+    margin: 0;
+    font-family: var(--font-heading);
+    font-weight: 700;
+    line-height: 1.25;
+    color: var(--sol-10);
+  }
+
+  :global([data-effective-theme="dark"]) h3 {
+    color: var(--sol-5);
+  }
+
+  .research-card--feature h3 {
+    font-size: clamp(1.4rem, 2.2vw, 1.75rem);
+  }
+
+  .research-card--compact h3 {
+    font-size: 1.15rem;
+  }
+
+  /* The title link covers the card; secondary links sit above it. */
+  .research-link {
+    color: inherit;
+    text-decoration: underline;
+    text-decoration-color: transparent;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.14em;
+    transition: text-decoration-color 0.2s ease;
+  }
+
+  .research-link::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 2; /* global img rule sets z-index: 1 */
+  }
+
+  .research-card:hover .research-link {
+    text-decoration-color: currentColor;
+  }
+
+  .research-card:has(.research-link:focus-visible) {
+    outline: 2px solid var(--blue);
+    outline-offset: 2px;
+  }
+
+  .research-link:focus-visible {
+    outline: none;
+  }
+
+  .finding {
+    margin: 0;
+    color: var(--sol-8);
+    font-size: 0.9rem;
+    line-height: 1.55;
+  }
+
+  .research-card--feature .finding {
+    font-size: 1rem;
+    line-height: 1.6;
+  }
+
+  .note {
+    margin: 0;
+    color: var(--sol-7);
+    font-size: 0.8rem;
+    line-height: 1.5;
+  }
+
+  .links {
+    position: relative;
+    z-index: 3;
+  }
+
+
+  .links {
+    display: flex;
+    flex-wrap: wrap;
+    column-gap: 1.1rem;
+    margin-top: auto;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.02em;
+  }
+
+  .links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 32px;
+    color: var(--sol-8);
+    text-decoration: underline;
+    text-decoration-color: transparent;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.18em;
+    transition: color 0.2s ease, text-decoration-color 0.2s ease;
+  }
+
+  .links a:hover,
+  .links a:focus-visible {
+    color: var(--sol-10);
+    text-decoration-color: currentColor;
+  }
+
+  :global([data-effective-theme="dark"]) .links a:hover {
+    color: var(--sol-5);
+  }
+
+  .links :global(.link-icon) {
+    margin-left: 0.2em;
+    opacity: 0.72;
+  }
+
+  .links a:focus-visible {
+    outline: 2px solid var(--blue);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .research-card,
+    .research-card.is-linked:hover {
+      transition: none;
+      transform: none;
+    }
+  }
+</style>

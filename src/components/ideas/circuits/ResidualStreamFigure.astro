@@ -10,15 +10,19 @@ import SvgFigure from "../../SvgFigure.astro";
 interface Props {
   caption?: string;
   numbered?: boolean;
+  /** Cross-reference target; `id="foo"` is reachable as `[fig:foo]`. */
+  id?: string;
 }
 
 const {
   caption = "The transformer as a residual stream. Each attention head is an independent operation, and every component — heads, then the MLP, layer after layer — reads the current stream with a linear projection and adds its result back in. The logits are the unembedding of the accumulated sum. Redrawn from the paper.",
   numbered = true,
+  id,
 } = Astro.props;
 ---
 
 <SvgFigure
+  id={id}
   alt="A transformer drawn as a residual stream: tokens are embedded into the stream, attention heads and an MLP each read from it and additively write back into it, more layers repeat the pattern, and the unembedding produces logits"
   caption={caption}
   numbered={numbered}

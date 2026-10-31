@@ -1,5 +1,6 @@
 ---
 import { Image } from "astro:assets";
+import { ExternalLink } from "lucide-astro";
 import GradientThumb from "./GradientThumb.astro";
 import { getIconForType, getColorForType, capitalize } from "../utils/postIcons";
 
@@ -16,13 +17,27 @@ interface PostData {
   readingTimeText: string;
 }
 
+interface CardLink {
+  label: string;
+  href: string;
+}
+
 interface Props {
   post: PostData;
   variant?: "showcase" | "compact" | "mini";
   showDescription?: boolean;
+  /** Replaces the tag/date/reading-time chunks after the type label (e.g. venue, role). */
+  meta?: string[];
+  /** Secondary links (paper, code) shown as a quiet row; the title still links to the post. */
+  links?: CardLink[];
+  /** Extra emphasized line under the description, e.g. a headline result. */
+  highlight?: string;
+  eager?: boolean;
 }
 
-const { post, variant = "compact", showDescription } = Astro.props;
+const { post, variant = "compact", showDescription, meta, links, highlight, eager = false } = Astro.props;
+const href = `/ideas/${post.slug}/`;
+const isExternal = (url: string) => /^https?:\/\//.test(url);
 
 const Icon = getIconForType(post.type);
 const typeColor = getColorForType(post.type);
@@ -43,17 +58,15 @@ const gradientAspect =
   variant === "showcase" ? "16 / 10" : variant === "compact" ? "16 / 9" : "4 / 3";
 ---
 
-<a
-  href={`/ideas/${post.slug}/`}
-  class={`post-card post-card--${variant}`}
-  data-type={post.type}
->
+<article class={`post-card post-card--${variant}`} data-type={post.type}>
   <div class="post-card-media">
     {post.image?.path ? (
       <Image
         src={post.image.path}
         alt={post.image.alt || ""}
-        width={1200}
+        width={variant === "mini" ? 640 : 1200}
+        loading={eager ? "eager" : "lazy"}
+        fetchpriority={eager ? "high" : undefined}
       />
     ) : (
       <GradientThumb seed={post.slug} aspectRatio={gradientAspect} />
@@ -69,23 +82,48 @@ const gradientAspect =
           {capitalize(post.type)}
         </span>
       )}
-      {variant !== "mini" && primaryTag && (
-        <span class="meta-chunk">{primaryTag}</span>
+      {meta ? (
+        meta.map((chunk) => <span class="meta-chunk meta-chunk--plain">{chunk}</span>)
+      ) : (
+        <Fragment>
+          {variant !== "mini" && primaryTag && (
+            <span class="meta-chunk">{primaryTag}</span>
+          )}
+          {metaDate && <span class="meta-chunk">{metaDate}</span>}
+          {post.readingTimeText && <span class="meta-chunk">{post.readingTimeText}</span>}
+        </Fragment>
       )}
-      {metaDate && <span class="meta-chunk">{metaDate}</span>}
-      {post.readingTimeText && <span class="meta-chunk">{post.readingTimeText}</span>}
     </div>
 
-    <h3 class="post-card-title">{post.title}</h3>
+    <h3 class="post-card-title"><a class="post-card-link" href={href}>{post.title}</a></h3>
 
     {shouldShowDescription && post.description && (
       <p class="post-card-description">{post.description}</p>
     )}
+
+    {highlight && <p class="post-card-highlight" set:html={highlight} />}
+
+    {links && links.length > 0 && (
+      <div class="post-card-links">
+        {links.map((link) => (
+          isExternal(link.href) ? (
+            <a href={link.href} target="_blank" rel="noopener noreferrer">
+              {link.label}
+              <ExternalLink class="post-card-link-icon" size={11} aria-hidden="true" />
+              <span class="sr-only"> (opens in a new tab)</span>
+            </a>
+          ) : (
+            <a href={link.href}>{link.label}</a>
+          )
+        ))}
+      </div>
+    )}
   </div>
-</a>
+</article>
 
 <style>
   .post-card {
+    position: relative;
     border: 1px solid var(--main-border-color);
     background-color: var(--base4);
     border-radius: 8px;
@@ -106,9 +144,112 @@ const gradientAspect =
     transform: translateY(-2px);
   }
 
-  .post-card:focus-visible {
+  /* The title link stretches over the whole card so the card stays one click target
+     while the secondary links below remain separately clickable. */
+  .post-card-link {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .post-card-link::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 2; /* global img rule sets z-index: 1 */
+  }
+
+  .post-card:has(.post-card-link:focus-visible) {
     outline: 2px solid var(--blue);
     outline-offset: 2px;
+  }
+
+  .post-card-link:focus-visible {
+    outline: none;
+  }
+
+  .post-card-highlight {
+    margin: 0;
+    color: var(--sol-8);
+    font-size: 0.95rem;
+    line-height: 1.5;
+  }
+
+  .post-card-highlight :global(strong) {
+    color: var(--sol-10);
+    font-weight: 600;
+  }
+
+  :global([data-effective-theme="dark"]) .post-card-highlight :global(strong) {
+    color: var(--sol-5);
+  }
+
+  .post-card-links {
+    position: relative;
+    z-index: 3;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 1.1rem;
+    margin-top: auto;
+    padding-top: 0.35rem;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.02em;
+  }
+
+  .post-card-links a {
+    color: var(--sol-8);
+    text-decoration: underline;
+    text-decoration-color: transparent;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.18em;
+    padding-block: 0.3rem;
+    transition: color 0.2s ease, text-decoration-color 0.2s ease;
+  }
+
+  .post-card-links :global(.post-card-link-icon) {
+    margin-left: 0.2em;
+    opacity: 0.72;
+    vertical-align: -0.05em;
+  }
+
+  .post-card-links a:hover,
+  .post-card-links a:focus-visible {
+    color: var(--sol-10);
+    text-decoration-color: currentColor;
+  }
+
+  :global([data-effective-theme="dark"]) .post-card-links a:hover {
+    color: var(--sol-5);
+  }
+
+  .post-card-links a:focus-visible {
+    outline: 2px solid var(--blue);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  .meta-chunk--plain {
+    text-transform: none;
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .post-card,
+    .post-card:hover {
+      transition: none;
+      transform: none;
+    }
   }
 
   :global([data-effective-theme="dark"]) .post-card {

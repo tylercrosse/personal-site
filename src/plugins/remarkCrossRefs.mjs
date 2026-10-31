@@ -61,10 +61,17 @@ function reportProblem(file, dev, message) {
 
 // ---- shared attribute helpers (components) --------------------------------
 
+// Figure/table components are matched on a name *suffix*, so purpose-built
+// wrappers — `SvgFigure`, `ResidualStreamFigure`, `InductionCircuitFigure` —
+// are counted in the same sequence as a plain `Figure`. They all share
+// `Astro.locals.figureCounter` when they render, so a wrapper this pass
+// skipped would still bump the printed caption number, and every reference
+// after it would resolve one too low.
 function isComponent(node, name) {
   return (
     (node.type === "mdxJsxFlowElement" || node.type === "mdxJsxTextElement") &&
-    node.name === name
+    typeof node.name === "string" &&
+    node.name.endsWith(name)
   );
 }
 
@@ -117,7 +124,6 @@ function buildMaps(tree, file, dev) {
   const maps = { fig: new Map(), tbl: new Map(), eq: new Map() };
 
   function handleComponent(node, sigil) {
-    const type = TYPES[sigil];
     const numbered = isNumbered(node);
     if (numbered) counters[sigil] += 1;
     const id = getStringAttr(node, "id");
@@ -126,7 +132,7 @@ function buildMaps(tree, file, dev) {
       reportProblem(
         file,
         dev,
-        `${type.component} id="${id}" has numbered={false} and cannot be referenced.`,
+        `${node.name} id="${id}" has numbered={false} and cannot be referenced.`,
       );
     } else if (seen[sigil].has(id)) {
       reportProblem(file, dev, `Duplicate ${sigil} id "${id}".`);

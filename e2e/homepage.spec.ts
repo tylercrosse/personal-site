@@ -10,10 +10,10 @@ test("homepage renders and navigates to ideas", async ({ page }) => {
   await expect(
     page.getByRole("heading", { level: 1, name: "Tyler Crosse" }),
   ).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Recent Work" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Recent Work", exact: true })).toBeVisible();
   await expect(page.locator("vite-error-overlay")).toHaveCount(0);
 
-  await page.getByRole("link", { name: /all ideas/i }).click();
+  await page.getByRole("link", { name: /all writing/i }).click();
 
   await expect(page).toHaveURL(/\/ideas\/?$/);
   await expect(page).toHaveTitle("Ideas | Tyler Crosse");

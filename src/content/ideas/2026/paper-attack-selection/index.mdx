@@ -1,17 +1,28 @@
 ---
 title: 'Attack Selection in Agentic AI Control Evaluations Meaningfully Decreases Safety'
-description: 'Control evaluations that let the red team choose when to attack produce meaningfully lower safety estimates than evaluations that ignore attack selection.'
+description: 'Selective start/stop attack policies reduced measured safety by 20–28 percentage points at a 1% audit budget across BashArena and LinuxArena.'
 date: '2026-06-25'
 status: 'complete'
 type: 'paper'
-venue: 'ICML 2026'
+research:
+  role: "Co-first author"
+  venue: "NeurIPS 2026 \u00b7 ICML 2026 workshops"
+  contribution: "Co-developed the research direction and attack-selection methodology; designed and ran most experiments, analyzed results, and helped write the paper."
+  links:
+    - label: "Paper"
+      href: "https://arxiv.org/abs/2606.06529"
+    - label: "Code"
+      href: "https://github.com/tylercrosse/mars-attacks"
+    - label: "Write-up"
+      href: "https://www.lesswrong.com/posts/WuKDzJxtiqcA9ZZRH"
+venue: 'NeurIPS 2026'
 tags: ['AI-safety', "evaluations", "agents", 'research', 'machine-learning', 'short']
 category: ['projects']
 draft: false
 audience: 'All'
 image:
-  path: './buried_giant.png'
-  alt: 'Buried giant'
+  path: './Hidden_Snake_by_the_Meadow_Stream.png'
+  alt: 'Painting of a camouflaged snake hidden in meadow grass beside a stream, watching a vole'
 hideCaption: true
 media_subpath: "/ideas/paper-attack-selection/"
 ---
@@ -19,16 +30,26 @@ media_subpath: "/ideas/paper-attack-selection/"
 import Figure from "../../../../components/Figure.astro";
 import posterImg from "./attack_selection_poster_icml.png";
 
-AI control evaluations estimate how safe an oversight protocol is by having a red-team model attack it. Most evaluations have the red team attack indiscriminately. A scheming model would be choosier: it would pick its moments to attack and abort attempts that begin to look risky. We added both policies to agentic control evaluations and measured safety drops of 20–28 percentage points at a 1% audit budget across two environments. Evaluations that skip attack selection overstate how safe a protocol is.
+## Finding
+
+AI control evaluations estimate how safe an oversight protocol is by having a red-team model attack it. Most evaluations have the red team attack indiscriminately. A scheming model would be choosier: it would pick its moments to attack and abort attempts that begin to look risky. We added both policies to agentic control evaluations and measured safety drops of 20-28 percentage points at a 1% audit budget across two environments. Evaluations that skip attack selection overstate how safe a protocol is.
+
+## My contribution
 
 I was co-first author. I worked on the core research direction from the start, designed and ran most of the experiments, and helped develop the attack-selection methodology with Tyler Tracy at Redwood Research. The project started during MARS 4.0 and continued on contract at Redwood.
 
-Accepted at three ICML 2026 workshops (AI4GOOD, AI-WILD, and a FAGEN poster). Under review at NeurIPS 2026.
+Accepted at NeurIPS 2026 and three ICML 2026 workshops (AI4GOOD, AI-WILD, and a FAGEN poster).
 
 - [arXiv](https://arxiv.org/abs/2606.06529)
 - [LessWrong post](https://www.lesswrong.com/posts/WuKDzJxtiqcA9ZZRH/attack-selection-in-agentic-ai-control-evals-can-decrease) — the longer write-up
 - [Code](https://github.com/tylercrosse/mars-attacks)
 - OpenReview: [AI4GOOD](https://openreview.net/forum?id=VpE45lUk1H), [AI-WILD](https://openreview.net/forum?id=mVE4NOHqZO)
+
+## Scope and limitations
+
+The result concerns the evaluated start/stop policies, oversight protocols, environments, and audit budgets. It does not establish the safety of a deployed system. An open question is how well these attacker policies represent future models or real-world attackers.
+
+## Poster
 
 <Figure
   src={posterImg}

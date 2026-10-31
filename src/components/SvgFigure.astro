@@ -9,9 +9,13 @@ interface Props {
   caption?: string;
   numbered?: boolean;
   maxWidth?: number;
+  /** Cross-reference target; `id="foo"` is reachable as `[fig:foo]`. */
+  id?: string;
 }
 
-const { alt, caption, numbered = true, maxWidth } = Astro.props;
+const { alt, caption, numbered = true, maxWidth, id } = Astro.props;
+
+const figureId = id ? `fig-${id}` : undefined;
 
 let figureNumber: number | undefined;
 if (numbered) {
@@ -23,7 +27,11 @@ if (numbered) {
 }
 ---
 
-<figure class="figure svg-figure" style={maxWidth ? `--fig-max: ${maxWidth}px` : undefined}>
+<figure
+  id={figureId}
+  class="figure svg-figure"
+  style={maxWidth ? `--fig-max: ${maxWidth}px` : undefined}
+>
   <div class="svg-wrap" role="img" aria-label={alt}>
     <slot />
   </div>
@@ -41,6 +49,37 @@ if (numbered) {
   .figure {
     margin: 1rem 0;
     text-align: center;
+    /* Keep a referenced figure clear of the viewport top when jumped to.
+       Mirrors Figure.astro — component styles are scoped, so an SVG figure
+       that skipped these would land under the header with no highlight and
+       read as a dead `[fig:…]` link. */
+    scroll-margin-top: 5rem;
+    border-radius: 8px;
+  }
+
+  /* Brief highlight when arrived at via a [fig:…] reference. */
+  @media (prefers-reduced-motion: no-preference) {
+    .figure:target {
+      animation: svg-figure-target-flash 2s ease-out;
+    }
+
+    @keyframes svg-figure-target-flash {
+      0% {
+        background: color-mix(in srgb, var(--blue) 16%, transparent);
+        box-shadow: 0 0 0 0.5rem color-mix(in srgb, var(--blue) 16%, transparent);
+      }
+      100% {
+        background: transparent;
+        box-shadow: 0 0 0 0.5rem transparent;
+      }
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .figure:target {
+      outline: 2px solid color-mix(in srgb, var(--blue) 55%, transparent);
+      outline-offset: 0.4rem;
+    }
   }
 
   .svg-wrap {

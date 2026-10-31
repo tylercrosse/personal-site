@@ -125,6 +125,7 @@ const hierarchicalPosts = allPostsData
       cursor: pointer;
       background: rgba(var(--gray-light), 0.8);
     }
+    .filters summary { cursor: pointer; min-height: 44px; padding: 0.5rem 0; color: var(--sol-1); }
     .tag-list {
       display: flex;
       flex-wrap: wrap;
@@ -600,34 +601,9 @@ const hierarchicalPosts = allPostsData
       vertical-align: middle;
     }
 
-        /* Retro posts - larger, more prominent */
-    .post-card--retro {
-      /* border-width: 2px;
-      border-color: var(--accent); */
-    }
-
-    .post-card--retro .post-card-content {
-      /* padding: 1.5rem; */
-    }
-
-    .post-card--retro .post-card-content h3 {
-      font-size: 1.75rem;
-      font-weight: 700;
-      margin-bottom: 0.75rem;
-    }
-
-    .post-card--retro .post-card-content p {
-      font-size: 1.05rem;
-      line-height: 1.6;
-    }
-
-    .post-card--retro > .post-card-link > img {
-      height: 300px;
-    }
-
-    :global([data-effective-theme="dark"]) .post-card--retro {
-      /* border-color: var(--accent); */
-    }
+    /* Retros, talks, papers, projects, and articles share the standard card.
+       Coursework retros used to be oversized and papers shrunk to compact rows,
+       which inverted the site's emphasis on research. Notes stay compact. */
 
     /* Note posts - compact, minimal */
     .post-card--note {
@@ -676,32 +652,6 @@ const hierarchicalPosts = allPostsData
       /* Uses default post-card styles with subtle border accent */
       /* border-left-width: 3px; */
       /* border-left-color: var(--sol-magenta); */
-    }
-
-    /* Paper posts - compact horizontal reference rows */
-    .post-card--paper .post-card-link {
-      flex-direction: row;
-      align-items: stretch;
-    }
-
-    .post-card--paper .post-card-link > img {
-      width: 120px;
-      height: auto;
-      flex: 0 0 120px;
-      min-height: 120px;
-    }
-
-    .post-card--paper .post-card-content {
-      padding: 0.75rem;
-    }
-
-    .post-card--paper .post-card-content h3 {
-      font-size: 1.05rem;
-    }
-
-    .post-card--paper .post-card-content p {
-      font-size: 0.85rem;
-      margin-bottom: 0.5rem;
     }
 
     .draft-indicator {
@@ -757,17 +707,17 @@ const hierarchicalPosts = allPostsData
   <header class="slide-in-block">
     <div class="hero">
       <h1>Digital Garden</h1>
-      <p>The notes, thoughts, and projects I've been working on.</p>
+      <p>Research notes, technical projects, and things I’m learning. For papers and contributions, start with <a href="/research">selected research</a>.</p>
     </div>
 
     <div class="js-required">
       <div class="select-filters">
         <button class="active" id="all-tags">All Topics</button>
-        <select id="type-filter">
+        <select id="type-filter" aria-label="Filter by writing type">
           <option value="all">All types</option>
           {allTypes.map((type) => <option value={type}>{capitalize(type || '')}</option>)}
         </select>
-        <select id="status-filter">
+        <select id="status-filter" aria-label="Filter by completion status">
           <option value="all">All statuses</option>
           {
             allStatuses.map((status) => (
@@ -785,7 +735,8 @@ const hierarchicalPosts = allPostsData
         </div>
       </div>
 
-      <div class="filters" data-pagefind-ignore>
+      <details class="filters" data-pagefind-ignore>
+        <summary>Browse topics</summary>
         <ul class="tag-list">
           {
             groupedTags.map(({ group, tags }) => (
@@ -800,7 +751,7 @@ const hierarchicalPosts = allPostsData
             ))
           }
         </ul>
-      </div>
+      </details>
     </div>
   </header>
 
@@ -1275,6 +1226,7 @@ const hierarchicalPosts = allPostsData
         if (matchingButton) {
           tagButtons.forEach((btn) => btn.classList.remove("active"));
           allTagsButton?.classList.remove("active");
+          matchingButton.closest("details")?.setAttribute("open", "");
           matchingButton.classList.add("active");
           activeTag = urlTag;
           filterPosts();

@@ -1,5 +1,6 @@
 ---
 import { Image } from "astro:assets";
+import { ExternalLink } from "lucide-astro";
 import type { ImageMetadata } from "astro:assets";
 
 import type { CollectionEntry } from "astro:content";
@@ -48,6 +49,7 @@ const {
   draft,
   readingTimeText,
   hideCaption,
+  research,
   series,
   cite,
   license,
@@ -129,6 +131,48 @@ const postTopics = [...topicsForPost.values()];
       margin: 0;
     }
 
+    .research-overview {
+      max-width: 800px;
+      margin: 2rem auto 0;
+      padding: 1rem 0 0.25rem;
+      border-block: 1px solid var(--main-border-color);
+      font-size: 0.95rem;
+    }
+    .research-overview p { margin: 0 0 0.75rem; line-height: 1.6; color: var(--sol-8); }
+    .research-overview strong { color: var(--sol-10); font-weight: 600; }
+    .research-overview .research-role {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--sol-7);
+      margin-bottom: 0.5rem;
+    }
+    :global([data-effective-theme="dark"]) .research-overview strong { color: var(--sol-5); }
+    .research-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0 1.1rem;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      letter-spacing: 0.02em;
+    }
+    .research-links a {
+      min-height: 40px;
+      display: inline-flex;
+      align-items: center;
+      color: var(--sol-8);
+      text-decoration: underline;
+      text-decoration-color: transparent;
+      text-decoration-thickness: 1px;
+      text-underline-offset: 0.18em;
+      transition: color 0.2s ease, text-decoration-color 0.2s ease;
+    }
+    .research-links :global(.research-link-icon) { margin-left: 0.2em; opacity: 0.72; }
+    .research-links a:hover,
+    .research-links a:focus-visible { color: var(--sol-10); text-decoration-color: currentColor; }
+    .research-links a:focus-visible { outline: 2px solid var(--blue); outline-offset: 4px; }
     .title-meta {
       display: flex;
       align-items: center;
@@ -431,8 +475,7 @@ const postTopics = [...topicsForPost.values()];
               {capitalize(type)}
             </span>
           )}
-          {status && <span>{capitalize(status)}</span>}
-          <span>{readingTimeText}</span>
+          {research ? <span>{research.venue}</span> : <Fragment>{status && <span>{capitalize(status)}</span>}<span>{readingTimeText}</span></Fragment>}
         </div>
         <h1>{title}</h1>
         <div class="description">{description}</div>
@@ -496,6 +539,24 @@ const postTopics = [...topicsForPost.values()];
               <figcaption class="caption">{imageData.alt}</figcaption>
             )}
           </figure>
+        )
+      }
+      {
+        research && (
+          <section class="research-overview" aria-label="Paper details">
+            <p class="research-role">{research.role}</p>
+            <p><strong>My contribution:</strong> {research.contribution}</p>
+            <div class="research-links">
+              {research.links.map((link) => (
+                <a href={link.href} target="_blank" rel="noopener noreferrer">
+                  {link.label}
+                  <ExternalLink class="research-link-icon" size={11} aria-hidden="true" />
+                  <span class="sr-only"> (opens in a new tab)</span>
+                </a>
+              ))}
+              <a href="/research">all research →</a>
+            </div>
+          </section>
         )
       }
     </header>

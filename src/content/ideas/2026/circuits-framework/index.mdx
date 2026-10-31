@@ -2,12 +2,13 @@
 title: 'Notes on A Mathematical Framework for Transformer Circuits'
 description: 'Notes on the 2021 paper that reframes transformers as operations on a shared residual stream: QK/OV circuits, virtual weights, and path decompositions of attention-only models.'
 date: '2026-07-12'
-status: 'in-progress'
+updated: '2026-08-16'
+status: 'complete'
 type: 'note'
 tags: ['mechanistic-interpretability', 'deep-learning', 'research', 'AI-safety']
 category: ['ideas']
 draft: false
-audience: 'All'
+audience: 'Technical'
 sources:
   - elhage2021framework
 media_subpath: "/ideas/circuits-framework/"
@@ -17,7 +18,6 @@ image:
   path: 'mathematical-framework.png'
   alt: 'Abstract shapes'
 hideCaption: true
-# TODO: hero image before publishing
 ---
 
 import Figure from "../../../../components/Figure.astro";
@@ -97,6 +97,8 @@ $$
 T = \underbrace{\mathrm{Id} \otimes W_U W_E}_{\text{direct path}}
   + \sum_h \underbrace{A^h \otimes W_U W_{OV}^h W_E}_{\text{one term per head}}.
 $$
+
+Read one source-destination pair at a time. For destination position $i$ and source position $j$, the scalar $A^h_{ij}$ says how much head $h$ reads from $j$, while $W_UW_{OV}^hW_E$ says which logits the token at $j$ pushes up or down. The tensor product packages all of those position pairs into one operator rather than introducing a new kind of computation.
 
 The tensor product $\otimes$ keeps two operations separate. The left factor describes movement between token positions; the right factor describes a transformation within the residual-stream space. The direct path is the zero-layer bigram model. Each head adds another path in which $A^h$ selects a source position and $W_UW_{OV}^hW_E$ turns the token at that position into a logit update.
 

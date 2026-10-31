@@ -2,12 +2,13 @@
 title: 'Notes on Towards Monosemanticity and Scaling Monosemanticity'
 description: 'Notes on decomposing MLP activations into interpretable features with sparse autoencoders, from a one-layer transformer to Claude 3 Sonnet.'
 date: '2026-07-14'
-status: 'in-progress'
+updated: '2026-08-16'
+status: 'complete'
 type: 'note'
 tags: ['mechanistic-interpretability', 'deep-learning', 'research', 'AI-safety']
 category: ['ideas']
 draft: false
-audience: 'All'
+audience: 'Technical'
 sources:
   - bricken2023monosemanticity
   - templeton2024scaling
@@ -18,7 +19,6 @@ image:
   path: 'scaling.png'
   alt: 'Abstract shapes'
 hideCaption: true
-# TODO: hero image before publishing
 ---
 
 import Figure from "../../../../components/Figure.astro";
@@ -76,7 +76,7 @@ The authors inspect examples from across each feature's activation range, not ju
 
 The main 4,096-feature run is not uniformly clean. Of its learned features, 168 never activate and another 292 activate so rarely that the paper excludes them from much of the analysis. Among the remaining features, interpretability is strongest at high activation values and less reliable near zero.
 
-The feature interface below ([fig:feature-interface|short]) is designed around that problem. The histogram shows how frequently different activation strengths occur, while the logit columns show which outputs the feature promotes or suppresses. On the right, the maximum-activating texts sit beside samples drawn across the full activation range. Those range samples are where a clean label often starts to break down. The links on the left compare the feature with individual neurons and with features learned in another run.
+The feature interface below ([fig:feature-interface|short]) is designed to make cherry-picking harder. Maximum-activating examples sit beside samples from the full activation range, where a clean label often starts to break down, and the activation distribution can be checked against output effects and comparable directions from other runs.
 
 <Figure
   id="feature-interface"
@@ -113,7 +113,7 @@ Specificity is only half of the test. A feature might fire exclusively on Arabic
 
 The feature also has effects consistent with its interpretation. Its decoder direction favors Arabic tokens in the output logits, and forcing it active makes the model produce Arabic text. The corresponding intervention on the base64 feature produces base64-like output. These experiments show that the directions are not labels attached after the fact: changing them can change the model in the expected direction.
 
-They do not show that one direction is solely responsible for a behavior. Intervening through an autoencoder changes a reconstructed activation, and large interventions can move it away from states encountered in ordinary inference. Causal usefulness is a stronger result than correlation, but it is not a complete circuit explanation.
+The interventions establish that these directions can control behavior through the reconstructed activation. They leave the direction's ordinary causal importance unresolved, especially when a large intervention moves the activation away from states encountered during normal inference. A complete circuit explanation would also have to identify the upstream computation and the other directions involved.
 
 The selected features also fail to line up with any single neuron. Some never appear among the top examples for any neuron, despite being clear in the learned dictionary. Training autoencoders on two separately trained one-layer models recovers more similar feature directions than comparing their neurons directly. That is evidence that the dictionaries track recurring structure, though not that every run recovers a unique set of features.
 
@@ -148,7 +148,7 @@ _Scaling Monosemanticity_ applies the same basic method to the middle-layer resi
 
 The paper trains autoencoders with roughly one million, four million, and 34 million features. Fewer than 300 features are active on an average token, and the reconstructions explain at least 65% of the activation variance. Scale also makes optimization waste visible: about 2% of the one-million-feature dictionary is dead, rising to 35% for four million and 65% for 34 million.
 
-Sweeps over dictionary width and training duration produce approximate scaling laws for the autoencoder's reconstruction-plus-sparsity loss. The compute-optimal dictionary gets wider as the training budget grows, while the optimal learning rate falls. These laws help allocate SAE training compute. They do not establish that a lower SAE loss produces a more interpretable dictionary, a distinction the paper flags as an unresolved evaluation problem.
+Sweeps over dictionary width and training duration produce approximate scaling laws for the autoencoder's reconstruction-plus-sparsity loss. The compute-optimal dictionary gets wider as the training budget grows, while the optimal learning rate falls. These laws help allocate SAE training compute. Interpretability remains a separate evaluation problem because a lower SAE loss need not produce a more useful dictionary.
 
 Many of the resulting features are more abstract than the script and encoding features in the one-layer model. A Golden Gate Bridge feature activates for references to the bridge in several languages and in images, even though the autoencoder was trained on text activations. A code-error feature responds to invalid operations and mistakes in Python, C, and Scheme without responding to ordinary English typos. Another feature recognizes addition performed through function composition rather than matching a particular piece of syntax.
 
@@ -156,7 +156,7 @@ The features are again difficult to reduce to neurons: for 82% of a sampled set,
 
 Feature steering supplies vivid causal examples. Increasing the Golden Gate Bridge feature makes the model mention the bridge and, at a ten-times-maximum clamp, claim to be the bridge. Steering the code-error and addition features also changes the corresponding outputs. The extreme Golden Gate intervention is useful for identifying the direction's effect, but it says little about the feature's normal causal importance; at large enough values, feature steering often makes the model repetitive or incoherent.
 
-The paper also finds features related to sycophancy, deception, secrecy, unsafe code, and other safety-relevant topics. Their presence shows that these concepts are represented in a form the autoencoder can expose. It does not distinguish between discussing a behavior, recognizing it in someone else, being capable of it, and pursuing it.
+The paper also finds features related to sycophancy, deception, secrecy, unsafe code, and other safety-relevant topics. Their presence shows that these concepts are represented in a form the autoencoder can expose. The activation examples alone leave several roles mixed together: discussing a behavior, recognizing it in someone else, being capable of it, and pursuing it.
 
 ## What scaling did not settle
 

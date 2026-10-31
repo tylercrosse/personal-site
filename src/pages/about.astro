@@ -1,599 +1,508 @@
 ---
-import BaseLayout from "../layouts/BaseLayout.astro";
 import { Image } from "astro:assets";
+import { Briefcase, GraduationCap } from "lucide-astro";
+import BaseLayout from "../layouts/BaseLayout.astro";
+import SocialLinks from "../components/SocialLinks.astro";
 import socialCards from "../config/socialCards.json";
+
+const experience = [
+  {
+    org: "Knowable",
+    role: "Senior Software Engineer & Team Lead",
+    dates: "Jun 2019 - Jun 2024",
+    summary:
+      "Led a five-engineer team building a legal knowledge platform. I took LLM and search prototypes into production over several million contracts and built distributed services and developer tooling.",
+  },
+  {
+    org: "Rosetta Stone",
+    role: "Software Engineer",
+    dates: "Aug 2017 - Jun 2019",
+    summary:
+      "Rebuilt a React and Node marketing platform with page loads about 2.25 times faster, built an internal A/B testing system, and maintained services for a platform serving millions of learners.",
+  },
+];
+
+const education = [
+  {
+    org: "Georgia Institute of Technology",
+    role: "MS Computer Science",
+    dates: "May 2026",
+    summary: "Focused on machine learning and computing systems.",
+  },
+  {
+    org: "Virginia Commonwealth University",
+    role: "BS Biomedical Engineering",
+    dates: "Dec 2023",
+    summary: "Engineering, physiology, and the design of systems for medical and biological problems.",
+  },
+];
+
+const background = [
+  { label: "Experience", icon: Briefcase, entries: experience },
+  { label: "Education", icon: GraduationCap, entries: education },
+];
+
+const interests = [
+  {
+    emoji: "🧩",
+    title: "Mechanistic interpretability",
+    text: "Sparse autoencoders, circuits, and tools to open up black boxes so we can understand and steer models.",
+  },
+  {
+    emoji: "🎯",
+    title: "AI safety & alignment",
+    text: "Keeping capable agents within the intent and limits people set for them, and checking that our safeguards hold.",
+  },
+  {
+    emoji: "🛡️",
+    title: "Robustness & evaluation",
+    text: "Empirical evaluation under distribution shift; honesty/helpfulness metrics; reproducibility and measurement.",
+  },
+  {
+    emoji: "🔧",
+    title: "Systems for ML",
+    text: "Operating systems, distributed systems, and tooling that make ML research reliable, scalable, and repeatable.",
+  },
+  {
+    emoji: "⚡",
+    title: "High-performance computing",
+    text: "GPU programming, parallelism, computer architecture, and the memory systems underneath modern models.",
+  },
+  {
+    emoji: "📚",
+    title: "Learning in public",
+    text: "Sharing the journey—methods, failures, and breakthroughs—so others can learn alongside me.",
+  },
+  {
+    emoji: "⚖️",
+    title: "Economics",
+    text: "Understanding the economic forces that shape our world.",
+  },
+  {
+    emoji: "🧬",
+    title: "Computational biology",
+    text: "Understanding the biological mechanisms that underlie disease and development.",
+  },
+];
 ---
 
 <BaseLayout
   title="About"
-  description="Tyler Crosse works on machine learning and AI safety, from research experiments to production systems."
+  description={socialCards.about.description}
   image={socialCards.about.image}
   imageAlt={socialCards.about.alt}
 >
-  <div class="headshot slide-in-block">
-    <Image
-      src="/img/headshot.jpeg"
-      alt="Tyler Crosse"
-      width={300}
-      height={300}
-    />
-  </div>
-
-  <section class="intro slide-in-block">
-    <h1>Hi, I'm Tyler</h1>
-    <p class="lead">
-      I work on machine learning and <strong>AI safety</strong>, from research
-      experiments to production systems. I recently completed projects with
-      Redwood Research on attack selection for AI control and with SPAR on
-      scalable oversight. I also have more than seven years of production
-      software engineering experience, most recently as a senior engineer and
-      team lead. I completed Georgia Tech's MSCS in May 2026, with a focus on
-      machine learning and computing systems.
-    </p>
-  </section>
-
-  <section class="journey slide-in-block">
-    <h2>My path</h2>
-    <p>
-      My undergraduate degree is in <strong>Biomedical Engineering</strong>. I
-      ended up in software, where I worked on consumer products, enterprise
-      search, data pipelines, developer tooling, and distributed services. That
-      work taught me how to turn prototypes into systems people can rely on and
-      how to make tradeoffs when correctness, performance, and delivery all
-      matter.
-    </p>
-    <p>
-      Seeing the early results from
-      <a
-        href="https://en.wikipedia.org/wiki/AlphaFold"
-        target="_blank"
-        rel="noopener noreferrer">AlphaFold</a
-      > in 2018 pushed me to study machine learning more seriously. As language
-      models became more capable and agentic, I became interested in a narrower
-      set of questions: what safety evaluations actually measure, how models
-      behave under pressure, and how to build experiments that make those
-      failures visible. I returned to school to add deeper ML and systems
-      foundations to my production engineering background.
-    </p>
-  </section>
-
-  <section class="research slide-in-block">
-    <h2>Recent research</h2>
-    <ul>
-      <li>
-        <strong>AI control with Redwood Research:</strong> I studied how an
-        attacking agent's decision to start or abandon an attack changes the
-        apparent safety of control protocols. Selective start/stop policies
-        reduced measured safety by roughly 20–28 points at a 1% audit budget
-        across BashArena and LinuxArena. The project began through MARS 4.0 and
-        continued as a collaboration with Redwood.
-      </li>
-      <li>
-        <strong>Agent evaluation and scalable oversight with SPAR:</strong> In
-        Fall 2025, I built evaluation infrastructure for measuring goal drift
-        in long-horizon coding agents. In Spring 2026, I worked on human-AI
-        oversight and built the FastAPI backend for a participant study run
-        through Prolific.
-      </li>
-    </ul>
-    <p>
-      I also completed ARENA 7.0 in London. For the capstone, I used activation
-      patching, steering vectors, and path patching to study how moral
-      fine-tuning changes attention pathways in Gemma-2-2b.
-    </p>
-
-    <h3>Selected publications</h3>
-    <ul>
-      <li>
-        <a
-          href="https://arxiv.org/abs/2606.06529"
-          target="_blank"
-          rel="noopener noreferrer"
-          ><em
-            >Attack Selection in Agentic AI Control Evaluations Meaningfully
-            Decreases Safety</em
-          ></a
-        >, co-first author. Accepted to the ICML 2026 AI4GOOD and AI-WILD
-        workshops and as a FAGEN poster; under review at NeurIPS 2026.
-      </li>
-      <li>
-        <a
-          href="https://arxiv.org/abs/2606.04161"
-          target="_blank"
-          rel="noopener noreferrer"
-          ><em
-            >When Offline Selectors Cannot Beat the Best Single Model</em
-          ></a
-        >, first author. Accepted to the ICML 2026 DEMO Workshop.
-      </li>
-      <li>
-        Three co-authored papers from SPAR, including work on inherited and
-        asymmetric goal drift in coding agents and inference effects in medical
-        allocation.
-      </li>
-    </ul>
-    <p>
-      My full publication list is on <a
-        href="https://scholar.google.com/citations?user=RfFEQLMAAAAJ&hl=en&oi=ao"
-        target="_blank"
-        rel="noopener noreferrer">Google Scholar</a
-      >.
-    </p>
-  </section>
-
-  <section class="experience slide-in-block">
-    <h2>Industry experience</h2>
-    <div class="timeline">
-      <div class="timeline-item">
-        <div class="timeline-marker"></div>
-        <div class="timeline-content">
-          <h3>Knowable</h3>
-          <p class="company">
-            Senior Software Engineer &amp; Team Lead
-            <span class="period">| Jun 2019 – Jun 2024</span>
-          </p>
-
-          <p class="description">
-            Directed the technical roadmap for a five-engineer team building a
-            legal knowledge platform. I took RAG-style LLM and OpenSearch
-            systems from data-science prototypes to production over several
-            million contracts, built event-driven services on AWS, and cut the
-            average CI pipeline from roughly 55 minutes to 15. I also maintained
-            a React component library used across three product teams.
-          </p>
-        </div>
-      </div>
-
-      <div class="timeline-item">
-        <div class="timeline-marker"></div>
-        <div class="timeline-content">
-          <h3>Rosetta Stone</h3>
-          <p class="company">
-            Software Engineer
-            <span class="period">| Aug 2017 – Jun 2019</span>
-          </p>
-
-          <p class="description">
-            Rebuilt a React and Node marketing platform with page loads about
-            2.25 times faster. I also built an internal A/B testing system used
-            by roughly 20 non-engineering stakeholders to run hundreds of
-            experiments and maintained backend services for a platform serving
-            millions of learners.
-          </p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section class="education slide-in-block">
-    <h2>Education</h2>
-    <div class="timeline">
-      <div class="timeline-item">
-        <div class="timeline-marker"></div>
-        <div class="timeline-content">
-          <h3>Georgia Institute of Technology</h3>
-          <p class="company">
-            MS Computer Science <span class="period">| May 2026</span>
-          </p>
-
-          <p class="description">
-            Focused on machine learning and computing systems. Coursework
-            included deep learning, reinforcement learning, GPU hardware and
-            software, high-performance computer architecture, Advanced
-            Operating Systems, and Graduate Algorithms. Projects included
-            FlashAttention and KV-cache CUDA kernels, GPU simulators, static
-            branch-divergence analysis, and reproducible ML evaluation
-            pipelines.
-          </p>
-        </div>
-      </div>
-
-      <div class="timeline-item">
-        <div class="timeline-marker"></div>
-        <div class="timeline-content">
-          <h3>Virginia Commonwealth University</h3>
-          <p class="company">
-            BS Biomedical Engineering <span class="period">| Dec 2023</span>
-          </p>
-
-          <p class="description">
-            Studied engineering, physiology, and the design of systems for
-            medical and biological problems.
-          </p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section class="interests slide-in-block">
-    <h2>What I'm interested in</h2>
-    <div class="interests-grid">
-      <div class="interest-card">
-        <h3>🧩 Mechanistic Interpretability</h3>
-        <p>
-          Sparse autoencoders, circuits, and tools to open up black boxes so we
-          can understand and steer models.
+  <div class="about">
+    <header class="intro slide-in-block">
+      <div class="intro-copy">
+        <h1>Hi, I'm Tyler</h1>
+        <p class="lede">
+          I study how AI models perceive the world and the situations they're
+          in, and when that perception leads them to cause harm.
         </p>
+        <SocialLinks showRss={false} />
       </div>
-      <div class="interest-card">
-        <h3>🎯 AI Safety & Alignment</h3>
-        <p>
-          Building systems that are steerable, reliable, and beneficial by
-          design.
-        </p>
-      </div>
-      <div class="interest-card">
-        <h3>🛡️ Robustness & Evaluation</h3>
-        <p>
-          Empirical evaluation under distribution shift; honesty/helpfulness
-          metrics; reproducibility and measurement.
-        </p>
-      </div>
-      <div class="interest-card">
-        <h3>🔧 Systems for ML</h3>
-        <p>
-          Operating systems, distributed systems, and tooling that make ML
-          research reliable, scalable, and repeatable.
-        </p>
-      </div>
-      <div class="interest-card">
-        <h3>⚡ High-Performance Computing</h3>
-        <p>
-          GPU programming, parallelism, computer architecture, and the memory
-          systems underneath modern models.
-        </p>
-      </div>
-      <div class="interest-card">
-        <h3>📚 Learning in Public</h3>
-        <p>
-          Sharing the journey—methods, failures, and breakthroughs—so others can
-          learn alongside me.
-        </p>
-      </div>
+      <Image class="headshot" src="/img/headshot.jpeg" alt="Tyler Crosse" width={180} height={180} />
+    </header>
 
-      <div class="interest-card">
-        <h3>⚖️ Economics</h3>
-        <p>Understanding the economic forces that shape our world.</p>
-      </div>
-      <div class="interest-card">
-        <h3>🧬 Computational Biology</h3>
-        <p>
-          Understanding the biological mechanisms that underlie disease and
-          development.
-        </p>
-      </div>
-    </div>
-  </section>
+    <section class="slide-in-block" aria-labelledby="current">
+      <h2 id="current">What I work on</h2>
+      <p>
+        I'm a Research Scientist at AE Studio, where I study when models
+        misunderstand, overlook, or override what users intend. We look at
+        this from the inside, through how models represent intent internally,
+        and from the outside, through how agents actually behave.
+      </p>
+      <p>
+        Every model acts on its own picture of what's going on. That includes
+        what it's been asked to do, who it's working for, and whether anyone is
+        watching. When that picture is wrong, or right in ways we didn't plan
+        for, agents can take harmful actions. My work tries to find those
+        situations and figure out how to prevent them.
+      </p>
+      <p>
+        As models get better at reading their circumstances, I'm especially
+        interested in whether they can tell when they're being tested or
+        monitored, and whether our safeguards still hold when they can.
+      </p>
+    </section>
 
-  <section class="about-this-site slide-in-block">
-    <h2>About This Digital Garden</h2>
-    <p>
-      This is where I keep technical write-ups, research notes, course
-      retrospectives, and project logs. Some pieces are finished articles;
-      others are notes that I update as my understanding changes.
-    </p>
-    <p>
-      I try to include the method, mistakes, and intermediate reasoning instead
-      of only the final result. If you notice an error or want to discuss
-      something, <a href="mailto:hello@tylercrosse.com">send me a note</a>.
-    </p>
-
-    <p>
-      Built with <a
-        href="https://astro.build/"
-        target="_blank"
-        rel="noopener noreferrer">Astro</a
-      >. Check out the <a
-        href="https://github.com/tylercrosse/personal-site"
-        target="_blank"
-        rel="noopener noreferrer">source code</a
-      >.
-    </p>
-
-    <details class="inspiration-details">
-      <summary>Sites that inspired this one</summary>
-      <ul class="inspiration-list">
+    <section class="slide-in-block" aria-labelledby="recent">
+      <h2 id="recent">Recent research</h2>
+      <ul class="research-list">
         <li>
-          <a
-            href="https://distill.pub/"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <strong>Distill.pub</strong>
-          </a> - Interactive machine learning research papers
+          <strong>AI control with Redwood Research.</strong> I studied how an
+          attacking agent's choice of when to start or abandon an attack changes
+          the apparent safety of control protocols. Selective attack policies
+          reduced measured safety by 20-28 percentage points at a 1% audit budget
+          across BashArena and LinuxArena, so control evaluations that use naive
+          attackers can overstate how safe a protocol is. I co-developed the
+          methodology, built evaluation infrastructure, and designed and ran
+          most experiments. Our
+          <a href="/ideas/2026/paper-attack-selection/">co-first-author paper</a>
+          was accepted at NeurIPS 2026 and at three ICML 2026 workshops. The
+          project began through MARS 4.0 and continued on contract at Redwood.
         </li>
         <li>
-          <a
-            href="https://maggieappleton.com/"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <strong>Maggie Appleton</strong>
-          </a> - The digital garden philosophy and beautiful visual thinking
+          <strong>Agent evaluation with SPAR.</strong> I built a harness for
+          measuring constraint violations in long-horizon coding tasks and
+          co-developed and ran experiments on
+          <a href="/ideas/2026/paper-asymmetric-goal-drift/">goal drift in coding agents</a>
+          and <a href="/ideas/2026/paper-inherited-goal-drift/">the effects of inherited context</a>.
+          Agents broke system-prompt constraints more readily when those
+          constraints conflicted with values from their training, and agents
+          that resisted direct pressure still drifted after inheriting flawed
+          trajectories from weaker models. In Spring 2026, I contributed to the
+          backend for a participant study on human-AI oversight.
         </li>
         <li>
-          <a
-            href="https://www.arlenmccluskey.com/"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <strong>Arlen McCluskey</strong>
-          </a> - Clean technical writing and site structure
-        </li>
-        <li>
-          <a
-            href="https://eugeneyan.com/"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <strong>Eugene Yan</strong>
-          </a> - Thoughtful ML content and career insights
-        </li>
-        <li>
-          <a
-            href="https://www.swyx.io/"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <strong>Swyx</strong>
-          </a> - Learning in public and developer advocacy
-        </li>
-        <li>
-          <a
-            href="https://lowyx.com/"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <strong>Yxlow</strong>
-          </a> - Minimalist design and thoughtful curation
+          <strong>Interpretability at ARENA 7.0.</strong> In London, I
+          fine-tuned Gemma-2-2b with PPO and LoRA on an iterated prisoner's
+          dilemma, then used activation patching, path patching, and steering
+          vectors to study
+          <a href="/ideas/2026/llm-morality-mech-interp/">how moral fine-tuning changes the model</a>.
+          It reroutes attention pathways and leaves the selfish behavior in
+          place, which suggests safety from fine-tuning can be shallower than
+          it looks.
         </li>
       </ul>
-    </details>
-  </section>
+      <a class="quiet-link" href="/research">research summaries, papers, and code →</a>
+    </section>
 
-  <style>
-    section {
-      max-width: 800px;
-      margin: 2rem auto;
-      padding: 0 1rem;
-    }
+    <section class="slide-in-block" aria-labelledby="background">
+      <h2 id="background">My background</h2>
+      <p>
+        My undergraduate degree is in biomedical engineering. I ended up in
+        software, where I spent seven years working on consumer products,
+        enterprise search, and distributed services. Seeing the early results
+        from AlphaFold pushed me to study machine learning more seriously, and
+        I returned to school for Georgia Tech's MSCS. The engineering is still
+        a large part of how I do research. I build the harnesses and pipelines
+        my experiments run on, and I do most of that work with coding agents.
+      </p>
 
-    .headshot {
-      margin: 2rem auto;
-      max-width: 300px;
-      text-align: center;
-    }
+      {background.map((group) => {
+        const GroupIcon = group.icon;
+        return (
+          <div class="entry-group">
+            <h3 class="group-label">
+              <GroupIcon size={14} aria-hidden="true" />
+              <span>{group.label}</span>
+            </h3>
+            <ul class="entries">
+              {group.entries.map((entry) => (
+                <li class="entry">
+                  <h4>{entry.org}</h4>
+                  <p class="entry-meta">
+                    <span class="entry-role">{entry.role}</span>
+                    <span>{entry.dates}</span>
+                  </p>
+                  <p class="entry-summary">{entry.summary}</p>
+                </li>
+              ))}
+            </ul>
+          </div>
+        );
+      })}
+    </section>
 
-    .headshot img {
-      border: 8px solid #fff;
+    <section class="slide-in-block" aria-labelledby="interests">
+      <h2 id="interests">What I'm interested in</h2>
+      <ul class="interests">
+        {interests.map((interest) => (
+          <li class="interest">
+            <h3><span class="interest-emoji" aria-hidden="true">{interest.emoji}</span>{interest.title}</h3>
+            <p>{interest.text}</p>
+          </li>
+        ))}
+      </ul>
+    </section>
+
+    <section class="slide-in-block" aria-labelledby="garden">
+      <h2 id="garden">About this digital garden</h2>
+      <p>
+        This site also holds technical write-ups, research notes, course
+        retrospectives, and project logs. Some are finished articles; others
+        change as my understanding does. I try to include the method, mistakes,
+        and intermediate reasoning.
+      </p>
+      <p>
+        Browse the <a href="/ideas">writing archive</a>, or
+        <a href="mailto:tylerscottcrosse@gmail.com">send me a note</a> if you
+        notice an error or want to discuss something.
+      </p>
+      <p class="note">
+        Built with <a href="https://astro.build/">Astro</a>.
+        <a href="https://github.com/tylercrosse/personal-site">Source code</a>.
+      </p>
+    </section>
+  </div>
+</BaseLayout>
+
+<style>
+  :global(main) {
+    padding: 0;
+  }
+
+  /* 800px matches the blog-post prose column. */
+  .about {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 3rem 1.5rem 5rem;
+  }
+
+  .intro {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 180px;
+    gap: 2rem;
+    align-items: start;
+  }
+
+  .intro-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  h1 {
+    margin: 0;
+    font-size: clamp(2.5rem, 6vw, 4rem);
+    line-height: 1.05;
+  }
+
+  .lede {
+    margin: 0;
+    color: var(--sol-8);
+    font-size: clamp(1.1rem, 1.4vw, 1.25rem);
+    line-height: 1.55;
+  }
+
+  .intro :global(.social-links) {
+    margin-left: -0.5rem;
+  }
+
+  .intro :global(.headshot) {
+    width: 180px;
+    height: 180px;
+    object-fit: cover;
+    border-radius: 4px;
+  }
+
+  section {
+    margin-top: 3.5rem;
+  }
+
+  h2 {
+    margin: 0 0 1rem;
+    font-size: 1.8rem;
+  }
+
+  p,
+  li {
+    line-height: 1.7;
+  }
+
+  section > p {
+    margin: 0 0 1rem;
+  }
+
+  /* Recent research: bold lead-ins make each project scannable. */
+  .research-list {
+    margin: 0 0 0.5rem;
+    padding-left: 1.2rem;
+  }
+
+  .research-list li + li {
+    margin-top: 0.85rem;
+  }
+
+  .research-list strong {
+    color: var(--sol-10);
+  }
+
+  :global([data-effective-theme="dark"]) .research-list strong {
+    color: var(--sol-5);
+  }
+
+  .quiet-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 40px;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    letter-spacing: 0.02em;
+    color: var(--sol-8);
+    text-decoration: underline;
+    text-decoration-color: transparent;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.18em;
+    transition: color 0.2s ease, text-decoration-color 0.2s ease;
+  }
+
+  .quiet-link:hover,
+  .quiet-link:focus-visible {
+    color: var(--sol-10);
+    text-decoration-color: currentColor;
+  }
+
+  :global([data-effective-theme="dark"]) .quiet-link:hover {
+    color: var(--sol-5);
+  }
+
+  /* Background entries */
+  .entry-group {
+    margin: 1.75rem 0;
+  }
+
+  .group-label {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin: 0 0 0.5rem;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--sol-7);
+  }
+
+  .group-label :global(svg) {
+    flex-shrink: 0;
+    opacity: 0.85;
+  }
+
+  .entries {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .entry {
+    padding: 1rem 0;
+    border-top: 1px solid var(--main-border-color);
+  }
+
+  :global([data-effective-theme="dark"]) .entry {
+    border-color: var(--base03);
+  }
+
+  .entry h4 {
+    margin: 0;
+    font-family: var(--font-heading);
+    font-size: 1.15rem;
+    line-height: 1.3;
+  }
+
+  .entry-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.15rem 1em;
+    margin: 0.3rem 0 0.4rem;
+    color: var(--sol-7);
+    font-size: 0.85rem;
+    line-height: 1.5;
+  }
+
+  .entry-role {
+    color: var(--sol-8);
+    font-weight: 600;
+  }
+
+  .entry-summary {
+    margin: 0;
+    color: var(--sol-8);
+  }
+
+  /* Interests */
+  .interests {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .interest {
+    padding: 1rem 1.1rem;
+    border: 1px solid var(--main-border-color);
+    border-radius: 8px;
+    background: var(--base4);
+  }
+
+  :global([data-effective-theme="dark"]) .interest {
+    border-color: var(--base03);
+    background: var(--base02);
+  }
+
+  .interest h3 {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0 0 0.4rem;
+    font-size: 1.05rem;
+    line-height: 1.3;
+  }
+
+  .interest p {
+    margin: 0;
+    color: var(--sol-8);
+    font-size: 0.92rem;
+    line-height: 1.55;
+  }
+
+  .note {
+    color: var(--sol-8);
+    font-size: 0.9rem;
+  }
+
+  a:focus-visible {
+    outline: 2px solid var(--blue);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+
+  @media (max-width: 600px) {
+    .about {
+      padding: 2rem 1.25rem 3rem;
     }
 
     .intro {
-      text-align: center;
-      margin-bottom: 3rem;
+      grid-template-columns: 1fr;
     }
 
-    .intro h1 {
-      font-size: 2.5rem;
-      margin-bottom: 1rem;
-      color: var(--sol-base01);
+    .intro :global(.headshot) {
+      width: 120px;
+      height: 120px;
     }
 
-    .lead {
-      font-size: 1.25rem;
-      line-height: 1.6;
-      color: var(--sol-base0);
-      max-width: 600px;
-      margin: 0 auto;
+    .interests {
+      grid-template-columns: 1fr;
     }
+  }
 
-    .journey {
-      margin-bottom: 3rem;
+  /* Entrance animation, as on main's About page. The global stylesheet turns it off for reduced motion. */
+  .slide-in-block {
+    opacity: 0;
+    filter: blur(10px);
+    transform: scale(0.95);
+    will-change: transform, opacity, filter;
+    animation: slideInBlock 0.4s cubic-bezier(0.43, 0.195, 0.02, 1) forwards;
+  }
+
+  .slide-in-block:nth-child(2) { animation-delay: 0.1s; }
+  .slide-in-block:nth-child(3) { animation-delay: 0.2s; }
+  .slide-in-block:nth-child(4) { animation-delay: 0.3s; }
+  .slide-in-block:nth-child(5) { animation-delay: 0.4s; }
+  .slide-in-block:nth-child(6) { animation-delay: 0.5s; }
+
+  @keyframes slideInBlock {
+    to {
+      opacity: 1;
+      filter: blur(0px);
+      transform: scale(1);
     }
-
-    .journey p {
-      font-size: 1.1rem;
-      line-height: 1.7;
-      margin-bottom: 1.5rem;
-    }
-
-    .research p,
-    .research li {
-      font-size: 1.1rem;
-      line-height: 1.7;
-    }
-
-    .research ul {
-      margin-bottom: 1.5rem;
-    }
-
-    .timeline {
-      position: relative;
-      /* margin: 2rem 0; */
-    }
-    .timeline-item {
-      position: relative;
-      margin-bottom: 2rem;
-      /* padding-left: 60px; */
-      font-size: 1.1rem;
-    }
-
-    .timeline-marker {
-      position: absolute;
-      left: 11px;
-      top: 8px;
-      width: 18px;
-      height: 18px;
-      border-radius: 50%;
-      background: var(--sol-base2);
-      border: 3px solid var(--sol-base3);
-    }
-
-    .timeline-content h3 {
-      color: var(--sol-base01);
-      font-size: 1.4rem;
-    }
-
-    .company {
-      color: var(--sol-blue);
-      font-weight: 600;
-      margin: 0 0 0.25rem 0;
-    }
-
-    .description {
-      color: var(--sol-base0);
-      line-height: 1.6;
-      margin: 0;
-    }
-
-    .interests-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 1.5rem;
-      margin: 2rem 0;
-    }
-
-    .interest-card h3 {
-      margin: 0 0 1rem 0;
-      color: var(--sol-base01);
-      font-size: 1.1rem;
-    }
-
-    .interest-card p {
-      margin: 0;
-      color: var(--sol-base0);
-      line-height: 1.5;
-    }
-
-    /* .about-this-site {
-        background: var(--sol-base3);
-        border-radius: 12px;
-        padding: 2rem;
-        border: 1px solid var(--sol-base2);
-      } */
-
-    .about-this-site p {
-      font-size: 1.1rem;
-      line-height: 1.7;
-      margin-bottom: 1.5rem;
-    }
-
-    .inspiration-details {
-      margin-top: 2rem;
-    }
-
-    .inspiration-details summary {
-      cursor: pointer;
-      font-weight: 600;
-      color: var(--sol-base01);
-      padding: 0.5rem 0;
-      border-bottom: 1px solid var(--sol-base2);
-    }
-
-    .inspiration-details summary:hover {
-      color: var(--sol-blue);
-    }
-    .inspiration-list li {
-      margin-bottom: 0.75rem;
-      padding-left: 1rem;
-      position: relative;
-    }
-
-    .inspiration-list a {
-      color: var(--sol-blue);
-      text-decoration: none;
-    }
-
-    .inspiration-list a:hover {
-      text-decoration: underline;
-    }
-
-    .slide-in-block {
-      opacity: 0;
-      filter: blur(10px);
-      transform: scale(0.95);
-      will-change: transform, opacity, filter;
-      animation: slideInBlock 0.4s cubic-bezier(0.43, 0.195, 0.02, 1) forwards;
-    }
-
-    .slide-in-block:nth-child(1) {
-      animation-delay: 0s;
-    }
-    .slide-in-block:nth-child(2) {
-      animation-delay: 0.1s;
-    }
-    .slide-in-block:nth-child(3) {
-      animation-delay: 0.2s;
-    }
-    .slide-in-block:nth-child(4) {
-      animation-delay: 0.3s;
-    }
-    .slide-in-block:nth-child(5) {
-      animation-delay: 0.4s;
-    }
-    .slide-in-block:nth-child(6) {
-      animation-delay: 0.5s;
-    }
-
-    @keyframes slideInBlock {
-      to {
-        opacity: 1;
-        filter: blur(0px);
-        transform: scale(1);
-      }
-    }
-
-    /* Dark theme adjustments */
-    @media (prefers-color-scheme: dark) {
-      .headshot img {
-        /* border-color: var(--sol-base02); */
-      }
-
-      .interest-card {
-        background: var(--sol-base02);
-        border-color: var(--sol-base01);
-      }
-
-      .about-this-site {
-        background: var(--sol-base02);
-        border-color: var(--sol-base01);
-      }
-
-      .timeline::before {
-        background: var(--sol-base01);
-      }
-
-      .timeline-marker {
-        background: var(--sol-base01);
-        border-color: var(--sol-base02);
-      }
-    }
-
-    /* Mobile responsive */
-    @media (max-width: 768px) {
-      .intro h1 {
-        font-size: 2rem;
-      }
-
-      .lead {
-        font-size: 1.1rem;
-      }
-
-      .interests-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .timeline-item {
-        padding-left: 50px;
-      }
-
-      .timeline::before {
-        left: 15px;
-      }
-
-      .timeline-marker {
-        left: 6px;
-      }
-    }
-  </style>
-</BaseLayout>
+  }
+</style>

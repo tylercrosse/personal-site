@@ -1,0 +1,184 @@
+---
+// Animated pond (WebGL2) behind the homepage intro.
+//
+// On load the water fills the first screen edge to edge. Over the first bit
+// of scrolling it closes in to a frame that matches the cards below, and the
+// cards slide up over it. Scrolling itself is untouched: only the stage's
+// clip-path follows scroll position.
+// The layout box (.pond-hero) is always the framed size, so nothing reflows.
+//
+// Without WebGL, or before the first frame, a CSS gradient shows instead.
+// Reduced motion or no JS: the framed state, with a still frame.
+---
+
+<section class="pond-hero" data-pond-hero>
+  <div class="pond-hero__stage">
+    <canvas aria-hidden="true"></canvas>
+  </div>
+  <div class="pond-hero__content">
+    <slot />
+  </div>
+</section>
+<noscript><style>[data-pond-hero] { --p: 1 !important; }</style></noscript>
+
+<script>
+  import { createPondWater } from "../scripts/pondWater.js";
+
+  const hero = document.querySelector<HTMLElement>("[data-pond-hero]");
+  const canvas = hero?.querySelector("canvas");
+  if (hero && canvas) {
+    createPondWater(canvas, {
+      // Calm, darker water and no lilies behind the intro text.
+      quietEl: hero.querySelector(".pond-hero__content"),
+      lilyQuiet: 1.5,
+      lilySpread: 0.6,
+      onReady: () => hero.classList.add("is-ready"),
+      onLost: () => hero.classList.remove("is-ready"),
+    });
+
+    if (!matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      // Scroll distance over which the hero settles into its frame.
+      let distance = 1;
+      const measure = () => {
+        distance = Math.min(300, Math.max(160, innerHeight * 0.3));
+      };
+
+      let queued = false;
+      const update = () => {
+        queued = false;
+        const p = Math.min(1, Math.max(0, scrollY / distance));
+        hero.style.setProperty("--p", p.toFixed(4));
+      };
+      const queue = () => {
+        if (!queued) {
+          queued = true;
+          requestAnimationFrame(update);
+        }
+      };
+
+      measure();
+      update();
+      addEventListener("scroll", queue, { passive: true });
+      addEventListener("resize", () => {
+        measure();
+        queue();
+      });
+    }
+  }
+</script>
+
+<style>
+  /* Lets the full-bleed stage span 100vw without a horizontal scrollbar
+     (100vw includes the vertical scrollbar on some platforms). */
+  :global(body) {
+    overflow-x: clip;
+  }
+
+  .pond-hero {
+    /* Scroll progress: 0 = full screen, 1 = framed. Set from JS. */
+    --p: 0;
+    /* Extra space above the framed box; moves the frame, the intro and the
+       cards below down the page together. */
+    --shift: 260px;
+    /* Distance from the top of the page to this box: the body's padding for
+       the fixed header (4rem), the homepage's <main> top padding, and --shift. */
+    --main-pad: 2rem;
+    --above: calc(4rem + var(--main-pad) + var(--shift));
+    --hero-h: clamp(420px, 62svh, 640px);
+    --stage-h: max(100svh, calc(var(--above) + var(--hero-h)));
+    --radius: 8px;
+
+    position: relative;
+    container-type: inline-size;
+    display: grid;
+    place-items: center;
+    max-width: 1200px;
+    height: var(--hero-h);
+    margin: var(--shift) auto 2rem;
+    color: #fff;
+  }
+
+  @media (min-width: 768px) {
+    .pond-hero {
+      --main-pad: 3rem;
+    }
+  }
+
+  /* The water, drawn full-bleed from the top of the page to the bottom of the
+     first screen, then clipped down to this box as --p goes from 0 to 1. */
+  .pond-hero__stage {
+    --inset-x: calc(50vw - 50cqw);
+    position: absolute;
+    z-index: 0; /* below the page sections that follow (index.astro lifts them to 1) */
+    top: calc(-1 * var(--above));
+    left: calc(50% - 50vw);
+    width: 100vw;
+    height: var(--stage-h);
+    overflow: hidden;
+    clip-path: inset(
+      calc(var(--above) * var(--p))
+      calc(var(--inset-x) * var(--p))
+      calc((var(--stage-h) - var(--above) - var(--hero-h)) * var(--p))
+      calc(var(--inset-x) * var(--p))
+      round calc(var(--radius) * var(--p))
+    );
+    background:
+      radial-gradient(60% 35% at 40% 12%, rgba(120, 200, 225, 0.55), transparent 70%),
+      linear-gradient(
+        162deg,
+        #2f8fb6 0%,
+        #1f6b2a 30%,
+        #0b3a1c 55%,
+        #1f6b2a 72%,
+        #3f9cc4 90%,
+        #1f6b2a 100%
+      );
+  }
+
+  /* The cards' hairline border, appearing as the frame settles (light mode only). */
+  .pond-hero::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    border-radius: var(--radius);
+    /* box-shadow: 0 0 0 1px var(--main-border-color); */
+    opacity: clamp(0, calc((var(--p) - 0.85) / 0.15), 1);   /* only as it lands */
+    pointer-events: none;
+  }
+
+  :global([data-effective-theme="dark"]) .pond-hero::after {
+    content: none;
+  }
+
+  .pond-hero canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    opacity: 0;
+    transition: opacity 1.2s ease;
+  }
+
+  .pond-hero.is-ready canvas {
+    opacity: 1;
+  }
+
+  .pond-hero__content {
+    position: relative;
+    z-index: 2;
+    padding: 0 16px;
+    text-align: center;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .pond-hero {
+      --p: 1;
+    }
+
+    .pond-hero canvas {
+      transition: none;
+    }
+  }
+</style>

@@ -10,15 +10,19 @@ import SvgFigure from "../../SvgFigure.astro";
 interface Props {
   caption?: string;
   numbered?: boolean;
+  /** Cross-reference target; `id="foo"` is reachable as `[fig:foo]`. */
+  id?: string;
 }
 
 const {
   caption = "The induction circuit on the repeated sequence A B C D A. Step 1: at every position, the previous-token head writes “the token before me” into the current position’s residual stream (shown for B; faded arcs mark the same move elsewhere). Step 2: at the second A, the induction head’s query (“I am A”) matches B’s key (“prev = A”), attention lands on B, and the head’s OV circuit raises B’s logit — completing A B … A → B.",
   numbered = true,
+  id,
 } = Astro.props;
 ---
 
 <SvgFigure
+  id={id}
   alt="Two-panel schematic of the induction circuit: a previous-token head tags each token with its predecessor, then an induction head at the repeated token matches that tag to attend back and boost the following token's logit"
   caption={caption}
   numbered={numbered}

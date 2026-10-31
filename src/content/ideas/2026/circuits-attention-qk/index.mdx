@@ -2,12 +2,13 @@
 title: 'Notes on Tracing Attention Computation Through Feature Interactions'
 description: 'Notes on QK attributions, attention-head loadings, and what feature interactions reveal about why a transformer attends to one token rather than another.'
 date: '2026-07-19'
-status: 'in-progress'
+updated: '2026-08-16'
+status: 'complete'
 type: 'note'
 tags: ['mechanistic-interpretability', 'deep-learning', 'research', 'AI-safety']
 category: ['ideas']
 draft: false
-audience: 'All'
+audience: 'Technical'
 sources:
   - kamath2025tracing
 credits:
@@ -39,11 +40,11 @@ The [earlier attribution-graphs post](/ideas/2026/circuits-attribution-graphs/) 
 
 the graph showed a _Sally_ feature being copied from the first occurrence to the final position. That is a description of the head's OV circuit: what it moved and how that information affected the output. The missing QK circuit is the rule that selected the earlier _Sally_ token in the first place.
 
-This paper adds that part of the account. It decomposes an attention score into interactions between features at the query and key positions, then decomposes an attribution-graph edge into the heads that carried it. Used together, those two decompositions connect three questions: which features communicate, which heads carry the message, and which feature matches cause those heads to look where they do.
+This paper adds that part of the account. It decomposes an attention score into interactions between features at the query and key positions, then decomposes an attribution-graph edge into the heads that carried it. Used together, those two decompositions connect three questions: (1) which features communicate, (2) which heads carry the message, and (3) which feature matches cause those heads to look where they do.
 
 ## An attention score is already a pairwise interaction
 
-For head $h$, the pre-softmax score from query position $q$ to key position $k$ is
+Attention begins by scoring every pair of positions. For head $h$, the score $s_h(q,k)$ from query position $q$ to key position $k$ measures how strongly the token at $q$ wants to read from the token at $k$, before the softmax turns those scores into attention weights:
 
 $$
 s_h(q,k)
@@ -53,7 +54,9 @@ s_h(q,k)
 W_{QK}^h=(W_Q^h)^\top W_K^h.
 $$
 
-The score is bilinear: it is linear in the query residual stream when the key is fixed, and linear in the key residual stream when the query is fixed. That makes it possible to insert sparse-autoencoder decompositions for both positions. Write them as
+Here $\mathbf{x}_q$ and $\mathbf{x}_k$ are the residual-stream vectors at the two positions, the running summary each token carries as it passes through the network. The matrices $W_Q^h$ and $W_K^h$ project those vectors into the head's query and key spaces, and $\sqrt{d_h}$, with $d_h$ the head's dimension, is the usual scaling factor. Because the two projections only ever appear multiplied together, they fold into one matrix $W_{QK}^h=(W_Q^h)^\top W_K^h$. The score is then a single bilinear form: a query vector on the left, a key vector on the right, and a fixed matrix in between whose entries say how compatible any query direction is with any key direction.
+
+Bilinear means the score is linear in the query vector when the key is held fixed, and linear in the key vector when the query is held fixed. That is what makes the decomposition work: whenever we write $\mathbf{x}_q$ or $\mathbf{x}_k$ as a sum of parts, the score splits into a sum over those parts. A sparse autoencoder supplies exactly such a sum. It rewrites each residual-stream vector as a few active interpretable features plus some leftovers:
 
 $$
 \mathbf{x}_q=\mathbf{b}+\boldsymbol{\epsilon}_q+
@@ -63,13 +66,19 @@ $$
 \sum_j a_j^{(k)}\mathbf{v}_j,
 $$
 
-where $\mathbf{v}_i$ is a feature direction, $a_i$ its activation, $\mathbf{b}$ the decoder bias, and $\boldsymbol{\epsilon}$ the reconstruction error. Multiplying out the score produces feature-feature, feature-bias, bias-bias, and error terms. The interpretable feature-pair term is
+Each $\mathbf{v}_i$ is a feature direction, a direction in the residual stream that stands for a recognizable concept, and $a_i$ is how strongly that feature is active at the position. The vector $\mathbf{b}$ is a constant offset, the decoder bias, present on every token, and $\boldsymbol{\epsilon}$ is the reconstruction error, the part of the residual stream the features fail to capture. So each token is approximated as its bias, plus its handful of active features, plus whatever is left over.
+
+Substituting both expansions into the score and multiplying out pairs every part of the query vector with every part of the key vector. Terms that involve the bias or the error are hard to read, but a term pairing one query feature with one key feature is interpretable. It has the form
 
 $$
 C_{ij}^{h}(q,k)
 =\frac{a_i^{(q)}a_j^{(k)}}{\sqrt{d_h}}
 \mathbf{v}_i^\top W_{QK}^h\mathbf{v}_j.
 $$
+
+For a stripped-down numerical example, suppose the query feature activates at 2, the key feature at 3, and their fixed compatibility under the head is 0.5. This pair contributes $3/\sqrt{d_h}$ to the score. The real analysis repeats that calculation for every active query-key feature pair, along with the bias and reconstruction-error terms.
+
+Read left to right, this is how strongly query feature $i$ fires, times how strongly key feature $j$ fires, times a fixed number $\mathbf{v}_i^\top W_{QK}^h\mathbf{v}_j$ measuring how compatible those two feature directions are under this head. The term is large only when both features are active and the head's weights connect them. It is the amount that this one pair of concepts, one at the query and one at the key, contributed to the head attending from $q$ to $k$.
 
 Summing every term, including the bias and error terms, recovers $s_h(q,k)$. The largest $C_{ij}$ terms say which query-side and key-side features made that token pair attractive to the head. A query feature for an antonym request can interact with a key feature marking the adjective whose antonym was requested; a query feature for producing a multiple-choice answer can interact with a key feature marking the correct option. The expansion figure groups the algebra by what can be interpreted: feature-feature pairs on the left, feature-error terms in the middle, then bias and error terms that complete the score.
 
@@ -78,7 +87,7 @@ Summing every term, including the bias and error terms, recovers $s_h(q,k)$. The
   alt={"Expansion of an attention score into feature-feature, feature-error, feature-bias, bias-bias, and error-error interaction terms"}
   caption={"Expanding both residual streams makes the feature-pair contribution explicit while retaining bias and reconstruction-error terms needed to recover the full score. Figure from Tracing Attention Computation Through Feature Interactions."}
   fullWidth
-  width={1000}
+  width={1200}
 />
 
 There is a useful distinction here. The method decomposes a particular score, not the head as a whole. The same head can have different active feature pairs on another prompt. Calling something an "antonym head" is therefore shorthand for the role it plays in the example, not a claim that the head has one stable meaning across the model's input distribution.
@@ -128,7 +137,7 @@ There is a second attentional step earlier in the circuit. On the first _Sally_,
 <Figure
   src={inductionCircuit}
   alt={"Induction circuit in which the final Aunt position attends to the earlier Sally position using family-title and associated-name features, then copies Sally to the output"}
-  caption={"The QK interaction selects the earlier name associated with “Aunt”; the head's OV circuit then moves the Sally feature toward the output. Figure from Tracing Attention Computation Through Feature Interactions."}
+  caption={"The QK interaction selects the earlier name associated with \"Aunt\"; the head's OV circuit then moves the Sally feature toward the output. Figure from Tracing Attention Computation Through Feature Interactions."}
 />
 
 The longer completion makes the parallelism clearer:

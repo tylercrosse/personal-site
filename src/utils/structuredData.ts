@@ -92,7 +92,9 @@ export function getPersonStructuredData(site: SiteReference): StructuredData {
     url: root,
     image: absoluteUrl("/img/headshot.jpeg", site),
     description:
-      "AI safety research engineer with an MS in Computer Science from Georgia Tech and more than seven years of production software engineering experience.",
+      "Research Scientist at AE Studio working on AI alignment, agent behavior, evaluations, and oversight. MS in Computer Science from Georgia Tech; seven years of prior software engineering experience.",
+    jobTitle: "Research Scientist",
+    worksFor: { "@type": "Organization", name: "AE Studio" },
     sameAs: [
       "https://github.com/tylercrosse",
       "https://linkedin.com/in/tylercrosse",
@@ -100,6 +102,7 @@ export function getPersonStructuredData(site: SiteReference): StructuredData {
     ],
     knowsAbout: [
       "AI safety",
+      "AI alignment",
       "AI control",
       "Agent evaluation",
       "Scalable oversight",

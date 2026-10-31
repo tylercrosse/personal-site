@@ -1,0 +1,93 @@
+---
+/**
+ * The three readouts compared: what each one puts between a hidden state at
+ * layer ℓ and the unembedding. The logit lens puts nothing, the tuned lens
+ * puts a map it learned, the Jacobian lens puts one it measured.
+ *
+ * Deliberately spare — the viewBox stays narrow and the caption carries the
+ * explanation, because SVG text scales with the diagram and anything wordier
+ * becomes unreadable at phone widths.
+ */
+import SvgFigure from "../../SvgFigure.astro";
+
+interface Props {
+  caption?: string;
+  numbered?: boolean;
+  id?: string;
+}
+
+const {
+  caption = "All three readouts end at the same unembedding and differ only in what they put in front of it. The logit lens puts nothing, which assumes layer ℓ already writes in the final layer's coordinates. The tuned lens inserts a map fit to reproduce the model's output distribution, so on a prompt where the model is working something out it reports the answer rather than the working. The Jacobian lens inserts one measured from how the output moves when the state is pushed, which is what lets it carry content the model is not about to say.",
+  numbered = true,
+  id,
+} = Astro.props;
+---
+
+<SvgFigure
+  id={id}
+  alt="Three readout paths from a hidden state at layer ℓ. All three end in the same unembedding matrix. The logit lens path inserts nothing, drawn as a dashed box labelled identity, assumed. The tuned lens path inserts a learned affine map A-sub-ℓ. The Jacobian lens path inserts a measured map J-sub-ℓ."
+  caption={caption}
+  numbered={numbered}
+  maxWidth={620}
+>
+  <svg viewBox="0 0 468 276" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <marker id="ln-n" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor" fill-opacity="0.5" />
+      </marker>
+      <marker id="ln-o" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+        <path d="M 0 0 L 10 5 L 0 10 z" style="fill: var(--orange)" />
+      </marker>
+      <marker id="ln-c" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+        <path d="M 0 0 L 10 5 L 0 10 z" style="fill: var(--cyan)" />
+      </marker>
+      <marker id="ln-b" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+        <path d="M 0 0 L 10 5 L 0 10 z" style="fill: var(--blue)" />
+      </marker>
+    </defs>
+
+    <!-- the state being read -->
+    <line x1="4" y1="138" x2="18" y2="138" stroke="currentColor" stroke-opacity="0.4" stroke-width="1.4" marker-end="url(#ln-n)" />
+    <rect x="24" y="116" width="56" height="44" rx="7" fill="currentColor" fill-opacity="0.07" stroke="currentColor" stroke-opacity="0.5" stroke-width="1.3" />
+    <text x="52" y="144" font-size="16" text-anchor="middle" fill="currentColor" font-style="italic">h<tspan dy="4" font-size="11">ℓ</tspan></text>
+    <text x="52" y="176" font-size="11.5" text-anchor="middle" fill="currentColor" fill-opacity="0.5">layer ℓ</text>
+
+    <!-- fan-out -->
+    <path d="M 80 138 L 96 138" stroke="currentColor" stroke-opacity="0.4" stroke-width="1.4" fill="none" />
+    <path d="M 96 138 C 110 138 110 53 124 53" stroke="var(--orange)" stroke-opacity="0.8" stroke-width="1.5" fill="none" marker-end="url(#ln-o)" />
+    <path d="M 96 138 L 124 138" stroke="var(--cyan)" stroke-opacity="0.8" stroke-width="1.5" fill="none" marker-end="url(#ln-c)" />
+    <path d="M 96 138 C 110 138 110 223 124 223" stroke="var(--blue)" stroke-opacity="0.85" stroke-width="1.6" fill="none" marker-end="url(#ln-b)" />
+
+    <!-- row 1: logit lens — nothing in between -->
+    <rect x="132" y="31" width="84" height="44" rx="7" fill="none" stroke="var(--orange)" stroke-opacity="0.5" stroke-width="1.3" stroke-dasharray="4 3.5" />
+    <text x="174" y="51" font-size="13" text-anchor="middle" style="fill: var(--orange)">identity</text>
+    <text x="174" y="66" font-size="11" text-anchor="middle" fill="currentColor" fill-opacity="0.5">assumed</text>
+    <line x1="216" y1="53" x2="238" y2="53" stroke="var(--orange)" stroke-opacity="0.7" stroke-width="1.4" marker-end="url(#ln-o)" />
+
+    <!-- row 2: tuned lens — a learned map -->
+    <rect x="132" y="116" width="84" height="44" rx="7" fill="var(--cyan)" fill-opacity="0.1" stroke="var(--cyan)" stroke-opacity="0.75" stroke-width="1.4" />
+    <text x="174" y="137" font-size="15.5" text-anchor="middle" fill="currentColor" font-style="italic">A<tspan dy="4" font-size="10.5">ℓ</tspan></text>
+    <text x="174" y="153" font-size="11" text-anchor="middle" fill="currentColor" fill-opacity="0.6">learned</text>
+    <line x1="216" y1="138" x2="238" y2="138" stroke="var(--cyan)" stroke-opacity="0.7" stroke-width="1.4" marker-end="url(#ln-c)" />
+
+    <!-- row 3: Jacobian lens — a measured map -->
+    <rect x="132" y="201" width="84" height="44" rx="7" fill="var(--blue)" fill-opacity="0.12" stroke="var(--blue)" stroke-opacity="0.85" stroke-width="1.6" />
+    <text x="174" y="222" font-size="15.5" text-anchor="middle" fill="currentColor" font-style="italic">J<tspan dy="4" font-size="10.5">ℓ</tspan></text>
+    <text x="174" y="238" font-size="11" text-anchor="middle" fill="currentColor" fill-opacity="0.6">measured</text>
+    <line x1="216" y1="223" x2="238" y2="223" stroke="var(--blue)" stroke-opacity="0.8" stroke-width="1.5" marker-end="url(#ln-b)" />
+
+    <!-- the shared unembedding -->
+    <rect x="244" y="25" width="50" height="226" rx="8" fill="currentColor" fill-opacity="0.05" stroke="currentColor" stroke-opacity="0.4" stroke-width="1.2" />
+    <text x="269" y="134" font-size="15.5" text-anchor="middle" fill="currentColor" font-style="italic">W<tspan dy="4" font-size="10.5">U</tspan></text>
+    <text x="269" y="158" font-size="11" text-anchor="middle" fill="currentColor" fill-opacity="0.5">unembed</text>
+
+    <line x1="294" y1="53" x2="318" y2="53" stroke="var(--orange)" stroke-opacity="0.7" stroke-width="1.4" marker-end="url(#ln-o)" />
+    <line x1="294" y1="138" x2="318" y2="138" stroke="var(--cyan)" stroke-opacity="0.7" stroke-width="1.4" marker-end="url(#ln-c)" />
+    <line x1="294" y1="223" x2="318" y2="223" stroke="var(--blue)" stroke-opacity="0.8" stroke-width="1.5" marker-end="url(#ln-b)" />
+
+    <!-- which readout each path is -->
+    <text x="326" y="58" font-size="14.5" style="fill: var(--orange)">logit lens</text>
+    <text x="326" y="143" font-size="14.5" style="fill: var(--cyan)">tuned lens</text>
+    <text x="326" y="228" font-size="14.5" style="fill: var(--blue)">Jacobian lens</text>
+  </svg>
+</SvgFigure>

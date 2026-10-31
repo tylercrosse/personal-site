@@ -401,8 +401,9 @@ const structuredData = getCollectionPageStructuredData({
               >
                 {renderBlock.blocks.map((block) => {
                   const PostIcon = getIconForType(block.post.type);
-                  const isCompactRow =
-                    block.post.type === "paper" || block.post.type === "note";
+                  // Notes are compact rows; papers get full cards so research
+                  // isn't the smallest thing on the page.
+                  const isCompactRow = block.post.type === "note";
                   return (
                     <article class="loose-post-item">
                       <a
@@ -830,7 +831,7 @@ const structuredData = getCollectionPageStructuredData({
   }
 
   /* Multi-column masonry: mixed-height cards (full posts next to compact
-     paper/note rows) pack without the row-height gaps a grid would leave */
+     note rows) pack without the row-height gaps a grid would leave */
   .loose-post-grid {
     columns: 2;
     column-gap: 0.9rem;
@@ -889,8 +890,8 @@ const structuredData = getCollectionPageStructuredData({
     border-radius: 0;
   }
 
-  /* Papers and notes - compact horizontal rows matching /ideas: the hero is
-     a full-height strip flush with the card's left edge */
+  /* Notes - compact horizontal rows: the hero is a full-height strip flush
+     with the card's left edge */
   .loose-post-card--compact {
     display: grid;
     grid-template-columns: 120px minmax(0, 1fr);
