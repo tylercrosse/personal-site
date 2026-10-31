@@ -5,6 +5,7 @@ import { ExternalLink, FileText, Youtube } from "lucide-astro";
 
 import BaseLayout from "../layouts/BaseLayout.astro";
 import PostCard from "../components/PostCard.astro";
+import PondHero from "../components/PondHero.astro";
 import SocialLinks from "../components/SocialLinks.astro";
 import { getResearchProjects, getTalks } from "../utils/research";
 import socialCards from "../config/socialCards.json";
@@ -149,8 +150,8 @@ const notebook = [
   image={socialCards.home.image}
   imageAlt={socialCards.home.alt}
 >
-  <section class="profile slide-in-block">
-    <div class="profile-main">
+  <PondHero>
+    <div class="profile slide-in-block">
       <h1 class="profile-name">Tyler Crosse</h1>
       <p class="profile-role">Research Scientist at AE Studio</p>
       <p class="profile-bio">
@@ -159,9 +160,7 @@ const notebook = [
       </p>
       <SocialLinks showRss={false} />
     </div>
-  </section>
-
-  <hr class="divider slide-in-block" />
+  </PondHero>
 
   <section class="showcase slide-in-block" aria-label="Selected research">
     <div class="showcase-hero">
@@ -251,79 +250,50 @@ const notebook = [
     }
   }
 
-  /* Profile header */
+  /* Profile intro, set over the pond hero */
   .profile {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 2rem;
-    max-width: 1200px;
-    margin: 0 auto 2.5rem;
-    padding-inline: 0;
-    box-sizing: border-box;
-  }
-
-  @media (min-width: 768px) {
-    .profile {
-      grid-template-columns: minmax(0, 1fr) auto;
-      align-items: start;
-      gap: 3rem;
-      /* padding-inline: 3rem; */
-    }
-  }
-
-  @media (min-width: 1100px) {
-    .profile {
-      padding-inline: 5rem;
-    }
-  }
-
-  .profile-main {
     display: flex;
     flex-direction: column;
+    align-items: center;
     gap: 1rem;
-    max-width: 36rem;
+    max-width: 40rem;
+    margin: 0 auto;
+    text-shadow: 0 1px 18px rgba(4, 30, 12, 0.55);
   }
 
   .profile-name {
     font-family: var(--font-heading);
-    font-size: clamp(3rem, 7vw, 5rem);
-    line-height: 1;
+    font-size: clamp(3rem, 9vw, 6.5rem);
+    line-height: 0.95;
+    letter-spacing: -0.03em;
     margin: 0;
     font-weight: 700;
+    color: #fff;
+    text-shadow: 0 2px 48px rgba(4, 30, 12, 0.45);
   }
 
   .profile-role {
     margin: 0 0 -0.5rem;
-    color: var(--sol-10);
-    font-size: clamp(1.1rem, 1.4vw, 1.3rem);
+    color: #fff;
+    font-size: clamp(1.1rem, 1.6vw, 1.35rem);
     line-height: 1.4;
-  }
-
-  :global([data-effective-theme="dark"]) .profile-role {
-    color: var(--sol-5);
   }
 
   .profile-bio {
     margin: 0;
-    color: var(--sol-8);
-    font-size: clamp(1.05rem, 1.25vw, 1.2rem);
+    color: rgba(255, 255, 255, 0.92);
+    font-size: clamp(1.02rem, 1.25vw, 1.2rem);
     line-height: 1.55;
     max-width: 34rem;
   }
 
-  .profile :global(.social-links) {
-    margin-left: -0.5rem;
+  .profile :global(.social-links a) {
+    color: #fff;
+    filter: drop-shadow(0 1px 6px rgba(4, 30, 12, 0.6));
   }
 
-  .divider {
-    border: none;
-    border-top: 1px solid var(--main-border-color);
-    max-width: 1200px;
-    margin: 0 auto 2rem;
-  }
-
-  :global([data-effective-theme="dark"]) .divider {
-    border-top-color: var(--base03);
+  .profile :global(.social-links a:hover) {
+    color: #e7f6f2;
   }
 
   /* Recent work */
@@ -580,9 +550,6 @@ const notebook = [
 
   .profile.slide-in-block {
     animation-delay: 0.05s;
-  }
-  .divider.slide-in-block {
-    animation-delay: 0.15s;
   }
   .recent-work.slide-in-block {
     animation-delay: 0.2s;
