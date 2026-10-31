@@ -601,34 +601,9 @@ const hierarchicalPosts = allPostsData
       vertical-align: middle;
     }
 
-        /* Retro posts - larger, more prominent */
-    .post-card--retro {
-      /* border-width: 2px;
-      border-color: var(--accent); */
-    }
-
-    .post-card--retro .post-card-content {
-      /* padding: 1.5rem; */
-    }
-
-    .post-card--retro .post-card-content h3 {
-      font-size: 1.75rem;
-      font-weight: 700;
-      margin-bottom: 0.75rem;
-    }
-
-    .post-card--retro .post-card-content p {
-      font-size: 1.05rem;
-      line-height: 1.6;
-    }
-
-    .post-card--retro > .post-card-link > img {
-      height: 300px;
-    }
-
-    :global([data-effective-theme="dark"]) .post-card--retro {
-      /* border-color: var(--accent); */
-    }
+    /* Retros, talks, papers, projects, and articles share the standard card.
+       Coursework retros used to be oversized and papers shrunk to compact rows,
+       which inverted the site's emphasis on research. Notes stay compact. */
 
     /* Note posts - compact, minimal */
     .post-card--note {
@@ -677,32 +652,6 @@ const hierarchicalPosts = allPostsData
       /* Uses default post-card styles with subtle border accent */
       /* border-left-width: 3px; */
       /* border-left-color: var(--sol-magenta); */
-    }
-
-    /* Paper posts - compact horizontal reference rows */
-    .post-card--paper .post-card-link {
-      flex-direction: row;
-      align-items: stretch;
-    }
-
-    .post-card--paper .post-card-link > img {
-      width: 120px;
-      height: auto;
-      flex: 0 0 120px;
-      min-height: 120px;
-    }
-
-    .post-card--paper .post-card-content {
-      padding: 0.75rem;
-    }
-
-    .post-card--paper .post-card-content h3 {
-      font-size: 1.05rem;
-    }
-
-    .post-card--paper .post-card-content p {
-      font-size: 0.85rem;
-      margin-bottom: 0.5rem;
     }
 
     .draft-indicator {
