@@ -480,6 +480,15 @@ const notebook = [
     border: 0;
   }
 
+  /* Sections after the pond hero sit above its full-screen water, so the
+     cards slide up over it while it closes into its frame. */
+  .showcase,
+  .recent-work,
+  .notebook {
+    position: relative;
+    z-index: 1;
+  }
+
   /* Showcase */
   .showcase {
     display: grid;
