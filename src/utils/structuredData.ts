@@ -102,6 +102,7 @@ export function getPersonStructuredData(site: SiteReference): StructuredData {
     ],
     knowsAbout: [
       "AI safety",
+      "AI alignment",
       "AI control",
       "Agent evaluation",
       "Scalable oversight",

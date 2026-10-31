@@ -2,7 +2,7 @@
   "home": {
     "eyebrow": "Alignment research · AE Studio",
     "title": "Tyler Crosse",
-    "description": "Research Scientist at AE Studio studying AI alignment, agent behavior, and oversight.",
+    "description": "Research Scientist at AE Studio studying when AI agents act against human intent.",
     "accent": "#268bd2",
     "motif": "orbit",
     "image": "/social/home.jpg",
@@ -11,7 +11,7 @@
   "about": {
     "eyebrow": "About",
     "title": "Hi, I’m Tyler",
-    "description": "Research Scientist at AE Studio studying AI alignment, agent behavior, and oversight.",
+    "description": "Research Scientist at AE Studio studying when AI agents act against human intent.",
     "accent": "#2aa198",
     "motif": "portrait",
     "image": "/social/about.jpg",

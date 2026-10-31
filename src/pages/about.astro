@@ -9,14 +9,14 @@ const experience = [
   {
     org: "Knowable",
     role: "Senior Software Engineer & Team Lead",
-    dates: "Jun 2019 – Jun 2024",
+    dates: "Jun 2019 - Jun 2024",
     summary:
       "Led a five-engineer team building a legal knowledge platform. I took LLM and search prototypes into production over several million contracts and built distributed services and developer tooling.",
   },
   {
     org: "Rosetta Stone",
     role: "Software Engineer",
-    dates: "Aug 2017 – Jun 2019",
+    dates: "Aug 2017 - Jun 2019",
     summary:
       "Rebuilt a React and Node marketing platform with page loads about 2.25 times faster, built an internal A/B testing system, and maintained services for a platform serving millions of learners.",
   },
@@ -51,7 +51,7 @@ const interests = [
   {
     emoji: "🎯",
     title: "AI safety & alignment",
-    text: "Building systems that are steerable, reliable, and beneficial by design.",
+    text: "Keeping capable agents within the intent and limits people set for them, and checking that our safeguards hold.",
   },
   {
     emoji: "🛡️",
@@ -95,10 +95,10 @@ const interests = [
   <div class="about">
     <header class="intro">
       <div class="intro-copy">
-        <h1>Hi, I’m Tyler</h1>
+        <h1>Hi, I'm Tyler</h1>
         <p class="lede">
-          I work on AI alignment, studying when models misunderstand or override
-          human intent and how to evaluate and oversee their behavior.
+          I study how AI models perceive the world and the situations they're
+          in, and when that perception leads them to cause harm.
         </p>
         <SocialLinks showRss={false} />
       </div>
@@ -108,14 +108,22 @@ const interests = [
     <section aria-labelledby="current">
       <h2 id="current">What I work on</h2>
       <p>
-        I joined AE Studio in August 2026. My current work looks at gaps between
-        user intent, model interpretations, and model actions.
+        I'm a Research Scientist at AE Studio, where I study when models
+        misunderstand, overlook, or override what users intend. We look at
+        this from the inside, through how models represent intent internally,
+        and from the outside, through how agents actually behave.
       </p>
       <p>
-        The question I keep returning to is what evidence should make us more or
-        less confident that an advanced agent is safe to deploy. I enjoy taking a
-        concern about model behavior and turning it into an experiment with
-        useful baselines and failure cases.
+        Every model acts on its own picture of what's going on. That includes
+        what it's been asked to do, who it's working for, and whether anyone is
+        watching. When that picture is wrong, or right in ways we didn't plan
+        for, agents can take harmful actions. My work tries to find those
+        situations and figure out how to prevent them.
+      </p>
+      <p>
+        As models get better at reading their circumstances, I'm especially
+        interested in whether they can tell when they're being tested or
+        monitored, and whether our safeguards still hold when they can.
       </p>
     </section>
 
@@ -124,28 +132,38 @@ const interests = [
       <ul class="research-list">
         <li>
           <strong>AI control with Redwood Research.</strong> I studied how an
-          attacking agent’s choice of when to start or abandon an attack changes
+          attacking agent's choice of when to start or abandon an attack changes
           the apparent safety of control protocols. Selective attack policies
-          reduced measured safety by 20–28 percentage points at a 1% audit budget
-          across BashArena and LinuxArena. I co-developed the methodology and
-          designed and ran most experiments. Our
+          reduced measured safety by 20-28 percentage points at a 1% audit budget
+          across BashArena and LinuxArena, so control evaluations that use naive
+          attackers can overstate how safe a protocol is. I co-developed the
+          methodology, built evaluation infrastructure, and designed and ran
+          most experiments. Our
           <a href="/ideas/2026/paper-attack-selection/">co-first-author paper</a>
-          was accepted to NeurIPS 2026 and ICML 2026 workshops. The project began
-          through MARS 4.0 and continued on contract at Redwood.
+          was accepted at NeurIPS 2026 and at three ICML 2026 workshops. The
+          project began through MARS 4.0 and continued on contract at Redwood.
         </li>
         <li>
-          <strong>Agent evaluation and oversight with SPAR.</strong> I
+          <strong>Agent evaluation with SPAR.</strong> I built a harness for
+          measuring constraint violations in long-horizon coding tasks and
           co-developed and ran experiments on
           <a href="/ideas/2026/paper-asymmetric-goal-drift/">goal drift in coding agents</a>
           and <a href="/ideas/2026/paper-inherited-goal-drift/">the effects of inherited context</a>.
-          In Spring 2026, I contributed to the backend for a participant study on
-          human-AI oversight.
+          Agents broke system-prompt constraints more readily when those
+          constraints conflicted with values from their training, and agents
+          that resisted direct pressure still drifted after inheriting flawed
+          trajectories from weaker models. In Spring 2026, I contributed to the
+          backend for a participant study on human-AI oversight.
         </li>
         <li>
-          <strong>Interpretability at ARENA 7.0.</strong> In London, I used
-          activation patching, steering vectors, and path patching to study
-          <a href="/ideas/2026/llm-morality-mech-interp/">how moral fine-tuning changes attention pathways</a>
-          in Gemma-2-2b.
+          <strong>Interpretability at ARENA 7.0.</strong> In London, I
+          fine-tuned Gemma-2-2b with PPO and LoRA on an iterated prisoner's
+          dilemma, then used activation patching, path patching, and steering
+          vectors to study
+          <a href="/ideas/2026/llm-morality-mech-interp/">how moral fine-tuning changes the model</a>.
+          It reroutes attention pathways and leaves the selfish behavior in
+          place, which suggests safety from fine-tuning can be shallower than
+          it looks.
         </li>
       </ul>
       <a class="quiet-link" href="/research">research summaries, papers, and code →</a>
@@ -154,10 +172,13 @@ const interests = [
     <section aria-labelledby="background">
       <h2 id="background">My background</h2>
       <p>
-        Before moving into research, I spent seven years building production
-        software. Early results from AlphaFold helped draw me toward ML;
-        increasingly capable agents drew me toward questions about evaluation,
-        oversight, and control.
+        My undergraduate degree is in biomedical engineering. I ended up in
+        software, where I spent seven years working on consumer products,
+        enterprise search, and distributed services. Seeing the early results
+        from AlphaFold pushed me to study machine learning more seriously, and
+        I returned to school for Georgia Tech's MSCS. The engineering is still
+        a large part of how I do research. I build the harnesses and pipelines
+        my experiments run on, and I do most of that work with coding agents.
       </p>
 
       {background.map((group) => {
@@ -183,16 +204,10 @@ const interests = [
           </div>
         );
       })}
-
-      <p>
-        That engineering background still shapes how I work: I care about
-        whether an experimental harness is measuring what we think it is, and
-        whether someone else can reproduce the result.
-      </p>
     </section>
 
     <section aria-labelledby="interests">
-      <h2 id="interests">What I’m interested in</h2>
+      <h2 id="interests">What I'm interested in</h2>
       <ul class="interests">
         {interests.map((interest) => (
           <li class="interest">
