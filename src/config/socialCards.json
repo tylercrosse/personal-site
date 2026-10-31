@@ -1,21 +1,21 @@
 {
   "home": {
-    "eyebrow": "AI safety · machine learning · systems",
+    "eyebrow": "Alignment research · AE Studio",
     "title": "Tyler Crosse",
-    "description": "Machine learning and AI safety, from research experiments to production systems.",
+    "description": "Research Scientist at AE Studio studying AI alignment, agent behavior, and oversight.",
     "accent": "#268bd2",
     "motif": "orbit",
     "image": "/social/home.jpg",
-    "alt": "Tyler Crosse: machine learning and AI safety, from research experiments to production systems"
+    "alt": "Tyler Crosse, Research Scientist at AE Studio working on AI alignment"
   },
   "about": {
     "eyebrow": "About",
     "title": "Hi, I’m Tyler",
-    "description": "Machine learning and AI safety, from research experiments to production systems.",
+    "description": "Research Scientist at AE Studio studying AI alignment, agent behavior, and oversight.",
     "accent": "#2aa198",
     "motif": "portrait",
     "image": "/social/about.jpg",
-    "alt": "Portrait of Tyler Crosse with a short description of his AI safety and engineering background"
+    "alt": "Tyler Crosse, Research Scientist at AE Studio working on AI alignment"
   },
   "ideas": {
     "eyebrow": "Tyler Crosse",

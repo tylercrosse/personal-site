@@ -10,21 +10,26 @@ import {
 import { getIconForTopic } from "../utils/topicIcons";
 
 const topics = await getLiveTopicsWithCounts();
+const isHome = Astro.url.pathname.replace(import.meta.env.BASE_URL, "/").replace(/\/+$/, "") === "";
 ---
 
 <header>
   <nav>
-    <a href="/" class="logo"
+    <a
+      href="/"
+      class:list={["logo", { active: isHome }]}
+      aria-label="Home"
+      aria-current={isHome ? "page" : undefined}
       ><img
         style="width: 28px; height: 28px;"
         src="/img/favicons/favicon-96x96.png"
-        alt="Logo"
+        alt=""
       /></a
     >
     <div class="internal-links">
-      <HeaderLink href="/">Home</HeaderLink>
+      <HeaderLink href="/research">Research</HeaderLink>
       <div class="nav-item has-menu">
-        <HeaderLink href="/ideas">Ideas</HeaderLink>
+        <HeaderLink href="/ideas">Writing</HeaderLink>
         {
           topics.length > 0 && (
             <Fragment>
@@ -71,10 +76,10 @@ const topics = await getLiveTopicsWithCounts();
               </div>
               <div class="ideas-menu-footer">
                 <a href="/ideas" class="ideas-menu-all">
-                  Browse all ideas →
+                  Browse all writing →
                 </a>
                 <span class="ideas-menu-caption">
-                  Topic guides · auto-built from tags
+                  Explore by topic
                 </span>
               </div>
             </div>
@@ -165,12 +170,16 @@ const topics = await getLiveTopicsWithCounts();
     border-bottom-color: var(--accent);
   }
 
+  /* The logo doubles as the Home link; on the homepage it gets the same
+     accent underline as the active nav tab. */
   nav a.logo {
-    padding: 0;
-    margin: 0;
-    border-bottom: none;
+    padding: 0.55em 0.35em;
+    margin: 0 0 0 -0.35em;
     display: flex;
     align-items: center;
+  }
+  nav a.logo.active {
+    border-bottom-color: var(--accent);
   }
 
   .internal-links {
@@ -336,6 +345,12 @@ const topics = await getLiveTopicsWithCounts();
     background-color: rgba(255, 255, 255, 8%);
   }
 
+  @media (max-width: 420px) {
+    header { padding-inline: 0.5rem; }
+    nav a { padding-inline: 0.4em; font-size: 14px; }
+    .internal-links { gap: 0.1rem; }
+    .ideas-caret { padding-inline: 0.15rem; }
+  }
   @media (max-width: 720px) {
     .social-links {
       display: none;

@@ -1,0 +1,335 @@
+---
+import { getCollection } from "astro:content";
+import { Compass, Scale, ShieldAlert } from "lucide-astro";
+import BaseLayout from "../layouts/BaseLayout.astro";
+import ResearchCard from "../components/ResearchCard.astro";
+import socialCards from "../config/socialCards.json";
+import { getResearchProjects, getTalks } from "../utils/research";
+
+const slugOf = (id: string) => id.replace(/(\/index)?\.(md|mdx)$/, "");
+
+const papers = await getResearchProjects();
+const talks = await getTalks();
+const interpretability = (await getCollection("ideas")).find(
+  (post) => slugOf(post.id) === "2026/llm-morality-mech-interp",
+)!;
+
+const paperCard = (post: (typeof papers)[number]) => {
+  const research = post.data.research!;
+  return {
+    title: post.data.title,
+    description: post.data.description,
+    href: post.href,
+    image: post.data.image,
+    meta: [research.venue, research.role],
+    links: research.links,
+  };
+};
+
+const paperBySlug = (slug: string) => {
+  const post = papers.find((p) => slugOf(p.id) === `2026/${slug}`);
+  if (!post) throw new Error(`Research group references unknown paper: ${slug}`);
+  return paperCard(post);
+};
+
+// Grouped by theme rather than date. The first group's paper gets the feature card.
+const groups = [
+  {
+    label: "AI control",
+    icon: ShieldAlert,
+    papers: [paperBySlug("paper-attack-selection")],
+  },
+  {
+    label: "Goal drift",
+    icon: Compass,
+    papers: [paperBySlug("paper-asymmetric-goal-drift"), paperBySlug("paper-inherited-goal-drift")],
+  },
+  {
+    label: "Model behavior",
+    icon: Scale,
+    papers: [paperBySlug("paper-same-facts-different-updates"), paperBySlug("paper-offline-selectors")],
+  },
+];
+
+const groupedCount = groups.reduce((n, g) => n + g.papers.length, 0);
+if (groupedCount !== papers.length) {
+  throw new Error(`Research page groups ${groupedCount} of ${papers.length} papers`);
+}
+
+const projects = [
+  {
+    title: "Mechanistic interpretability of moral fine-tuning",
+    description:
+      "Using activation patching, steering vectors, and path patching to investigate how moral fine-tuning changes attention pathways in Gemma-2-2b.",
+    href: "/ideas/2026/llm-morality-mech-interp/",
+    image: interpretability.data.image,
+    type: "project",
+    meta: ["ARENA 7.0", "Draft write-up"],
+    note: "Capstone project; not submitted to a workshop.",
+    links: [{ label: "Code", href: "https://github.com/tylercrosse/LLM_morality" }],
+  },
+  {
+    title: "Towards Human-AI Complementarity for AI Safety",
+    description:
+      "Whether combining human and model judgments, which fail in different ways, gives a stronger oversight signal than either alone. I contributed to the backend for the participant study.",
+    type: "project",
+    // No artwork yet; this seed lands on a teal gradient that sits with the greens.
+    seed: "SPAR oversight",
+    meta: ["SPAR", "Spring 2026", "Co-author"],
+    links: [{ label: "Paper", href: "https://arxiv.org/abs/2610.24969" }],
+  },
+];
+---
+
+<BaseLayout
+  image={socialCards.home.image}
+  imageAlt={socialCards.home.alt}
+  title="Research"
+  description="Research on AI control, goal drift, model behavior, and scalable oversight by Tyler Crosse, Research Scientist at AE Studio."
+>
+  <header class="intro slide-in-block">
+    <h1>Research</h1>
+    <p class="lede">
+      Papers, projects, and talks on AI control, goal drift, and model behavior.
+      The full publication list is on
+      <a href="https://scholar.google.com/citations?user=RfFEQLMAAAAJ&hl=en&oi=ao">Google Scholar</a>.
+    </p>
+  </header>
+
+  <hr class="divider slide-in-block" />
+
+  <section class="block publications slide-in-block" aria-labelledby="publications-title">
+    <header class="section-header">
+      <h2 id="publications-title">Publications</h2>
+      <span class="section-note">{papers.length} papers · 2026</span>
+    </header>
+
+    {groups.map((group, index) => {
+      const GroupIcon = group.icon;
+      return (
+        <section class="paper-group" aria-label={group.label}>
+          <h3 class="group-label">
+            <GroupIcon size={14} aria-hidden="true" />
+            <span>{group.label}</span>
+          </h3>
+          <div class:list={["group-grid", { "group-grid--feature": index === 0 }]}>
+            {group.papers.map((paper) => (
+              <ResearchCard {...paper} variant={index === 0 ? "feature" : "compact"} />
+            ))}
+          </div>
+        </section>
+      );
+    })}
+  </section>
+
+  <section class="block slide-in-block" aria-labelledby="projects-title">
+    <header class="section-header">
+      <h2 id="projects-title">Research projects</h2>
+      <span class="section-note">Interpretability &amp; oversight</span>
+    </header>
+    <div class="group-grid">
+      {projects.map((project) => <ResearchCard {...project} />)}
+    </div>
+  </section>
+
+  <section class="block talks slide-in-block" aria-labelledby="talks-title">
+    <header class="section-header">
+      <h2 id="talks-title">Talks &amp; presentations</h2>
+    </header>
+    <div class="group-grid group-grid--three">
+      {talks.map((talk) => (
+        <ResearchCard
+          title={talk.title}
+          description={talk.description}
+          href={talk.href}
+          image={talk.image}
+          type="talk"
+          meta={talk.context.split(" · ")}
+        />
+      ))}
+    </div>
+  </section>
+
+  <p class="closing">
+    For technical notes and paper discussions, explore the
+    <a href="/ideas">writing archive</a>.
+  </p>
+</BaseLayout>
+
+<style>
+  /* Container, insets, and type scale mirror the homepage (src/pages/index.astro). */
+  :global(main) {
+    padding: 2rem 1.5rem 4rem;
+  }
+
+  @media (min-width: 768px) {
+    :global(main) {
+      padding: 3rem 2rem 5rem;
+    }
+  }
+
+  .intro,
+  .divider,
+  .block,
+  .closing {
+    max-width: 1200px;
+    margin-inline: auto;
+    box-sizing: border-box;
+  }
+
+  .intro {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 2.5rem;
+  }
+
+  h1 {
+    margin: 0;
+    font-family: var(--font-heading);
+    font-size: clamp(3rem, 7vw, 5rem);
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  /* Matches the Digital Garden header: title plus one line about the page. */
+  .lede {
+    max-width: 40rem;
+    margin: 0;
+    color: var(--sol-8);
+    font-size: clamp(1.05rem, 1.25vw, 1.2rem);
+    line-height: 1.55;
+  }
+
+  .divider {
+    border: none;
+    border-top: 1px solid var(--main-border-color);
+    margin-block: 0 2rem;
+  }
+
+  :global([data-effective-theme="dark"]) .divider {
+    border-top-color: var(--base03);
+  }
+
+  .block {
+    margin-bottom: 3.5rem;
+  }
+
+  .section-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.25rem 1rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .section-header h2 {
+    margin: 0;
+    font-family: var(--font-heading);
+    font-size: 1.35rem;
+    font-weight: 700;
+  }
+
+  .section-note {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    letter-spacing: 0.02em;
+    color: var(--sol-8);
+  }
+
+  @media (min-width: 1100px) {
+    .intro,
+    .section-header,
+    .group-label,
+    .closing {
+      padding-inline: 5rem;
+    }
+  }
+
+  .paper-group + .paper-group {
+    margin-top: 2.25rem;
+  }
+
+  .group-label {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin: 0 0 0.9rem;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--sol-7);
+  }
+
+  .group-label :global(svg) {
+    flex-shrink: 0;
+    opacity: 0.85;
+  }
+
+  .group-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  @media (min-width: 700px) {
+    .group-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .group-grid--feature {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (min-width: 1000px) {
+    .group-grid--three {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  .closing {
+    margin-top: 0;
+    color: var(--sol-8);
+    font-size: 0.95rem;
+  }
+
+  a:focus-visible {
+    outline: 2px solid var(--blue);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+
+  /* Entrance animation, matching the homepage. */
+  .slide-in-block {
+    opacity: 0;
+    filter: blur(8px);
+    transform: scale(0.98);
+    animation: slideInBlock 0.45s cubic-bezier(0.43, 0.195, 0.02, 1) forwards;
+  }
+
+  .intro.slide-in-block { animation-delay: 0.05s; }
+  .divider.slide-in-block { animation-delay: 0.15s; }
+  .publications.slide-in-block { animation-delay: 0.2s; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .slide-in-block {
+      opacity: 1;
+      filter: none;
+      transform: none;
+      animation: none;
+    }
+  }
+
+  @keyframes slideInBlock {
+    to {
+      opacity: 1;
+      filter: blur(0);
+      transform: scale(1);
+    }
+  }
+</style>

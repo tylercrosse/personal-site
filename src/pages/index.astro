@@ -1,28 +1,28 @@
 ---
-import { getCollection } from "astro:content";
+import { getCollection, type CollectionEntry } from "astro:content";
 import readingTime from "reading-time";
-import { ExternalLink, PenTool, Youtube } from "lucide-astro";
+import { ExternalLink, FileText, Youtube } from "lucide-astro";
 
 import BaseLayout from "../layouts/BaseLayout.astro";
 import PostCard from "../components/PostCard.astro";
 import SocialLinks from "../components/SocialLinks.astro";
-import CurrentlyList from "../components/CurrentlyList.astro";
+import { getResearchProjects, getTalks } from "../utils/research";
 import socialCards from "../config/socialCards.json";
 
+const slugOf = (id: string) => id.replace(/(\/index)?\.(md|mdx)$/, "");
+
 const posts = (await getCollection("ideas"))
-  .filter((post) => import.meta.env.DEV || !post.data.draft)
+  .filter((post) => !post.data.draft)
   .sort((a, b) => {
     const aDate = a.data.pubDate || a.data.date;
     const bDate = b.data.pubDate || b.data.date;
     return new Date(bDate || 0).valueOf() - new Date(aDate || 0).valueOf();
   });
 
-const allPostsData = posts.map((post) => {
-  const slug = post.id.replace(/(\/index)?\.(md|mdx)$/, "");
-  const stats = readingTime(post.body || "");
+function toCardData(post: CollectionEntry<"ideas">) {
   return {
     id: post.id,
-    slug,
+    slug: slugOf(post.id),
     title: post.data.title,
     description: post.data.description,
     date: post.data.pubDate || post.data.date,
@@ -31,16 +31,98 @@ const allPostsData = posts.map((post) => {
     tags: post.data.tags || [],
     image: post.data.image,
     draft: post.data.draft,
-    featured: post.data.featured,
-    readingTimeText: stats.text,
+    research: post.data.research,
+    readingTimeText: readingTime(post.body || "").text,
   };
-});
+}
 
-const featured = allPostsData.filter((p) => p.featured).slice(0, 3);
-const featuredIds = new Set(featured.map((p) => p.id));
-// Papers are already listed under Recent Work, so keep them out of Selected Posts
+const allPostsData = posts.map(toCardData);
+
+function getPost(slug: string) {
+  const post = allPostsData.find((candidate) => candidate.slug === slug);
+  if (!post) throw new Error(`Missing homepage selection: ${slug}`);
+  return post;
+}
+
+// Selected research: hand-picked, with shorter display titles than the paper titles.
+const lead = getPost("2026/paper-attack-selection");
+const goalDrift = getPost("2026/paper-asymmetric-goal-drift");
+const interpretability = getPost("2026/llm-morality-mech-interp");
+
+const paperLinks = (post: typeof lead) =>
+  (post.research?.links ?? []).filter((link) => link.label !== "Write-up");
+
+const showcase = {
+  post: {
+    ...lead,
+    title: "Attack selection in AI control",
+    description: "Control evaluations can overestimate safety when attackers choose when to act.",
+  },
+  meta: ["NeurIPS 2026", "Co-first author"],
+  highlight: "<strong>20–28 percentage-point drop</strong> in measured safety at a 1% audit budget across two environments.",
+  links: paperLinks(lead),
+};
+
+const rail = [
+  {
+    post: {
+      ...goalDrift,
+      title: "Goal drift under value conflict",
+      description: "Coding agents break explicit constraints more readily when those constraints oppose trained-in values.",
+    },
+    meta: ["ICLR 2026 workshops", "AI-WILD spotlight"],
+    links: paperLinks(goalDrift),
+  },
+  {
+    post: {
+      ...interpretability,
+      title: "Moral fine-tuning, under the hood",
+      description: "Investigating how moral fine-tuning changes attention pathways.",
+    },
+    meta: ["ARENA project", "Draft"],
+    links: [{ label: "Code", href: "https://github.com/tylercrosse/LLM_morality" }],
+  },
+];
+
+// Recent Work: the remaining papers plus talks.
+const research = await getResearchProjects();
+const highlightedSlugs = new Set([lead.slug, goalDrift.slug]);
+
+type WorkItem = {
+  title: string;
+  href: string;
+  meta: string;
+  source?: { label: string; href: string };
+};
+
+const otherPapers: WorkItem[] = research
+  .filter((post) => !highlightedSlugs.has(slugOf(post.id)))
+  .map((post) => {
+    const paper = post.data.research!.links.find((link) => link.label === "Paper");
+    return {
+      title: post.data.title,
+      href: post.href,
+      meta: `${post.data.research!.venue} · ${post.data.research!.role}`,
+      source: paper && { label: "Paper", href: paper.href },
+    };
+  });
+
+const talks: WorkItem[] = (await getTalks()).map(({ title, href, context }) => ({
+  title,
+  href,
+  meta: context,
+}));
+
+const recentWorkGroups = [
+  { heading: "More papers", icon: FileText, items: otherPapers },
+  { heading: "Talks & presentations", icon: Youtube, items: talks },
+];
+
+// Selected Posts: recent writing with one post per primary tag first, for breadth.
+// Papers already appear above, so keep them out.
+const shownSlugs = new Set([lead.slug, goalDrift.slug, interpretability.slug]);
 const recentCandidates = allPostsData.filter(
-  (p) => !featuredIds.has(p.id) && p.type !== "paper",
+  (p) => !shownSlugs.has(p.slug) && p.type !== "paper",
 );
 const notebookTargetCount = 8;
 
@@ -59,100 +141,6 @@ const notebook = [
     (post) => !diverseNotebook.some((candidate) => candidate.id === post.id),
   ),
 ].slice(0, notebookTargetCount);
-
-const themeItems = [
-  { label: "What makes systems honest?" },
-  { label: "How do we align systems?" },
-  { label: "How do we spot deception?" },
-  { label: "Which evals matter?" },
-  { label: "How do humans have oversight?" },
-];
-
-type WorkItem = {
-  title: string;
-  href: string;
-  meta: string;
-  external: boolean;
-  // Direct link to the paper itself when the title links to the on-site post
-  source?: { label: string; href: string };
-};
-
-type WorkGroup = {
-  heading: string;
-  icon: typeof PenTool;
-  items: WorkItem[];
-};
-
-const recentWorkGroups: WorkGroup[] = [
-  {
-    heading: "Writing & Papers",
-    icon: PenTool,
-    items: [
-      {
-        title: "Attack Selection in Agentic AI Control Evaluations Meaningfully Decreases Safety",
-        href: "/ideas/2026/paper-attack-selection/",
-        meta: "Paper, ICML 2026 AI4GOOD, AI-WILD, and FAGEN, Jun 2026",
-        external: false,
-        source: { label: "arXiv", href: "https://arxiv.org/abs/2606.06529" },
-      },
-      {
-        title: "When Offline Selectors Cannot Beat the Best Single Model: A Diagnostic Study on edX Dropout Prediction",
-        href: "/ideas/2026/paper-offline-selectors/",
-        meta: "Paper, ICML 2026 DEMO Workshop, Jun 2026",
-        external: false,
-        source: { label: "arXiv", href: "https://arxiv.org/abs/2606.04161" },
-      },
-      {
-        title: "Same Facts, Different Updates: Inference Setup Shapes LLM Behavior in Medical Allocation",
-        href: "/ideas/2026/paper-same-facts-different-updates/",
-        meta: "Paper, ICML 2026 AI4GOOD + Pluralistic Alignment Workshops, May 2026",
-        external: false,
-        source: {
-          label: "OpenReview",
-          href: "https://openreview.net/forum?id=z06of44TcG",
-        },
-      },
-      {
-        title: "Attack Selection in Agentic AI Control Evals Can Decrease Safety",
-        href: "https://www.lesswrong.com/posts/WuKDzJxtiqcA9ZZRH",
-        meta: "Essay, LessWrong, Apr 2026",
-        external: true,
-      },
-      {
-        title: "Asymmetric Goal Drift in Coding Agents Under Value Conflict",
-        href: "/ideas/2026/paper-asymmetric-goal-drift/",
-        meta: "Paper, AI-WILD Workshop at ICLR 2026, Mar 2026",
-        external: false,
-        source: { label: "arXiv", href: "https://arxiv.org/abs/2603.03456" },
-      },
-      {
-        title: "Inherited Goal Drift: Contextual Pressure Can Undermine Agentic Goals",
-        href: "/ideas/2026/paper-inherited-goal-drift/",
-        meta: "Paper, AI-WILD Workshop at ICLR 2026, Mar 2026",
-        external: false,
-        source: { label: "arXiv", href: "https://arxiv.org/abs/2603.03258" },
-      },
-    ],
-  },
-  {
-    heading: "Talks",
-    icon: Youtube,
-    items: [
-      {
-        title: "Hierarchical Reasoning Models",
-        href: "/ideas/2025/hierarchical-reasoning-models/",
-        meta: "Talk, Latent Space Paper Club, Sep 2025",
-        external: false,
-      },
-      {
-        title: "Language Diffusion Survey",
-        href: "/ideas/2025/language-diffusion-survey/",
-        meta: "Talk, Latent Space Paper Club, May 2025",
-        external: false,
-      },
-    ],
-  },
-];
 ---
 
 <BaseLayout
@@ -164,35 +152,39 @@ const recentWorkGroups: WorkGroup[] = [
   <section class="profile slide-in-block">
     <div class="profile-main">
       <h1 class="profile-name">Tyler Crosse</h1>
+      <p class="profile-role">Research Scientist at AE Studio</p>
       <p class="profile-bio">
-        I work on machine learning and AI safety, from research experiments to
-        production systems.
-        <br />Georgia Tech MSCS. 7+ years building production software and
-        leading teams.
+        I study when models depart from human intent, and how to evaluate and
+        oversee their behavior.
       </p>
       <SocialLinks showRss={false} />
     </div>
-    <CurrentlyList heading="Themes" items={themeItems} />
   </section>
 
   <hr class="divider slide-in-block" />
 
-  {featured.length > 0 && (
-    <section class="showcase slide-in-block" aria-label="Featured posts">
-      <div class="showcase-hero">
-        <PostCard post={featured[0]} variant="showcase" />
-      </div>
-      <div class="showcase-rail">
-        {featured.slice(1, 3).map((post) => (
-          <PostCard post={post} variant="compact" />
-        ))}
-      </div>
-    </section>
-  )}
+  <section class="showcase slide-in-block" aria-label="Selected research">
+    <div class="showcase-hero">
+      <PostCard
+        post={showcase.post}
+        variant="showcase"
+        meta={showcase.meta}
+        highlight={showcase.highlight}
+        links={showcase.links}
+        eager
+      />
+    </div>
+    <div class="showcase-rail">
+      {rail.map((item) => (
+        <PostCard post={item.post} variant="compact" meta={item.meta} links={item.links} />
+      ))}
+    </div>
+  </section>
 
   <section class="recent-work slide-in-block" aria-labelledby="recent-work-title">
-    <header class="recent-work-header">
+    <header class="section-header">
       <h2 id="recent-work-title">Recent Work</h2>
+      <a href="/research" class="section-all">all research →</a>
     </header>
     <div class="recent-work-grid">
       {recentWorkGroups.map((group) => {
@@ -206,25 +198,8 @@ const recentWorkGroups: WorkGroup[] = [
             <ul class="work-list">
               {group.items.map((item) => (
                 <li class="work-item">
-                  <a
-                    href={item.href}
-                    class="work-link"
-                    target={item.external ? "_blank" : undefined}
-                    rel={item.external ? "noopener noreferrer" : undefined}
-                  >
-                    <span class="work-title-row">
-                      <span class="work-title">{item.title}</span>
-                      {item.external && (
-                        <>
-                          <ExternalLink
-                            class="work-link-icon"
-                            size={14}
-                            aria-hidden="true"
-                          />
-                          <span class="sr-only">opens in a new tab</span>
-                        </>
-                      )}
-                    </span>
+                  <a href={item.href} class="work-link">
+                    <span class="work-title">{item.title}</span>
                   </a>
                   <p class="work-meta">
                     {item.meta}
@@ -238,11 +213,7 @@ const recentWorkGroups: WorkGroup[] = [
                           rel="noopener noreferrer"
                         >
                           {item.source.label}
-                          <ExternalLink
-                            class="work-link-icon"
-                            size={11}
-                            aria-hidden="true"
-                          />
+                          <ExternalLink class="work-link-icon" size={11} aria-hidden="true" />
                           <span class="sr-only">opens in a new tab</span>
                         </a>
                       </>
@@ -257,10 +228,10 @@ const recentWorkGroups: WorkGroup[] = [
     </div>
   </section>
 
-  <section class="notebook slide-in-block" aria-label="Selected writing">
-    <header class="notebook-header">
-      <h2>Selected Posts</h2>
-      <a href="/ideas" class="notebook-all">all ideas →</a>
+  <section class="notebook slide-in-block" aria-labelledby="notebook-title">
+    <header class="section-header">
+      <h2 id="notebook-title">Selected Posts</h2>
+      <a href="/ideas" class="section-all">all writing →</a>
     </header>
     <div class="notebook-grid">
       {notebook.map((post) => (
@@ -269,7 +240,6 @@ const recentWorkGroups: WorkGroup[] = [
     </div>
   </section>
 </BaseLayout>
-
 <style>
   :global(main) {
     padding: 2rem 1.5rem 4rem;
@@ -322,6 +292,17 @@ const recentWorkGroups: WorkGroup[] = [
     font-weight: 700;
   }
 
+  .profile-role {
+    margin: 0 0 -0.5rem;
+    color: var(--sol-10);
+    font-size: clamp(1.1rem, 1.4vw, 1.3rem);
+    line-height: 1.4;
+  }
+
+  :global([data-effective-theme="dark"]) .profile-role {
+    color: var(--sol-5);
+  }
+
   .profile-bio {
     margin: 0;
     color: var(--sol-8);
@@ -353,15 +334,37 @@ const recentWorkGroups: WorkGroup[] = [
     box-sizing: border-box;
   }
 
-  .recent-work-header {
+  .section-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
     margin-bottom: 1.25rem;
   }
 
-  .recent-work-header h2 {
+  .section-header h2 {
     font-family: var(--font-heading);
     font-size: 1.35rem;
     font-weight: 700;
     margin: 0;
+  }
+
+  .section-all {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: var(--sol-8);
+    text-decoration: none;
+    letter-spacing: 0.02em;
+  }
+
+  .section-all:hover {
+    color: var(--sol-9);
+  }
+
+  .section-all:focus-visible {
+    outline: 2px solid var(--blue);
+    outline-offset: 3px;
+    border-radius: 2px;
   }
 
   .recent-work-grid {
@@ -447,10 +450,6 @@ const recentWorkGroups: WorkGroup[] = [
     transition:
       color 0.2s ease,
       text-decoration-color 0.2s ease;
-  }
-
-  .work-title-row {
-    display: inline;
   }
 
   .work-link-icon {
@@ -546,35 +545,6 @@ const recentWorkGroups: WorkGroup[] = [
     margin: 0 auto;
   }
 
-  .notebook-header {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    margin-bottom: 1.25rem;
-    gap: 1rem;
-    padding-inline: 0;
-    box-sizing: border-box;
-  }
-
-  .notebook-header h2 {
-    font-family: var(--font-heading);
-    font-size: 1.35rem;
-    font-weight: 700;
-    margin: 0;
-  }
-
-  .notebook-all {
-    font-family: var(--font-mono);
-    font-size: 0.8rem;
-    color: var(--sol-8);
-    text-decoration: none;
-    letter-spacing: 0.02em;
-  }
-
-  .notebook-all:hover {
-    color: var(--sol-9);
-  }
-
   .notebook-grid {
     display: grid;
     grid-template-columns: 1fr;
@@ -594,7 +564,7 @@ const recentWorkGroups: WorkGroup[] = [
   }
 
   @media (min-width: 1100px) {
-    .notebook-header {
+    .notebook .section-header {
       padding-inline: 5rem;
     }
   }
@@ -622,6 +592,15 @@ const recentWorkGroups: WorkGroup[] = [
   }
   .notebook.slide-in-block {
     animation-delay: 0.35s;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .slide-in-block {
+      opacity: 1;
+      filter: none;
+      transform: none;
+      animation: none;
+    }
   }
 
   @keyframes slideInBlock {

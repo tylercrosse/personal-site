@@ -125,6 +125,7 @@ const hierarchicalPosts = allPostsData
       cursor: pointer;
       background: rgba(var(--gray-light), 0.8);
     }
+    .filters summary { cursor: pointer; min-height: 44px; padding: 0.5rem 0; color: var(--sol-1); }
     .tag-list {
       display: flex;
       flex-wrap: wrap;
@@ -757,17 +758,17 @@ const hierarchicalPosts = allPostsData
   <header class="slide-in-block">
     <div class="hero">
       <h1>Digital Garden</h1>
-      <p>The notes, thoughts, and projects I've been working on.</p>
+      <p>Research notes, technical projects, and things I’m learning. For papers and contributions, start with <a href="/research">selected research</a>.</p>
     </div>
 
     <div class="js-required">
       <div class="select-filters">
         <button class="active" id="all-tags">All Topics</button>
-        <select id="type-filter">
+        <select id="type-filter" aria-label="Filter by writing type">
           <option value="all">All types</option>
           {allTypes.map((type) => <option value={type}>{capitalize(type || '')}</option>)}
         </select>
-        <select id="status-filter">
+        <select id="status-filter" aria-label="Filter by completion status">
           <option value="all">All statuses</option>
           {
             allStatuses.map((status) => (
@@ -785,7 +786,8 @@ const hierarchicalPosts = allPostsData
         </div>
       </div>
 
-      <div class="filters" data-pagefind-ignore>
+      <details class="filters" data-pagefind-ignore>
+        <summary>Browse topics</summary>
         <ul class="tag-list">
           {
             groupedTags.map(({ group, tags }) => (
@@ -800,7 +802,7 @@ const hierarchicalPosts = allPostsData
             ))
           }
         </ul>
-      </div>
+      </details>
     </div>
   </header>
 
@@ -1275,6 +1277,7 @@ const hierarchicalPosts = allPostsData
         if (matchingButton) {
           tagButtons.forEach((btn) => btn.classList.remove("active"));
           allTagsButton?.classList.remove("active");
+          matchingButton.closest("details")?.setAttribute("open", "");
           matchingButton.classList.add("active");
           activeTag = urlTag;
           filterPosts();
