@@ -5,6 +5,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 import ResearchCard from "../components/ResearchCard.astro";
 import socialCards from "../config/socialCards.json";
 import { getResearchProjects, getTalks } from "../utils/research";
+import twinTrees from "../assets/research/Ancient_Trees_Over_Alpine_Lake.png";
 
 const slugOf = (id: string) => id.replace(/(\/index)?\.(md|mdx)$/, "");
 
@@ -73,8 +74,10 @@ const projects = [
     description:
       "Whether combining human and model judgments, which fail in different ways, gives a stronger oversight signal than either alone. I contributed to the backend for the participant study.",
     type: "project",
-    // No artwork yet; this seed lands on a teal gradient that sits with the greens.
-    seed: "SPAR oversight",
+    image: {
+      path: twinTrees,
+      alt: "Painting of two old trees, one red-brown and one weathered silver, twisted together on a rocky slope above an alpine lake under a blue sky",
+    },
     meta: ["SPAR", "Spring 2026", "Co-author"],
     links: [{ label: "Paper", href: "https://arxiv.org/abs/2610.24969" }],
   },
