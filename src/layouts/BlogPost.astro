@@ -52,6 +52,7 @@ const {
   research,
   series,
   cite,
+  citeKey,
   license,
   credits,
 } = Astro.props;
@@ -568,6 +569,7 @@ const postTopics = [...topicsForPost.values()];
         pubDate={pubDate}
         url={postUrl.href}
         cite={cite}
+        citeKey={citeKey}
         license={license}
         credits={credits}
       />

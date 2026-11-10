@@ -24,11 +24,13 @@ interface Props {
   pubDate?: Date;
   url: string;
   cite?: boolean;
+  /** Overrides the default crosse<year><first title word> BibTeX key. */
+  citeKey?: string;
   license?: boolean;
   credits?: Credit[];
 }
 
-const { title, pubDate, url, cite, license, credits } = Astro.props;
+const { title, pubDate, url, cite, citeKey, license, credits } = Astro.props;
 
 const showCite = Boolean(cite);
 // Opting into a citation opts into the licence unless it is explicitly disabled.
@@ -43,7 +45,7 @@ const date = pubDate ?? new Date();
 const year = date.getFullYear();
 const monthShort = date.toLocaleDateString("en-US", { month: "short" });
 const firstWord = (title.match(/[A-Za-z0-9]+/g)?.[0] ?? "post").toLowerCase();
-const bibKey = `crosse${year}${firstWord}`;
+const bibKey = citeKey ?? `crosse${year}${firstWord}`;
 const citationLine = `Crosse, Tyler. (${monthShort} ${year}). ${title}. tylercrosse.com. ${url}.`;
 const bibtex = `@article{${bibKey},
   title   = {${title}},

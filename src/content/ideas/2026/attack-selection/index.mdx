@@ -9,7 +9,8 @@ draft: true
 # Nests this post under the paper: series links on both pages, the paper's
 # research card, and grouping on the ideas index / topic pages. Draft-safe.
 parent: '2026/paper-attack-selection'
-# TODO(publish): decide on `cite: true` (companion is sole-authored, but explains a co-authored paper).
+cite: true
+citeKey: crosse2026attackselection
 image:
   path: "./heron-waiting.png"
   alt: "Watercolor of a grey heron standing still among reeds and yellow iris at the edge of a lily pond, watching two small fish just below the surface"
@@ -36,7 +37,7 @@ import UpfrontAuditPanel from "../../../../components/ideas/attack-selection/Upf
 
 Most AI control evaluations assume the attacker doesn't think carefully about when to attack. The red team attacks on some fixed fraction of tasks, without asking whether a given task is a good opportunity. A capable misaligned model wouldn't behave that way. It would wait for cover, and back off when things started to look suspicious.
 
-This year we published a paper that tests what happens when you give the attacker that kind of judgment. It's called *Attack Selection in Agentic AI Control Evaluations Meaningfully Decreases Safety* [@gewang2026attack]. I did it with Cath Ge-Wang, my co-first author, along with Ben Hadad and others, mentored by Tyler Tracy at Redwood Research. The short answer is that selection matters a lot. When humans can review only the most suspicious 1% of the model's work, simple prompted selection policies cut measured safety by about 20 to 28 percentage points, in two different agentic environments.
+This year we published a paper that tests what happens when you give the attacker that kind of judgment. It's called *Attack Selection in Agentic AI Control Evaluations Meaningfully Decreases Safety* [Ge-Wang & Crosse et al., -@gewang2026attack]. Cath Ge-Wang and I were co-first authors, working with Ben Hadad and others and mentored by Tyler Tracy at Redwood Research. The short answer is that selection matters a lot. When humans can review only the most suspicious 1% of the model's work, simple prompted selection policies cut measured safety by about 20 to 28 percentage points, in two different agentic environments.
 
 Rather than summarize the paper, this post tries to build the intuition that made the results feel obvious to me in hindsight. Almost everything in it can be understood through one picture, which shows two score distributions and a threshold. Once that picture makes sense, the safety curves, the start and stop policies, the appendix math and a few follow-up ideas all fall out of it.
 
@@ -226,7 +227,7 @@ This part widens the view in three directions. It follows selection over a whole
 
 ### Safety over a whole deployment
 
-Everything so far is about single attack attempts. A fair question is whether a selective attacker, who attacks less often, is really more dangerous over a whole deployment. Appendix A of the paper answers that with a small Markov model [@gewang2026attack].
+Everything so far is about single attack attempts. A fair question is whether a selective attacker, who attacks less often, is really more dangerous over a whole deployment. Appendix A of the paper answers that with a small Markov model [Ge-Wang & Crosse et al., -@gewang2026attack].
 
 On each of $N$ tasks, one of three things happens. The attacker gets caught (probability $g_\text{caught}$), succeeds uncaught ($g_\text{uncaught}$), or nothing decisive happens ($g_\text{cont}$). The blue team is safe if nothing decisive ever happens, or if a catch comes before an uncaught success.
 

@@ -72,6 +72,9 @@ const ideas = defineCollection({
         // pieces — never for the multi-author `paper` posts, whose citation
         // belongs to the venue and full author list.
         cite: z.boolean().optional(),
+        // Optional BibTeX key for that block. Defaults to crosse<year><first title
+        // word>; set this when the first word is filler ("How…", "The…").
+        citeKey: z.string().regex(/^[A-Za-z0-9_:-]+$/).optional(),
         // Show the CC BY 4.0 license line. Defaults to `cite` when omitted, so
         // opting into a citation opts into the licence too; set false to suppress.
         license: z.boolean().optional(),
