@@ -21,6 +21,7 @@ import Table from "../../../../components/Table.astro";
 import DistributionFigure from "../../../../components/ideas/attack-selection/DistributionFigure.astro";
 import RocCurveFigure from "../../../../components/ideas/attack-selection/RocCurveFigure.astro";
 import SafetyCurveFigure from "../../../../components/ideas/attack-selection/SafetyCurveFigure.astro";
+import RocToSafetyFigure from "../../../../components/ideas/attack-selection/RocToSafetyFigure.astro";
 import ThresholdRocWidget from "../../../../components/ideas/attack-selection/ThresholdRocWidget.jsx";
 import SelectionExplorer from "../../../../components/ideas/attack-selection/SelectionExplorer.jsx";
 import RocPanel from "../../../../components/ideas/attack-selection/RocPanel.jsx";
@@ -149,7 +150,17 @@ $$
 
 When every uncaught attack succeeds ($p = 1$), safety equals the TPR. A lower $p$ pushes safety above the TPR, because some attacks that slip past the monitor fail on their own. For example, a TPR of 50% with $p$ = 70% gives safety of about 59%. Safety always rises with the TPR, so from here on I'll mostly talk about the caught rate.
 
-This also tells us what the safety curves in the paper are. Pick an audit budget, find the TPR at that budget on the ROC curve, and convert it to safety with the formula above. Doing that for every budget gives a safety-versus-audit-budget curve, which is the ROC curve from [fig:roc-curve] with its y-axis relabeled from caught rate to safety. Because safety rises with the TPR, anything that moves the ROC curve moves the safety curve in the same direction. [fig:safety-curve], in the next section, shows a safety curve for the toy model.
+This also tells us what the safety curves in the paper are. Pick an audit budget, find the TPR at that budget on the ROC curve, and convert it to safety with the formula above. Doing that for every budget gives a safety-versus-audit-budget curve, which is the ROC curve from [fig:roc-curve] with its y-axis relabeled from caught rate to safety. Because safety rises with the TPR, anything that moves the ROC curve moves the safety curve in the same direction. [fig:roc-to-safety] shows that relabeling for the toy model, and [fig:safety-curve], in the next section, puts a selective attacker's curve next to it.
+
+{/* NEW PROSE (review): the sentence above was extended to introduce the ROC → safety figure. */}
+<RocToSafetyFigure id="roc-to-safety" />
+
+{/* NEW PROSE (review): ROC vs safety curves in the literature, and why the paper reports safety. */}
+Control papers don't all present results the same way. Work that evaluates monitors on their own tends to report ROC-style numbers, like AUROC or the true-positive rate at a fixed false-positive rate. SHADE-Arena, for example, reports how well monitors separate benign from malign transcripts as an AUC [@kutasov2025shade]. Work that evaluates whole protocols tends to report safety, often traded off against usefulness, as the original control paper does [@greenblatt2023control].
+
+We report safety curves for three reasons. Safety is the quantity a control evaluation is actually about: how often the blue team wins. It also counts attacks that fail on their own, which matters for our stop policy in particular. Stopping an attack early often keeps its side task from succeeding, so a stop policy can lower the caught rate without handing the red team a win. A ROC curve would score that as a pure loss for the blue team, and a safety curve doesn't. Reporting safety also keeps our numbers comparable with the protocol work we build on.
+
+The ROC view still earns its place. It isolates the monitor from everything else in the evaluation, so it doesn't depend on how often attacks succeed, which makes it the better way to compare monitors across settings. And because safety is the caught rate passed through a fixed map, as [fig:roc-to-safety] shows, the two views agree on which monitor is better at a given budget, as long as attacks succeed equally often against both. When a paper reports only one view and gives the side-task success rate, you can convert between them.
 
 ## What attack selection does
 
