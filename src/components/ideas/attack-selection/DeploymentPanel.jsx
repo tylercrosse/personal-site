@@ -20,8 +20,8 @@ import {
 } from "./chartKit";
 
 // Deployment safety over N tasks (paper Appendix A, Eq. 4) for an attacker
-// that attacks every opportunity vs. one that attacks only the share its
-// selector keeps. Caught rates and side-task success come from the explorer.
+// that attacks at a fixed rate with no selection vs. one that attacks only
+// the share its selector keeps. Caught rates and side-task success come from the explorer.
 
 const NS = logSpace(1, 6, 100);
 
@@ -62,20 +62,20 @@ export default function DeploymentPanel() {
       <div className="as-split">
       <div className="as-side" ref={sideRef}>
       <div className="as-controls">
-        <Slider label="opportunities per task" valueChars={8} value={rateExp} min={-5} max={-1} step={0.05}
+        <Slider label="attack rate (no selection)" valueChars={8} value={rateExp} min={-5} max={-1} step={0.05}
           onChange={setRateExp} display={fmtRate(rate)} />
         <Slider label="deployment length N" value={nExp} min={1} max={6} step={0.05}
           onChange={setNExp} display={fmtCount(n)} />
       </div>
 
       <div className="as-stats" aria-live="polite">
-        <Stat label="decisive attempts, all → selective" value={`${fmtAttempts(all.expectedAttempts(n))} → ${fmtAttempts(sel.expectedAttempts(n))}`} />
+        <Stat label="expected decisive attempts, all → selective" value={`${fmtAttempts(all.expectedAttempts(n))} → ${fmtAttempts(sel.expectedAttempts(n))}`} />
         <Stat label="deployment safety S_N" value={`${pct(all.safety(n))} → ${pct(sel.safety(n))}`} color={INK.kept} />
         <Stat label="long-run limit (the ratio)" value={`${pct(all.ratio)} → ${pct(sel.ratio)}`} />
       </div>
 
       <div className="as-legend">
-        <span><Swatch color={INK.all} dashed />attacks every opportunity</span>
+        <span><Swatch color={INK.all} dashed />no selection</span>
         <span><Swatch color={INK.kept} width={3} />selective attacker</span>
         <span><Swatch color={INK.honest} dashed width={1.2} />long-run limits</span>
       </div>
@@ -101,9 +101,9 @@ export default function DeploymentPanel() {
       </div>
 
       <p className="as-note">
-        Uses the caught rates and side-task success from the explorer above; the selective attacker attempts
-        only the share of opportunities its selector keeps. Drop the opportunity rate until expected attempts
-        fall near one: at small N the selective attacker looks safer, because the deployment often ends with
+        Caught rates and side-task success come from the explorer above, and the selective attacker attempts
+        only the share of attacks its selector keeps. Drop the attack rate until expected attempts
+        fall near one. At small N the selective attacker looks safer, because the deployment often ends with
         nothing decisive. Raise N and both curves settle onto their ratios.
       </p>
     </section>

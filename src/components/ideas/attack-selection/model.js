@@ -170,7 +170,7 @@ export const optimalRate = (auditShare, n) =>
 
 /** Scenario presets from the artifact (random fixed to truly random). */
 export const PRESETS = {
-  paper: { label: "Prompted selector", keep: 0.3, noise: 0.8, sigma: 1 },
+  paper: { label: "Noisy selector", keep: 0.3, noise: 0.8, sigma: 1 },
   none: { label: "No selection", keep: 1, noise: 0.8, sigma: 1 },
   perfect: { label: "Near-perfect selector", keep: 0.15, noise: 0.15, sigma: 1 },
   random: { label: "Random (control)", keep: 0.3, noise: Infinity, sigma: 1 },

@@ -66,8 +66,8 @@ const title = selection
 const caption =
   Astro.props.caption ??
   (selection
-    ? `Toy model: honest scores ~ Normal(0, 1), attack scores ~ Normal(2.3, 1.1). The selector keeps the ${pct(keep)} of attacks it predicts will score lowest, from a noisy (σ = ${noise}) read of each score.`
-    : "Toy model: honest scores ~ Normal(0, 1), attack scores ~ Normal(2.3, 1.1). The audit threshold τ sits where the top 1% of honest scores begin; every attack above it gets caught.");
+    ? `Toy model: honest scores ~ Normal(0, 1), attack scores ~ Normal(2.3, 1.1). The selector keeps the ${pct(keep)} of attacks it predicts will score lowest, from a noisy read of each score (selector noise ${noise}, as in the explorer).`
+    : "Toy model: honest scores ~ Normal(0, 1), attack scores ~ Normal(2.3, 1.1). The audit threshold τ sits where the top 1% of honest scores begin, and every attack above it gets caught.");
 
 const alt = selection
   ? `Score distributions with the audit threshold at the top ${fmtBudget(budget)} of honest scores. ${pct(caughtAll)} of all attacks sit above τ, but only ${pct(caughtKept)} of the attacks a selector keeps, which bunch up in the overlap with honest work.`

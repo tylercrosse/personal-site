@@ -227,10 +227,10 @@ export default function ThresholdRocWidget() {
       </div>
 
       <p className="as-note">
-        The point on the right is the threshold on the left: its x is the orange area (honest work above τ)
+        The point on the right is the threshold on the left. Its x is the orange area (honest work above τ)
         and its y is the green area (attacks above τ). Drag τ left and both areas grow, so the point climbs
         toward the top-right. The faint dots are the table's five rows. On the linear axis, budgets from 0.1%
-        to 5% are crammed against the left edge; switch to log to spread them out.
+        to 5% are crammed against the left edge. Switch to log to spread them out.
       </p>
     </section>
   );

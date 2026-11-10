@@ -23,7 +23,7 @@ const {
   id,
   numbered = true,
   sideTaskSuccess: p = 0.7,
-  caption = "The log-scale ROC curve from Figure 2 (solid) and the safety curve it becomes (dashed), for the toy model with side-task success p = 70%. The mapping never reorders points, so the curve keeps its shape and only lifts; with p = 1 the two curves coincide.",
+  caption = "The log-scale ROC curve from Figure 2 (solid) and the safety curve it becomes (dashed), for the toy model with side-task success p = 70%. The conversion never reorders points, so the safety curve rises wherever the ROC curve does, only higher. With p = 1 the two curves coincide.",
 } = Astro.props;
 
 const W = 800;
@@ -51,7 +51,7 @@ const alt = `Two curves against audit budget on a log axis: the toy monitor's RO
 
 <SvgFigure id={id} alt={alt} caption={caption} numbered={numbered} maxWidth={800}>
   <svg viewBox={`0 0 ${W} ${H}`} width="100%" aria-hidden="true" class="as-figure">
-    <text x="24" y="28" fill={C.text} font-size="20" font-weight="650">The safety curve is the ROC curve, relabeled</text>
+    <text x="24" y="28" fill={C.text} font-size="20" font-weight="650">The safety curve is the ROC curve, converted to safety</text>
     <text x="24" y="52" fill={C.muted} font-size="15">
       Same x-axis. Each caught rate lifts to TPR / (TPR + (1 − TPR)·p), with p = {pct(p)}.
     </text>
@@ -69,6 +69,7 @@ const alt = `Two curves against audit budget on a log axis: the toy monitor's RO
     <text x={PAD.l + innerW / 2} y={H - 8} fill={C.muted} font-size="15" text-anchor="middle">
       Audit budget = false-positive rate (log scale)
     </text>
+    <text transform={`translate(18 ${PAD.t + innerH / 2}) rotate(-90)`} fill={C.muted} font-size="15" text-anchor="middle">Caught rate or safety</text>
 
     <path d={linePath(rocPts)} fill="none" stroke={C.text} stroke-width="2.4" />
     <path d={linePath(safetyPts)} fill="none" stroke={C.dim} stroke-width="2.4" stroke-dasharray="7 5" />
@@ -87,7 +88,7 @@ const alt = `Two curves against audit budget on a log axis: the toy monitor's RO
       );
     })}
 
-    <text x={sx(0.05)} y={sy(0.3)} fill={C.text} font-size="16">ROC curve: caught rate</text>
+    <text x={r(sx(0.03) + 10)} y={r(sy(tpr(0.03)) + 30)} fill={C.text} font-size="16">ROC curve: caught rate</text>
     <text x={sx(4e-4)} y={sy(safety(4e-4)) - 14} fill={C.muted} font-size="16" text-anchor="middle">Safety</text>
   </svg>
 </SvgFigure>

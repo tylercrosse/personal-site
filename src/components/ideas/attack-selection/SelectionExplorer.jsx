@@ -259,16 +259,15 @@ export default function SelectionExplorer() {
       </div>
 
       <p className="as-note">
-        By default each curve is scaled to the same area, so attacks look as common as honest work. That
-        makes the shapes easy to compare, but in a real deployment attacks are rare. Switch to <em>by
-        count</em> to see a realistic mix at the chosen prevalence: the attack curve shrinks to a sliver, and
-        the kept curve shrinks further because the selector attacks less often. The log view makes that
-        sliver visible again. τ and every rate stay the same in all three views, because the caught rate and
+        By default each curve is scaled to the same area, which makes the shapes easy to compare but makes
+        attacks look as common as honest work. Switch to <em>by count</em> to see a realistic mix at the
+        chosen prevalence. The attack curve shrinks to a sliver, and the kept curve shrinks further because
+        the selector attacks less often. The log view makes the sliver visible again. τ and every rate stay the same in all three views, because the caught rate and
         the false-positive rate are each measured within their own class.
       </p>
       <p className="as-note">
         Toy model: honest scores ~ Normal(0, σ), attack scores ~ Normal(2.3, 1.1). The selector reads each
-        attack's score through Gaussian noise and keeps the share it predicts will score lowest; the random
+        attack's score through Gaussian noise and keeps the share it predicts will score lowest. The random
         control keeps a random share, so the shape doesn't change.
       </p>
     </section>

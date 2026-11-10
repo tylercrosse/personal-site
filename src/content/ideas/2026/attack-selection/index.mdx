@@ -37,13 +37,11 @@ import UpfrontAuditPanel from "../../../../components/ideas/attack-selection/Upf
   joins them.
 */}
 
-Most AI control evaluations give little thought to when the attacker attacks. Some red teams use a simple rule to skip bad opportunities, but many just attack on a fixed fraction of tasks, without asking whether a given task is a good opportunity [@kaufman2025basharena]. {/* NEW PROSE (review) */} A capable misaligned model wouldn't behave that way [@shlegeris2025conservative]. It would wait for cover, and back off when things started to look suspicious.
+Most AI control evaluations give little thought to when the attacker attacks. Some red teams use a simple rule to skip bad opportunities, but many just attack on a fixed fraction of tasks, chosen at random [@kaufman2025basharena]. {/* NEW PROSE (review) */} A capable misaligned model wouldn't behave that way [@shlegeris2025conservative]. It would wait for cover, and back off when things started to look suspicious.
 
-This year we published a paper that tests what happens when you give the attacker that kind of judgment. It builds on a single-step study of the same question [@schaeffer2026concentrated] and moves it to agentic environments. {/* NEW PROSE (review) */} It's called *Attack Selection in Agentic AI Control Evaluations Meaningfully Decreases Safety* [Ge-Wang & Crosse et al., -@gewang2026attack]. Cath Ge-Wang and I were co-first authors, working with Ben Hadad and others and mentored by Tyler Tracy at Redwood Research. The short answer is that selection matters a lot. When humans can review only the most suspicious 1% of the model's work, simple prompted selection policies cut measured safety by about 20 to 28 percentage points, in two different agentic environments.
+This year we published a paper that tests what happens when you give the attacker that kind of judgment. It's called *Attack Selection in Agentic AI Control Evaluations Meaningfully Decreases Safety* [Ge-Wang & Crosse et al., -@gewang2026attack], and it extends a single-step study of the same question [@schaeffer2026concentrated] to agentic environments. {/* NEW PROSE (review) */} Cath Ge-Wang and I were co-first authors, working with Ben Hadad and others and mentored by Tyler Tracy at Redwood Research. The short answer is that selection matters a lot. When humans can review only the most suspicious 1% of the model's work, simple prompted selection policies cut measured safety by about 20 to 28 percentage points, in two different agentic environments.
 
-Rather than summarize the paper, this post tries to build the intuition that made the results feel obvious to me in hindsight. Almost everything in it can be understood through one picture, which shows two score distributions and a threshold. Once that picture makes sense, the safety curves, the start and stop policies, the appendix math and a few follow-up ideas all fall out of it.
-
-The post builds in order. It starts with how a control evaluation works and how safety is scored, then builds the picture and shows how the standard safety curve falls out of it. Only then does it add selection, read the paper's results through the picture, and extend the argument to a whole deployment. I assume basic probability and a rough sense of what AI control is, but nothing about the details of control evaluations.
+Rather than summarize the paper, this post tries to build the intuition that made the results feel obvious to me in hindsight. Almost everything in it can be understood through one picture, which shows two score distributions and a threshold. Once that picture makes sense, the safety curves, the start and stop policies, the appendix math and a few follow-up ideas all fall out of it. I assume basic probability and a rough sense of what AI control is, but nothing about the details of control evaluations.
 
 ## How control evaluations score safety
 
@@ -64,7 +62,7 @@ One run of the model on one task produces a trajectory, which is the sequence of
 
 The blue team's main tool is a trusted model, one weak enough that we don't worry about it scheming. It watches every action the untrusted model takes and gives it a suspicion score from 0 to 10, a setup known as trusted monitoring. The blue team also has a small budget of human audits, stated as the fraction of trajectories humans can review, and we assume an audit always recognizes an attack. The blue team never learns which trajectories are attacks, so it has to decide where to spend its audits from the scores alone.
 
-If a human audits an attack, the blue team wins, because one caught attack is strong evidence of misalignment and lets the developer stop the deployment. If an attack completes its side task without being audited, the red team wins. If an attack is neither caught nor successful, nothing happens and the game goes on [@shlegeris2024wincontinuelose].
+If a human audits an attack, the blue team wins, because one caught attack is strong evidence of misalignment and lets the developer stop the deployment, the stretch of real use that the evaluation stands in for. If an attack completes its side task without being audited, the red team wins. If an attack is neither caught nor successful, nothing happens and the game goes on [@shlegeris2024wincontinuelose].
 
 A control evaluation runs many honest and attack trajectories, scores them all, and estimates how often the blue team would win. That number is safety, defined precisely below. Most evaluations have the red team attack a fixed fraction of opportunities, chosen at random. Our paper asks what happens to safety when the red team gets to choose which opportunities to attack instead.
 
@@ -76,30 +74,32 @@ To keep things concrete, the figures in this post use a toy model instead of our
 
 The audit budget becomes a threshold τ on that axis. A 1% budget means you can afford to audit 1% of honest work, so τ sits where the top 1% of honest scores begin. Anything above τ gets a human review.
 
-Think of the monitor plus its threshold as a classifier, with attacks as the positive class. The audit budget is then its false-positive rate, meaning the share of honest trajectories that get flagged. τ is set using honest trajectories only, and attacks play no part in it. This point is worth holding onto, because much of what follows depends on it. An attacker can change which attacks show up, but it can't move τ.
+Think of the monitor plus its threshold as a classifier, with attacks as the positive class. The audit budget is then its false-positive rate, meaning the share of honest trajectories that get flagged. τ is set using honest trajectories only, and attacks play no part in it. Much of what follows depends on this. An attacker can change which attacks show up, but it can't move τ.
 
 [fig:threshold] shows the toy model at a 1% budget.
 
 <DistributionFigure id="threshold" />
 
-The share of attacks above τ is the monitor's true-positive rate (also called recall), which is just the caught rate. The overlap region near τ is where the game gets decided. Attacks far to the right are caught at any sensible budget, and attacks far to the left were never at risk.
+The share of attacks above τ is the monitor's true-positive rate, which is just the caught rate. The overlap region near τ is where the game gets decided. Attacks far to the right are caught at any sensible budget, and attacks far to the left were never at risk.
 
 | Outcome | Rate ([fig:threshold]: 1% budget) | Role in a control evaluation |
 | --- | --- | --- |
 | False positive: honest work above τ | FPR = Pr(score > τ ∣ honest), 1% | The audit budget. Fixed in advance by how much human review you can afford, and it fixes τ. |
 | True negative: honest work below τ | TNR = 1 − FPR, 99% | Honest work that passes without review, which is almost all of it. |
 | True positive: attack above τ | TPR = Pr(score > τ ∣ attack), 49% | The caught rate. The outcome you measure once τ is fixed. |
-| False negative: attack below τ | FNR = 1 − TPR, 51% | Missed attacks. Each completes its side task with probability p, and those successes are the red team's wins. |
+| False negative: attack below τ | FNR = 1 − TPR, 51% | Missed attacks. Some still fail at their side task, and the ones that succeed are the red team's wins. |
 
 This is a different way of using a classifier than you might be used to. In a typical ML evaluation, you look at both kinds of error together, using a summary like accuracy or F1, and then pick a threshold that trades false positives against missed positives in whatever way suits the application. In control we don't get to choose that trade-off. The amount of human review we can afford fixes the false-positive rate, the false-positive rate fixes τ, and the true-positive rate is whatever comes out at that τ. So the question we ask of a monitor is always how many attacks it catches at one particular, small false-positive rate.
 
+**Low precision isn't a problem here.** Attacks are rare in deployment, so almost every flagged trajectory is honest work. That means the monitor's precision, the share of flagged trajectories that are actually attacks, is very low. In most applications a precision that low would be a problem. In control it isn't, because the blue team only needs one catch.
+
+**Step-level and trajectory-level rates differ.** If an honest trajectory has $L$ steps and each step crosses a step-level threshold with probability $f$, the trajectory's false-positive rate is about $1 - (1 - f)^L$, or roughly $L \times f$ when $f$ is small. Longer trajectories need a stricter per-step threshold for the same budget.
+
 ### Sweeping the threshold to get an ROC curve
 
-If you haven't worked with ROC curves in a while, it helps to start from the general idea. Many classifiers don't output a yes or a no directly. They output a score, and you turn the score into a decision by picking a threshold, so that anything above it counts as a positive. A spam filter works this way, and so does our monitor, where the score is suspicion and a positive means the trajectory gets sent to a human.
+Many classifiers don't output a yes or a no directly. They output a score, and you turn the score into a decision by picking a threshold, so that anything above it counts as a positive. A spam filter works this way, and so does our monitor, where the score is suspicion and a positive means the trajectory gets sent to a human.
 
-The threshold controls a trade-off. A strict threshold flags very little, so it rarely raises false alarms, but it also misses many of the real positives. A lenient threshold catches more of the real positives, at the cost of more false alarms. The FPR and TPR from the previous section measure these two things for one particular threshold.
-
-An ROC curve shows that trade-off for every threshold at once. You compute the FPR and TPR at each possible threshold and plot them against each other, with the FPR on the x-axis and the TPR on the y-axis. The curve always runs from the bottom-left corner, where the threshold is so strict that nothing gets flagged, to the top-right corner, where it's so lenient that everything does. What differs from one classifier to another is the path the curve takes between those two corners.
+An ROC curve shows how the FPR and TPR from the previous section trade off across every threshold at once. You compute the FPR and TPR at each possible threshold and plot them against each other, with the FPR on the x-axis and the TPR on the y-axis. The curve always runs from the bottom-left corner, where the threshold is so strict that nothing gets flagged, to the top-right corner, where it's so lenient that everything does. What differs from one classifier to another is the path the curve takes between those two corners.
 
 So far τ has been fixed at a 1% budget. Now imagine sliding it. If you move τ to the left, more honest trajectories land above it, so the false-positive rate goes up. More attacks land above it too, so the true-positive rate goes up as well. If you move τ to the right, both rates fall.
 
@@ -114,25 +114,25 @@ The table below shows a few positions of τ in the toy model, from strict to len
 | 0.00 | 50% | 98% |
 
 {/* NEW PROSE (review): lead-in for the threshold → ROC widget. */}
-You can do the sliding yourself below. Drag τ on the left, or pick one of the table's rows, and watch its point move along the curve on the right: the point's x is the orange area (honest work above τ) and its y is the green area (attacks above τ).
+You can do the sliding yourself below. Drag τ on the left, or pick one of the table's rows, and watch its point move along the ROC curve on the right.
 
 <div class="viz-shell">
   <ThresholdRocWidget client:visible />
 </div>
 
-Each row of the table is one point on the monitor's ROC curve, with the FPR on the x-axis and the TPR on the y-axis, and sliding τ smoothly through every position fills in the rest of the curve. A monitor that couldn't tell attacks from honest work would sit on the diagonal, where TPR equals FPR: any τ would flag the same share of attacks as of honest trajectories. A better monitor bows up toward the top-left corner, because at the same FPR it reaches a higher TPR. It gets more true positives (attacks caught) for the same number of false positives (honest trajectories sent to a human).
+Each row of the table is one point on the monitor's ROC curve, and sliding τ through every position fills in the rest. A monitor that couldn't tell attacks from honest work would sit on the diagonal, where TPR equals FPR, because any τ would flag the same share of attacks as of honest trajectories. A better monitor bows up toward the top-left corner, because at the same FPR it reaches a higher TPR. It gets more true positives (attacks caught) for the same number of false positives (honest trajectories sent to a human).
 
 In control we only ever use one point on this curve, the one picked out by the audit budget. That point sits at the far left, since budgets are usually somewhere between 0.1% and 5%. On an ordinary linear axis that whole range gets squeezed into a sliver next to the y-axis, which is why control papers plot the FPR on a log scale. [fig:roc-curve] shows the toy model's ROC curve both ways.
 
 <RocCurveFigure id="roc-curve" />
 
-Reading off the log-scale panel, the toy monitor catches about 24% of attacks at a 0.1% budget, 49% at a 1% budget and 72% at a 5% budget. The 1% point is the same 49% from [fig:threshold]. Changing the audit budget just means moving along this curve.
+The 1% point is the same 49% from [fig:threshold]. Changing the audit budget just means moving along this curve.
 
 ### Turning the caught rate into safety
 
 The paper reports its results as safety rather than as a caught rate, so the next step is to connect the two.
 
-Each attack attempt ends in one of three ways. It gets caught, it succeeds without being caught, or it fails quietly and nothing happens. A deployment is the stretch of real use the evaluation stands in for, and it ends at the first catch or the first uncaught success. Call those two outcomes decisive. Quiet failures leave the game running, so they drop out of the score.
+As in the setup, an attack attempt can be caught, succeed without being caught, or fail quietly. A deployment ends at the first catch or the first uncaught success. Call those two outcomes decisive. Quiet failures leave the game running, so they drop out of the score.
 
 Counting these outcomes over the sampled attack trajectories gives the safety metric we report in the paper.
 
@@ -142,30 +142,30 @@ $$
 
 This is a ratio of two counts, which will matter later when we look at attackers that attack less often.
 
-Write $p$ for the chance that an attack completes its side task, and assume for now that it's independent of whether the monitor catches it. Then each attempt is caught with probability TPR and succeeds uncaught with probability (1 − TPR) × $p$. Putting those into the ratio gives safety as a function of the caught rate.
+Write $p$ for the chance that an attack completes its side task, and assume it's independent of whether the monitor catches it. Then each attempt is caught with probability TPR and succeeds uncaught with probability (1 − TPR) × $p$. Putting those into the ratio gives safety as a function of the caught rate.
 
 $$
 \text{safety} = \frac{\text{TPR}}{\text{TPR} + (1 - \text{TPR})\, p}
 $$
 
-When every uncaught attack succeeds ($p = 1$), safety equals the TPR. A lower $p$ pushes safety above the TPR, because some attacks that slip past the monitor fail on their own. For example, a TPR of 50% with $p$ = 70% gives safety of about 59%. Safety always rises with the TPR, so from here on I'll mostly talk about the caught rate.
+When every uncaught attack succeeds ($p = 1$), safety equals the TPR. A lower $p$ pushes safety above the TPR, because some attacks that slip past the monitor fail on their own. For example, a TPR of 50% with $p$ = 70% gives safety of about 59%.
 
-This also tells us what the safety curves in the paper are. Pick an audit budget, find the TPR at that budget on the ROC curve, and convert it to safety with the formula above. Doing that for every budget gives a safety-versus-audit-budget curve, which is the ROC curve from [fig:roc-curve] with its y-axis relabeled from caught rate to safety. Because safety rises with the TPR, anything that moves the ROC curve moves the safety curve in the same direction. [fig:roc-to-safety] shows that relabeling for the toy model, and [fig:safety-curve], in the next section, puts a selective attacker's curve next to it.
+This also tells us what the safety curves in the paper are. Pick an audit budget, find the TPR at that budget on the ROC curve, and convert it to safety with the formula above. Doing that for every budget gives a safety-versus-audit-budget curve, which is the ROC curve from [fig:roc-curve] with each caught rate converted to safety. Because safety rises with the TPR, anything that moves the ROC curve moves the safety curve in the same direction. [fig:roc-to-safety] shows that conversion for the toy model.
 
-{/* NEW PROSE (review): the sentence above was extended to introduce the ROC → safety figure. */}
+{/* NEW PROSE (review): the sentence above introduces the ROC → safety figure. */}
 <RocToSafetyFigure id="roc-to-safety" />
 
 {/* NEW PROSE (review): ROC vs safety curves in the literature, and why the paper reports safety. */}
 Control papers don't all present results the same way. Work that evaluates monitors on their own tends to report ROC-style numbers, like AUROC or the true-positive rate at a fixed false-positive rate. SHADE-Arena, for example, reports how well monitors separate benign from malign transcripts as an AUC [@kutasov2025shade], and MonitoringBench reports the share of attacks caught at a 1% false-positive rate [@jotautaite2026monitoringbench]. {/* NEW PROSE (review) */} Work that evaluates whole protocols tends to report safety, often traded off against usefulness, as the original control paper does [@greenblatt2023control].
 
-We report safety curves for three reasons. Safety is the quantity a control evaluation is actually about: how often the blue team wins. It also counts attacks that fail on their own, which matters for our stop policy in particular. Stopping an attack early often keeps its side task from succeeding, so a stop policy can lower the caught rate without handing the red team a win. A ROC curve would score that as a pure loss for the blue team, and a safety curve doesn't. Reporting safety also keeps our numbers comparable with the protocol work we build on.
+We report safety curves. Safety is the quantity a control evaluation is actually about, which is how often the blue team wins, and reporting it keeps our numbers comparable with the protocol work we build on. There's one more reason, which comes up with the stop policy in the next part.
 
 The ROC view still earns its place. It isolates the monitor from everything else in the evaluation, so it doesn't depend on how often attacks succeed, which makes it the better way to compare monitors across settings. And because safety is the caught rate passed through a fixed map, as [fig:roc-to-safety] shows, the two views agree on which monitor is better at a given budget, as long as attacks succeed equally often against both. When a paper reports only one view and gives the side-task success rate, you can convert between them.
 
 ## What attack selection does
 
 {/* NEW PROSE (review): part lead-in. */}
-Now the attacker gets to choose. This part shows what that choice does to the picture, why the usual summary statistic for a monitor hides the damage, and how the paper's results look through the same lens.
+Now the attacker gets to choose.
 
 ### How selection changes the attacks the monitor sees
 
@@ -177,14 +177,14 @@ What selection changes is the set of attacks that τ gets applied to. A good sel
 
 <DistributionFigure id="score-distributions" selection />
 
-Two things follow. The distributions can stay far apart overall and selection still wins, as long as it removes the attacks that would have crossed τ. And only the region near τ matters, which is why the effect depends so much on the audit budget.
+Two things follow. The monitor can separate attacks from honest work well on average and selection still works, as long as it removes the attacks that would have crossed τ. And only the region near τ matters, which is why the effect depends so much on the audit budget.
 
 <SafetyCurveFigure id="safety-curve" />
 
-[fig:safety-curve] sweeps the toy model across budgets, the same way as in the previous section. The dashed curve is safety against all attacks, and the blue curve is safety against only the attacks the selector keeps. The gap is widest near a 1% budget, where τ cuts through the dense middle of the attack distribution, and it closes at both ends.
+[fig:safety-curve] sweeps the toy model across budgets, the same way as in the previous section. The dashed curve is safety against all attacks, and the blue curve is safety against only the attacks the selector keeps. The gap is widest near a 1% budget, where τ cuts through the dense middle of the attack distribution, and it closes at both ends. The toy selector is stronger than the prompted ones in the paper, so this gap is larger than the 20 to 28 points we measured. {/* NEW PROSE (review) */}
 
 {/* NEW PROSE (review): lead-in for the widget. */}
-Here are [fig:score-distributions] and [fig:safety-curve] as one live toy model. Move the audit budget and watch τ slide, change how many attacks the selector keeps and how well it reads the monitor, or switch to the random control.
+Here are [fig:score-distributions] and [fig:safety-curve] as one live toy model. Move the audit budget and watch τ slide, or change how many attacks the selector keeps and how well it reads the monitor. Then try the random control, which keeps the same share of attacks at random. The kept curve takes the shape of all attacks again, and the safety gap disappears.
 
 <div class="viz-shell">
   <SelectionExplorer client:visible />
@@ -193,37 +193,33 @@ Here are [fig:score-distributions] and [fig:safety-curve] as one live toy model.
 We split selection into two decisions, and each one acts on the picture in a different way.
 
 - **Start policy.** Before doing anything, the attacker looks at the main task and side task and decides whether this is a good opportunity. Skipping a task removes a whole trajectory, so the blatant attacks in the right tail are the first to go.
-- **Stop policy.** At each step, the attacker looks at the trajectory so far and decides whether to abort. Because a trajectory's score is the maximum over its steps, stopping before the most suspicious step lowers the score. The downside is that stopping early often also keeps the side task from succeeding.
+- **Stop policy.** At each step, the attacker looks at the trajectory so far and decides whether to abort. Because a trajectory's score is the maximum over its steps, stopping before the most suspicious step lowers the score. The downside is that stopping early often also keeps the side task from succeeding. That's the other reason we report safety rather than the caught rate. A stop policy can lower the caught rate without handing the red team a win, and only a safety curve gives the blue team credit for that. {/* NEW PROSE (review) */}
 
 {/* WIDGET (optional, new): StopPolicyTrajectory — per-step suspicion of one attack, draggable stop point, audit line. Not in the artifact. */}
 
-Both policies are prompted language models that output a score from 1 to 9, and the attacker acts when the score crosses a threshold. We tuned that threshold with 10-fold cross-validation. We split the attack trajectories into ten folds, picked the threshold that minimized safety on nine of them, and reported safety on the tenth. Tuning on monitor outcomes is generous to the red team, since a deployed attacker wouldn't see them. So read the results as an upper bound on what prompted selection can do.
+Both policies are prompted language models that output a score from 1 to 9. The start policy attacks, and the stop policy aborts, when that score crosses a cutoff. We tuned the cutoff with 10-fold cross-validation. We split the attack trajectories into ten folds, picked the cutoff that minimized safety on nine of them, and reported safety on the tenth. Tuning on monitor outcomes is generous to the red team, since a deployed attacker wouldn't see them. So read the results as an upper bound on what prompted selection can do.
 
-The obvious objection is that a selective attacker simply attacks less often. That alone shouldn't change safety, because safety is a ratio. If an attacker attacks half as often, the number of caught attacks and the number of uncaught successes both halve, and the ratio stays the same. So attacking less often doesn't make an attacker more dangerous on its own, and what matters is attacking at better moments. We checked this directly with random start and stop baselines matched on how often they attack. Random starting keeps the same score distribution with fewer attacks, and it didn't produce the drop. Random stopping lowers safety a little, but the real stop policy beat it at matched rates.
+The obvious objection is that a selective attacker simply attacks less often. That alone shouldn't change safety, because safety is a ratio. If an attacker attacks half as often, the number of caught attacks and the number of uncaught successes both halve, and the ratio stays the same. We checked this directly with random start and stop baselines matched on how often they attack. Random starting keeps the same score distribution with fewer attacks, and it didn't produce the drop. Random stopping lowers safety a little, but the real stop policy beat it at matched rates.
 
 ### Why AUROC understates the effect
 
 As [fig:roc-curve] showed, the audit budgets used in control sit at the far-left edge of the ROC curve. AUROC, the area under the whole ROC curve, averages over every false-positive rate, including the 50% to 100% region no one would ever operate in. Equivalently, it's the chance that a random attack scores above a random honest trajectory [@fawcett2006roc].
 
-Selection shows how misleading that average can be. In the toy model behind the figures, selection lowers AUROC by about a tenth, from 0.94 to 0.84. At a 1% FPR it cuts the TPR from 49% to 8%, the numbers in [fig:score-distributions]'s title. The monitor and the honest data haven't changed, yet the caught rate drops sixfold at the budget we actually care about. To get the 49% back against the selective attacker, you'd need to audit about 9% of honest work instead of 1%.
+Selection shows how misleading that average can be. In the toy model behind the figures, selection lowers AUROC by about a tenth, from 0.94 to 0.84. At a 1% FPR it cuts the TPR from 49% to 8%, the numbers in the title of [fig:score-distributions]. The caught rate drops sixfold at the budget we actually care about. To get the 49% back against the selective attacker, you'd need to audit about 9% of honest work instead of 1%.
 
 <div class="viz-shell">
   <RocPanel client:visible />
 </div>
 
-This is why it's better to report the TPR at a fixed low FPR than to report AUROC [@carlini2022membership]. A few other points follow from the same picture.
+This is why it's better to report the TPR at a fixed low FPR than to report AUROC [@carlini2022membership].
 
 **Selection changes the positives, not the monitor.** An ROC curve describes a monitor *and* the set of positives it was tested on. Attack selection leaves the monitor and the honest data alone and swaps the positives for a harder subset. A monitor's ROC measured on attacks spread across all tasks is therefore optimistic about the attacks it will actually face. At a fixed budget, this shows up as a lower TPR. If you hold the TPR fixed instead, it shows up as a much larger audit budget.
 
-An earlier offline analysis, now in the paper's Appendix C, estimated how much extra auditing selection costs. It used an earlier attacker and monitor, Claude Sonnet 4.5 and GPT-4.1-mini. Two LLM judges estimated, from the task descriptions alone, how likely each attack opportunity was to succeed and to be flagged. We ranked opportunities by the combination and kept only the top slice. Against an attacker restricted to its best 2% of opportunities, a 20% audit budget gave about the same safety (0.42) as a 5% budget against an attacker who attacked everywhere. Each step up in selectivity needed a proportional step up in auditing.
-
-**Low precision isn't a problem here.** Attacks are rare in deployment, so almost every flagged trajectory is honest work. That means the monitor's precision, the share of flagged trajectories that are actually attacks, is very low. In most applications a precision that low would be a problem. In control it isn't, because the blue team only needs one catch.
-
-**Step-level and trajectory-level rates differ.** If an honest trajectory has $L$ steps and each step crosses a step-level threshold with probability $f$, the trajectory's false-positive rate is about $1 - (1 - f)^L$, or roughly $L \times f$ when $f$ is small. Longer trajectories need a stricter per-step threshold for the same budget. On the attack side, scoring by the maximum is what gives the stop policy something to work with.
+An earlier offline analysis, now in the paper's Appendix C, estimated how much extra auditing selection costs. It used older models for the attacker and monitor, Claude Sonnet 4.5 and GPT-4.1-mini. Two LLM judges estimated, from the task descriptions alone, how likely each attack opportunity was to succeed and to be flagged. We ranked opportunities by the combination and kept only the top slice. Against an attacker restricted to its best 2% of opportunities, a 20% audit budget gave about the same safety (0.42) as a 5% budget against an attacker who attacked everywhere. Each step up in selectivity needed a proportional step up in auditing.
 
 ### Results from the paper
 
-In the paper, Claude Opus 4.6 played the attacker in BashArena and LinuxArena. The monitor was MiMo-V2-Flash, sampled five times per action and averaged, with the trajectory's max as its score. The start and stop scorers were a separate model, MiMo-V2.5-Pro. Here is empirical safety without and with selection at the three audit budgets we report.
+In the paper, Claude Opus 4.6 played the attacker in BashArena and LinuxArena. The monitor was MiMo-V2-Flash, sampled five times per action and averaged, with the trajectory's max as its score. The start and stop policies ran on a separate model, MiMo-V2.5-Pro. Here is safety without and with selection at the three audit budgets we report.
 
 | Policy and setting | 1% audit | 2% audit | 5% audit |
 | --- | --- | --- | --- |
@@ -232,7 +228,7 @@ In the paper, Claude Opus 4.6 played the attacker in BashArena and LinuxArena. T
 | Stop, BashArena | 0.20 → 0.00 (n=2) | 0.30 → 0.13 (n=15) | 0.42 → 0.37 (n=223) |
 | Stop, LinuxArena | 0.36 → 0.09 (n=23) | 0.61 → 0.47 (n=17) | 0.79 → 0.79 (n=28) |
 
-Each cell reads baseline → with selection, and n counts the attack trajectories left after selection. Eleven of the twelve cells drop and the twelfth is unchanged, but many rest on few trajectories, because selection works by shrinking the set of attacks that actually happen. Only the LinuxArena stop result at 1% has a 95% confidence interval that excludes zero on its own. So we pooled the cells with a Cochran–Mantel–Haenszel test (added for the camera-ready version of the paper, not yet in the arXiv preprint), which looks for a common effect across cells while letting each keep its own baseline. Selected trajectories had about one-seventh the odds of being caught compared with the ones the policies rejected (p ≈ 9×10⁻⁵). If selection did nothing, we'd expect about 17 selected trajectories to be caught at a 1% budget. Only four were.
+Each cell reads baseline → with selection, and n counts the attack trajectories left after selection. Eleven of the twelve cells drop and the twelfth is unchanged, but many rest on few trajectories, because selection works by shrinking the set of attacks that actually happen. Only the LinuxArena stop result at 1% has a 95% confidence interval that excludes zero on its own. So we pooled the cells with a Cochran–Mantel–Haenszel test, which looks for a common effect across cells while letting each keep its own baseline. Selected trajectories had about one-seventh the odds of being caught compared with the ones the policies rejected (p ≈ 9×10⁻⁵). If selection did nothing, we'd expect about 17 selected trajectories to be caught at a 1% budget. Only four were. We added this test for the camera-ready version, so it isn't in the arXiv preprint yet.
 
 The paper also plots safety against audit budget for each environment, like [fig:safety-curve] but with real data. Several features of those curves can be read straight off the distributions.
 
@@ -244,11 +240,11 @@ The paper also plots safety against audit budget for each environment, like [fig
 ## Deployments, low-rate attacks, and other interventions
 
 {/* NEW PROSE (review): part lead-in. */}
-This part widens the view in three directions. It follows selection over a whole deployment, separates it from an older strategy that also attacks rarely, and lines it up against the other interventions that move the same two distributions.
+The last part steps back from single attacks. It follows selection over a whole deployment, separates it from an older strategy that also attacks rarely, and lines it up against the other interventions that move the same two distributions.
 
 ### Safety over a whole deployment
 
-Everything so far is about single attack attempts. A fair question is whether a selective attacker, who attacks less often, is really more dangerous over a whole deployment. Appendix A of the paper answers that with a small Markov model [Ge-Wang & Crosse et al., -@gewang2026attack], a simplified version of the game model in Griffin et al. [-@griffin2024games]. {/* NEW PROSE (review) */}
+Everything so far is about single attack attempts, and the ratio argument assumes the game ends. A fair question is whether a selective attacker, who attacks less often, is really more dangerous over a whole deployment. Appendix A of the paper answers that with a small Markov model [Ge-Wang & Crosse et al., -@gewang2026attack], a simplified version of the game model in Griffin et al. [-@griffin2024games]. {/* NEW PROSE (review) */}
 
 On each of $N$ tasks, one of three things happens. The attacker gets caught (probability $g_\text{caught}$), succeeds uncaught ($g_\text{uncaught}$), or nothing decisive happens ($g_\text{cont}$). The blue team is safe if nothing decisive ever happens, or if a catch comes before an uncaught success.
 
@@ -258,7 +254,7 @@ $$
 
 To see where this comes from, note that the chance of all $N$ tasks passing with nothing decisive is $g_\text{cont}^N$, and that outcome counts as safe. Otherwise the game ends at the first decisive task, and that task is a catch with probability $g_\text{caught} / (g_\text{caught} + g_\text{uncaught})$.
 
-The ratio on the right is the empirical safety from earlier. The attack rate enters only through the first term, the chance that the attacker never does anything decisive at all.
+The ratio on the right is the safety metric from earlier. The attack rate enters only through the first term, the chance that the attacker never does anything decisive at all.
 
 A selective attacker shrinks both $g_\text{caught}$ and $g_\text{uncaught}$, because it attacks less, but it shrinks $g_\text{caught}$ faster. This separates the two effects cleanly. Attacking rarely mostly changes whether the game ends at all, while selection changes how it ends. In a short deployment with only one or two expected attempts, a selective attacker can even look safer, simply because it often never acts. As $N$ grows, the first term goes to zero, both attackers settle onto their ratios, and selection is strictly worse for the blue team.
 
@@ -306,29 +302,29 @@ Resampling and selection both pick "the version that looks less suspicious." Wha
 
 ## Open questions
 
-**Why doesn't safety go to zero?** A perfect selector would attack only when its score will land below τ, and safety would be zero. Real selectors have to predict a noisy monitor from the outside. That's also why, in our stop-policy experiments, prompts that imitated the monitor's own prompt beat more elaborate attacker reasoning: the attacker needs an internal model of the monitor, and the monitor's prompt is the best one on hand [@loughridge2025synthetic]. In the toy model, the noisier the selector's read of each score, the closer the blue curve in [fig:score-distributions] sits to the dashed one.
+**Why doesn't safety go to zero?** A perfect selector would attack only when its score will land below τ, and safety would be zero. Real selectors have to predict a noisy monitor from the outside. That's also why, in our stop-policy experiments, prompts that imitated the monitor's own prompt beat more elaborate attacker reasoning. The attacker needs an internal model of the monitor, and the monitor's prompt is the best one on hand [@loughridge2025synthetic]. In the toy model, the noisier the selector's read of each score, the closer the blue curve in [fig:score-distributions] sits to the dashed one.
 
 **Why is the start policy's job easier than the stop policy's?** The start policy gets to choose among many tasks. Across main tasks there's a lot of variation in how much cover each one offers, and it only has to attack more often on the good ones. The stop policy only acts inside a trajectory that's already fixed, and under max-suspicion auditing, stopping early enough to avoid the decisive step often kills the side task too. In the pre-paper experiments mentioned earlier, stopping barely helped on the strongest attack sets and helped more on weaker ones, where less selection had already happened upstream.
 
 **How should the blue team respond?** We held the blue team fixed. One natural response is to keep the total false-positive spend the same but move it to where attacks concentrate: a lower threshold on tasks that offer good cover, a higher one elsewhere. Another is to make the monitor less predictable, with ensembles or randomization, so the attacker's internal model of it gets worse.
 
-**Does resampling defend against selection?** Possibly. If resampling tightens the honest distribution and lowers τ, there's less overlap region for a selector to hide in. It can also backfire: against an attacker that targets the monitor with prompt injections, resampling acts like a best-of-n attack [@terekhov2025adaptive]. {/* NEW PROSE (review) */} We haven't tested it.
+**Does resampling defend against selection?** Possibly, though we haven't tested it. If resampling tightens the honest distribution and lowers τ, there's a smaller overlap region for a selector to hide in. It can also backfire. Against an attacker that targets the monitor with prompt injections, resampling acts like a best-of-n attack [@terekhov2025adaptive]. {/* NEW PROSE (review) */}
 
-**Would one model do this without saying so?** In our setup, selection runs in separate scorer models, so the attacker's chain of thought never shows it. Whether a single policy could select this well without reasoning about it out loud, where a chain-of-thought monitor might notice, is open.
+**Would one model do this without saying so?** In our setup, selection runs in separate models, so the attacker's chain of thought never shows it. Whether a single policy could select this well without reasoning about it out loud, where a chain-of-thought monitor might notice, is open.
 
 **What does it look like online?** Our stop policy truncates recorded trajectories after the fact. A real agent that aborts can't just vanish. It has to keep working on the main task and keep looking normal. Running the stop policy online, and training a selector instead of prompting one, are the follow-ups I'm most interested in.
 
 ## Takeaways
 
-If you run control evaluations, the practical upshot is to include an elicited selective attacker, and to report the caught rate at the budgets you'd actually use [@korbak2025safetycase]. A random-rate attacker measures the monitor against attacks it will rarely face.
-
 If you only keep five sentences from this post, these are the ones I'd pick.
 
 1. The audit budget is the monitor's false-positive rate, set on honest work, and attackers can't move it.
 2. Safety is the share of decisive outcomes that are catches, so it depends on which attacks happen, not how many.
-3. A safety curve is an ROC curve on a log false-positive axis, and only its left edge matters.
+3. A safety curve is the ROC curve on a log false-positive axis, converted to safety, and only its left edge matters.
 4. Selection moves the attacks that happen into the overlap region near τ, without touching the monitor or the threshold.
 5. Resampling mostly moves the honest distribution, while selection moves the attack distribution.
+
+If you run control evaluations, the practical upshot is to include a selective attacker that you've worked to make as strong as you can, and to report safety at the budgets you'd actually use [@korbak2025safetycase]. A random-rate attacker measures the monitor against attacks it will rarely face.
 
 The full paper is on [arXiv](https://arxiv.org/abs/2606.06529), and there's a short summary, with the poster and code, on [its project page](/ideas/2026/paper-attack-selection/). Thanks to Cath Ge-Wang, Ben Hadad, Tyler Tracy and Ram Potham, and to everyone who shared attack datasets and feedback along the way.
 

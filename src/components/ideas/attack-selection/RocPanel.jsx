@@ -112,9 +112,9 @@ export default function RocPanel() {
       </div>
 
       <p className="as-note">
-        Follows the explorer's selector settings; this budget slider moves the explorer too. The arrow is how
-        far right you have to move, meaning how much more honest work you have to audit, to get the original
-        caught rate back against the selective attacker.
+        This panel follows the explorer's selector settings, and its budget slider moves the explorer too.
+        The arrow shows how much more honest work you'd have to audit to get the original caught rate back
+        against the selective attacker.
       </p>
     </section>
   );
