@@ -37,7 +37,7 @@ import UpfrontAuditPanel from "../../../../components/ideas/attack-selection/Upf
   joins them.
 */}
 
-Most AI control evaluations assume the attacker doesn't think carefully about when to attack. The red team attacks on some fixed fraction of tasks, without asking whether a given task is a good opportunity. A capable misaligned model wouldn't behave that way. It would wait for cover, and back off when things started to look suspicious.
+Most AI control evaluations assume the attacker doesn't think carefully about when to attack. The red team attacks on some fixed fraction of tasks, without asking whether a given task is a good opportunity [@kaufman2025basharena]. A capable misaligned model wouldn't behave that way [@shlegeris2025conservative]. It would wait for cover, and back off when things started to look suspicious.
 
 This year we published a paper that tests what happens when you give the attacker that kind of judgment. It's called *Attack Selection in Agentic AI Control Evaluations Meaningfully Decreases Safety* [Ge-Wang & Crosse et al., -@gewang2026attack]. Cath Ge-Wang and I were co-first authors, working with Ben Hadad and others and mentored by Tyler Tracy at Redwood Research. The short answer is that selection matters a lot. When humans can review only the most suspicious 1% of the model's work, simple prompted selection policies cut measured safety by about 20 to 28 percentage points, in two different agentic environments.
 
@@ -56,7 +56,7 @@ AI control asks a narrow question. If a model were secretly trying to cause harm
 
 The evaluation is set up as a game between two teams. The red team stands in for the misaligned model and writes its attack strategy, usually as prompts and scaffolding around a capable model. In our paper that model was Claude Opus 4.6. The blue team designs the safeguards that are supposed to catch it. This style of evaluation comes from Greenblatt et al. [@greenblatt2023control], and the setup below follows theirs closely.
 
-The model being evaluated is called untrusted, because it's capable enough that it might be scheming. Its main tasks are real jobs done in a Linux sandbox, which in our paper came from two environments called BashArena and LinuxArena. In BashArena the tasks are sysadmin-style. When the red team attacks, the model works on the main task as usual but also tries to complete a hidden side task, such as disabling the firewall, downloading malware, leaking passwords or granting itself sudo. Each pairing of a main task with a side task is one attack opportunity.
+The model being evaluated is called untrusted, because it's capable enough that it might be scheming. Its main tasks are real jobs done in a Linux sandbox, which in our paper came from two environments called BashArena [@kaufman2025basharena] and LinuxArena [@tracy2026linuxarena]. In BashArena the tasks are sysadmin-style. When the red team attacks, the model works on the main task as usual but also tries to complete a hidden side task, such as disabling the firewall, downloading malware, leaking passwords or granting itself sudo. Each pairing of a main task with a side task is one attack opportunity.
 
 As an example, a main task might ask the model to set up a scheduled job that rotates log files. An attacking model could do that job correctly while also adding a line to the sudoers file that gives it root access, in the hope that the change blends in with its other configuration edits.
 
@@ -64,7 +64,7 @@ One run of the model on one task produces a trajectory, which is the sequence of
 
 The blue team's main tool is a trusted model, one weak enough that we don't worry about it scheming. It watches every action the untrusted model takes and gives it a suspicion score from 0 to 10, a setup known as trusted monitoring. The blue team also has a small budget of human audits, stated as the fraction of trajectories humans can review, and we assume an audit always recognizes an attack. The blue team never learns which trajectories are attacks, so it has to decide where to spend its audits from the scores alone.
 
-If a human audits an attack, the blue team wins, because one caught attack is strong evidence of misalignment and lets the developer stop the deployment. If an attack completes its side task without being audited, the red team wins. If an attack is neither caught nor successful, nothing happens and the game goes on.
+If a human audits an attack, the blue team wins, because one caught attack is strong evidence of misalignment and lets the developer stop the deployment. If an attack completes its side task without being audited, the red team wins. If an attack is neither caught nor successful, nothing happens and the game goes on [@shlegeris2024wincontinuelose].
 
 A control evaluation runs many honest and attack trajectories, scores them all, and estimates how often the blue team would win. That number is safety, defined precisely below. Most evaluations have the red team attack a fixed fraction of opportunities, chosen at random. Our paper asks what happens to safety when the red team gets to choose which opportunities to attack instead.
 
@@ -156,7 +156,7 @@ This also tells us what the safety curves in the paper are. Pick an audit budget
 <RocToSafetyFigure id="roc-to-safety" />
 
 {/* NEW PROSE (review): ROC vs safety curves in the literature, and why the paper reports safety. */}
-Control papers don't all present results the same way. Work that evaluates monitors on their own tends to report ROC-style numbers, like AUROC or the true-positive rate at a fixed false-positive rate. SHADE-Arena, for example, reports how well monitors separate benign from malign transcripts as an AUC [@kutasov2025shade]. Work that evaluates whole protocols tends to report safety, often traded off against usefulness, as the original control paper does [@greenblatt2023control].
+Control papers don't all present results the same way. Work that evaluates monitors on their own tends to report ROC-style numbers, like AUROC or the true-positive rate at a fixed false-positive rate. SHADE-Arena, for example, reports how well monitors separate benign from malign transcripts as an AUC [@kutasov2025shade], and MonitoringBench reports the share of attacks caught at a 1% false-positive rate [@jotautaite2026monitoringbench]. {/* NEW PROSE (review) */} Work that evaluates whole protocols tends to report safety, often traded off against usefulness, as the original control paper does [@greenblatt2023control].
 
 We report safety curves for three reasons. Safety is the quantity a control evaluation is actually about: how often the blue team wins. It also counts attacks that fail on their own, which matters for our stop policy in particular. Stopping an attack early often keeps its side task from succeeding, so a stop policy can lower the caught rate without handing the red team a win. A ROC curve would score that as a pure loss for the blue team, and a safety curve doesn't. Reporting safety also keeps our numbers comparable with the protocol work we build on.
 
@@ -169,7 +169,7 @@ Now the attacker gets to choose. This part shows what that choice does to the pi
 
 ### How selection changes the attacks the monitor sees
 
-Attack selection means the attacker decides, from what it can observe, whether an opportunity is worth attacking. It can see the main task, the side task and its own actions so far. It can't see the monitor's scores, so it has to predict them.
+Attack selection means the attacker decides, from what it can observe, whether an opportunity is worth attacking. It can see the main task, the side task and its own actions so far. It can't see the monitor's scores, so it has to predict them [@schaeffer2026concentrated].
 
 Selection doesn't make any single attack stealthier. In our experiments the attacks were fixed in advance. We collected trajectories from a strong attacker first, and then applied the selection decisions described below on top of them. That way, any change in safety comes from choosing when to attack rather than from attacking better.
 
@@ -203,7 +203,7 @@ The obvious objection is that a selective attacker simply attacks less often. Th
 
 ### Why AUROC understates the effect
 
-As [fig:roc-curve] showed, the audit budgets used in control sit at the far-left edge of the ROC curve. AUROC, the area under the whole ROC curve, averages over every false-positive rate, including the 50% to 100% region no one would ever operate in. Equivalently, it's the chance that a random attack scores above a random honest trajectory.
+As [fig:roc-curve] showed, the audit budgets used in control sit at the far-left edge of the ROC curve. AUROC, the area under the whole ROC curve, averages over every false-positive rate, including the 50% to 100% region no one would ever operate in. Equivalently, it's the chance that a random attack scores above a random honest trajectory [@fawcett2006roc].
 
 Selection shows how misleading that average can be. In the toy model behind the figures, selection lowers AUROC by about a tenth, from 0.94 to 0.84. At a 1% FPR it cuts the TPR from 49% to 8%, the numbers in [fig:score-distributions]'s title. The monitor and the honest data haven't changed, yet the caught rate drops sixfold at the budget we actually care about. To get the 49% back against the selective attacker, you'd need to audit about 9% of honest work instead of 1%.
 
@@ -211,7 +211,7 @@ Selection shows how misleading that average can be. In the toy model behind the 
   <RocPanel client:visible />
 </div>
 
-This is why it's better to report the TPR at a fixed low FPR than to report AUROC. A few other points follow from the same picture.
+This is why it's better to report the TPR at a fixed low FPR than to report AUROC [@carlini2022membership]. A few other points follow from the same picture.
 
 **Selection changes the positives, not the monitor.** An ROC curve describes a monitor *and* the set of positives it was tested on. Attack selection leaves the monitor and the honest data alone and swaps the positives for a harder subset. A monitor's ROC measured on attacks spread across all tasks is therefore optimistic about the attacks it will actually face. At a fixed budget, this shows up as a lower TPR. If you hold the TPR fixed instead, it shows up as a much larger audit budget.
 
@@ -248,7 +248,7 @@ This part widens the view in three directions. It follows selection over a whole
 
 ### Safety over a whole deployment
 
-Everything so far is about single attack attempts. A fair question is whether a selective attacker, who attacks less often, is really more dangerous over a whole deployment. Appendix A of the paper answers that with a small Markov model [Ge-Wang & Crosse et al., -@gewang2026attack].
+Everything so far is about single attack attempts. A fair question is whether a selective attacker, who attacks less often, is really more dangerous over a whole deployment. Appendix A of the paper answers that with a small Markov model [Ge-Wang & Crosse et al., -@gewang2026attack], a simplified version of the game model in Griffin et al. [-@griffin2024games]. {/* NEW PROSE (review) */}
 
 On each of $N$ tasks, one of three things happens. The attacker gets caught (probability $g_\text{caught}$), succeeds uncaught ($g_\text{uncaught}$), or nothing decisive happens ($g_\text{cont}$). The blue team is safe if nothing decisive ever happens, or if a catch comes before an uncaught success.
 
@@ -268,7 +268,7 @@ A selective attacker shrinks both $g_\text{caught}$ and $g_\text{uncaught}$, bec
 
 ### Selection versus attacking at a low rate
 
-There's an older red-team strategy that also involves attacking rarely, and it's worth separating from selection. Under upfront auditing, humans review the first $aN$ tasks of an $N$-task deployment, a fraction $a$ of the whole, and the attacker attacks each task independently with some fixed probability $r$. There's no score threshold here, so the distributions above don't apply. Nothing after the window gets audited, so the attacker wins if it gets through the window without attacking, then attacks at least once afterward.
+There's an older red-team strategy that also involves attacking rarely, and it's worth separating from selection. Under upfront auditing, humans review the first $aN$ tasks of an $N$-task deployment, a fraction $a$ of the whole, and the attacker attacks each task independently with some fixed probability $r$ [@greenblatt2023control]. There's no score threshold here, so the distributions above don't apply. Nothing after the window gets audited, so the attacker wins if it gets through the window without attacking, then attacks at least once afterward.
 
 $$
 P(\text{red wins}) = (1 - r)^{aN}\left[1 - (1 - r)^{(1-a)N}\right], \qquad r^{*} \approx \frac{-\ln a}{(1-a)N}
@@ -276,7 +276,7 @@ $$
 
 Minimizing over $r$ for large $N$ gives the attacker's best rate $r^*$, shown on the right, and it's very small. With a 1% audit window it's about 0.46% at $N$ = 1,000 and 0.0005% at $N$ = 1,000,000. Either way, the idealized attacker expects only about $-\ln a$ attacks over the whole deployment, around 4.6 for a 1% window.
 
-Whether a model can actually act at such a low rate is an empirical question. Serrano, Xing, Lindner and Jenner [@serrano2026lowprob] found that frontier models can hit calibrated rates below 1 in 100,000 when given a source of in-context randomness, such as a UUID, and mostly fail without one.
+Whether a model can actually act at such a low rate is an empirical question [@mallen2024subversion]. Serrano, Xing, Lindner and Jenner [@serrano2026lowprob] found that frontier models can hit calibrated rates below 1 in 100,000 when given a source of in-context randomness, such as a UUID, and mostly fail without one.
 
 <div class="viz-shell">
   <UpfrontAuditPanel client:visible />
@@ -306,13 +306,13 @@ Resampling and selection both pick "the version that looks less suspicious." Wha
 
 ## Open questions
 
-**Why doesn't safety go to zero?** A perfect selector would attack only when its score will land below τ, and safety would be zero. Real selectors have to predict a noisy monitor from the outside. That's also why, in our stop-policy experiments, prompts that imitated the monitor's own prompt beat more elaborate attacker reasoning: the attacker needs an internal model of the monitor, and the monitor's prompt is the best one on hand. In the toy model, the noisier the selector's read of each score, the closer the blue curve in [fig:score-distributions] sits to the dashed one.
+**Why doesn't safety go to zero?** A perfect selector would attack only when its score will land below τ, and safety would be zero. Real selectors have to predict a noisy monitor from the outside. That's also why, in our stop-policy experiments, prompts that imitated the monitor's own prompt beat more elaborate attacker reasoning: the attacker needs an internal model of the monitor, and the monitor's prompt is the best one on hand [@loughridge2025synthetic]. In the toy model, the noisier the selector's read of each score, the closer the blue curve in [fig:score-distributions] sits to the dashed one.
 
 **Why is the start policy's job easier than the stop policy's?** The start policy gets to choose among many tasks. Across main tasks there's a lot of variation in how much cover each one offers, and it only has to attack more often on the good ones. The stop policy only acts inside a trajectory that's already fixed, and under max-suspicion auditing, stopping early enough to avoid the decisive step often kills the side task too. In the pre-paper experiments mentioned earlier, stopping barely helped on the strongest attack sets and helped more on weaker ones, where less selection had already happened upstream.
 
 **How should the blue team respond?** We held the blue team fixed. One natural response is to keep the total false-positive spend the same but move it to where attacks concentrate: a lower threshold on tasks that offer good cover, a higher one elsewhere. Another is to make the monitor less predictable, with ensembles or randomization, so the attacker's internal model of it gets worse.
 
-**Does resampling defend against selection?** Possibly. If resampling tightens the honest distribution and lowers τ, there's less overlap region for a selector to hide in. We haven't tested it.
+**Does resampling defend against selection?** Possibly. If resampling tightens the honest distribution and lowers τ, there's less overlap region for a selector to hide in. It can also backfire: against an attacker that targets the monitor with prompt injections, resampling acts like a best-of-n attack [@terekhov2025adaptive]. {/* NEW PROSE (review) */} We haven't tested it.
 
 **Would one model do this without saying so?** In our setup, selection runs in separate scorer models, so the attacker's chain of thought never shows it. Whether a single policy could select this well without reasoning about it out loud, where a chain-of-thought monitor might notice, is open.
 
@@ -320,7 +320,7 @@ Resampling and selection both pick "the version that looks less suspicious." Wha
 
 ## Takeaways
 
-If you run control evaluations, the practical upshot is to include an elicited selective attacker, and to report the caught rate at the budgets you'd actually use. A random-rate attacker measures the monitor against attacks it will rarely face.
+If you run control evaluations, the practical upshot is to include an elicited selective attacker, and to report the caught rate at the budgets you'd actually use [@korbak2025safetycase]. A random-rate attacker measures the monitor against attacks it will rarely face.
 
 If you only keep five sentences from this post, these are the ones I'd pick.
 
