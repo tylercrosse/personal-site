@@ -21,6 +21,7 @@ import Table from "../../../../components/Table.astro";
 import DistributionFigure from "../../../../components/ideas/attack-selection/DistributionFigure.astro";
 import RocCurveFigure from "../../../../components/ideas/attack-selection/RocCurveFigure.astro";
 import SafetyCurveFigure from "../../../../components/ideas/attack-selection/SafetyCurveFigure.astro";
+import ThresholdRocWidget from "../../../../components/ideas/attack-selection/ThresholdRocWidget.jsx";
 import SelectionExplorer from "../../../../components/ideas/attack-selection/SelectionExplorer.jsx";
 import RocPanel from "../../../../components/ideas/attack-selection/RocPanel.jsx";
 import DeploymentPanel from "../../../../components/ideas/attack-selection/DeploymentPanel.jsx";
@@ -82,10 +83,12 @@ Think of the monitor plus its threshold as a classifier, with attacks as the pos
 
 The share of attacks above τ is the monitor's true-positive rate (also called recall), which is just the caught rate. The overlap region near τ is where the game gets decided. Attacks far to the right are caught at any sensible budget, and attacks far to the left were never at risk.
 
-| Rate | Definition | Role in a control evaluation |
+| Outcome | Rate ([fig:threshold]: 1% budget) | Role in a control evaluation |
 | --- | --- | --- |
-| False-positive rate (FPR) | Pr(score > τ ∣ honest) | The audit budget. Fixed in advance by how much human review you can afford, and it fixes τ. |
-| True-positive rate (TPR) | Pr(score > τ ∣ attack) | The caught rate. The outcome you measure once τ is fixed. |
+| False positive: honest work above τ | FPR = Pr(score > τ ∣ honest), 1% | The audit budget. Fixed in advance by how much human review you can afford, and it fixes τ. |
+| True negative: honest work below τ | TNR = 1 − FPR, 99% | Honest work that passes without review, which is almost all of it. |
+| True positive: attack above τ | TPR = Pr(score > τ ∣ attack), 49% | The caught rate. The outcome you measure once τ is fixed. |
+| False negative: attack below τ | FNR = 1 − TPR, 51% | Missed attacks. Each completes its side task with probability p, and those successes are the red team's wins. |
 
 This is a different way of using a classifier than you might be used to. In a typical ML evaluation, you look at both kinds of error together, using a summary like accuracy or F1, and then pick a threshold that trades false positives against missed positives in whatever way suits the application. In control we don't get to choose that trade-off. The amount of human review we can afford fixes the false-positive rate, the false-positive rate fixes τ, and the true-positive rate is whatever comes out at that τ. So the question we ask of a monitor is always how many attacks it catches at one particular, small false-positive rate.
 
@@ -108,6 +111,13 @@ The table below shows a few positions of τ in the toy model, from strict to len
 | 1.64 | 5% | 72% |
 | 1.28 | 10% | 82% |
 | 0.00 | 50% | 98% |
+
+{/* NEW PROSE (review): lead-in for the threshold → ROC widget. */}
+You can do the sliding yourself below. Drag τ on the left, or pick one of the table's rows, and watch its point move along the curve on the right: the point's x is the orange area (honest work above τ) and its y is the green area (attacks above τ).
+
+<div class="viz-shell">
+  <ThresholdRocWidget client:visible />
+</div>
 
 Each row of the table is one point on the monitor's ROC curve, with the FPR on the x-axis and the TPR on the y-axis, and sliding τ smoothly through every position fills in the rest of the curve. A monitor that couldn't tell attacks from honest work would sit on the diagonal, where TPR equals FPR: any τ would flag the same share of attacks as of honest trajectories. A better monitor bows up toward the top-left corner, because at the same FPR it reaches a higher TPR. It gets more true positives (attacks caught) for the same number of false positives (honest trajectories sent to a human).
 
