@@ -1,0 +1,127 @@
+---
+/**
+ * Honest and attack score distributions with the audit threshold τ, drawn at
+ * build time from the toy model (model.js) as theme-aware inline SVG.
+ *
+ *   <DistributionFigure id="threshold" />                  Figure 1: before selection
+ *   <DistributionFigure id="score-distributions" selection />  Figure 3: plus the
+ *     attacks a noisy selector keeps
+ *
+ * Name ends in "Figure" so remarkCrossRefs counts it in the figure sequence.
+ */
+import SvgFigure from "../../SvgFigure.astro";
+import { ALL_ATTACKS, GRID, honestMass, keptAttacks, thresholdFor, tprAt } from "./model.js";
+import { C, fmtBudget, linePath, pct, r } from "./figureKit.js";
+
+interface Props {
+  id?: string;
+  caption?: string;
+  numbered?: boolean;
+  /** Also draw the attacks a selector keeps. */
+  selection?: boolean;
+  budget?: number;
+  keep?: number;
+  noise?: number;
+}
+
+const { id, numbered = true, selection = false, budget = 0.01, keep = 0.3, noise = 0.8 } = Astro.props;
+
+const SIGMA = 1;
+const X_MIN = -4;
+const X_MAX = 7;
+const W = 800;
+const H = 370;
+const PAD = { l: 24, r: 24, t: 78, b: 56 };
+const innerW = W - PAD.l - PAD.r;
+const innerH = H - PAD.t - PAD.b;
+const base = PAD.t + innerH;
+
+const tau = thresholdFor(budget, SIGMA);
+const honest = honestMass(SIGMA);
+const kept = keptAttacks(keep, noise);
+const caughtAll = tprAt(ALL_ATTACKS, tau);
+const caughtKept = tprAt(kept, tau);
+
+const pts = GRID.map((x, i) => [x, i] as const).filter(([x]) => x <= X_MAX);
+const curves = selection ? [honest, ALL_ATTACKS, kept] : [honest, ALL_ATTACKS];
+const peak = Math.max(...pts.map(([, i]) => Math.max(...curves.map((c) => c[i]))));
+const sx = (x: number) => r(PAD.l + ((x - X_MIN) / (X_MAX - X_MIN)) * innerW);
+const sy = (v: number) => r(base - (v / peak) * (innerH - 24));
+const at = (mass: number[], x: number) => mass[pts.find(([gx]) => gx >= x)![1]];
+
+const line = (mass: number[]) => linePath(pts.map(([x, i]) => [sx(x), sy(mass[i])]));
+const tail = (mass: number[]) => {
+  const above = pts.filter(([x]) => x >= tau);
+  return `M${sx(tau)} ${base} ${above.map(([x, i]) => `L${sx(x)} ${sy(mass[i])}`).join(" ")} L${sx(X_MAX)} ${base} Z`;
+};
+
+const tauX = sx(tau);
+const ticks = [-4, -2, 0, 2, 4, 6];
+const keptPeakX = pts.reduce((best, [x, i]) => (kept[i] > kept[best[1]] ? [x, i] : best), pts[0])[0];
+
+const title = selection
+  ? `Selection cuts the caught rate from ${pct(caughtAll)} to ${pct(caughtKept)} at a ${fmtBudget(budget)} audit budget`
+  : `A ${fmtBudget(budget)} audit budget catches ${pct(caughtAll)} of attacks`;
+
+const caption =
+  Astro.props.caption ??
+  (selection
+    ? `Toy model: honest scores ~ Normal(0, 1), attack scores ~ Normal(2.3, 1.1). The selector keeps the ${pct(keep)} of attacks it predicts will score lowest, from a noisy (σ = ${noise}) read of each score.`
+    : "Toy model: honest scores ~ Normal(0, 1), attack scores ~ Normal(2.3, 1.1). The audit threshold τ sits where the top 1% of honest scores begin; every attack above it gets caught.");
+
+const alt = selection
+  ? `Score distributions with the audit threshold at the top ${fmtBudget(budget)} of honest scores. ${pct(caughtAll)} of all attacks sit above τ, but only ${pct(caughtKept)} of the attacks a selector keeps, which bunch up in the overlap with honest work.`
+  : `Two overlapping score distributions: honest trajectories centered at 0 and attacks centered at 2.3. A dashed threshold at τ = ${tau.toFixed(2)} marks the top ${fmtBudget(budget)} of honest scores; ${pct(caughtAll)} of attacks sit above it and are caught.`;
+
+// Label anchors, placed off each curve's own height.
+const honestLabel = { x: sx(-1.25), y: sy(at(honest, -1.25)) - 10 };
+const allLabel = { x: sx(4.35), y: sy(at(ALL_ATTACKS, 3.4)) - 10 };
+const keptLabel = { x: sx(keptPeakX - 0.55), y: sy(at(kept, keptPeakX)) + 6 };
+---
+
+<SvgFigure id={id} alt={alt} caption={caption} numbered={numbered} maxWidth={800}>
+  <svg viewBox={`0 0 ${W} ${H}`} width="100%" aria-hidden="true" class="as-figure">
+    <text x={PAD.l} y="28" fill={C.text} font-size="20" font-weight="650">{title}</text>
+    <text x={PAD.l} y="52" fill={C.muted} font-size="15">
+      Toy model. Each curve is scaled to the same area. Shaded regions sit above τ and get audited.
+    </text>
+
+    <path d={tail(ALL_ATTACKS)} fill={C.dim} fill-opacity="0.22" />
+    {selection && <path d={tail(kept)} fill={C.blue} fill-opacity="0.32" />}
+    <path d={tail(honest)} fill={C.muted} fill-opacity="0.28" />
+    <path d={line(honest)} fill="none" stroke={C.muted} stroke-width="2.4" />
+    <path d={line(ALL_ATTACKS)} fill="none" stroke={C.dim} stroke-width="2.2" stroke-dasharray="7 5" />
+    {selection && <path d={line(kept)} fill="none" stroke={C.blue} stroke-width="3" />}
+
+    <line x1={PAD.l} x2={W - PAD.r} y1={base} y2={base} stroke={C.rule} stroke-width="1.2" />
+    {ticks.map((t) => (
+      <text x={sx(t)} y={base + 22} fill={C.muted} font-size="14" text-anchor="middle">{t}</text>
+    ))}
+    <text x={PAD.l + innerW / 2} y={H - 8} fill={C.muted} font-size="15" text-anchor="middle">
+      Trajectory suspicion score (max over steps)
+    </text>
+
+    <line x1={tauX} x2={tauX} y1={PAD.t - 6} y2={base} stroke={C.text} stroke-width="1.5" stroke-dasharray="5 4" />
+    <text x={tauX + 8} y={PAD.t + 8} fill={C.text} font-size="15">τ: top {fmtBudget(budget)} of honest scores</text>
+
+    <text x={honestLabel.x} y={honestLabel.y - 20} fill={C.text} font-size="16" text-anchor="end">Honest trajectories</text>
+    <text x={honestLabel.x} y={honestLabel.y} fill={C.muted} font-size="15" text-anchor="end">{fmtBudget(budget)} above τ, audited</text>
+
+    <text x={allLabel.x} y={allLabel.y - 20} fill={C.text} font-size="16">All attacks</text>
+    <text x={allLabel.x} y={allLabel.y} fill={C.muted} font-size="15">{pct(caughtAll)} above τ, caught</text>
+
+    {selection && (
+      <>
+        <text x={keptLabel.x} y={keptLabel.y} fill={C.blue} font-size="16" font-weight="650" text-anchor="end">Attacks the selector keeps</text>
+        <text x={keptLabel.x} y={keptLabel.y + 20} fill={C.muted} font-size="15" text-anchor="end">{pct(caughtKept)} above τ, caught</text>
+      </>
+    )}
+  </svg>
+</SvgFigure>
+
+<style>
+  .as-figure {
+    display: block;
+    font-family: var(--font-body);
+  }
+</style>

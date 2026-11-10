@@ -1,0 +1,107 @@
+---
+/**
+ * Safety against audit budget for the toy model, with and without selection,
+ * drawn at build time from model.js as theme-aware inline SVG. Same curves as
+ * the SelectionExplorer's safety chart at its default settings.
+ *
+ * Name ends in "Figure" so remarkCrossRefs counts it in the figure sequence.
+ */
+import SvgFigure from "../../SvgFigure.astro";
+import { ALL_ATTACKS, keptAttacks, logSpace, safetyFromTpr, thresholdFor, tprAt } from "./model.js";
+import { C, bandPath, fmtBudget, linePath, pct, r } from "./figureKit.js";
+
+interface Props {
+  id?: string;
+  caption?: string;
+  numbered?: boolean;
+  budget?: number;
+  keep?: number;
+  noise?: number;
+  sideTaskSuccess?: number;
+}
+
+const {
+  id,
+  numbered = true,
+  budget = 0.01,
+  keep = 0.3,
+  noise = 0.8,
+  sideTaskSuccess = 0.7,
+  caption = "Safety against audit budget for the toy model and selector from Figure 3, with and without selection. Each x position is one threshold τ on the honest distribution. Illustrative only, not the paper's data.",
+} = Astro.props;
+
+const W = 800;
+const H = 410;
+const PAD = { l: 64, r: 24, t: 82, b: 62 };
+const innerW = W - PAD.l - PAD.r;
+const innerH = H - PAD.t - PAD.b;
+const base = PAD.t + innerH;
+const sx = (b: number) => r(PAD.l + ((Math.log10(b) + 4) / 4) * innerW);
+const sy = (v: number) => r(base - v * innerH);
+
+const kept = keptAttacks(keep, noise);
+const safetyAt = (mass: number[], b: number) => safetyFromTpr(tprAt(mass, thresholdFor(b, 1)), sideTaskSuccess);
+
+const budgets = logSpace(-4, 0, 160);
+const xs = budgets.map(sx);
+const yAll = budgets.map((b) => sy(safetyAt(ALL_ATTACKS, b)));
+const yKept = budgets.map((b) => sy(safetyAt(kept, b)));
+const sAll = safetyAt(ALL_ATTACKS, budget);
+const sKept = safetyAt(kept, budget);
+const bx = sx(budget);
+
+const yTicks = [0, 0.25, 0.5, 0.75, 1];
+const xTicks = [-4, -3, -2, -1, 0].map((e) => 10 ** e);
+
+const allLabelAt = 3e-4;
+const keptLabelAt = 0.035;
+const alt = `Safety against audit budget on a log axis. Against all attacks, safety rises from ${pct(safetyAt(ALL_ATTACKS, 1e-4))} at a 0.01% budget to 100%; against the attacks a selector keeps it stays near zero until about 0.1%. At a ${fmtBudget(budget)} budget it is ${pct(sAll)} versus ${pct(sKept)}, near where the gap is widest; the gap closes at both ends.`;
+---
+
+<SvgFigure id={id} alt={alt} caption={caption} numbered={numbered} maxWidth={800}>
+  <svg viewBox={`0 0 ${W} ${H}`} width="100%" aria-hidden="true" class="as-figure">
+    <text x="24" y="28" fill={C.text} font-size="20" font-weight="650">
+      Selection costs the most safety near a {fmtBudget(budget)} audit budget
+    </text>
+    <text x="24" y="52" fill={C.muted} font-size="15">
+      Same toy model and selector, side-task success {pct(sideTaskSuccess)}. Shaded: safety lost to selection.
+    </text>
+
+    {yTicks.map((v) => (
+      <>
+        <line x1={PAD.l} x2={W - PAD.r} y1={sy(v)} y2={sy(v)} stroke={v === 0 ? C.rule : C.grid} stroke-width="1" />
+        <text x={PAD.l - 8} y={sy(v) + 5} fill={C.muted} font-size="14" text-anchor="end">{pct(v)}</text>
+      </>
+    ))}
+    {xTicks.map((b, i) => (
+      <text x={sx(b)} y={base + 22} fill={C.muted} font-size="14"
+        text-anchor={i === 0 ? "start" : i === xTicks.length - 1 ? "end" : "middle"}>{fmtBudget(b)}</text>
+    ))}
+    <text x={PAD.l + innerW / 2} y={H - 8} fill={C.muted} font-size="15" text-anchor="middle">
+      Audit budget, the share of honest work audited (log scale)
+    </text>
+    <text transform={`translate(18 ${PAD.t + innerH / 2}) rotate(-90)`} fill={C.muted} font-size="15" text-anchor="middle">Safety</text>
+
+    <path d={bandPath(xs, yAll, yKept)} fill={C.blue} fill-opacity="0.13" />
+    <path d={linePath(xs.map((x, i) => [x, yAll[i]]))} fill="none" stroke={C.dim} stroke-width="2.2" stroke-dasharray="7 5" />
+    <path d={linePath(xs.map((x, i) => [x, yKept[i]]))} fill="none" stroke={C.blue} stroke-width="3" />
+
+    <line x1={bx} x2={bx} y1={PAD.t - 8} y2={base} stroke={C.text} stroke-width="1.5" stroke-dasharray="5 4" />
+    <text x={bx + 8} y={PAD.t + 6} fill={C.text} font-size="15">{fmtBudget(budget)} audit budget</text>
+
+    <circle cx={bx} cy={sy(sAll)} r="6" fill="var(--bg-0, white)" stroke={C.dim} stroke-width="2.4" />
+    <circle cx={bx} cy={sy(sKept)} r="6" fill={C.blue} stroke="var(--bg-0, white)" stroke-width="2" />
+    <text x={bx - 12} y={sy(sAll) - 8} fill={C.text} font-size="16" font-weight="650" text-anchor="end">{pct(sAll)}</text>
+    <text x={bx + 12} y={sy(sKept) + 20} fill={C.blue} font-size="16" font-weight="650">{pct(sKept)}</text>
+
+    <text x={sx(allLabelAt)} y={sy(safetyAt(ALL_ATTACKS, allLabelAt)) - 16} fill={C.text} font-size="16" text-anchor="middle">All attacks</text>
+    <text x={sx(keptLabelAt)} y={sy(0.13)} fill={C.blue} font-size="16" font-weight="650">Attacks the selector keeps</text>
+  </svg>
+</SvgFigure>
+
+<style>
+  .as-figure {
+    display: block;
+    font-family: var(--font-body);
+  }
+</style>

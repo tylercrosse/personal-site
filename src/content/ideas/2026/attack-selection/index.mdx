@@ -16,12 +16,10 @@ image:
 hideCaption: true
 ---
 
-import Figure from "../../../../components/Figure.astro";
 import Table from "../../../../components/Table.astro";
-import scoreDistributionsImg from "./score-distributions.png";
-import rocCurveImg from "./roc-curve.png";
-import safetyCurveImg from "./safety-curve.png";
-import ThresholdFigure from "../../../../components/ideas/attack-selection/ThresholdFigure.astro";
+import DistributionFigure from "../../../../components/ideas/attack-selection/DistributionFigure.astro";
+import RocCurveFigure from "../../../../components/ideas/attack-selection/RocCurveFigure.astro";
+import SafetyCurveFigure from "../../../../components/ideas/attack-selection/SafetyCurveFigure.astro";
 import SelectionExplorer from "../../../../components/ideas/attack-selection/SelectionExplorer.jsx";
 import RocPanel from "../../../../components/ideas/attack-selection/RocPanel.jsx";
 import DeploymentPanel from "../../../../components/ideas/attack-selection/DeploymentPanel.jsx";
@@ -79,7 +77,7 @@ Think of the monitor plus its threshold as a classifier, with attacks as the pos
 
 [fig:threshold] shows the toy model at a 1% budget.
 
-<ThresholdFigure id="threshold" />
+<DistributionFigure id="threshold" />
 
 The share of attacks above τ is the monitor's true-positive rate (also called recall), which is just the caught rate. The overlap region near τ is where the game gets decided. Attacks far to the right are caught at any sensible budget, and attacks far to the left were never at risk.
 
@@ -114,12 +112,7 @@ Each row of the table is one point on the monitor's ROC curve, with the FPR on t
 
 In control we only ever use one point on this curve, the one picked out by the audit budget. That point sits at the far left, since budgets are usually somewhere between 0.1% and 5%. On an ordinary linear axis that whole range gets squeezed into a sliver next to the y-axis, which is why control papers plot the FPR on a log scale. [fig:roc-curve] shows the toy model's ROC curve both ways.
 
-<Figure
-  id="roc-curve"
-  src={rocCurveImg}
-  alt="The toy model's ROC curve on a linear and a log false-positive axis. On the log axis, 0.1%, 1% and 5% budgets catch 24%, 49% and 72% of attacks."
-  caption="The ROC curve for the toy model in Figure 1, traced by sliding τ across the honest distribution. Both panels show the same curve, and the shaded band marks audit budgets between 0.1% and 5%."
-/>
+<RocCurveFigure id="roc-curve" />
 
 Reading off the log-scale panel, the toy monitor catches about 24% of attacks at a 0.1% budget, 49% at a 1% budget and 72% at a 5% budget. The 1% point is the same 49% from [fig:threshold]. Changing the audit budget just means moving along this curve.
 
@@ -160,21 +153,11 @@ Selection doesn't make any single attack stealthier. In our experiments the atta
 
 What selection changes is the set of attacks that τ gets applied to. A good selector skips the attacks that would land above τ and keeps the ones that would land below it. The survivors sit in the overlap region, where they look like ordinary honest work. That's the solid blue curve in [fig:score-distributions]. In the toy model it comes from a selector that sees each attack's score through Gaussian noise and keeps the 30% it predicts will score lowest.
 
-<Figure
-  id="score-distributions"
-  src={scoreDistributionsImg}
-  alt="Honest and attack score distributions with the 1% audit threshold. 49% of all attacks sit above τ, but only 8% of the attacks a selector keeps."
-  caption="Toy model: honest scores ~ Normal(0, 1), attack scores ~ Normal(2.3, 1.1). The selector keeps the 30% of attacks it predicts will score lowest, from a noisy (σ = 0.8) read of each score."
-/>
+<DistributionFigure id="score-distributions" selection />
 
 Two things follow. The distributions can stay far apart overall and selection still wins, as long as it removes the attacks that would have crossed τ. And only the region near τ matters, which is why the effect depends so much on the audit budget.
 
-<Figure
-  id="safety-curve"
-  src={safetyCurveImg}
-  alt="Safety against audit budget on a log axis, for all attacks and for the attacks a selector keeps. At a 1% budget safety falls from 58% to 12%; the gap closes at both ends."
-  caption="Safety against audit budget for the toy model and selector from Figure 3, with and without selection. Each x position is one threshold τ on the honest distribution. Illustrative only, not the paper's data."
-/>
+<SafetyCurveFigure id="safety-curve" />
 
 [fig:safety-curve] sweeps the toy model across budgets, the same way as in the previous section. The dashed curve is safety against all attacks, and the blue curve is safety against only the attacks the selector keeps. The gap is widest near a 1% budget, where τ cuts through the dense middle of the attack distribution, and it closes at both ends.
 
