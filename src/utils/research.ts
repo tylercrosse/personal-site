@@ -1,4 +1,26 @@
-import { getCollection } from "astro:content";
+import { getCollection, type CollectionEntry } from "astro:content";
+import { compareSeriesOrder } from "./series";
+
+const slugOf = (id: string) => id.replace(/(\/index)?\.(md|mdx)$/, "");
+
+// Same visibility rule as the post routes: drafts show in dev only, so a
+// companion link never points at a page the production build skipped.
+const isVisible = (post: CollectionEntry<"ideas">) => import.meta.env.DEV || !post.data.draft;
+
+export type Companion = { title: string; href: string; draft: boolean };
+
+/** Posts that name `parentSlug` as their `parent` (e.g. a paper's explainer). */
+function companionsOf(parentSlug: string, posts: CollectionEntry<"ideas">[]): Companion[] {
+  return posts
+    .filter((p) => p.data.parent === parentSlug && isVisible(p))
+    .sort((a, b) =>
+      compareSeriesOrder(
+        { order: a.data.order, date: a.data.date ?? a.data.pubDate, title: a.data.title },
+        { order: b.data.order, date: b.data.date ?? b.data.pubDate, title: b.data.title },
+      ),
+    )
+    .map((p) => ({ title: p.data.title, href: `/ideas/${slugOf(p.id)}/`, draft: Boolean(p.data.draft) }));
+}
 
 // Editorial order: relevance to the current research focus, rather than recency.
 const researchOrder = [
@@ -16,7 +38,7 @@ export async function getResearchProjects() {
     if (!post || post.data.draft || !post.data.research) {
       throw new Error(`Missing published research project: ${name}`);
     }
-    return { ...post, href: `/ideas/2026/${name}/` };
+    return { ...post, href: `/ideas/2026/${name}/`, companions: companionsOf(`2026/${name}`, posts) };
   });
 }
 

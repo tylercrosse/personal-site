@@ -9,6 +9,13 @@ interface CardLink {
   href: string;
 }
 
+interface Companion {
+  title: string;
+  href: string;
+  /** Only visible in dev; production builds filter draft companions out. */
+  draft?: boolean;
+}
+
 interface Props {
   title: string;
   description: string;
@@ -22,6 +29,8 @@ interface Props {
   meta?: string[];
   note?: string;
   links?: CardLink[];
+  /** Posts written alongside this one (e.g. a paper's explainer), shown nested in the card. */
+  companions?: Companion[];
   variant?: "feature" | "compact";
 }
 
@@ -35,6 +44,7 @@ const {
   meta = [],
   note,
   links = [],
+  companions = [],
   variant = "compact",
 } = Astro.props;
 
@@ -62,6 +72,19 @@ const isExternal = (url: string) => /^https?:\/\//.test(url);
     <h3>{href ? <a class="research-link" href={href}>{title}</a> : title}</h3>
     <p class="finding">{description}</p>
     {note && <p class="note">{note}</p>}
+    {companions.length > 0 && (
+      <div class="companions">
+        <span class="companions-label">{companions.length === 1 ? "Companion post" : "Companion posts"}</span>
+        <ul>
+          {companions.map((companion) => (
+            <li>
+              <a href={companion.href}>{companion.title}</a>
+              {companion.draft && <span class="companion-draft">draft</span>}
+            </li>
+          ))}
+        </ul>
+      </div>
+    )}
     {links.length > 0 && (
       <div class="links">
         {links.map((link) => (
@@ -254,6 +277,64 @@ const isExternal = (url: string) => /^https?:\/\//.test(url);
   .links {
     position: relative;
     z-index: 3;
+  }
+
+  /* Nested companion posts: sit above the card's stretched title link. */
+  .companions {
+    position: relative;
+    z-index: 3;
+    padding: 0.15rem 0 0.15rem 0.75rem;
+    border-left: 2px solid var(--main-border-color);
+  }
+
+  :global([data-effective-theme="dark"]) .companions {
+    border-left-color: var(--base01);
+  }
+
+  .companions-label {
+    display: block;
+    color: var(--sol-7);
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-bottom: 0.2rem;
+  }
+
+  .companions ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .companions li {
+    margin: 0;
+    font-size: 0.88rem;
+    line-height: 1.45;
+  }
+
+  .companions a {
+    color: inherit;
+    text-decoration: underline;
+    text-decoration-color: var(--sol-7);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.18em;
+  }
+
+  .companions a:hover,
+  .companions a:focus-visible {
+    text-decoration-color: currentColor;
+  }
+
+  .companion-draft {
+    margin-left: 0.4rem;
+    padding: 0 0.3rem;
+    border: 1px solid var(--main-border-color);
+    border-radius: 3px;
+    color: var(--sol-7);
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    vertical-align: 0.1em;
   }
 
 
