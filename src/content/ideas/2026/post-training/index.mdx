@@ -1,0 +1,459 @@
+---
+title: "How language models learn after pretraining"
+description: "A guide to post-training methods, where their feedback comes from, and how the same data can train a model in different ways."
+date: "2026-11-21"
+type: "article"
+status: "draft"
+draft: true
+tags: ["machine-learning", "reinforcement-learning", "NLP"]
+sources: [lambert2026rlhf]
+image:
+  path: "./hero1.png"
+  alt: "Textured botanical illustration of pink blossoms and colorful lantern-shaped seed pods among vivid leaves."
+hideCaption: true
+---
+
+import Figure from "../../../../components/Figure.astro";
+import Table from "../../../../components/Table.astro";
+import learningSignals from "./figures/01-learning-signal-taxonomy.png";
+import demonstrations from "./figures/02-demonstrations.png";
+import preferences from "./figures/03-preferences.png";
+import advantages from "./figures/04-advantage-estimation.png";
+import policyUpdates from "./figures/05-policy-updates.png";
+import distillation from "./figures/06-distillation.png";
+import sixRecipes from "./figures/08-six-recipes.png";
+import kimiRecipe from "./figures/09-kimi-k3.png";
+import dataTaxonomy from "./figures/10-data-taxonomy.png";
+import annotatedExample from "./figures/11-annotated-example.png";
+import dataFlywheel from "./figures/12-data-flywheel.png";
+import dataSources from "./figures/13-data-sourcing.png";
+import dataMethodMatrix from "./figures/14-data-method-matrix.png";
+import oneTask from "./figures/15-one-task-many-methods.png";
+
+I started reading Nathan Lambert's book on reinforcement learning from human feedback to get a handle on post-training. I kept losing track of which differences mattered. Take a model-written answer. You could train the model to imitate it, have a reviewer compare it with another answer, or have an automated checker score it. You start with the same text in all three cases, and what you do with it determines what the model can learn [@lambert2026rlhf].
+
+I found it easier to follow a training stage once I knew who produced the answers, how they were judged, and what the training procedure did with those judgments. I use *policy* for the model that generates the next token or action, and *student* for that model when it learns from another model. [tbl:method-inventory] compares the common setups once those roles are in place.
+
+## A map of post-training methods
+
+A pretrained model assigns probabilities to continuations of text. If you give it a question, it might continue with an answer, another question in a list, or a paragraph about the question. *Post-training* starts with that pretrained model and teaches it how to behave on tasks like answering questions, reasoning through problems, or using tools. It might learn to return a response in the requested format or to work through several tool calls before delivering an edited workbook.
+
+The four columns in [fig:learning-signals] describe the feedback a training update can use. A demonstration gives the model tokens to imitate. A preference supplies a judgment about answers. A scalar reward gives an attempt a numerical score. A teacher can give the student probabilities for multiple tokens at a particular position. These uses can overlap. A teacher's answer can be a demonstration if you train on the tokens it wrote, and the same teacher can supply token probabilities for a different update [@lambert2026rlhf].
+
+<Figure
+  id="learning-signals"
+  src={learningSignals}
+  alt="Four common learning signals. Demonstrations provide target responses, preferences compare or label responses, scalar rewards score rollouts, and teacher distributions give next-token probabilities."
+  caption="The columns show what feedback reaches the training update. The preference column shows a pair, and some methods use labels on individual answers."
+  width={800}
+/>
+
+Suppose a model keeps getting the answer right and returning it in the wrong format. An expert could rewrite several answers in the requested format, or a reviewer could compare answers that follow the format with ones that don't. If you can specify the required fields in code, a checker can grade new attempts automatically. A teacher model could also show how much probability it assigns to different next tokens as the answer takes shape. The cost of getting feedback looks different in each case. A checker takes work to write, for instance, and can then score as many attempts as you generate.
+
+## The families of post-training methods
+
+### Demonstrations and supervised fine-tuning
+
+A demonstration might be a one-line reply, a conversation with several turns, or a record of somebody using tools. In **supervised fine-tuning (SFT)**, the trainer gives the model the prompt and the start of the demonstrated answer, then asks it to predict the next token. The trainer repeats that for each position in the answer. Even when the model would have taken the answer in a different direction on its own, it trains on the continuation that was demonstrated [@lambert2026rlhf].
+
+#### What supervised fine-tuning teaches
+
+Write the prompt as $x$ and the target answer as $y=(y_1,\ldots,y_T)$, a sequence of $T$ tokens. At position $t$, the model with weights $\theta$ assigns probability $\pi_\theta(y_t\mid x,y_{<t})$ to the target token. It conditions on the prompt and the earlier target tokens $y_{<t}$, which together form the prefix. The loss adds the negative log probabilities of the target tokens.
+
+$$
+\mathcal L_{\mathrm{SFT}} =
+-\sum_{t=1}^T \log \pi_\theta(y_t\mid x,y_{<t}).
+$$
+
+Supplying the demonstrated prefix at each position is called **teacher forcing**. In a chat transcript, the trainer can give the model the user messages and tool responses as context and compute the loss only on the assistant's messages and tool calls. That choice is recorded in a loss mask, which says which tokens count toward the sum. Including tokens from a tool response also trains the model to predict what the tool returned [@lambert2026rlhf].
+
+Suppose a spreadsheet tool reports that a sheet name is ambiguous. In the demonstration, the assistant responds by listing the available sheets. The trainer can put the error in the context and make the recovery call the target, so the model practices what to do when it sees that error. A collection of traces in which every tool call works on the first try gives the model fewer chances to practice recovery.
+
+#### Choosing which answers to imitate
+
+An expert can write an answer, a teacher model can generate one, or you can sample several candidates and keep the ones that pass a check. In post-training, that last workflow is often called **rejection sampling**. The checker or judge determines which responses enter the dataset. If scores of 0.9 and 1.0 both clear the threshold, both responses can become demonstrations. The SFT loss then uses the tokens in those responses as targets [@lambert2026rlhf].
+
+<Figure
+  src={demonstrations}
+  alt="Three ways to obtain targets for cross-entropy training. Use curated responses, generate candidates and filter them, or use teacher-generated answers."
+  caption="Curated, filtered, and teacher-generated answers can all become supervised targets."
+  width={800}
+/>
+
+Imitation works naturally for a behavior you can show, such as how to format a tool call or handle a follow-up question. If every demonstration solves a problem the same way, the loss pushes up the probability of that particular solution even when several others would work.
+
+The filter creates a second choice about coverage. If you sample ten solutions per prompt and keep only verified successes, prompts with zero successes drop out of the resulting dataset. Prompts that the model already solves contribute more data if you keep every passing completion. You can retain one solution per prompt, allocate more generation to harder prompts, or ask a stronger teacher to fill gaps. Which fix helps depends on whether the bottleneck is finding any successful answer or collecting enough variety among the successful ones.
+
+With **best-of-$N$ sampling**, you draw $N$ candidate answers for a user's live query and return the one with the highest score. You can do a similar search when building a training set. In that case you keep the winners as demonstrations, hoping the model will learn to produce better answers on its own [@lambert2026rlhf].
+
+### Preferences and direct alignment
+
+Sometimes it's easier to judge two answers than to write an ideal one. A preference example records the prompt and which answer the reviewer chose. The **chosen** answer can still have flaws. The **rejected** answer might be perfectly usable, just less suited to the request.
+
+**Direct Preference Optimization (DPO)** uses that pair to update the policy. The probability of an entire answer is the product of its token probabilities, each conditioned on the prompt and the tokens before it. DPO compares the probability ratio of the chosen answer to the rejected answer under two models. One is the policy being trained. The other is a fixed reference, which can be a copy of the model you started from. Comparing the two tells you how much the policy's preference for the chosen answer has shifted.
+
+For a prompt $x$, write the chosen answer as $y^+$ and the rejected answer as $y^-$. The training policy is $\pi_\theta$, the fixed reference is $\pi_{\text{ref}}$, and the margin $\Delta$ measures the shift on a log scale.
+
+$$
+\Delta =
+\log \frac{\pi_\theta(y^+\mid x)}{\pi_{\text{ref}}(y^+\mid x)}
+-
+\log \frac{\pi_\theta(y^-\mid x)}{\pi_{\text{ref}}(y^-\mid x)}.
+$$
+
+DPO scales the margin by a positive factor $\beta$, then applies the logistic sigmoid $\sigma$ to get a number between zero and one. The scale determines how sharply that number responds to the margin. The loss $-\log \sigma(\beta\Delta)$ gets smaller as the training policy favors the chosen answer more strongly relative to the reference. Across many pairs, either answer's absolute probability can move [@rafailov2023dpo].
+
+If the reference gives the chosen and rejected answers probabilities of $0.08$ and $0.04$, it favors the chosen answer two to one. At $0.06$ and $0.015$, the training policy favors it four to one, so $\Delta=\log 2$. The margin improves even as the probability of the chosen answer falls. Looking at answers sampled after training tells you something the pair's loss alone leaves open [@rafailov2023dpo].
+
+In the usual **offline** setup, the trainer collects a fixed set of pairs before running DPO. Models may have generated the answers in an earlier collection stage. In an **online** run, the trainer periodically samples new answers, asks a judge to compare them, and uses the new pairs in the next round. Both runs can use the same DPO loss. Refreshing the data gives the judge a chance to respond to the kinds of answers the policy starts producing as it changes [@lambert2026rlhf].
+
+#### Where the comparison goes
+
+The same pairs can also train a **reward model**, a separate scorer that learns to give chosen answers higher scores than rejected ones. Once trained, it can score a new answer on its own. InstructGPT used a reward model this way to grade new attempts sampled from the policy during reinforcement learning [@ouyang2022instructgpt].
+
+In a reward model trained on pairs, a common objective raises the score gap between the chosen and rejected responses. Adding the same prompt-dependent number to both scores leaves the pair's predicted preference unchanged. The judgments tell the reward model about relative quality, and any use of the scores as absolute grades needs its own calibration. That matters if you want one threshold to apply across tasks or to mix the learned scores with a second kind of reward [@ouyang2022instructgpt; @lambert2026rlhf].
+
+#### What changes across direct-alignment methods
+
+Two choices distinguish the methods in [fig:preference-methods]. You can keep the same preference pairs and change how the loss treats the gap between them, or start with a different kind of judgment altogether.
+
+<Figure
+  id="preference-methods"
+  src={preferences}
+  alt="DPO compares a chosen and rejected answer relative to a reference. IPO targets a finite margin, SimPO uses a length-normalized margin, ORPO adds a preference term to SFT, and KTO uses individual desirability labels."
+  caption="Direct-alignment methods can change the loss, the role of a reference policy, or the kind of judgment supplied."
+  width={800}
+/>
+
+- **IPO** uses a squared loss around a finite target for the reference-relative preference margin. A pair can move past that target and incur a larger loss again. The logistic DPO loss keeps decreasing as the margin grows [@azar2023ipo; @rafailov2023dpo].
+- **SimPO** scores an answer using the policy's average log probability per token. It compares the two answers against a target margin and dispenses with the frozen reference [@meng2024simpo].
+- **ORPO** trains on the chosen answer with an SFT term and adds a preference term based on the odds of the chosen and rejected answers. The terms share one update [@hong2024orpo].
+- **KTO** can learn from an acceptability label on one answer at a time. If reviewers independently mark answers as acceptable or unacceptable, you can use those labels directly. DPO would need chosen and rejected answers to the same prompt [@ethayarajh2024kto; @rafailov2023dpo].
+
+Suppose one reviewer favors concision and another favors covering every caveat. Their judgments may give the model different instructions on similar prompts. A **rubric**, or a set of criteria for judging the answers, can help reviewers agree about what matters. You can also record the two qualities separately or make the requested level of detail explicit in the prompt.
+
+### Scalar rewards and reinforcement learning
+
+In **reinforcement learning (RL)**, the policy generates an attempt and the trainer uses a reward to update the policy. A sampled attempt is called a **rollout**. When the model uses tools, the rollout includes the actions the model chose and the observations it got back. That sequence is also called a **trajectory**. A learned reward model, a judge applying a rubric, or an automated checker can score the result.
+
+Terms such as **RLHF** (reinforcement learning from human feedback), **RLAIF** (from AI feedback), and **RLVR** (with verifiable rewards) tell you where that reward comes from. To follow the update, you also need to know how the trainer turns the reward into a weight for an action and how it applies that weight to the policy [@lambert2026rlhf].
+
+A **verifier** checks whether an answer or action satisfies a requirement you can test. It might grade the final answer or check each step of a structured proof. A model judge might also assess a finished report or several intermediate results. With only a final reward, the trainer has to work out which earlier tokens and tool calls contributed to success. That's the **credit assignment** problem. Intermediate feedback can help if you can judge progress reliably [@lambert2026rlhf].
+
+#### Estimating advantage
+
+Take four answers to the same prompt with rewards of $0.9$, $0.7$, $0.3$, and $0.1$. An attempt's **return** is the reward accumulated along the rollout. Here each answer gets a single reward at the end, so its return is that final score. An **advantage estimate** asks how the attempt compares with a baseline, a number representing the performance you'd expect. In the simplest sequence-level setup, the trainer uses that estimate to weight the gradient of the log probability of the answer. Taken on its own, a positive term pushes that answer's probability up, and a negative term pushes it down. The update combines terms from all the answers in the batch.
+
+**REINFORCE** can use the observed return directly, or subtract a baseline to reduce variance. With no baseline, all four rewards in this example are positive, so each sampled response makes a positive contribution in the direction of its own log-probability gradient. If you choose a baseline of $0.5$ in advance, the first attempt gets a weight of $0.9-0.5=0.4$, and the two below-baseline attempts get negative weights. A baseline that depends only on the prompt leaves the expected policy gradient unchanged. It changes the estimate from the particular responses you sampled [@williams1992reinforce; @ahmadian2024rloo].
+
+For one prompt $x$ and one sampled answer $y$, let $R$ be the observed return and $b(x)$ the baseline for the prompt. The sampled answer has probability $\pi_\theta(y\mid x)$ under the policy. The trainer minimizes the following term.
+
+$$
+\mathcal L_{\mathrm{REINFORCE}}
+= -(R-b(x))\log\pi_\theta(y\mid x).
+$$
+
+The log probability appears because the gradient of an answer's probability equals its probability times the gradient of its log probability. That first factor is already accounted for when you sample answers according to their probabilities. The log probability of the whole answer, $\log\pi_\theta(y\mid x)$, adds up the sampled tokens' log probabilities, so every token gets the same weight in this example. Even an unnecessary tool call gets a positive weight when it appears in a rollout with a high enough return [@williams1992reinforce; @ahmadian2024rloo].
+
+**RLOO**, or REINFORCE Leave-One-Out, averages the returns from the other attempts at the same prompt to get its baseline. The first attempt gets $0.9-(0.7+0.3+0.1)/3\approx 0.53$. This requires several rollouts per prompt and lets the baseline adapt to how hard that prompt is for the policy [@ahmadian2024rloo].
+
+**Group Relative Policy Optimization (GRPO)** uses the group to estimate advantages too. In its outcome-reward form, each completed response's reward is centered at the group mean and scaled by the group's standard deviation. The resulting advantage is used for the response's tokens. Here the group mean is $0.5$ and the population standard deviation is about $0.316$, so the best attempt has an advantage of about $1.26$ [@shao2024deepseekmath].
+
+<Table id="advantages" caption="Four ways to weight the same completions. The GRPO row uses the population standard deviation for this example.">
+
+| Method | A (0.9) | B (0.7) | C (0.3) | D (0.1) |
+| --- | ---: | ---: | ---: | ---: |
+| REINFORCE with no baseline | +0.90 | +0.70 | +0.30 | +0.10 |
+| REINFORCE with a fixed 0.5 baseline | +0.40 | +0.20 | −0.20 | −0.40 |
+| RLOO | +0.53 | +0.27 | −0.27 | −0.53 |
+| GRPO | +1.26 | +0.63 | −0.63 | −1.26 |
+
+</Table>
+
+The last three rows in [tbl:advantages] agree on which answers get positive or negative weights. The two group-based methods both center the rewards. If you sample $K$ answers for one prompt, RLOO gives the same result as subtracting the full group mean and multiplying by $K/(K-1)$. GRPO divides the centered rewards by their spread. If every answer passes or every answer fails, the standard deviation is zero and the division needs a guard. The group supplies no outcome-based advantage because every return equals the group mean [@ahmadian2024rloo; @shao2024deepseekmath].
+
+In the usual language-model implementation of **Proximal Policy Optimization (PPO)**, a learned **critic** predicts the return the policy can expect if it continues from a partial answer. You can think of the reward model as a grader and the critic as a predictor of how the attempt will go from here. The trainer uses the critic's predictions and the actual rewards to estimate an advantage at each token position. A PPO row in [tbl:advantages] would need the critic's predictions along each of the four answers [@schulman2017ppo; @ouyang2022instructgpt].
+
+Suppose the critic predicts $0.40$ from the current prefix and $0.65$ after a tool call. In this example there is no immediate reward, and future rewards count at their full value. The call raises the predicted return by $+0.25$. **Generalized advantage estimation (GAE)** combines differences like this along the rest of the trajectory and lets the trainer control how much weight to give later changes in the prediction. Doing that well depends on fitting a critic that can make useful predictions from the prefixes the policy actually reaches [@schulman2017ppo; @lambert2026rlhf].
+
+[fig:estimating-advantage] puts these calculations side by side.
+
+<Figure
+  id="estimating-advantage"
+  src={advantages}
+  alt="REINFORCE uses a sampled return with an optional baseline. RLOO compares with other completions. PPO usually uses a learned value function. GRPO standardizes rewards within a group."
+  caption="REINFORCE, RLOO, and GRPO can use the observed returns from this example. PPO also uses a critic's predictions along the way. The bars are schematic."
+  width={800}
+/>
+
+#### Turning advantage into a policy update
+
+PPO can reuse a batch of rollouts for several optimizer steps. After a step, the current model may assign different probabilities to the actions in the batch. The trainer takes each sampled token and its prefix and asks both versions of the policy how likely that token is at that prefix. Dividing the current probability by the probability recorded when the token was sampled gives the **importance ratio** $r$. It lets the trainer account for how much more or less likely the token is under the current policy.
+
+PPO uses that ratio in a **clipped surrogate objective**, a training objective it can evaluate on samples it already has. Write the token's estimated advantage as $A$ and the clipping interval as $[1-\epsilon,1+\epsilon]$, where $\epsilon$ is the width on either side of one. Clipping moves a ratio outside that interval to the nearest endpoint. PPO maximizes the smaller of $rA$ and $\operatorname{clip}(r,1-\epsilon,1+\epsilon)A$. For $\epsilon=0.2$ and a positive advantage, a ratio of $1.2$ has reached the upper edge. Increasing it to $1.4$ gives the same value on that term [@schulman2017ppo].
+
+If $A=-1$, the update favors making the action less likely. Reducing $r$ from $0.8$ to $0.6$ leaves the term at $-0.8$. In both examples the term stops giving the optimizer an incentive to keep moving that probability in the direction it already went. Other terms in the batch can still move it because the model's parameters are shared [@schulman2017ppo].
+
+The snapshot that generated the actions in the batch is the **behavior policy**. It changes as the trainer collects new rollouts. Some recipes also keep a fixed **reference policy** and penalize the current model for moving too far from that reference across many rounds. A rollout is **on-policy** in the strict sense if it came from the current policy. Once the trainer changes the weights, the rollout is **off-policy** for that updated model. That's how a batch becomes stale even during an online run that regularly collects new data [@lambert2026rlhf].
+
+#### What the newer update rules change
+
+In their basic on-policy form, REINFORCE and RLOO use the weights from [tbl:advantages] directly. GRPO pairs its group-based advantage with the PPO-style objective above. That means one advantage can be shared by all the tokens in an answer, while each token has its own probability ratio [@williams1992reinforce; @ahmadian2024rloo; @shao2024deepseekmath].
+
+<Figure
+  id="policy-updates"
+  src={policyUpdates}
+  alt="Basic REINFORCE and RLOO use an advantage-weighted log probability. PPO and GRPO clip a surrogate using token ratios. GSPO uses a sequence ratio. CISPO clips the token importance weights."
+  caption="The figure compares common forms of the update rules. The ratios and clipping choices are separate from how the advantages were estimated."
+  width={800}
+/>
+
+**Group Sequence Policy Optimization (GSPO)** takes the geometric mean of the token ratios to get one ratio for the entire answer. Some token probabilities can rise and others can fall, and both changes enter the same ratio. The clipping then applies to the answer as a whole [@zheng2025gspo].
+
+**Clipped Importance Sampling Policy Optimization (CISPO)** keeps a ratio at each token and clips it. It multiplies the token's advantage by that clipped ratio and treats the resulting weight as fixed when differentiating the token's log probability. That token can still contribute to the update after the ratio reaches the bound, with the ratio's influence capped [@minimax2025m1].
+
+**DAPO** can set different upper and lower clipping bounds and changes which groups go into a training batch. With a pass/fail verifier, a group where every answer passes or every answer fails gives the trainer no differences to learn from. DAPO samples more prompts and builds the batch from groups where the verifier actually distinguishes the answers [@yu2025dapo]. [fig:policy-updates] shows ways to use a weight once you have it. DAPO's sampling rule controls which examples make it that far.
+
+### Teacher supervision and distillation
+
+A teacher model can generate complete answers or supply its predictions at individual token positions. In **sequence distillation**, the student uses supervised fine-tuning to imitate the answers the teacher sampled. In **logit distillation**, the trainer uses the teacher's scores for possible next tokens, called logits, or the probabilities those scores produce. That gives the student information about alternatives the teacher considered plausible [@agarwal2023distillation].
+
+#### Hard targets and soft targets
+
+Suppose the answer so far is “the result was”. In a toy vocabulary with just three possible next tokens, the teacher gives “positive” probability $0.7$, “negative” $0.2$, and “inconclusive” $0.1$. If the teacher samples “positive”, you can use it as the single target for that position. That's a **hard target**. The full probability distribution is a **soft target**. It also tells the student that the teacher considered “negative” more plausible than “inconclusive”.
+
+One way to train the student is to minimize cross-entropy at that prefix. For a token $v$ in the vocabulary, let $p_T(v)$ be the teacher's probability for it and $p_S(v)$ the student's probability. The loss weights each token's negative log probability under the student by how likely the teacher thought it was.
+
+$$
+\mathcal L_{\mathrm{soft}}=-\sum_v p_T(v)\log p_S(v),
+$$
+
+If the teacher puts all the weight on one token, the loss reduces to the usual next-token training term. With the soft target, the student's probability for each option contributes according to the teacher's prediction. Other distillation objectives use different ways to measure the gap between the distributions, or approximate the information in the full distribution [@agarwal2023distillation].
+
+#### Fixed prefixes and student-generated prefixes
+
+The next decision is who writes the text that the teacher scores. In an offline setup, the trainer can compute the teacher's predictions on a fixed collection of prefixes ahead of time. In **on-policy distillation**, the student generates the answers and the teacher scores the prefixes the student reaches. Those prefixes can include mistakes or detours that the teacher would rarely produce on its own [@agarwal2023distillation].
+
+<Figure
+  src={distillation}
+  alt="Sequence distillation uses teacher-generated answers. Offline logit distillation scores fixed prefixes. On-policy distillation scores prefixes generated by the student."
+  caption="The source of the prefixes and the form of the teacher's feedback are two separate choices."
+  width={800}
+/>
+
+Distillation often transfers a larger model's behavior to a smaller one. It can also consolidate specialists, as [Kimi K3](#how-kimi-k3-combines-three-training-signals) illustrates below.
+
+What you can do depends on what the teacher exposes. A service that returns generated text gives you enough to build a sequence-distillation dataset. Matching token distributions requires teacher probabilities or a way to approximate them. On-policy distillation also requires querying the teacher as the student produces new prefixes, so the trainer continues collecting feedback as the student changes [@agarwal2023distillation; @lambert2026rlhf].
+
+<Table id="method-inventory" caption="Inputs, sampling, and model roles in common implementations.">
+
+| Method | What the update uses | Where responses come from | Other model roles |
+| --- | --- | --- | --- |
+| SFT | Target tokens | Fixed demonstrations, including answers selected from earlier samples | A teacher can supply demonstrations |
+| DPO | Chosen and rejected responses | Usually a fixed dataset, sometimes refreshed during training | Fixed reference policy |
+| REINFORCE / RLOO | Returns, with a baseline in RLOO | Current policy in the basic form | A reward model or a verifier can supply scores |
+| PPO | Advantages and token probability ratios | Recent policy snapshot | Usually a learned critic, with an optional fixed reference |
+| GRPO | Group-relative advantages and token probability ratios | Several responses per prompt from a recent policy snapshot | Group rewards provide the baseline, with an optional fixed reference |
+| On-policy logit distillation | Teacher predictions at sampled prefixes | Current student | Teacher policy |
+
+</Table>
+
+## What a post-training pipeline looks like
+
+A **checkpoint** is a saved version of the model's weights. A post-training recipe tells you which checkpoint a team starts from and what it trains on next. The team also has to generate and label candidates, build environments for the model to practice in, and test the checkpoints it produces. Some of that work supplies more than one training run.
+
+### From a base checkpoint to a trained policy
+
+A team can start with the base model or continue pretraining it on selected text or longer contexts, a stage sometimes called **midtraining**. A **supervised cold start** uses demonstrations such as conversations, worked solutions, or tool traces to give that model some practice before RL. If the model's early rollouts rarely produce anything usable, the team can revisit the demonstrations, simplify the tasks, or see whether the grader can recognize partial progress [@lambert2026rlhf; @olmo2025].
+
+InstructGPT started one training run with human demonstrations and another with human rankings of model outputs. The demonstrations produced a supervised checkpoint, and the rankings trained a reward model. PPO needed both. The team initialized the policy from the supervised checkpoint and used the reward model to grade the fresh answers it sampled during training [@ouyang2022instructgpt].
+
+DeepSeek-R1-Zero started RL directly from its base model. The team reported effective reasoning behavior alongside problems such as language mixing and poor readability. The DeepSeek-R1 recipe added a supervised cold start and more training stages to address a broader set of behaviors than reasoning performance alone [@deepseek2025r1].
+
+### Six published recipes side by side
+
+[fig:recipes] compares the main policy-training stages in six published recipes. Read each row as a path through checkpoints. The reports describe how teams collect the data and compute rewards for each stage [@ouyang2022instructgpt; @kimi2025k2; @deepseek2025r1; @olmo2025; @qwen2025qwen3; @kimi2026k3].
+
+<Figure
+  id="recipes"
+  src={sixRecipes}
+  alt="Six simplified recipes. InstructGPT uses SFT and PPO with a reward model. Kimi K2 uses SFT and joint RL. DeepSeek-R1 alternates SFT and RL. Olmo 3 Think uses SFT, DPO, and RLVR. Flagship Qwen3 models add mode fusion between two RL stages. Kimi K3 uses SFT, specialist RL, and multi-teacher distillation."
+  caption="Six published paths through post-training. The Qwen3 row depicts the flagship recipe. The Kimi K3 row shows the three behavior-training stages developed below."
+  width={800}
+/>
+
+In the Kimi K2 row, **joint RL** means one stage trains across tasks with several different sources of reward. Olmo 3 Think starts with SFT, uses DPO to learn from pairs, then takes that preference-tuned checkpoint into RL with verifiable rewards. Qwen3's flagship recipe returns to supervised training after its reasoning RL stage. The team calls this stage **mode fusion**. It mixes demonstrations of long reasoning with demonstrations of quick answers, so it can teach both modes under one chat format [@olmo2025; @qwen2025qwen3].
+
+In DeepSeek-R1, the first reasoning RL stage produces a policy that can generate reasoning trajectories. The team filters those attempts by rejection sampling and uses the selected traces in a later supervised stage. There are two things to follow along that row. The RL checkpoint produces the attempts, and the filter decides which attempts the supervised stage will learn from [@deepseek2025r1].
+
+### How Kimi K3 combines three training signals
+
+In [fig:kimi-k3], the model first learns from tool-use demonstrations. Then Moonshot trains specialist policies with RL and brings them together by using them as teachers for one student. The figure also notes that Moonshot uses **quantization-aware training** throughout post-training. It trains the model with reduced numerical precision so it can adapt to the precision used to run it [@kimi2026k3].
+
+<Figure
+  id="kimi-k3"
+  src={kimiRecipe}
+  alt="Kimi K3 cold-start SFT uses verified, annotated trajectories from prior Kimi models. RL produces nine specialists for three task domains and three effort levels. The student generates responses and the matching specialist supplies token feedback."
+  caption="A reading guide to Kimi K3's post-training recipe. Quantization-aware training spans the post-training stages."
+  width={800}
+/>
+
+#### Demonstrations establish a cold start
+
+Moonshot starts by asking specialists from earlier Kimi models to generate tool-use trajectories. The team verifies and annotates the traces, then puts them in a common chat format for SFT. The demonstrations show the starting policy what action to take, what the tool returned, and how to continue from there [@kimi2026k3].
+
+#### Rewards develop nine specialists
+
+Moonshot runs RL on general tasks such as reasoning and search, general-agent tasks such as longer assistant workflows, and coding-agent tasks such as software engineering. The team can choose a grader for each task. For GPU kernels, the output first has to pass a numerical check. Correct solutions then receive credit based on speed relative to an expert implementation. For general tasks that are hard to verify automatically, a model judge applies a rubric to compare candidates [@kimi2026k3].
+
+The team also trains policies to work within different token budgets. It uses the cold-start policy to estimate a baseline token budget for each task. The trainer scales that budget and penalizes attempts that run over it. Training starts with a larger allowance and tightens it to produce the high- and low-effort versions. Each of the three domains gets a policy for low, high, and max effort, yielding nine specialists [@kimi2026k3].
+
+Some tool-using attempts take long enough that Moonshot pauses them while it updates the policy, then resumes them in a later iteration. One completed trajectory can therefore contain actions from several versions of the policy. The grader still scores the attempt as a whole, and the optimizer has to handle actions sampled before the latest update [@kimi2026k3].
+
+#### Token feedback brings the specialists together
+
+The student generates an attempt, and the trainer selects the specialist for the task's domain and assigned effort level. Earlier, the soft-target example used a full distribution over possible next tokens. Here the specialist only needs to score the token the student sampled, using the same prefix as the student. The trainer divides the teacher's probability by the student's, takes the log, then clips it to a bounded range. A token the teacher sees as more likely gets a positive reward [@kimi2026k3].
+
+Moonshot uses its RL infrastructure for this stage too. Earlier, a checker could give an entire kernel-writing attempt a reward based on whether it was correct and fast. Here, the teacher supplies a reward separately for each sampled token. The trainer still generates attempts and uses rewards to update the policy [@kimi2026k3].
+
+### What to look for at a stage boundary
+
+On a fixed set of tasks, a higher reward means the grader rated the new attempts more highly. Checkpoints evaluated on tasks held out of training tell you more about where that improvement carries over. It's also worth checking abilities the stage was supposed to preserve. The Qwen3 report tracks thinking and non-thinking behavior around mode fusion and general RL. After those stages, performance rose on some general tasks and fell on some difficult reasoning benchmarks [@qwen2025qwen3].
+
+When I read a recipe, I look for what each stage passes on with the weights. InstructGPT's reward model and DeepSeek-R1's filtered traces both took work to produce, and each made a later stage possible. Looking at the data behind those stages helps explain what each update taught the model.
+
+## Where post-training data comes from
+
+A preference pair records a comparison. The prompt could come from a user, the answers from two models, and the judgment from a person applying a rubric. Each source helps explain something about what the dataset contains.
+
+### Who produces the data
+
+The sources in [fig:data-sources] range from real user requests to programmatically generated tasks. They can supply different pieces of the same example.
+
+<Figure
+  id="data-sources"
+  src={dataSources}
+  alt="Five data sources and their tradeoffs. Experts supply rich annotations, users supply real interactions, teachers generate at scale, current models reveal current behavior, and programs generate checkable tasks."
+  caption="The source of the prompts, the source of the attempts, and the source of the feedback can each be different."
+  width={800}
+/>
+
+Users contribute requests that reflect how they actually use a model. Annotators can write demonstrations, rank answers, or correct them. A domain expert could design a financial reconciliation task and write a rubric that another reviewer can apply. InstructGPT combined prompts written by labelers with prompts from API users, then used labeler demonstrations and rankings of generated answers [@ouyang2022instructgpt].
+
+Models can draft tasks, produce answers or tool-use traces, and critique, revise, or judge them. Rollouts from an earlier checkpoint can provide a collection of mistakes to learn from. Sampling the policy being trained tells you which mistakes it still makes at that point in training [@lambert2026rlhf].
+
+A program can generate tasks with known solutions, run tests, or give the model files it can change and check the resulting state. A generator can quickly produce many variants that use one checker. The practice the model gets depends on which cases the generator actually covers [@lambert2026rlhf].
+
+Mixing sources lets you build many examples from a small set of task designs. An expert can specify a task and its criteria once, then a teacher can generate multiple candidate answers for reviewers or checkers to filter. If those checks miss a mistake the teacher makes repeatedly, the mistake can show up repeatedly in the training data too.
+
+### What is stored
+
+The artifacts in [fig:data-taxonomy] differ in how much of the work has already been done. A demonstration contains an answer or trajectory the model can imitate. An annotation records a judgment about an existing answer. A prompt with a verifier allows the trainer to score answers generated later, and a teacher can return a next-token distribution once it gets a prefix to score.
+
+<Figure
+  id="data-taxonomy"
+  src={dataTaxonomy}
+  alt="Post-training artifacts include targets such as conversations and expert traces, evaluations such as rankings and critiques, tasks with checkers or environments, and teacher answers or probabilities."
+  caption="Training artifacts range from ready-made targets to tasks and criteria that can generate feedback on later attempts."
+  width={800}
+/>
+
+A prompt with a good reference answer can be used for SFT. A reliable checker for other answers turns that same prompt into a task the model can practice during RL. If the dataset comes with an expert rubric, it supplies criteria you can reuse, and you'll still need a person or model to apply them to each new response.
+
+### What an annotation captures
+
+Say a model summarizes a study as *“The study proves X causes Y.”* The study found a correlation. An annotator could mark the response incorrect, give it a factuality score, or prefer a corrected summary. A **span label** points to the words where the error occurs. A critique can explain why the study design supports an association, and a revision gives the model a replacement to imitate. If you want to check many summaries, a rubric can ask whether the study design supports each causal claim.
+
+<Figure
+  src={annotatedExample}
+  alt="Six annotations for a summary that overstates causality. A binary error label, a factuality rating, a preference for the correction, a highlighted span, a critique, and a revised answer."
+  caption="Each annotation records a different judgment about the same mistake."
+  width={800}
+/>
+
+An outcome label can tell you a result failed. Labeling intermediate steps can locate the error earlier, and a **process reward model** can learn from those labels to score steps in future attempts. That can help with credit assignment when reviewers can reliably tell which steps helped. A check that expects one particular solution path can also penalize a step that works in a different valid solution [@lambert2026rlhf].
+
+A factuality rating can express how serious the reviewer thinks an error is. A ranking can record that answer A is better than B even when both fall below a minimum standard. A rubric can also have reviewers record factual accuracy and coverage separately. If you retain both scores, you can change how you trade off accuracy and coverage when you build the dataset or compute the reward.
+
+### What an RL environment supplies
+
+A spreadsheet reconciliation task starts with two ledgers and a request to match transactions and document any discrepancies. The environment supplies the initial workbook and tools for inspecting and editing it. The model's actions change the workbook, and subsequent tool responses show what changed. Resetting the workbook gives another attempt the same starting state. One rollout yields a trajectory of actions and observations and a final artifact that a grader can inspect.
+
+The grader can inspect the workbook itself. A check of the final totals can miss two errors that cancel out, so a row-level verifier can check whether each transaction was matched correctly. A reviewer can use a rubric to judge whether the accompanying report explains unresolved discrepancies clearly. Together, these checks tell the training procedure which parts of the work count toward the reward.
+
+The same task setup can generate successful traces for imitation, scored rollouts for RL, and held-out cases for checking whether the behavior generalizes. Those uses can share tools and a grader while using different task instances.
+
+Kimi K3's assistant training tasks start with a workspace spread across simulated workplace apps. The apps keep state over several simulated days, and the model handles events across them. Rules or a model judge check what the assistant does about each event. To train on one of these tasks, the team needs a starting workspace, a sequence of events, and criteria for judging the resulting work [@kimi2026k3].
+
+## How data and methods fit together
+
+### How one round of training supplies the next
+
+From a collection of prompts and generated answers, you can select good demonstrations, compare answers to build preference pairs, or attach scores to rollouts. [fig:data-flywheel] also shows how a policy updated with this feedback can generate the next set of answers. In its middle branch, direct alignment updates the policy from the pairs. If you use the pairs for reward modeling, they train the scorer that a later round can use to grade fresh rollouts.
+
+<Figure
+  id="data-flywheel"
+  src={dataFlywheel}
+  alt="Prompts produce candidate responses. People, models, or checks annotate them. Selected demonstrations feed SFT, preferences feed direct alignment or reward modeling, and scored rollouts feed RL. An updated policy can generate new responses."
+  caption="Read the reward-modeling arrow as two stages. Preference pairs train a separate scorer, which grades fresh rollouts for a later policy update."
+  width={800}
+/>
+
+Suppose a policy is now passing nearly every task in a set of short arithmetic problems. Its correct answers may be good demonstrations for another model. In the current policy's GRPO batch, a group where every answer passes offers no outcome-based advantage. To keep improving that policy, you may need tasks where the grader still sees meaningful differences between attempts.
+
+### One summarization task, several training paths
+
+Return to the study the model summarized earlier. This time it writes four summaries. An annotator gives A 5/5 for a faithful account, B 4/5 because it omits a limitation, C 2/5 because it overstates the findings, and D 1/5 because it invents a result.
+
+For SFT, you can imitate A or keep A and B if both meet the threshold. Once you've selected them, the trainer only needs the prompt and target tokens. For DPO, you might label A as preferred over C, or B over D. The trainer learns from the preference between those answers, so you can leave out comparisons where reviewers disagree or the ratings are too close to tell you much.
+
+Those same comparisons can train a reward model. An RL stage can then generate new summaries and use the scorer to assign rewards. That lets you learn from answers nobody reviewed, as long as the scorer's judgments hold up on the new answers.
+
+You could also turn each rating into an acceptable or unacceptable label for KTO. For distillation, you would need a teacher to generate a summary or score the student's next tokens. In [fig:one-task], that's the option that requires collecting another kind of supervision.
+
+<Figure
+  id="one-task"
+  src={oneTask}
+  alt="Four candidate summaries have ratings from one to five. SFT imitates a selected answer, DPO and KTO use preferences or acceptability labels, reward modeling predicts judgments, RL scores fresh attempts, and distillation needs teacher predictions."
+  caption="The same summarization task can support several objectives. Teacher predictions require a separate source of supervision."
+  width={800}
+/>
+
+If the reviewer only has time to say which summary is better, that may be enough for a useful preference pair, even when both summaries have flaws. To select a demonstration, the reviewer needs to judge whether an answer is suitable to imitate. If the plan calls for grading many more rollouts, a learned scorer can do that work, and you'll need a way to check that its judgments on fresh attempts agree with the criteria you care about.
+
+### One verifier, two places to use it
+
+In the spreadsheet task, the verifier can check whether the invoices and transactions were matched correctly and the workbook balances. You can run the model several times, keep the successful traces, and use them as SFT demonstrations. You can also use the same verifier to score new rollouts during RL. A failed attempt can be useful there if it helps the update distinguish better answers from worse ones.
+
+You can do both in sequence. The policy from an RL stage may generate more successful attempts, which can then be used alongside other demonstrations in a supervised stage, as in [the DeepSeek-R1 recipe](#six-published-recipes-side-by-side). A weak check carries the same flaw into both workflows. If it only checks the final balance, SFT can imitate traces that matched the wrong rows and RL can reward them.
+
+### What each method needs from the data
+
+In [fig:data-method-matrix], the solid and half-filled circles distinguish common direct uses from uses that depend on an intermediate step or a particular implementation. Preference pairs can go into DPO as pairs. To use them for policy-gradient RL, you can first train a reward model and then use it to score new attempts. The figure groups some related inputs together, so the condition depends on what your dataset actually contains.
+
+<Figure
+  id="data-method-matrix"
+  src={dataMethodMatrix}
+  alt="Matrix of characteristic and conditional uses for demonstrations, preference judgments, critiques, rubrics, environments, trajectories, and teacher probabilities across five training methods."
+  caption="Grouped rows cover distinct artifacts. A rubric needs to be applied to an attempt. In the distillation column, a teacher-generated trajectory can serve as a target for sequence distillation. Logit distillation also needs teacher predictions."
+  width={800}
+/>
+
+The rubric row, for instance, groups the criteria for judging answers with labels a reviewer has already assigned. [tbl:data-methods] spells out what needs to happen between the input and the training update.
+
+<Table id="data-methods" caption="Common routes from collected artifacts to training signals.">
+
+| Starting artifact | How it can enter training |
+| --- | --- |
+| Expert or teacher answer | Use the answer tokens as SFT targets. A teacher answer used this way is also sequence distillation. |
+| Ratings or rankings of answers | Filter into SFT targets, build chosen/rejected pairs for DPO, or use judgments to train a reward model. |
+| Critique and revision | Imitate the revision, pair it with the original answer, or use the critique itself as a target for learning to give feedback. |
+| Rubric | Have an expert or judge apply the criteria to produce labels, comparisons, or scores. |
+| Verifiable task and rollout | Retain verified attempts as demonstrations, or turn verifier results into rewards for a policy update. |
+| Teacher next-token probabilities | Match the distribution on fixed prefixes or on prefixes produced by the student. |
+
+</Table>
+
+If you're starting from scratch, you can often tell what feedback is available before you know how to train on it. Some behaviors are easy to demonstrate. On other tasks, a reviewer can reliably choose between answers even when writing one takes a long time. You may also have a checker that grades new attempts cheaply, or a teacher whose next-token predictions you can access. In the spreadsheet task, the automated check can establish that the rows match and a human can judge whether the explanation of outstanding discrepancies is clear.
+
+When a report says it used synthetic data, I look for what was generated and where it entered training. A verifier might have filtered a set of demonstrations or scored fresh attempts during optimization. If the report says GRPO, I still want to know which tasks the model practiced and what counted as success on them.
