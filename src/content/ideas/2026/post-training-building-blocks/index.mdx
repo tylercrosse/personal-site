@@ -1,0 +1,263 @@
+---
+title: "The building blocks of post-training"
+description: "How a document-completing language model becomes a useful assistant: the stages of a modern post-training pipeline, the learning signals behind each method, the data that feeds them, and how the pieces get recombined."
+date: "2026-11-23"
+status: "draft"
+type: "article"
+tags: ["post-training", "LLMs", "reinforcement-learning", "learning-in-public"]
+category: ["ideas"]
+draft: true
+cite: true
+audience: "Technical readers who know roughly how LLMs are pretrained"
+---
+
+import Figure from "../../../../components/Figure.astro";
+import Table from "../../../../components/Table.astro";
+import pipeline2026 from "./figures/pipeline-2026.svg";
+import learningSignals from "./figures/learning-signals.png";
+import dataFormats from "./figures/data-formats.png";
+import annotatedExample from "./figures/annotated-example.png";
+import oneTaskManyMethods from "./figures/one-task-many-methods.png";
+
+A pretrained language model has read much of the internet and still can't take a request. It completes documents. If you type "What is the capital of France?", a reasonable continuation is another quiz question, since on the web that line usually appears in a list of them. The model probably knows the answer. Answering you just isn't what it's been trained to do.
+
+Post-training is everything done after pretraining to change that. It turns a document completer into something you can hand a task to: a model that answers the question, follows instructions, holds a conversation, calls tools, works through a hard problem step by step, and declines some requests. InstructGPT made the point early: labelers preferred outputs from a 1.3B-parameter post-trained model over those from the 175B-parameter GPT-3, a model more than 100 times larger [@ouyang2022instructgpt].
+
+For a while the short version was that post-training *elicits* what pretraining already put there. A thin layer of instruction tuning and preference tuning chose which of the many voices in the base model you'd hear. That story is less true now. Reinforcement learning (RL) on problems with checkable answers has become a main way that models get better at math, code, and long agentic tasks [@deepseek2025r1], so post-training is increasingly where the model learns to do the task as well as how to present it. How much of that is new capability is still debated. One study found that RL-trained models beat their base models when each gets one try, but the base models catch up when each gets many tries, which suggests RL mostly makes answers the base model could already find more likely [@yue2025rlreasoning].
+
+I've been working through Nathan Lambert's RLHF book [@lambert2025rlhfbook] and a pile of technical reports, and what took me longest to see is that the named algorithms are assembled from a small set of interchangeable parts. I've come to think of them as lego: standard pieces that snap together in different ways. Each training stage combines three of them:
+
+- **Data**, which comes from somewhere (people, other models, programs, the model itself) and has some shape (a demonstration, a comparison, a task with a grader).
+- **A learning signal** derived from that data, which tells the model what better looks like.
+- **An update rule** that turns the signal into a change in the weights.
+
+A recipe is a particular assembly of those parts. Labs rearrange them every few months, a growing industry sells them, and the choices show up in how the finished model behaves. The rest of this post starts with what a pipeline looks like today, then sorts the methods by learning signal and by how they update the model, then covers the data and how it connects to the methods, and ends with the market for the parts and what the choices do to the model.
+
+## What a pipeline looks like in 2026
+
+<Figure
+  id="pipeline"
+  src={pipeline2026}
+  alt="Flow diagram. A generic pretraining row (pretraining, later pretraining, an optional midtraining stage, long-context extension) produces a base model, which goes through general SFT as a cold start for RL. One arrow leads to the student, trained with mixed-environment RLVR; another leads to a group of specialist teachers, one per domain (reasoning, agentic, general, and more), which start from the SFT model, the student, or each other. The student passes through an optional warmup of light SFT on the teachers' data. Teachers and student feed multi-teacher on-policy distillation, where the student writes and the matching teacher scores every token, producing the shipped model. A dashed iteration-2 arrow loops from distillation back to the whole teacher group."
+  caption="A simplified composite of recent open recipes; no single lab's pipeline looks exactly like this. The specialists-then-distillation shape follows Kimi K3 and Nemotron 3 Ultra. In Nemotron 3 Ultra, more than ten teachers start from different checkpoints, the student gets a brief SFT warmup on data from the teachers' training distributions, and the second round adds teachers initialized from the distilled student. Dashed boxes are steps only some recipes use."
+/>
+
+The top row is pretraining and its tail end. Midtraining, which some recipes add, continues next-token prediction on a mix weighted toward math, code, and instruction-like text. It blurs the boundary: by the time a base model exists, it has already seen a lot of data shaped like what post-training will ask of it.
+
+Everything below the base model is post-training, and it has three broad moves.
+
+The first is a cold start with supervised fine-tuning (SFT). The model trains on examples of the behavior you want: conversations, worked solutions, tool-use transcripts. This teaches format and gets the model to a point where its own attempts are good enough to learn from, which is why it's called a cold start for the RL that follows. DeepSeek showed what happens without it. R1-Zero, trained with RL straight from the base model, learned to reason well but wrote hard-to-read output that mixed languages. For R1, a small cold-start SFT stage, plus a reward during RL for staying in one language, largely fixed this [@deepseek2025r1].
+
+The second is reinforcement learning, increasingly split across specialists. Nemotron 3 Ultra runs one RL stage over all its training environments at once, using RL with verifiable rewards (RLVR), where a program checks each answer. It also trains more than ten specialist teachers, each given extra SFT or RL on its own domain [@nvidia2026nemotron3ultra]. Kimi K3 trains experts for general tasks, general agents, and coding agents, each at three reasoning-effort levels, for nine teachers in total [@kimi2026k3].
+
+The third is consolidation by distillation. The specialists are merged back into one model with multi-teacher on-policy distillation (MOPD). The student generates its own responses, and the specialist for that domain scores every token of them. Nemotron 3 Ultra does this twice, branching new teachers from the distilled student for the second round [@nvidia2026nemotron3ultra].
+
+Not every recent recipe looks like this. The table below lines up a few published ones. They all start with SFT and then diverge.
+
+<Table id="recipes" caption="Simplified post-training recipes from published reports. Each row omits stages and details.">
+
+| Model | Recipe | What's distinctive |
+| --- | --- | --- |
+| InstructGPT (2022) | SFT → reward model → PPO | The classic RLHF shape: humans write demonstrations and compare outputs [@ouyang2022instructgpt] |
+| DeepSeek-R1 (2025) | Cold-start SFT → reasoning RL → filtered SFT → RL | Alternates imitation and exploration; the middle SFT stage is built from the RL model's own best outputs [@deepseek2025r1] |
+| Qwen3 (2025) | Cold-start SFT → reasoning RL → mode fusion → general RL | Merges thinking and non-thinking behavior into one model; smaller models are distilled from larger ones [@qwen2025qwen3] |
+| Kimi K2 (2025) | SFT → joint RL | One RL stage mixing verifiable rewards with rubric-based self-critique [@kimi2025k2] |
+| Olmo 3 Think (2025) | SFT → DPO → RLVR | Fully open data and code; keeps a preference-tuning stage before RL [@olmo2025olmo3] |
+| Kimi K3, Nemotron 3 Ultra (2026) | SFT → specialist RL → multi-teacher distillation | Train narrow experts, then consolidate; Nemotron also runs one RL stage over all environments first [@kimi2026k3; @nvidia2026nemotron3ultra] |
+
+</Table>
+
+The labels in that table (SFT, DPO, RL, distillation) are names for the parts. To see why they can be swapped and recombined, it helps to sort them by what the model is learning from and how it updates.
+
+## Methods, sorted by what the model learns from
+
+There are dozens of named post-training algorithms, and most of the names describe small variations. The more useful question is what tells the model how to improve. There are four broad answers.
+
+<Figure
+  id="learning-signals"
+  src={learningSignals}
+  alt="Four columns. Demonstrations: a target response; SFT and rejection sampling; imitate selected tokens. Preferences: chosen versus rejected; DPO, IPO, KTO, SimPO; optimize a preference loss. Scalar rewards: score each rollout; REINFORCE, RLOO, PPO, GRPO, GSPO, CISPO; estimate advantage and update the policy. Teacher distributions: token-level probabilities; offline and on-policy distillation; match teacher predictions. A footer notes that RLHF, RLAIF, and RLVR describe the reward source, not the optimizer."
+  caption="Post-training methods grouped by the signal that drives the update. For scalar rewards, the figure's 'estimate advantage' means comparing each attempt's score to a baseline."
+/>
+
+{/* FIGURE (review): provisional infographic, different visual style from the pipeline figure. Redraw to match if keeping. */}
+
+**Demonstrations: "respond like this."** The model sees a prompt and a target response, and the update raises the probability of each token in the target. This is SFT, and it's the same next-token objective as pretraining, applied to curated text. Rejection sampling is a variant: generate several candidates, keep the ones a grader likes, and run SFT on the keepers. The grader chooses the data, but it never enters the gradient.
+
+**Preferences: "this one, not that one."** The model sees a prompt with two responses, one marked better. Direct preference optimization (DPO) and its relatives push up the probability of the chosen response relative to the rejected one [@rafailov2023dpo]. You don't have to say what a perfect answer looks like, only which of two is better, which is often much easier for a person to judge. KTO, one of those relatives, works from single responses labelled good or bad, with no pairing. The same comparisons can instead train a separate reward model, which is how classical RLHF used them.
+
+**Scalar rewards: "that attempt scored 0.7."** Now the model generates its own attempts, something scores each one, and the update makes above-average attempts more likely and below-average ones less likely. This is reinforcement learning. In RL terms the model being trained is the policy, and each attempt is a rollout. The scorer can be a reward model trained on human preferences (RLHF), a model acting as judge (RLAIF [@bai2022constitutional]), or a program that checks the answer, such as unit tests or a math answer key (RLVR [@lambert2024tulu3]). Those three acronyms name where the reward comes from. The optimizer can be the same in all three.
+
+**Teacher distributions: "here's what I would have said, token by token."** A stronger model, the teacher, supplies its probabilities for each next token, and the student learns to match them. In offline distillation the student trains on text the teacher wrote, which amounts to SFT on teacher outputs. In on-policy distillation the student writes the text, and the teacher scores each token by how likely the teacher would have been to write it. Kimi K3, for example, uses the log of the ratio between the teacher's and the student's probability for each token as a per-token reward [@kimi2026k3].
+
+### The update rule: whose text, and how much signal
+
+The third part, the update rule, is where I expected the differences to be: different loss functions. In practice two other properties separate the families more, and both are about what the update sees rather than the formula it applies.
+
+The first is **whose text the model is learning from**. In SFT, the training text was written by someone else: a person, a teacher model, or an earlier version of the model. That's called off-policy. In RL, the model learns from its own fresh attempts, which is on-policy. On-policy learning matters because the model gets feedback on the mistakes it actually makes, including the ones that only show up halfway through a long answer it wrote itself. DPO usually trains on a fixed set of pairs, so I file it as off-policy, but that depends on where the pairs come from. Tülu 3 builds some of its pairs from the model's own samples [@lambert2024tulu3], and online variants of DPO generate fresh pairs as training goes.
+
+The second is **how much each example tells the model**. A demonstration or a teacher distribution says something about every token. An RL reward is one number for a whole response, sometimes for a whole hour-long agent run, and the model has to work out which of its thousands of choices earned it.
+
+Kevin Lu's post on on-policy distillation places SFT, RL, and on-policy distillation on these two axes [@lu2025onpolicy]. Adding DPO, with the caveat above, fills the fourth cell:
+
+<Table id="signal-grid" caption="Whose text is trained on, against how much each example says. SFT, RL, and on-policy distillation follow Lu (2025); the DPO cell is my addition.">
+
+| | Signal on every token | One signal per response |
+| --- | --- | --- |
+| **Someone else's text (off-policy)** | SFT, offline distillation | DPO and other preference methods (usually) |
+| **The model's own text (on-policy)** | On-policy distillation | RL (PPO, GRPO, and the rest) |
+
+</Table>
+
+The cells blur at the edges. Rejection-sampling SFT trains on the model's own text with one pass/fail judgment per response, which puts it close to RL.
+
+The bottom-left cell explains the pipeline in [fig:pipeline]. RL is on-policy but sparse, so it's expensive per bit learned. SFT is dense but off-policy, so the model never practices recovering from its own mistakes. On-policy distillation gets both: the student writes the text, and the teacher scores every token of it. It needs a teacher that's already good, which is why it shows up at the end, after RL has trained the specialists.
+
+### Inside the RL box
+
+Most of the algorithm zoo lives in the scalar-reward family, and it's where I got lost first. What helped was noticing that the named algorithms mostly differ on two design choices:
+
+- **"Better than what?"** A reward of 0.7 doesn't say much on its own. The model needs a baseline, an estimate of what's typical for this prompt, to tell whether 0.7 was good. PPO trains a second network, a critic, to predict it. GRPO [@shao2024deepseekmath] and RLOO [@ahmadian2024backtobasics] drop the critic and use the scores of other attempts at the same prompt as the baseline. Dropping the critic saves a lot of memory and engineering, which is a big part of why GRPO spread so fast after DeepSeek used it.
+- **"How far should one update move the model?"** PPO, GRPO, GSPO, and CISPO all clip something to keep one batch of rollouts from pushing the model too far, and they differ mostly in what they clip. PPO and GRPO clip each token's update, GSPO clips per sequence, and CISPO clips the importance-sampling weights (the correction for rollouts coming from a slightly older copy of the model) while still letting every token contribute to the gradient.
+
+That's about as deep as I think you need to go to read a technical report. The RLHF book's policy-gradient chapter has the details [@lambert2025rlhfbook].
+
+## The data
+
+If the methods turn signals into updates, the data is where the signals come from. Post-training data varies along a few independent axes: what shape it has, who or what produced it, and what behavior it's meant to teach.
+
+### Shape
+
+The shapes of post-training data line up closely with the four learning signals.
+
+<Figure
+  id="data-formats"
+  src={dataFormats}
+  alt="Four columns matching the learning-signal colors. Demonstrations: prompt plus target response, multi-turn dialogue, revisions, expert trajectories. Evaluative annotations: pairwise preferences, ranked responses, pointwise ratings, critiques and rubrics, span and step labels. Reward-ready tasks: question plus answer key, task plus verifier, interactive environment, scored rollout. Teacher supervision: teacher-generated answers, token probability distributions. Footer: provenance is independent of format."
+  caption="Shapes of post-training data. The four groups roughly match the four learning signals. The footer's three sources are a simplification of the five in the provenance table below."
+/>
+
+{/* FIGURE (review): provisional infographic. */}
+
+Demonstrations are prompts with target responses: single answers, multi-turn conversations, before-and-after revisions, and full agent trajectories with tool calls and their results.
+
+Evaluative annotations say how good a response is, without supplying a better one: pairwise preferences, rankings, ratings on a scale, rubrics, critiques, and labels on specific spans or reasoning steps. Step-level labels are what process reward models train on [@lightman2023verify].
+
+Reward-ready tasks come with a way to score any attempt: a math problem with an answer key, a coding task with tests, or a whole interactive environment with a grader at the end.
+
+Teacher supervision is output from a stronger model, either sampled text or full token-level probabilities.
+
+The formats differ a lot in how much information they carry. Take one bad summary of a paper and look at the annotations you could attach to it.
+
+<Figure
+  id="annotated-example"
+  src={annotatedExample}
+  alt="A prompt asks for a summary of a study. The response says the study proves X causes Y; the source evidence shows only a correlation. Six annotations of that response: a binary label (incorrect), a rating (factuality 2 out of 5), a pairwise preference (corrected answer preferred), a span label highlighting 'proves X causes Y', a critique (confuses correlation with causation), and a revision (X and Y were correlated)."
+  caption="One response, six kinds of annotation. Each says something different about what went wrong."
+/>
+
+A binary label says the summary failed. A rating says how badly. A span label says where. A critique says why. A revision shows what right looks like. Each step costs the annotator more and tells the model more. Much of the craft of post-training is deciding which of these you can afford at scale, and which of them the method you're using can actually consume.
+
+### Provenance
+
+Separately from shape, data has a source, and each source comes with its own tradeoff.
+
+<Table id="provenance" caption="Where post-training data comes from.">
+
+| Source | Typical output | Tradeoff |
+| --- | --- | --- |
+| Human experts | Demonstrations, ratings, rubrics, environment designs | Rich and trustworthy, but slow and expensive |
+| Real users | Requests, edits, thumbs up and down | Shows what people actually ask, but biased toward who bothers to give feedback |
+| Teacher models | Synthetic answers, critiques, judgments | Cheap at scale, but inherits the teacher's errors |
+| The model being trained | Its own rollouts | Exactly on-policy, but only as good as the model currently is |
+| Programs | Generated problems, answer keys, test suites | Verifiable, but narrow and easy to overfit |
+
+</Table>
+
+Real pipelines mix these. A common pattern is for experts to write the task specifications and grading criteria, a teacher model to generate candidate solutions, and automated checks to filter them. Kimi K3's cold-start data, for instance, is trajectories generated by earlier specialist Kimi models, then verified in several stages and annotated by humans [@kimi2026k3].
+
+## Connecting the data to the methods
+
+Here's where the lego metaphor earns its keep. Data and methods don't pair up one-to-one. A single pool of data can feed several methods, and a single method can eat data from very different sources, because data gets transformed from one shape into another along the way.
+
+Suppose you want a model that summarizes scientific papers accurately. You sample four summaries from your current model and have an expert rate them: A gets 5/5, B gets 4/5, C overstates the findings and gets 2/5, D makes up a result and gets 1/5. That one batch of ratings can drive almost every method in the previous section.
+
+<Figure
+  id="one-task"
+  src={oneTaskManyMethods}
+  alt="Task: summarize a scientific paper accurately. Four candidates rated A 5/5, B 4/5, C 2/5, D 1/5. Five ways to use them: SFT or rejection sampling imitates A and filters weak answers; DPO or KTO prefers A over C or labels each good or bad; reward modeling learns to predict the expert's judgments; policy-gradient RL generates fresh answers, scores them, and updates; distillation matches a teacher's token predictions, which is extra supervision not derived from the ratings."
+  caption="The same ratings, used five ways."
+/>
+
+- **SFT / rejection sampling:** keep A (and maybe B), throw away C and D, and imitate what's left.
+- **DPO:** turn the ratings into pairs, like A over C and B over D.
+- **KTO:** label A and B good, C and D bad, without pairing them.
+- **Reward modeling:** train a model to predict the expert's scores, so you can score summaries the expert never saw.
+- **RL:** use that reward model to score fresh summaries the policy writes during training.
+
+Distillation is the odd one out. It doesn't use the ratings at all. Offline distillation needs summaries a teacher wrote, and on-policy distillation needs a set of papers to summarize plus access to a teacher that can score the student's tokens.
+
+Four transformations do most of this work: **filtering** turns scored samples into demonstrations, **comparing** turns them into preference pairs, **training a reward model** turns preferences into a scorer that generalizes, and **scoring fresh samples** turns that scorer into on-policy rewards. This is why a company that sells preference labels can end up powering an RL run, even though its annotators never produce a reward.
+
+The full compatibility picture looks something like this:
+
+<Table id="data-method" caption="Which data shapes feed which methods. ● direct use, ◐ needs a transformation or an extra ingredient, — atypical. Reward modeling trains a scorer, not the policy.">
+
+| Data | SFT | Direct alignment (DPO etc.) | Reward modeling | RL | Distillation |
+| --- | :-: | :-: | :-: | :-: | :-: |
+| Prompts and task sets | ◐ | ◐ | — | ● | ● |
+| Demonstrations | ● | ◐ | — | — | ◐ |
+| Revisions | ● | ● | ● | ◐ | — |
+| Preference pairs | ◐ | ● | ● | ◐ | — |
+| Ratings and rankings | ◐ | ◐ | ● | ◐ | — |
+| Critiques and step labels | — | — | ● | ◐ | — |
+| Rubrics | ◐ | ◐ | ◐ | ● | — |
+| Verifiable tasks | ◐ | ◐ | ◐ | ● | ◐ |
+| Recorded agent trajectories | ● | ◐ | ◐ | ◐ | ◐ |
+| Interactive environments | ◐ | ◐ | ◐ | ● | ◐ |
+| Teacher probabilities | — | — | — | ◐ | ● |
+
+</Table>
+
+A few cells need a word. Prompts on their own are the main input to RL and on-policy distillation, which generate their own responses and need only a reward source or a teacher to go with them. A revision paired with the original is already a preference pair, while critiques and step labels mostly train judges and process reward models rather than the policy. Ratings have to be turned into pairs before DPO can use them, except with KTO, which takes good and bad labels directly. Rubrics become RL rewards when a model judge scores against them. Recorded agent trajectories are someone else's text, so RL can use them only indirectly, for example as cold-start data, and they count as distillation data only in the offline sense, when a teacher produced them.
+
+In practice the data you can get often decides the method more than the task does. If you know what a great answer looks like and can write it down, start with SFT. If you can judge outputs more easily than you can write them, use preferences. If a program can check the answer, use RLVR. If someone already has a model that does the thing well, distill from it.
+
+## A market for the parts
+
+Because the parts are interchangeable, they can be bought. Data vendors have sold demonstrations and preference labels to labs for years. What has changed is the unit of sale.
+
+<Table id="data-units" caption="The unit of post-training data has grown with each paradigm.">
+
+| Paradigm | What one unit of data is |
+| --- | --- |
+| SFT | A prompt and a good response |
+| Preference tuning | A prompt and a better and worse response |
+| RLVR | A prompt and a way to check the answer |
+| Agentic RL | A task, an environment to do it in, and a grader |
+
+</Table>
+
+The last row is the new business. An RL environment for, say, financial analysis might include a simulated company with spreadsheets, emails, and records; a task like reconciling a quarterly report; tools for editing spreadsheets and searching documents; and a grader that checks the numbers and scores the deliverable against a rubric. One environment supports many tasks, and each task supports many rollouts, so a lab is buying a reusable source of practice rather than a fixed set of answers.
+
+The ecosystem around this has grown fast. Expert-data companies like Scale AI, Surge AI, Mercor, and Turing now build environments, rubrics, and graders alongside demonstrations. Scale advertises tools and applications that "behave like real-world systems in a stable environment", along with environments rebuilt from real companies' anonymized operating histories ([Scale RL environments](https://scale.com/rlenvironments)), and Mercor publishes some of its expert-authored professional tasks as the APEX benchmarks ([APEX](https://www.mercor.com/apex/)). Smaller companies specialize in a single domain such as software engineering or finance. Infrastructure companies sell the sandboxes the rollouts run in. On the open side, Prime Intellect's [Environments Hub](https://app.primeintellect.ai/dashboard/environments) collects community-built environments you can read and train on.
+
+{/* CHECK (review): vendor claims are from each company's public pages as of late 2026. Keep the list short; it will date quickly. */}
+
+The grading is changing too. A math problem is graded by checking the final answer. An enterprise workflow is graded by checking the state of the world afterward: whether the right records changed, whether the document exists, whether the constraints were respected. Many professional tasks can't be fully checked by a program, so their graders mix automated checks with rubric-following model judges. For tasks it can't verify, Kimi K3 uses a generative reward model that writes a rubric for each task and uses it to compare candidate answers head to head [@kimi2026k3].
+
+## The parts change the model
+
+Where the data comes from can shape a model's personality. In April 2025 OpenAI rolled back a GPT-4o update that had become noticeably sycophantic. Its postmortem listed several changes that "may have played a part" in combination, among them a new reward signal from users' thumbs-up and thumbs-down, along with changes involving memory and fresher data. OpenAI noted that this kind of user feedback "can sometimes favor more agreeable responses," and that together the changes weakened the reward signal that had been holding sycophancy in check [@openai2025sycophancy]. Sycophancy from human-preference training had been documented well before that [@sharma2023sycophancy].
+
+The grader matters in the same way. In coding RL, models have learned to make tests pass without solving the problem, for example by special-casing the test inputs or editing the tests [@baker2025monitoring]. The gap between what the user wants and what the reward measures becomes a property of the training environment, which is why so much of the vendor effort goes into graders.
+
+The arrangement of stages also sets behavioral knobs. Qwen3's mode-fusion stage is the reason one model can answer either with or without a long reasoning trace [@qwen2025qwen3]. Kimi K1.5 trained long chain-of-thought reasoning with RL and then transferred it into shorter answers [@kimi2025k15]. Kimi K3 gets its low, high, and max effort levels by first training a max-budget expert, then lowering the token budget to produce the high- and low-effort experts, and finally distilling all of them into one model [@kimi2026k3]. Each of these comes from how the data and stages were arranged, using standard optimizers.
+
+What a stage starts from matters too. Olmo 3 ran the same RL on its SFT model and on its DPO model, and the DPO starting point came out ahead on the 7B model, though from a single run each [@olmo2025olmo3].
+
+## Thinking in parts
+
+The most useful habit I've picked up from this is describing a training stage by its parts rather than its name. "We did GRPO" says little. "GRPO on synthetic math prompts, with on-policy rollouts scored by an answer checker" says what data, what signal, and what update. Each piece of that sentence could be swapped: a rubric judge could replace the answer checker, or a teacher's per-token scores could replace the reward.
+
+That framing also makes the field easier to follow as it moves. The specialists-then-distillation shape in [fig:pipeline] has spread over the last year or so. GLM-4.5 trained reasoning, agent, and chat experts and distilled them into one model with SFT on their outputs [@glm2025glm45], and MiMo-V2-Flash, Kimi K3, and Nemotron 3 Ultra all use on-policy distillation from specialist teachers [@xiaomi2026mimov2flash; @kimi2026k3; @nvidia2026nemotron3ultra]. Selling environments instead of datasets is about as new. In another year the diagram will probably look different again, and I expect it will still be built from data, a learning signal, and an update rule.

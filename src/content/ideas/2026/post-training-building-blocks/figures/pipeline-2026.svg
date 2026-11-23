@@ -1,0 +1,123 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2000 1440" width="2000" height="1440" role="img" aria-labelledby="title">
+  <title id="title">A simplified composite of a 2026 post-training pipeline</title>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#e8e8e8"/>
+    </marker>
+    <marker id="arrow-dim" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#9a9fa7"/>
+    </marker>
+    <style>
+      .bg { fill: #0f1115; }
+      .box { fill: #0f1115; stroke: #e8e8e8; stroke-width: 2.5; }
+      .strong { stroke-width: 4; }
+      .dash { stroke-dasharray: 12 8; }
+      .group { fill: none; stroke: #6b7079; stroke-width: 2; stroke-dasharray: 6 8; }
+      .line { fill: none; stroke: #e8e8e8; stroke-width: 2.5; }
+      .line-dash { fill: none; stroke: #e8e8e8; stroke-width: 2.5; stroke-dasharray: 12 8; }
+      .line-dim { fill: none; stroke: #9a9fa7; stroke-width: 2; stroke-dasharray: 6 6; }
+      .title { font-family: Inter, "Helvetica Neue", Helvetica, Arial, sans-serif; font-weight: 700; font-size: 29px; fill: #f2f2f2; text-anchor: middle; }
+      .sub { font-family: Inter, "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 22px; fill: #a3a8b0; text-anchor: middle; }
+      .mono { font-family: "IBM Plex Mono", Menlo, Consolas, "Courier New", monospace; font-size: 18px; letter-spacing: 3.5px; fill: #8c919a; }
+    </style>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="2000" height="1440"/>
+
+  <!-- Pretraining row (generic) -->
+  <rect class="box" x="130" y="50" width="400" height="105" rx="6"/>
+  <text class="title" x="330" y="94">Pretraining</text>
+  <text class="sub" x="330" y="128">broad web mix</text>
+
+  <rect class="box" x="590" y="50" width="400" height="105" rx="6"/>
+  <text class="title" x="790" y="94">Later pretraining</text>
+  <text class="sub" x="790" y="128">higher-quality mix</text>
+
+  <rect class="box dash" x="1050" y="50" width="400" height="105" rx="6"/>
+  <text class="title" x="1250" y="94">Midtraining</text>
+  <text class="sub" x="1250" y="128">math, code, IF (some recipes)</text>
+
+  <rect class="box" x="1510" y="50" width="400" height="105" rx="6"/>
+  <text class="title" x="1710" y="94">Long context</text>
+  <text class="sub" x="1710" y="128">extension</text>
+
+  <path class="line" d="M530,102 H584" marker-end="url(#arrow)"/>
+  <path class="line" d="M990,102 H1044" marker-end="url(#arrow)"/>
+  <path class="line" d="M1450,102 H1504" marker-end="url(#arrow)"/>
+  <path class="line" d="M1710,155 V205 H1020 V244" marker-end="url(#arrow)"/>
+
+  <!-- Base model -->
+  <rect class="box" x="820" y="250" width="400" height="105" rx="52.5"/>
+  <text class="title" x="1020" y="313">Base model</text>
+
+  <path class="line" d="M1020,355 V434" marker-end="url(#arrow)"/>
+
+  <!-- General SFT -->
+  <rect class="box" x="820" y="440" width="400" height="105" rx="6"/>
+  <text class="title" x="1020" y="484">General SFT</text>
+  <text class="sub" x="1020" y="518">cold start for RL</text>
+
+  <!-- SFT to student -->
+  <path class="line" d="M1220,492 H1700 V634" marker-end="url(#arrow)"/>
+  <!-- SFT to teacher group -->
+  <path class="line" d="M1020,545 V634" marker-end="url(#arrow)"/>
+
+  <!-- Specialist teacher group -->
+  <rect class="group" x="130" y="640" width="1180" height="195" rx="10"/>
+  <text class="mono" x="160" y="676">SPECIALIST TEACHERS · FROM SFT, THE STUDENT, OR EACH OTHER</text>
+
+  <rect class="box" x="160" y="700" width="260" height="105" rx="6"/>
+  <text class="title" x="290" y="744">Reasoning</text>
+  <text class="sub" x="290" y="778">math, code, STEM</text>
+
+  <rect class="box" x="450" y="700" width="260" height="105" rx="6"/>
+  <text class="title" x="580" y="744">Agentic</text>
+  <text class="sub" x="580" y="778">SWE, terminal, search</text>
+
+  <rect class="box" x="740" y="700" width="260" height="105" rx="6"/>
+  <text class="title" x="870" y="744">General</text>
+  <text class="sub" x="870" y="778">chat, IF, safety</text>
+
+  <rect class="box dash" x="1030" y="700" width="260" height="105" rx="6"/>
+  <text class="title" x="1160" y="744">…</text>
+  <text class="sub" x="1160" y="778">office, tool use, more</text>
+
+
+  <!-- Student -->
+  <rect class="box strong" x="1480" y="640" width="440" height="105" rx="6"/>
+  <text class="title" x="1700" y="684">Student</text>
+  <text class="sub" x="1700" y="718">mixed-environment RLVR</text>
+
+  <!-- Student seeds some teachers -->
+  <path class="line-dim" d="M1480,770 H1318" marker-end="url(#arrow-dim)"/>
+  <text class="mono" x="1338" y="800">SEEDS SOME</text>
+
+  <!-- Warmup -->
+  <path class="line" d="M1700,745 V934" marker-end="url(#arrow)"/>
+  <rect class="box dash" x="1480" y="940" width="440" height="105" rx="6"/>
+  <text class="title" x="1700" y="984">Warmup</text>
+  <text class="sub" x="1700" y="1018">light SFT on the teachers' data</text>
+  <path class="line" d="M1700,1045 V1104" marker-end="url(#arrow)"/>
+
+  <!-- Teachers to distillation -->
+  <path class="line" d="M290,805 V1104" marker-end="url(#arrow)"/>
+  <path class="line" d="M580,805 V1104" marker-end="url(#arrow)"/>
+  <path class="line" d="M870,805 V1104" marker-end="url(#arrow)"/>
+  <path class="line-dash" d="M1160,805 V1104" marker-end="url(#arrow)"/>
+  <text class="mono" x="900" y="990">per-token</text>
+  <text class="mono" x="900" y="1016">scores</text>
+
+  <!-- MOPD -->
+  <rect class="box strong" x="130" y="1110" width="1790" height="105" rx="6"/>
+  <text class="title" x="1025" y="1154">Multi-teacher on-policy distillation</text>
+  <text class="sub" x="1025" y="1188">the student writes; the matching teacher scores every token</text>
+
+  <!-- Iteration 2 loop back to all teachers -->
+  <path class="line-dash" d="M130,1162 H72 V765 H124" marker-end="url(#arrow)"/>
+  <text class="mono" transform="translate(52,964) rotate(-90)" text-anchor="middle">ITERATION 2</text>
+
+  <!-- Shipped -->
+  <path class="line" d="M1025,1215 V1294" marker-end="url(#arrow)"/>
+  <rect class="box" x="825" y="1300" width="400" height="105" rx="52.5"/>
+  <text class="title" x="1025" y="1363">Shipped model</text>
+</svg>
