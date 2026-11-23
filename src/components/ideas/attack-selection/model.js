@@ -65,21 +65,70 @@ export function thresholdFor(budget, sigma) {
  * (A large finite noise still selects a little; the source artifact's random
  * preset used noise 6 and lost ~8 points of TPR at 1%.)
  */
-export function keptAttacks(keep, noise) {
-  if (keep >= 0.999 || !Number.isFinite(noise)) return ALL_ATTACKS.slice();
-  const weights = (cut) => GRID.map((x) => Phi((cut - x) / noise));
+export function keptAttacks(keep, noise, base = ALL_ATTACKS) {
+  if (keep >= 0.999 || !Number.isFinite(noise)) return base.slice();
+  const cut = selectorCut(keep, noise, base);
+  const mass = base.map((a, j) => a * Phi((cut - GRID[j]) / noise));
+  const z = mass.reduce((s, v) => s + v, 0);
+  return mass.map((v) => v / z);
+}
+
+/**
+ * The selector keeps an attack when its noisy read (score + noise·Z) falls
+ * below this cut, chosen so the kept share of `base` is `keep`. Exported so
+ * simulations can apply the same rule to sampled attacks.
+ */
+export function selectorCut(keep, noise, base = ALL_ATTACKS) {
+  const total = base.reduce((s, v) => s + v, 0);
   let lo = -30;
   let hi = 30;
   for (let i = 0; i < 60; i++) {
     const cut = (lo + hi) / 2;
-    const k = weights(cut).reduce((s, w, j) => s + w * ALL_ATTACKS[j], 0);
+    const k = base.reduce((s, v, j) => s + v * Phi((cut - GRID[j]) / noise), 0) / total;
     if (k < keep) lo = cut;
     else hi = cut;
   }
-  const w = weights((lo + hi) / 2);
-  const mass = ALL_ATTACKS.map((a, j) => a * w[j]);
-  const z = mass.reduce((s, v) => s + v, 0);
-  return mass.map((v) => v / z);
+  return (lo + hi) / 2;
+}
+
+/** Normal(m, s) probability mass on GRID. */
+export const normalMass = (m, s) => GRID.map((x) => pdf(x, m, s) * DX);
+
+/** Threshold whose upper tail of `mass` is `budget` (for non-normal honest scores). */
+export function thresholdForMass(mass, budget) {
+  const total = mass.reduce((s, v) => s + v, 0);
+  let lo = X0;
+  let hi = X1;
+  for (let i = 0; i < 50; i++) {
+    const mid = (lo + hi) / 2;
+    if (tprAt(mass, mid) / total > budget) lo = mid;
+    else hi = mid;
+  }
+  return (lo + hi) / 2;
+}
+
+/**
+ * Score after resampling: execute the least suspicious of k samples.
+ * A score is signal ~ Normal(mean, signalSd), fixed by what the action does,
+ * plus per-sample noise ~ Normal(0, noiseSd). The minimum of k noise draws
+ * has density k·f(e)·(1 − F(e))^(k−1); convolve it with the signal.
+ * k = 1 gives Normal(mean, √(signalSd² + noiseSd²)).
+ */
+export function resampledMass(mean, signalSd, noiseSd, k) {
+  const offsets = [];
+  for (let e = -4 * noiseSd; e <= 4 * noiseSd + 1e-9; e += DX) offsets.push(e);
+  const minNoise = offsets.map((e) => k * pdf(e, 0, noiseSd) * (1 - Phi(e / noiseSd)) ** (k - 1) * DX);
+  const out = GRID.map(() => 0);
+  GRID.forEach((x, j) => {
+    const sig = pdf(x, mean, signalSd) * DX;
+    if (sig < 1e-12) return;
+    offsets.forEach((e, i) => {
+      const t = Math.round((x + e - X0) / DX);
+      if (t >= 0 && t < out.length) out[t] += sig * minNoise[i];
+    });
+  });
+  const z = out.reduce((s, v) => s + v, 0);
+  return out.map((v) => v / z);
 }
 
 /** True-positive (caught) rate of an attack mass at threshold τ. */

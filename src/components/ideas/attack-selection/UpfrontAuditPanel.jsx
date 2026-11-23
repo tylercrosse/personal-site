@@ -122,7 +122,8 @@ export default function UpfrontAuditPanel() {
       </div>
 
       <p className="as-note">
-        No score threshold here. Humans audit the first aN tasks and nothing after. Set a floor near 10⁻²
+        No score threshold here. Humans audit the first aN tasks and nothing after. Drag N and safety at r*
+        stays flat, because the attacker just rescales its rate. Set a floor near 10⁻²
         with N = 10k and safety jumps, because the model can't attack rarely enough to slip past the window.
       </p>
     </section>

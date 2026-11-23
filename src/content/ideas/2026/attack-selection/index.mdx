@@ -25,8 +25,8 @@ import RocToSafetyFigure from "../../../../components/ideas/attack-selection/Roc
 import ThresholdRocWidget from "../../../../components/ideas/attack-selection/ThresholdRocWidget.jsx";
 import SelectionExplorer from "../../../../components/ideas/attack-selection/SelectionExplorer.jsx";
 import RocPanel from "../../../../components/ideas/attack-selection/RocPanel.jsx";
-import DeploymentPanel from "../../../../components/ideas/attack-selection/DeploymentPanel.jsx";
-import UpfrontAuditPanel from "../../../../components/ideas/attack-selection/UpfrontAuditPanel.jsx";
+import DeploymentTape from "../../../../components/ideas/attack-selection/DeploymentTape.jsx";
+import InterventionPanel from "../../../../components/ideas/attack-selection/InterventionPanel.jsx";
 
 {/* cSpell:words Hadad MiMo Mantel Haenszel sudoers Serrano Lindner Jenner Potham */}
 
@@ -254,28 +254,30 @@ $$
 
 To see where this comes from, note that the chance of all $N$ tasks passing with nothing decisive is $g_\text{cont}^N$, and that outcome counts as safe. Otherwise the game ends at the first decisive task, and that task is a catch with probability $g_\text{caught} / (g_\text{caught} + g_\text{uncaught})$.
 
-The ratio on the right is the safety metric from earlier. The attack rate enters only through the first term, the chance that the attacker never does anything decisive at all.
+The ratio on the right is the safety metric from earlier, and it doesn't depend on how often the attacker attacks. {/* NEW PROSE (review) */} An attacker that attacks on a fraction $r$ of tasks has $g_\text{caught} = r \times \text{TPR}$ and $g_\text{uncaught} = r\,(1 - \text{TPR})\,p$, so the $r$ cancels and the ratio is the same TPR-to-safety formula as before. That's why the paper's random-selection control, which skips the same share of opportunities but picks them at random, leaves safety where it was. The attack rate enters only through the first term, the chance that the attacker never does anything decisive at all.
 
 A selective attacker shrinks both $g_\text{caught}$ and $g_\text{uncaught}$, because it attacks less, but it shrinks $g_\text{caught}$ faster. This separates the two effects cleanly. Attacking rarely mostly changes whether the game ends at all, while selection changes how it ends. In a short deployment with only one or two expected attempts, a selective attacker can even look safer, simply because it often never acts. As $N$ grows, the first term goes to zero, both attackers settle onto their ratios, and selection is strictly worse for the blue team.
 
 <div class="viz-shell">
-  <DeploymentPanel client:visible />
+  <DeploymentTape client:visible initialMode="score" />
 </div>
 
 ### Selection versus attacking at a low rate
 
-There's an older red-team strategy that also involves attacking rarely, and it's worth separating from selection. Under upfront auditing, humans review the first $aN$ tasks of an $N$-task deployment, a fraction $a$ of the whole, and the attacker attacks each task independently with some fixed probability $r$ [@greenblatt2023control]. There's no score threshold here, so the distributions above don't apply. Nothing after the window gets audited, so the attacker wins if it gets through the window without attacking, then attacks at least once afterward.
+There's an older red-team strategy that also involves attacking rarely, and it's worth separating from selection. Under upfront auditing, humans review the first $aN$ tasks of an $N$-task deployment, a fraction $a$ of the whole, and the attacker attacks each task independently with some fixed probability $r$ [@greenblatt2023control]. There's no score threshold here, so the distributions above don't apply. This is also where the attack rate stops cancelling out. {/* NEW PROSE (review) */} Under trusted monitoring, every attack faces the same caught rate whenever it happens. Here an attack is caught for certain inside the window and never after it, so whether it's caught depends on when it happens rather than on what it looks like. Nothing after the window gets audited, so the attacker wins if it gets through the window without attacking, then attacks at least once afterward.
 
 $$
 P(\text{red wins}) = (1 - r)^{aN}\left[1 - (1 - r)^{(1-a)N}\right], \qquad r^{*} \approx \frac{-\ln a}{(1-a)N}
 $$
 
-Minimizing over $r$ for large $N$ gives the attacker's best rate $r^*$, shown on the right, and it's very small. With a 1% audit window it's about 0.46% at $N$ = 1,000 and 0.0005% at $N$ = 1,000,000. Either way, the idealized attacker expects only about $-\ln a$ attacks over the whole deployment, around 4.6 for a 1% window.
+Maximizing the attacker's chance of winning over $r$, for large $N$, gives its best rate $r^*$, shown on the right, and it's very small. With a 1% audit window it's about 0.46% at $N$ = 1,000 and 0.0005% at $N$ = 1,000,000. Either way, the idealized attacker expects only about $-\ln a$ attacks over the whole deployment, around 4.6 for a 1% window.
 
-Whether a model can actually act at such a low rate is an empirical question [@mallen2024subversion]. Serrano, Xing, Lindner and Jenner [@serrano2026lowprob] found that frontier models can hit calibrated rates below 1 in 100,000 when given a source of in-context randomness, such as a UUID, and mostly fail without one.
+That fixed count is why a longer deployment doesn't help the blue team. {/* NEW PROSE (review) */} The window is a fixed fraction of the deployment, so a longer deployment just forces a rarer rate, and the attacker's best chance of winning comes out the same at every $N$. Against a 1% window it's about 94.5%, which leaves the blue team about 5.5% safety.
+
+So the question that decides upfront auditing isn't how long the deployment runs. It's whether a model can actually act at a rate as low as $r^*$, which is an empirical question [@mallen2024subversion]. A model that can't has to attack more often than it wants, and more of those attacks land inside the window. {/* NEW PROSE (review) */} Serrano, Xing, Lindner and Jenner [@serrano2026lowprob] found that frontier models can hit calibrated rates below 1 in 100,000 when given a source of in-context randomness, such as a UUID, and mostly fail without one.
 
 <div class="viz-shell">
-  <UpfrontAuditPanel client:visible />
+  <DeploymentTape client:visible initialMode="window" />
 </div>
 
 The two strategies avoid detection in different ways. A low-rate attacker avoids the window when audits happen, while a selective attacker avoids actions the monitor would find suspicious. Selection also needs no random number generator, because variation across tasks supplies the randomness, so limiting a model's access to entropy wouldn't stop it. The realistic threat is probably a combination of the two, where the attacker attacks with low probability and only when the opportunity is good.
@@ -297,6 +299,13 @@ One row needs context. CTRL-Z [@bhatt2025ctrlz] is a blue-team protocol that res
 | A larger audit budget | Unchanged | Unchanged | Falls | Rises, and selection has less room |
 
 </Table>
+
+{/* NEW PROSE (review): lead-in for the interventions widget. */}
+Each row is easier to see than to read. Pick one below and watch which curve moves, and whether τ goes with it.
+
+<div class="viz-shell">
+  <InterventionPanel client:visible />
+</div>
 
 Resampling and selection both pick "the version that looks less suspicious." What decides who benefits is whose distribution moves more relative to τ. Resampling helps the blue team because honest suspicion is mostly noise, which resampling averages away, while attack suspicion is mostly signal, which survives it.
 
