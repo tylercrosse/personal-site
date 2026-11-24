@@ -175,18 +175,26 @@ export default function InterventionPanel() {
   const baseTauX = sx(base.tau);
   const moved = Math.abs(cur.tau - base.tau) > 0.01;
   const xTicks = [-4, -2, 0, 2, 4, 6].map((v) => ({ x: sx(v), label: String(v) }));
-  const attackColor = id === "none" && !selOn ? INK.all : INK.kept;
+  // Blue only when a selector picked the attacks; otherwise the attack ink.
+  const selected = cur.share < 1;
+  const attackColor = selected ? INK.kept : INK.all;
 
   return (
     <section className="as-widget" aria-label="How interventions move the distributions">
       <style>{WIDGET_CSS + CSS}</style>
 
-      <div className="as-presets" role="group" aria-label="Intervention">
-        {INTERVENTIONS.map((x) => (
-          <button key={x.id} type="button" aria-pressed={id === x.id} onClick={() => setId(x.id)}
-            style={buttonStyles({ active: id === x.id, color: x.side === "blue" ? TOKENS.green : x.side === "red" ? TOKENS.red : INK.kept })}>
-            {x.label}
-          </button>
+      {/* Grouped by team in words, not color: blue already means "attacks the selector keeps". */}
+      <div className="as-toolbar" role="group" aria-label="Intervention">
+        {[[null, null], ["red", "red team"], ["blue", "blue team"]].map(([side, name]) => (
+          <div key={name ?? "base"} className="as-seg">
+            {name ? <span className="as-seg-label">{name}</span> : null}
+            {INTERVENTIONS.filter((x) => x.side === side).map((x) => (
+              <button key={x.id} type="button" aria-pressed={id === x.id} onClick={() => setId(x.id)}
+                style={buttonStyles({ active: id === x.id })}>
+                {x.label}
+              </button>
+            ))}
+          </div>
         ))}
       </div>
 
@@ -199,7 +207,7 @@ export default function InterventionPanel() {
 
       <div className="as-legend">
         <span><Swatch color={INK.honest} />honest</span>
-        <span><Swatch color={attackColor} width={3} />attacks after the change</span>
+        <span><Swatch color={attackColor} dashed={!selected} width={selected ? 3 : 2.2} />{selected ? "attacks a selector kept" : "attacks after the change"}</span>
         <span><Swatch color={TOKENS.textFaint} dashed width={1.5} />baseline, for comparison</span>
       </div>
 
@@ -214,7 +222,9 @@ export default function InterventionPanel() {
           {/* Current. */}
           <path d={tail(shown.attacks, shown.tau)} fill={attackColor} fillOpacity="0.28" />
           <path d={curve(shown.honest)} fill="none" stroke={INK.honest} strokeWidth="2.2" />
-          <path d={curve(shown.attacks)} fill="none" stroke={attackColor} strokeWidth="2.6" />
+          {/* The post's convention: dashed gray = all attacks, solid blue = attacks a selector kept. */}
+          <path d={curve(shown.attacks)} fill="none" stroke={attackColor} strokeWidth={selected ? 2.6 : 2.2}
+            strokeDasharray={selected ? undefined : "6 4"} />
           <line x1={tauX} x2={tauX} y1={Y1} y2={Y0} stroke={INK.marker} strokeWidth="1.5" strokeDasharray="4 3" />
           <Label x={px(Math.min(tauX + 6, X1 - 130))} y={Y1 + 12} color={INK.text}>
             τ = {shown.tau.toFixed(2)} (top {fmtBudget(cur.budget)})
@@ -240,18 +250,18 @@ export default function InterventionPanel() {
 
       <div className="as-stats">
         <Stat label="threshold τ" value={`${base.tau.toFixed(2)} → ${cur.tau.toFixed(2)}`} />
-        <Stat label="caught rate" value={`${pct(base.tpr)} → ${pct(cur.tpr)}`} color={INK.kept} />
-        <Stat label="safety" value={`${pct(base.safety)} → ${pct(cur.safety)}`} color={INK.kept} />
+        <Stat label="caught rate" value={`${pct(base.tpr)} → ${pct(cur.tpr)}`} />
+        <Stat label="safety" value={`${pct(base.safety)} → ${pct(cur.safety)}`} />
         <Stat label="safety selection costs here" value={id === "random" ? "0 pts" : `${Math.round(cur.selectionCost * 100)} pts (baseline ${Math.round(base.selectionCost * 100)})`} />
       </div>
 
       <p className="as-note">
         The area under the attack curve is how many attacks happen, so both kinds of selection shrink it to 30%.
-        The caught rate is the share of that area above τ. τ only moves when honest scores or the budget change, because it's set from honest work alone. Selection and
+        The caught rate is the share of that area above τ. Blue marks attacks a selector chose. τ only moves when honest scores or the budget change, because it's set from honest work alone. Selection and
         random selection leave it where it was. The three blue-team changes all lower it, and the last stat shows the
         cost of selection shrinking with it: a lower τ leaves less room below it to hide in. Resampling helps the
-        blue team because the least suspicious of three samples strips out noise, and honest suspicion is mostly
-        noise while attack suspicion is mostly signal.
+        blue team here because the toy assumes honest suspicion is mostly noise and attack suspicion mostly
+        signal, so taking the least suspicious of three samples moves honest scores further.
       </p>
       <p className="as-note">
         Toy model, 1% budget unless noted, side-task success 70%, the explorer's default selector. Resampling takes
