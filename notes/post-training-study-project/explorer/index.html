@@ -30,7 +30,15 @@ header h1 { font-size: 15px; font-weight: 600; margin: 0; white-space: nowrap; }
 .tabs button.on { background: var(--surface2); color: var(--text); }
 .lensdesc { color: var(--muted); font-size: 12.5px; flex: 1 1 280px; line-height: 1.4; }
 
-.app { flex: 1; display: grid; grid-template-columns: minmax(0, 1fr) 360px; min-height: 0; }
+.app { flex: 1; display: grid; grid-template-columns: minmax(0, 1fr) var(--panel-w, 420px); min-height: 0; }
+/* Drag the panel's left edge to resize it; double-click to reset */
+.resizer { position: absolute; top: 0; right: 0; bottom: 0; width: 7px; cursor: ew-resize; z-index: 5; touch-action: none; }
+.resizer::after { content: ""; position: absolute; top: 0; bottom: 0; right: 0; width: 2px; background: transparent; transition: background .15s; }
+.resizer:hover::after, .resizer:focus-visible::after, .resizer.drag::after { background: var(--faint); }
+.resizer:focus { outline: none; }
+body.resizing { cursor: ew-resize; user-select: none; }
+body.resizing svg#map { pointer-events: none; }
+.mech { max-width: 460px; }
 .canvas { position: relative; min-width: 0; min-height: 0; overflow: hidden; }
 svg#map { width: 100%; height: 100%; display: block; cursor: grab; touch-action: none; user-select: none; }
 svg#map.grabbing { cursor: grabbing; }
@@ -51,15 +59,20 @@ svg#map.grabbing { cursor: grabbing; }
   background: rgba(23,26,33,.92); color: var(--muted); cursor: pointer; font-size: 15px; }
 .zoom button:hover { color: var(--text); }
 .hint { position: absolute; right: 54px; top: 18px; color: var(--faint); font-size: 11px; pointer-events: none; }
+.reltoggle { position: absolute; left: 12px; top: 12px; }
+.relarc { fill: none; stroke: #e9d8a6; stroke-width: 1.4; }
+.relmark circle { fill: #0f1115; stroke: #e9d8a6; stroke-width: 1.2; }
+.relmark text { font-size: 11px; font-weight: 600; fill: #e9d8a6; }
+.relmark .rl { font-size: 10.5px; font-weight: 400; }
 
 aside { border-left: 1px solid var(--border); overflow: auto; padding: 18px 20px 48px; background: var(--panel);
   font-size: 13.5px; line-height: 1.5; }
-aside h2 { font-size: 18px; margin: 2px 0 8px; font-weight: 600; }
-aside h3 { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--faint);
+aside h2, .cmp-body h2 { font-size: 18px; margin: 2px 0 8px; font-weight: 600; }
+aside h3, .cmp-body h3 { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--faint);
   margin: 20px 0 8px; font-weight: 600; }
-aside p { margin: 0 0 10px; color: #cfd2d7; }
-aside ul { margin: 0; padding: 0; list-style: none; }
-aside li { margin: 0 0 8px; }
+aside p, .cmp-body p { margin: 0 0 10px; color: #cfd2d7; }
+aside ul, .cmp-body ul { margin: 0; padding: 0; list-style: none; }
+aside li, .cmp-body li { margin: 0 0 8px; }
 .kind { font-size: 11.5px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
 .tradeoff { color: var(--muted); font-style: italic; }
 .ref { background: none; border: 0; padding: 0; color: var(--text); cursor: pointer; font-weight: 500;
@@ -118,8 +131,57 @@ aside li { margin: 0 0 8px; }
 @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
 .badge text { font-size: 10px; font-weight: 700; fill: #0f1115; }
 
+/* Mechanism cards: one training step, drawn with the article figures' vocabulary */
+.mech { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 10px 6px 8px; }
+.mech-h { font-size: 12.5px; color: var(--muted); padding: 0 6px 6px; min-height: 1.5em; }
+.mech-h b { color: var(--text); font-weight: 600; }
+.mech-h .n { color: var(--reward); }
+.mech svg { display: block; width: 100%; height: auto; }
+.mech text { font-family: Inter, system-ui, sans-serif; }
+.mech .mt { font-size: 12px; font-weight: 600; fill: var(--text); }
+.mech .ms { font-size: 10.5px; fill: var(--muted); }
+.mech .mtag { font-size: 8.5px; letter-spacing: .12em; fill: var(--muted); }
+.mech .mnum { font-size: 10px; font-family: "IBM Plex Mono", Menlo, monospace; fill: #e8e8e8; text-anchor: middle;
+  paint-order: stroke; stroke: #0f1115; stroke-width: 2.5px; }
+.mech .mnum.dk { fill: #0f1115; stroke: none; font-weight: 600; }
+.mech .mcode { font-size: 11px; font-weight: 700; font-family: Menlo, monospace; fill: #8c919a; text-anchor: middle; }
+.mech-diff { list-style: none; padding: 0; margin: 8px 6px 0; min-height: 96px; font-size: 12px; }
+.mech-diff li { margin: 0 0 3px; color: #cfd2d7; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mech-diff .k { color: var(--faint); display: inline-block; width: 74px; }
+.mech-diff .was { color: var(--faint); text-decoration: line-through; }
+.mech-diff .now { color: var(--reward); }
+.mech-cap { font-size: 12px; margin-top: 8px !important; }
+aside li.mech-sub { border-radius: 6px; padding: 3px 6px; margin: 0 -6px 4px; }
+aside li.mech-sub:hover { background: var(--surface); }
+/* Compare view: method cards side by side, slots aligned across columns */
+.app { position: relative; }
+.compare { position: absolute; inset: 0; z-index: 20; background: var(--bg); overflow: auto; padding: 16px 20px 28px; }
+.compare[hidden] { display: none; }
+.cmp-bar { display: flex; gap: 12px 18px; align-items: flex-start; flex-wrap: wrap; margin-bottom: 18px; }
+.cmp-intro { flex: 1 1 360px; }
+.cmp-intro h2 { font-size: 18px; font-weight: 600; margin: 2px 0 6px; }
+.cmp-intro p { margin: 0; font-size: 12.5px; color: var(--muted); max-width: 680px; line-height: 1.45; }
+.cmp-close { background: var(--surface); border: 1px solid var(--border); color: var(--muted); border-radius: 7px;
+  padding: 5px 10px; cursor: pointer; font-size: 12.5px; }
+.cmp-close:hover { color: var(--text); }
+.cmp-cols { display: flex; gap: 14px; align-items: flex-start; }
+.cmp-col { flex: 1 1 0; min-width: 240px; max-width: 360px; }
+.cmp-col .mech { max-width: none; }
+.cmp-h { display: flex; align-items: baseline; gap: 6px; width: 100%; background: none; border: 0; color: var(--text);
+  padding: 0 4px 8px; cursor: pointer; text-align: left; font-size: 14.5px; }
+.cmp-h .yr { color: var(--faint); font-size: 12px; }
+.cmp-h .cmp-tag { margin-left: auto; font-size: 11.5px; color: var(--reward); }
+.cmp-col.ref .cmp-tag { color: var(--text); border: 1px solid var(--reward); border-radius: 999px; padding: 0 7px; }
+.cmp-col:not(.ref) .cmp-h:hover .cmp-tag::after { content: " · make reference"; color: var(--faint); }
+.cmp-col.ref .mech { border-color: var(--reward); }
+.cmp-col .mech-diff { min-height: 0; }
+.cmp-body { font-size: 12.5px; line-height: 1.45; padding: 12px 4px 0; }
+.cmp-body h3 { margin-top: 16px; }
+.cmp-body .tradeoff { color: var(--muted); }
+.cmp-open { margin: 8px 4px 0; font-size: 12px; }
 @media (max-width: 860px) {
   .app { grid-template-columns: 1fr; grid-template-rows: minmax(0, 1fr) 42vh; }
+  .resizer { display: none; }
   aside { border-left: 0; border-top: 1px solid var(--border); }
   .hint { display: none; }
   .recipes { flex-wrap: nowrap; overflow-x: auto; right: 12px; bottom: 8px; scrollbar-width: none; }
@@ -136,19 +198,23 @@ aside li { margin: 0 0 8px; }
 </header>
 <div class="app">
   <div class="canvas" id="canvas">
+    <div class="resizer" id="resizer" role="separator" aria-orientation="vertical" aria-label="Resize the side panel" tabindex="0" title="Drag to resize · double-click to reset"></div>
     <svg id="map">
-      <defs id="defs"></defs>
+      <defs id="defs"><marker id="arr-lane" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,1 L9,5 L0,9 z" fill="#6b7079"/></marker></defs>
       <g id="vp">
         <g id="bg"></g>
         <g id="edges"></g>
+        <g id="relarcs"></g>
         <g id="subarcs"></g>
         <g id="routes"></g>
         <g id="nodes"></g>
         <g id="overlay"></g>
+        <g id="relmarks"></g>
         <g id="labels"></g>
       </g>
     </svg>
     <div class="hint">drag to pan · pinch or ⌘/ctrl-scroll to zoom</div>
+    <button class="chip reltoggle" id="reltoggle" style="--c:#e9d8a6"><span class="sw" style="background:#e9d8a6"></span>≈ Show how methods relate</button>
     <div class="zoom">
       <button id="zin" title="Zoom in">+</button>
       <button id="zout" title="Zoom out">−</button>
@@ -157,6 +223,7 @@ aside li { margin: 0 0 8px; }
     <div class="recipes" id="recipes"><span class="lbl">Recipes</span></div>
   </div>
   <aside id="panel"></aside>
+  <div class="compare" id="compare" hidden></div>
 </div>
 
 <script>
@@ -179,6 +246,7 @@ const CITE = {
   shenfeld2025: "Shenfeld et al. 2025", macdiarmid2025: "MacDiarmid et al. 2025", singhal2023: "Singhal et al. 2023",
   cui2025: "Cui et al. 2025", schulman2017: "Schulman et al. 2017", agarwal2023: "Agarwal et al. 2023 (GKD)",
   guo2024: "Guo et al. 2024 (OAIF)", uesato2022: "Uesato et al. 2022", zelikman2022: "Zelikman et al. 2022 (STaR)",
+  touvron2023: "Touvron et al. 2023 (Llama 2)",
 };
 
 const NODES = [
@@ -268,7 +336,7 @@ const NODES = [
               ["SFT on another model's outputs copies style more than capability.", "gudibande2023", true],
               ["Narrow fine-tuning (insecure code) produced broadly misaligned behavior.", "betley2025", true],
               ["“SFT memorizes, RL generalizes.”", "chu2025", true]] },
-  { id: "m-rs", kind: "method", group: "demo", label: "Rejection sampling", year: 2022, pol: "on", dens: "sparse",
+  { id: "m-rs", kind: "method", group: "demo", also: "reward", label: "Rejection sampling", year: 2022, pol: "on", dens: "sparse",
     summary: "Sample several candidates, keep the ones a grader likes, run SFT on the keepers. The grader picks the data but never enters the gradient. Trains on the model's own text with one pass/fail judgment per response, which puts it close to RL: STaR, ReST and expert iteration are versions of it. Usually run in batches or rounds, so it's only roughly on-policy.", cites: ["zelikman2022"],
     subs: [["m-sft", "Imitates someone else's text; no grader needed, but the model never practices on its own outputs."],
            ["m-grpo", "Puts the scores in the gradient, so failures push probability down instead of just being dropped."],
@@ -291,7 +359,7 @@ const NODES = [
   { id: "m-simpo", kind: "method", group: "pref", label: "SimPO", year: 2024, pol: "off", dens: "sparse",
     summary: "Simple preference optimization: uses a response's average log-probability as the implicit reward, adds a margin, and needs no reference model.",
     subs: [["m-dpo", "Keeps a reference model in memory and anchors to it."]] },
-  { id: "m-odpo", kind: "method", group: "pref", label: "Online DPO", year: 2024, pol: "on", dens: "sparse",
+  { id: "m-odpo", kind: "method", group: "pref", also: "reward", label: "Online DPO", year: 2024, pol: "on", dens: "sparse",
     summary: "Generate fresh pairs from the current model and label them (with a reward model, a judge, a verifier, or people) as training goes. Sits between preference tuning and RL. (Tülu 3 is a halfway case: it builds some pairs from its own samples but trains on them offline.)", cites: ["guo2024"],
     subs: [["m-dpo", "Fixed, offline pairs: cheaper, but the model never sees feedback on its current mistakes."],
            ["m-grpo", "Uses a scalar score per response directly instead of forming pairs."]] },
@@ -323,12 +391,12 @@ const NODES = [
   { id: "m-cispo", kind: "method", group: "reward", label: "CISPO", year: 2025, pol: "on", dens: "sparse",
     summary: "Clips the importance-sampling weights (the correction for rollouts from a slightly older copy of the model) rather than the update itself, so every token still contributes to the gradient.",
     subs: [["m-grpo", "Clipping can zero out the gradient for some tokens entirely."]] },
-  { id: "m-offdistill", kind: "method", group: "teacher", label: "Offline distillation", year: 2015, pol: "off", dens: "dense",
+  { id: "m-offdistill", kind: "method", group: "teacher", also: "demo", label: "Offline distillation", year: 2015, pol: "off", dens: "dense",
     summary: "Train the student on text a teacher wrote (sequence-level), or on the teacher's token distributions over that text (logit distillation). Off-policy: the student never practices recovering from its own mistakes. GLM-4.5 consolidated its experts this way.", cites: ["glm2025"],
     subs: [["m-opd", "The student writes and the teacher grades every token: dense and on-policy."],
            ["m-sft", "Identical when only the teacher's sampled text is used."]],
     effects: [["DeepSeek-R1 distilled into small dense models with plain SFT on about 800k R1 samples; at that scale this beat running large-scale RL on the small models directly.", "deepseek2025"]] },
-  { id: "m-opd", kind: "method", group: "teacher", label: "On-policy distillation", year: 2023, pol: "on", dens: "dense",
+  { id: "m-opd", kind: "method", group: "teacher", also: "reward", label: "On-policy distillation", year: 2023, pol: "on", dens: "dense",
     summary: "The student writes; a live teacher scores each token by how likely it would have been to write it. Dense like SFT, on-policy like RL. Formally close to policy gradient with a per-token reward: Kimi K3 uses the log ratio of teacher to student probability for each token as that reward.", cites: ["agarwal2023", "lu2025", "kimi2026"],
     subs: [["m-grpo", "One reward per response, but no teacher needed, so it can go beyond any existing model."],
            ["m-offdistill", "Cheaper to run, but off-policy."]],
@@ -461,8 +529,75 @@ const FAM_NAME = { demo: "demonstrations", pref: "preferences", reward: "scalar 
 const byId = Object.fromEntries(NODES.map(n => [n.id, n]));
 const EDGES = RAW_EDGES.map(([from, to, type, s, via]) => ({ from, to, type, s, via: via || "" }));
 NODES.filter(n => n.kind === "method").forEach(n => EDGES.push({ from: "f-" + n.group, to: n.id, type: "member", s: "d", via: "" }));
+// Secondary family membership: drawn, but not used for tracing what can feed a method
+NODES.filter(n => n.also).forEach(n => EDGES.push({ from: "f-" + n.also, to: n.id, type: "member2", s: "t", via: "also in this family" }));
 const RECIPE = Object.fromEntries(RECIPES.map(r => [r.id, r]));
 const colorOf = n => COLORS[n.group || "neutral"];
+
+// "X is <rel> Y: text" — how methods reduce to or derive from one another
+const RELATIONS = [
+  { from: "m-rs", to: "m-reinforce", rel: "a special case of",
+    text: "the reward is 0/1 and only the passes are trained on, so failures are dropped rather than pushed down." },
+  { from: "m-offdistill", to: "m-sft", rel: "a special case of",
+    text: "in its sequence-level form it's SFT where a teacher happened to write the targets." },
+  { from: "m-opd", to: "m-reinforce", rel: "a form of",
+    text: "policy gradient where the reward arrives at every token: the teacher's log-probability ratio against the student.", cite: "kimi2026" },
+  { from: "m-dpo", to: "m-ppo", rel: "a closed-form shortcut for",
+    text: "it optimizes the same KL-regularized preference objective as reward modeling plus RL, without training a reward model or sampling.", cite: "rafailov2023" },
+  { from: "m-odpo", to: "m-dpo", rel: "a variant of",
+    text: "the pairs are regenerated from the current model as training goes." },
+  { from: "s-rm", to: "m-dpo", rel: "trained with the same loss as",
+    text: "both fit a Bradley–Terry model to preference pairs; DPO folds the reward into the policy itself.", cite: "rafailov2023" },
+];
+
+/* ---- Configurations: an update rule paired with its scorer(s), placed by
+   where the feedback lands (at) and whose text is learned from (pol). */
+// [at, pol] per recipe stage, in stage order
+const STAGE_AT = {
+  instructgpt: [["token", "off"], ["response", "off"], ["response", "on"]],
+  r1: [["token", "off"], ["outcome", "on"], ["response", "rounds"], ["response", "on"], ["token", "off"]],
+  qwen3: [["token", "off"], ["outcome", "on"], ["token", "off"], ["response", "on"], ["token", "off"], ["token", "on"]],
+  k2: [["token", "off"], ["response", "on"]],
+  olmo3: [["token", "off"], ["response", "off"], ["outcome", "on"]],
+  k3: [["token", "off"], ["response", "on"], ["token", "on"]],
+  nemotron: [["token", "off"], ["outcome", "on"], ["outcome", "on"], ["token", "off"], ["token", "on"], ["token", "on"]],
+};
+// Configurations from papers rather than the recipes above
+const LIT_CONFIGS = [
+  { u: "m-grpo", r: ["s-prm"], at: "step", pol: "on", ref: "DeepSeekMath: GRPO with a process reward model", cite: "shao2024" },
+  { u: "m-rs", r: ["s-verifier"], at: "outcome", pol: "rounds", ref: "STaR: keep the reasoning that reaches the right answer, retrain, repeat", cite: "zelikman2022" },
+  { u: "m-rs", r: ["s-rm"], at: "response", pol: "rounds", ref: "Llama 2: rejection-sampling fine-tuning against reward models, over several rounds", cite: "touvron2023" },
+  { u: "m-odpo", r: ["s-judge"], at: "response", pol: "on", ref: "OAIF: online DPO with an LLM labeling fresh pairs", cite: "guo2024" },
+];
+// What each kind of stage is doing, in plain words (used for cell names and recipe shapes)
+const PHASE = { "m-sft": "imitate", "m-offdistill": "distill offline", "m-dpo": "compare", "s-rm": "train a reward model",
+  "m-rs": "filter own samples", "m-grpo": "explore with rewards", "m-ppo": "explore with rewards", "f-reward": "explore with rewards",
+  "m-opd": "distill on-policy" };
+// Short box labels for the pipelines view, per recipe stage
+const STAGE_LABEL = {
+  instructgpt: ["SFT", "Reward model", "PPO · reward model"],
+  r1: ["SFT", "GRPO · verifier", "Rejection sampling", "GRPO · verifier + RM", "Distill → small models"],
+  qwen3: ["SFT", "GRPO · verifier", "SFT · mode fusion", "RL · verifier, judge, RM", "Distill offline", "Distill on-policy"],
+  k2: ["SFT · tool-use data", "RL · verifier + self-critique"],
+  olmo3: ["SFT", "DPO", "RLVR (GRPO)"],
+  k3: ["SFT", "×9 specialists · RL", "Multi-teacher distill"],
+  nemotron: ["SFT", "RL · all environments", "10+ specialists", "SFT warmup", "Multi-teacher distill", "Round 2: distill again"],
+};
+const STACKED = new Set(["k3-1", "nemotron-2"]); // stages that train many specialists at once
+// One node per recipe stage
+const STAGES = [];
+RECIPES.forEach(rec => rec.stages.forEach((st, i) => {
+  const [at, pol] = STAGE_AT[rec.id][i];
+  const n = { id: `p-${rec.id}-${i}`, kind: "stage", rid: rec.id, i, st, u: st.u, r: st.r, at, pol,
+    group: byId[st.u].group, also: byId[st.u].also, stacked: STACKED.has(`${rec.id}-${i}`),
+    label: STAGE_LABEL[rec.id][i], tag: `${rec.name} · ${i + 1}` };
+  STAGES.push(n);
+}));
+STAGES.forEach(n => { NODES.push(n); byId[n.id] = n; });
+const stagesMatching = id => {
+  const f = byId[id];
+  return STAGES.filter(s => f.kind === "stage" ? s.u === f.u : (s.u === id || s.r.includes(id)));
+};
 
 const outE = {}, inE = {};
 NODES.forEach(n => { outE[n.id] = []; inE[n.id] = []; });
@@ -475,6 +610,7 @@ function reach(id, dir, directOnly) {
     const u = q.shift();
     if (directOnly && u !== id && byId[u].trained) continue;
     for (const e of (dir === "down" ? outE[u] : inE[u])) {
+      if (e.type === "member2") continue;
       if (directOnly && e.s === "t") continue;
       const v = dir === "down" ? e.to : e.from;
       if (!seen.has(v)) { seen.set(v, seen.get(u) + 1); q.push(v); }
@@ -489,6 +625,8 @@ function reach(id, dir, directOnly) {
 const LENSES = [
   { id: "flow", label: "Parts flow",
     desc: "Who makes the data → its shape → what turns it into a reward → the learning signal → the update rule. Solid edges are direct use; dashed edges need a transformation. Click anything to trace it." },
+  { id: "pipes", label: "Pipelines",
+    desc: "Each published recipe as a lane of stages, in order. Colour is the learning signal; fill and the strip under each label show whose text it learns from and where the feedback lands. Hover a stage to find the same update rule in other pipelines." },
   { id: "grid", label: "Whose text × density",
     desc: "Each update rule placed by whose text it learns from and how much each example says. Three cells follow Lu (2025); the cells blur at the edges." },
   { id: "gran", label: "Granularity",
@@ -608,7 +746,25 @@ function layoutTime() {
   return { pos, deco };
 }
 
-const LAYOUT = { flow: layoutFlow, grid: layoutGrid, gran: layoutGran, time: layoutTime };
+function layoutPipes() {
+  const pos = {}, deco = [];
+  const LANE = 78, GAP = 46;
+  const lanes = state.recipes.length ? RECIPES.filter(r => state.recipes.includes(r.id)) : RECIPES;
+  lanes.forEach((r, li) => {
+    const y = li * LANE;
+    let x = 0;
+    STAGES.filter(s => s.rid === r.id).forEach(s => { pos[s.id] = { x: x + s.w / 2, y }; x += s.w + GAP; });
+    deco.push({ t: "dot", x: -196, y: y - 5, c: r.color });
+    deco.push({ t: "text", x: -186, y: y - 1, s: r.name, cls: "axislbl", anchor: "start" });
+    deco.push({ t: "text", x: -186, y: y + 15, s: String(r.year), cls: "axissub", anchor: "start" });
+  });
+  const ly = lanes.length * LANE + 10;
+  deco.push({ t: "text", x: -196, y: ly, s: "Filled box: learns from its own text. Dashed: its own samples, gathered in rounds. Outline only: someone else's text.", cls: "caption", anchor: "start" });
+  deco.push({ t: "text", x: -196, y: ly + 20, s: "Strip under the label: ticks = feedback on every token, a few ticks = each reasoning step, one mark at the end = one judgment per response.", cls: "caption", anchor: "start" });
+  return { pos, deco };
+}
+
+const LAYOUT = { flow: layoutFlow, pipes: layoutPipes, grid: layoutGrid, gran: layoutGran, time: layoutTime };
 
 /* ============================================================
    RENDERING
@@ -622,9 +778,9 @@ function el(tag, attrs = {}, parent) {
   return e;
 }
 const svg = $("map"), vp = $("vp");
-const G = { bg: $("bg"), edges: $("edges"), subarcs: $("subarcs"), routes: $("routes"), nodes: $("nodes"), overlay: $("overlay"), labels: $("labels") };
+const G = { bg: $("bg"), edges: $("edges"), relarcs: $("relarcs"), relmarks: $("relmarks"), subarcs: $("subarcs"), routes: $("routes"), nodes: $("nodes"), overlay: $("overlay"), labels: $("labels") };
 
-const state = { lens: "flow", sel: null, hover: null, recipes: [] };
+const state = { lens: "flow", sel: null, hover: null, recipes: [], showRel: false, compare: null };
 const cur = {}; // id -> {x,y,o}
 let view = { k: 1, tx: 0, ty: 0 };
 let animating = false;
@@ -632,25 +788,49 @@ let animating = false;
 const mctx = document.createElement("canvas").getContext("2d");
 const textW = (s, font) => { mctx.font = font; return mctx.measureText(s).width; };
 
+function splitGradient(a, b) {
+  const id = `g-${a}-${b}`;
+  if (!$(id)) {
+    const g = el("linearGradient", { id, x1: 0, x2: 1, y1: 0, y2: 0 }, $("defs"));
+    [[0, a], [0.5, a], [0.5, b], [1, b]].forEach(([o, k]) => el("stop", { offset: o, "stop-color": COLORS[k] }, g));
+  }
+  return `url(#${id})`;
+}
+
 function buildNodes() {
   for (const n of NODES) {
-    const fam = n.kind === "family";
-    n.h = fam ? 44 : 28;
+    const fam = n.kind === "family", stg = n.kind === "stage";
+    n.h = fam ? 44 : stg ? 40 : 28;
     const lw = textW(n.label, `${fam ? 600 : 500} ${fam ? 13.5 : 12.5}px Inter, system-ui, sans-serif`);
     const sw = n.sub ? textW(n.sub, "400 11px Inter, system-ui, sans-serif") : 0;
-    n.w = Math.ceil(Math.max(lw, sw)) + (n.kind === "data" ? 32 : 26);
+    n.w = Math.ceil(Math.max(lw, sw)) + (n.kind === "data" ? 32 : stg ? 30 : 26);
     const c = colorOf(n);
     const g = el("g", { class: "node", "data-id": n.id }, G.nodes);
     const s = el("g", { class: "state" }, g);
     const box = { x: -n.w / 2, y: -n.h / 2, width: n.w, height: n.h, class: "box" };
-    if (n.kind === "source") el("rect", { ...box, rx: n.h / 2, fill: "#171a21", stroke: "#4a4f5a" }, s);
+    if (stg) {
+      // Fill encodes whose text: own fresh = filled, own in rounds = light + dashed, someone else's = outline
+      const stroke = n.also ? splitGradient(n.group, n.also) : c;
+      const fill = n.pol === "on" ? c + "38" : n.pol === "rounds" ? c + "18" : "#171a21";
+      if (n.stacked) [8, 4].forEach(d => el("rect", { ...box, x: box.x + d, y: box.y - d, rx: 6, fill: "#171a21", stroke, "stroke-width": 1, opacity: 0.6, class: "" }, s));
+      el("rect", { ...box, rx: 6, fill, stroke, "stroke-width": 1.5, ...(n.pol === "rounds" ? { "stroke-dasharray": "5 3" } : {}) }, s);
+      el("text", { x: 0, y: -5, "text-anchor": "middle", "dominant-baseline": "central" }, s).textContent = n.label;
+      // Strip encodes where feedback lands
+      const x0 = -n.w / 2 + 12, x1 = n.w / 2 - 12, sy = n.h / 2 - 10;
+      el("line", { x1: x0, y1: sy + 1.5, x2: x1, y2: sy + 1.5, stroke: c, "stroke-opacity": 0.3 }, s);
+      if (n.at === "token") for (let x = x0; x <= x1; x += 4) el("rect", { x, y: sy, width: 2, height: 4, fill: c }, s);
+      else if (n.at === "step") for (let k = 1; k <= 5; k++) el("rect", { x: x0 + (x1 - x0) * k / 5 - 2, y: sy - 1, width: 3, height: 6, fill: c }, s);
+      else if (n.at === "response") el("rect", { x: x1 - 12, y: sy - 1, width: 12, height: 6, rx: 1, fill: c }, s);
+      else el("circle", { cx: x1 - 3, cy: sy + 2, r: 3.5, fill: c }, s);
+    } else if (n.kind === "source") el("rect", { ...box, rx: n.h / 2, fill: "#171a21", stroke: "#4a4f5a" }, s);
     else if (n.kind === "data") {
       el("rect", { ...box, rx: 5, fill: "#171a21", stroke: "#2f3440" }, s);
       el("rect", { x: -n.w / 2, y: -n.h / 2, width: 4, height: n.h, fill: c, rx: 1 }, s);
     } else if (n.kind === "scorer") el("rect", { ...box, rx: 5, fill: "#171a21", stroke: c, "stroke-dasharray": "3 2.5" }, s);
     else if (fam) el("rect", { ...box, rx: 8, fill: c + "26", stroke: c }, s);
-    else el("rect", { ...box, rx: 5, fill: "#171a21", stroke: c, "stroke-width": 1.3 }, s);
-    if (fam) {
+    else el("rect", { ...box, rx: 5, fill: "#171a21", stroke: n.also ? splitGradient(n.group, n.also) : c, "stroke-width": n.also ? 1.6 : 1.3 }, s);
+    if (stg) { /* label drawn above */ }
+    else if (fam) {
       el("text", { class: "fam", x: 0, y: -7, "text-anchor": "middle", "dominant-baseline": "central" }, s).textContent = n.label;
       el("text", { class: "sub", x: 0, y: 10, "text-anchor": "middle", "dominant-baseline": "central" }, s).textContent = n.sub;
     } else {
@@ -708,6 +888,11 @@ function computeSets() {
     [...outE[state.hover], ...inE[state.hover]].forEach(e => { litEdges.add(e); litNodes.add(e.from); litNodes.add(e.to); });
   }
   if (focus) [...outE[focus], ...inE[focus]].forEach(e => adjEdges.add(e));
+  if (focus) {
+    // Pipeline stages sharing this update rule (for a stage), or using this method/scorer
+    const match = stagesMatching(focus);
+    if (match.length) { litNodes ||= new Set([focus]); match.forEach(s => litNodes.add(s.id)); }
+  }
   recipeUsed = null;
   if (state.recipes.length) {
     recipeUsed = new Set();
@@ -720,7 +905,7 @@ function refresh() {
   for (const n of NODES) {
     let cls = "state";
     if (litNodes) { if (!litNodes.has(n.id)) cls += state.sel ? " dim" : " soft"; }
-    else if (recipeUsed && !recipeUsed.has(n.id)) cls += " soft";
+    else if (recipeUsed && !recipeUsed.has(n.id) && state.lens !== "pipes") cls += " soft";
     n.s.setAttribute("class", cls);
     n.g.classList.toggle("sel", n.id === state.sel);
   }
@@ -752,8 +937,44 @@ function frame() {
     e.p.setAttribute("opacity", op);
     e.p.setAttribute("stroke", lit ? (e.type === "make" ? "#b9bdc4" : colorOf(b.kind === "family" || b.kind === "method" ? b : (b.kind === "scorer" ? b : a))) : "#6b7079");
   }
+  drawRelArcs();
   drawSubArcs();
   drawRoutes();
+}
+
+function drawRelArcs() {
+  G.relarcs.innerHTML = ""; G.relmarks.innerHTML = "";
+  const focus = state.sel || state.hover;
+  for (const r of RELATIONS) {
+    const on = r.from === focus || r.to === focus;
+    if (!state.showRel && !on) continue;
+    const a = byId[r.from], b = byId[r.to], A = cur[a.id], B = cur[b.id];
+    if (Math.min(A.o, B.o) < 0.5) continue;
+    let d, mx, my;
+    if (Math.abs(A.x - B.x) < 30) {
+      // same column: bulge left (substitute arcs bulge right)
+      const x1 = A.x - a.w / 2, x2 = B.x - b.w / 2;
+      const bx = Math.min(x1, x2) - 40 - Math.abs(A.y - B.y) * 0.15;
+      d = `M${x1},${A.y} C${bx},${A.y} ${bx},${B.y} ${x2},${B.y}`;
+      mx = (x1 + 6 * bx + x2) / 8; my = (A.y + B.y) / 2;
+    } else {
+      const cx0 = (A.x + B.x) / 2, cy0 = (A.y + B.y) / 2, dx = B.x - A.x, dy = B.y - A.y, L = Math.hypot(dx, dy) || 1;
+      const cx = cx0 + dy / L * 50, cy = cy0 - dx / L * 50;
+      const p1 = rectExit(a, cx, cy), p2 = rectExit(b, cx, cy);
+      d = `M${p1.x},${p1.y} Q${cx},${cy} ${p2.x},${p2.y}`;
+      mx = (p1.x + 2 * cx + p2.x) / 4; my = (p1.y + 2 * cy + p2.y) / 4;
+    }
+    const op = state.sel && !on ? 0.15 : on ? 0.95 : 0.55;
+    el("path", { d, class: "relarc", opacity: op }, G.relarcs);
+    const m = el("g", { class: "relmark", transform: `translate(${mx},${my})`, opacity: op }, G.relmarks);
+    el("circle", { r: 8 }, m);
+    el("text", { x: 0, y: 0.5, "text-anchor": "middle", "dominant-baseline": "central" }, m).textContent = "≈";
+    if (on && !animating) {
+      const s = `${a.label} is ${r.rel} ${b.label}`, w = textW(s, "400 10.5px Inter, system-ui, sans-serif") + 10;
+      el("rect", { x: -12 - w, y: -8, width: w, height: 16, rx: 3, fill: "#0f1115", opacity: 0.92 }, m);
+      el("text", { class: "rl", x: -17, y: 0.5, "text-anchor": "end", "dominant-baseline": "central" }, m).textContent = s;
+    }
+  }
 }
 
 function drawSubArcs() {
@@ -786,14 +1007,16 @@ function ensureMarker(r) {
 
 function drawRoutes() {
   G.routes.innerHTML = ""; G.overlay.innerHTML = "";
+  if (state.lens === "pipes") return drawLanes();
   const badgeSlots = {}, dotSlots = {};
   state.recipes.forEach((rid, ri) => {
     const r = RECIPE[rid]; ensureMarker(r);
     const fade = state.sel ? 0.35 : 1;
     const nums = {};
-    r.stages.forEach((st, i) => (nums[st.u] ||= []).push(i + 1));
+    const at = st => st.u;
+    r.stages.forEach((st, i) => (nums[at(st)] ||= []).push(i + 1));
     for (let i = 0; i < r.stages.length - 1; i++) {
-      const a = byId[r.stages[i].u], b = byId[r.stages[i + 1].u];
+      const a = byId[at(r.stages[i])], b = byId[at(r.stages[i + 1])];
       if (a === b) continue;
       const A = cur[a.id], B = cur[b.id];
       if (Math.min(A.o, B.o) < 0.5) continue;
@@ -828,6 +1051,18 @@ function drawRoutes() {
       el("circle", { cx: c.x - n.w / 2 + 10 + k * 11, cy: c.y - n.h / 2, r: 4.5, fill: r.color, stroke: "#0f1115", "stroke-width": 1.5, opacity: fade }, G.overlay);
     });
   });
+}
+
+function drawLanes() {
+  for (const r of RECIPES) {
+    const lane = STAGES.filter(s => s.rid === r.id);
+    for (let i = 0; i < lane.length - 1; i++) {
+      const a = lane[i], b = lane[i + 1], A = cur[a.id], B = cur[b.id];
+      const o = Math.min(A.o, B.o); if (o < 0.05) continue;
+      el("line", { x1: A.x + a.w / 2 + (a.stacked ? 9 : 2), y1: A.y, x2: B.x - b.w / 2 - 4, y2: B.y,
+        stroke: "#6b7079", "stroke-width": 1.4, opacity: o, "marker-end": "url(#arr-lane)" }, G.routes);
+    }
+  }
 }
 
 function renderLabels() {
@@ -881,6 +1116,7 @@ function fitFor(pos, deco) {
 let lastLayout = null;
 function applyLens(id, animate = true) {
   state.lens = id;
+  if (P.firstChild && !state.sel) setTimeout(renderPanel);
   document.querySelectorAll("#tabs button").forEach(b => b.classList.toggle("on", b.dataset.lens === id));
   $("lensdesc").textContent = LENSES.find(l => l.id === id).desc;
   const { pos, deco } = LAYOUT[id]();
@@ -924,7 +1160,68 @@ function tween(target, tv, dur = 620) {
 const P = $("panel");
 const nodeRef = id => `<button class="ref" data-node="${id}">${byId[id].label}</button>`;
 const citeTxt = key => key ? `<span class="cite">${CITE[key] || key}</span>` : "";
-const KIND = { source: "Source", data: "Data shape", scorer: "Reward source", family: "Learning signal", method: "Update rule" };
+const KIND = { source: "Source", data: "Data shape", scorer: "Reward source", family: "Learning signal", method: "Update rule", stage: "Pipeline stage" };
+const AT_TEXT = { token: "every token gets its own signal", step: "each reasoning step is scored", response: "one judgment covers the whole response", outcome: "only the end result is checked" };
+
+const PHASE_TEXT = {
+  "imitate": "Imitating text someone else wrote. Every token of the target is supervised.",
+  "distill offline": "Imitating a stronger model's outputs: SFT where a teacher wrote the targets.",
+  "compare": "Learning from pairs of responses where one was judged better: one comparison per pair.",
+  "train a reward model": "Not an update to the policy: this stage trains the scorer that a later RL stage uses.",
+  "filter own samples": "The model samples answers, a grader keeps the good ones, and the model imitates those. Run in rounds.",
+  "explore with rewards": "The model tries things and gets scored; better-than-average attempts become more likely.",
+  "distill on-policy": "The model writes, and a live teacher scores every token it wrote.",
+};
+const recipeChip = (rid, i) => {
+  const r = RECIPE[rid];
+  return `<button class="chip${state.recipes.includes(rid) ? " on" : ""}" style="--c:${r.color}" data-recipe="${rid}"><span class="sw" style="background:${r.color}"></span>${r.name}${i != null ? " · " + (i + 1) : ""}</button>`;
+};
+const recipeShape = r => r.stages.map(st => PHASE[st.u]).filter((p, i, a) => p !== a[i - 1]).join(" → ");
+
+const POL_TEXT = { off: "it learns from text someone else wrote", rounds: "it learns from its own samples, gathered in rounds", on: "it learns from its own fresh samples" };
+const stagePill = id => { const s = byId[id], r = RECIPE[s.rid];
+  return `<button class="pill" data-node="${id}"><span class="glyph" style="color:${r.color}">●</span>${s.tag}</button>`; };
+
+function renderStagePanel(n) {
+  const r = RECIPE[n.rid];
+  const data = n.st.d.filter(x => byId[x].kind !== "source");
+  let h = `<button class="back" data-clear="1">← overview</button>
+    <div class="kind" style="color:${r.color}">${r.name} · stage ${n.i + 1} of ${r.stages.length}</div>
+    <h2>${n.label}</h2>
+    <p>${n.st.s}.</p>
+    <h3>The parts</h3>
+    <ul>
+      <li><span class="note">Data:</span> ${data.length ? data.map(nodeRef).join(", ") : '<span class="note">not specified</span>'}</li>
+      <li><span class="note">Scorer:</span> ${n.r.length ? n.r.map(nodeRef).join(", ") : '<span class="note">none; learns from the data directly</span>'}</li>
+      <li><span class="note">Update:</span> ${nodeRef(n.u)}</li>
+    </ul>
+    <p>${n.r.length ? "With this scorer, " : ""}${AT_TEXT[n.at]}, and ${POL_TEXT[n.pol]}.</p>`;
+
+  // B: same update rule across pipelines and papers, grouped by scorer
+  const items = new Map();
+  const add = (rr, at, stage, ref) => {
+    const k = [...rr].sort().join(",") + "|" + at;
+    if (!items.has(k)) items.set(k, { r: [...rr].sort(), at, stages: [], refs: [] });
+    if (stage) items.get(k).stages.push(stage); else items.get(k).refs.push(ref);
+  };
+  STAGES.filter(s => s.u === n.u).forEach(s => add(s.r, s.at, s));
+  LIT_CONFIGS.filter(l => l.u === n.u).forEach(l => add(l.r, l.at, null, l));
+  if (items.size > 1) {
+    const order = { token: 0, step: 1, response: 2, outcome: 3 };
+    const list = [...items.values()].sort((a, b) => order[a.at] - order[b.at]);
+    h += `<h3>How the scorer changes the feedback</h3>
+      <p class="note">${byId[n.u].label} appears with different scorers. The update rule is the same on every line; the scorer decides where the feedback lands.</p>
+      <ul>${list.map(it => {
+        const who = it.r.length ? it.r.map(nodeRef).join(" + ") : `<span class="note">No scorer</span>`;
+        const refs = it.refs.map(l => `<span class="note">${l.ref}</span> ${citeTxt(l.cite)}`).join("; ");
+        return `<li>${who} → ${AT_TEXT[it.at]}.<div class="pills" style="margin-top:5px">${it.stages.map(s => stagePill(s.id)).join("")}</div>${refs ? `<div style="margin-top:4px">${refs}</div>` : ""}</li>`;
+      }).join("")}</ul>`;
+  }
+  const same = STAGES.filter(s => s.u === n.u && s.rid !== n.rid);
+  if (same.length && items.size <= 1) h += `<h3>Same update rule in other pipelines</h3><div class="pills">${same.map(s => stagePill(s.id)).join("")}</div>`;
+  h += `<h3>This pipeline</h3><p style="color:${r.color}; margin-bottom:6px">${recipeShape(r)}</p><div class="pills">${STAGES.filter(s => s.rid === n.rid).map(s => stagePill(s.id)).join("")}</div>`;
+  P.innerHTML = h;
+}
 
 function pillList(ids, dashed) {
   if (!ids.length) return `<span class="note">none</span>`;
@@ -961,6 +1258,11 @@ function renderIntro() {
     <button class="try" data-try="grpo">What can feed GRPO, and what needs transforming first?</button>
     <button class="try" data-try="compare">Compare DeepSeek-R1 with Kimi K3</button>
     <button class="try" data-try="opd">Why does on-policy distillation come last?</button>
+    <button class="try" data-try="stages">How do the DeepSeek-R1 and Kimi K3 pipelines differ?</button>
+    <button class="try" data-try="scorer">Same algorithm, different scorer: what changes for GRPO?</button>
+    <button class="try" data-try="mech">Inside GRPO: what changes if you swap the baseline?</button>
+    <button class="try" data-try="cmp">Compare the RL update rules side by side</button>
+    <button class="try" data-try="relate">Which methods are special cases of others?</button>
     <h3>Legend</h3>
     <div class="legend">
       ${sw("#9a9fa7")}<span>direct use</span>
@@ -970,20 +1272,30 @@ function renderIntro() {
       ${sw(COLORS.pref)}<span>preferences</span>
       ${sw(COLORS.reward)}<span>scalar rewards</span>
       ${sw(COLORS.teacher)}<span>teacher distributions</span>
+      <svg width="34" height="14"><rect x="3" y="2" width="28" height="10" rx="3" fill="none" stroke="${splitGradient("demo", "reward")}" stroke-width="1.6"/></svg><span>two-colour border: straddles two families</span>
+      <svg width="34" height="16"><line x1="2" y1="8" x2="32" y2="8" stroke="#e9d8a6" stroke-width="1.4"/><circle cx="17" cy="8" r="6.5" fill="#0f1115" stroke="#e9d8a6"/><text x="17" y="8.5" text-anchor="middle" dominant-baseline="central" font-size="10" fill="#e9d8a6">≈</text></svg><span>one method is a special case or form of another</span>
     </div>
     <p class="foot">Prototype. Content comes from the building-blocks draft and the study notes. Items marked <span class="verify">to verify</span> come from the parked literature list and haven't been checked.</p>`;
 }
 
 function renderNodePanel(n) {
+  if (n.kind === "stage") return renderStagePanel(n);
+  P.innerHTML = nodePanelHTML(n);
+}
+
+// The panel's contents for a node. inCompare: a compare-view column, which has its own
+// header and diagram, so it skips those and keeps the substitutes list as plain text.
+function nodePanelHTML(n, inCompare, skipInputs) {
   const c = colorOf(n);
-  const fam = n.group && n.group !== "neutral" ? ` · ${FAM_NAME[n.group]}` : "";
-  let h = `<button class="back" data-clear="1">← overview</button>
+  const fam = n.group && n.group !== "neutral" ? ` · ${FAM_NAME[n.group]}${n.also ? " + " + FAM_NAME[n.also] : ""}` : "";
+  let h = inCompare ? `<p>${n.summary}</p>` : `<button class="back" data-clear="1">← overview</button>
     <div class="kind" style="color:${n.kind === "source" ? "var(--muted)" : c}">${KIND[n.kind]}${n.kind === "family" ? "" : fam}${n.year ? " · " + n.year : ""}</div>
     <h2>${n.label}</h2><p>${n.summary}</p>`;
   if (n.tradeoff) h += `<p class="tradeoff">${n.tradeoff}</p>`;
   if (n.cites) h += `<p>${n.cites.map(citeTxt).join(" · ")}</p>`;
+  if (MECH[n.id] && !inCompare) h += mechSection(n);
 
-  if (n.kind === "method" || n.kind === "family") {
+  if ((n.kind === "method" || n.kind === "family") && !skipInputs) {
     const { d, t } = reachSplit(n.id, "up", ["data"]);
     h += `<h3>Data that can feed it</h3><p class="note" style="margin-bottom:6px">Directly:</p>${pillList(d)}
           <p class="note" style="margin:10px 0 6px">After a transformation:</p>${pillList(t, true)}`;
@@ -992,7 +1304,18 @@ function renderNodePanel(n) {
   }
   if (n.kind === "family") {
     h += `<h3>Update rules in this family</h3>${pillList(outE[n.id].filter(e => e.type === "member").map(e => e.to))}`;
+    const also = outE[n.id].filter(e => e.type === "member2").map(e => e.to);
+    if (also.length) h += `<p class="note" style="margin:10px 0 6px">Also partly in this family:</p>${pillList(also, true)}`;
   }
+  if (n.also) {
+    h += `<h3>Straddles two families</h3><p>Sits in ${FAM_NAME[n.group]} and ${FAM_NAME[n.also]}. See how it relates below.</p>`;
+  }
+  const rels = RELATIONS.filter(r => r.from === n.id || r.to === n.id);
+  if (rels.length) {
+    h += `<h3>How it relates</h3><ul>${rels.map(r => `<li><span class="glyph">≈</span>${nodeRef(r.from)} is ${r.rel} ${nodeRef(r.to)}: <span class="note">${r.text}</span> ${citeTxt(r.cite)}</li>`).join("")}</ul>`;
+  }
+  const inPipes = stagesMatching(n.id);
+  if (inPipes.length) h += `<h3>In the pipelines</h3><div class="pills">${inPipes.map(s => stagePill(s.id)).join("")}</div>`;
   if (n.kind === "data" || n.kind === "scorer") {
     const { d, t } = reachSplit(n.id, "down", ["method"]);
     h += `<h3>Update rules it can drive</h3><p class="note" style="margin-bottom:6px">Directly:</p>${pillList(d)}
@@ -1007,7 +1330,7 @@ function renderNodePanel(n) {
   if (n.kind === "source") {
     h += `<h3>What it produces</h3>${pillList(outE[n.id].map(e => e.to))}`;
   }
-  if (n.subs) {
+  if (n.subs && (!MECH[n.id] || inCompare)) {
     h += `<h3>Substitutes, and what changes</h3><ul>${n.subs.map(([id, note]) => `<li>${nodeRef(id)} <span class="note">— ${note}</span></li>`).join("")}</ul>`;
   }
   if (n.effects) {
@@ -1017,17 +1340,20 @@ function renderNodePanel(n) {
   if (inR.length) {
     h += `<h3>In recipes</h3><div class="pills">${inR.map(r => `<button class="chip${state.recipes.includes(r.id) ? " on" : ""}" style="--c:${r.color}" data-recipe="${r.id}"><span class="sw" style="background:${r.color}"></span>${r.name}</button>`).join("")}</div>`;
   }
-  P.innerHTML = h;
+  return h;
 }
 
 function renderRecipePanel() {
   let h = `<button class="back" data-clear-recipes="1">← overview</button>
     <h2>${state.recipes.length > 1 ? "Recipes, side by side" : "Recipe"}</h2>
-    <p class="note">Each stage written as its parts: which data, which signal, which update. Numbers on the map mark the update rule at each stage; dots mark the data and reward sources it used.</p>`;
+    <p class="note">Each stage written as its parts: which data, which signal, which update. ${state.lens === "pipes"
+      ? "The lanes on the left show only the recipes picked below; unpick them all to see every pipeline."
+      : "Numbers on the map mark the update rule at each stage; dots mark the data and reward sources it used."}</p>`;
   for (const rid of state.recipes) {
     const r = RECIPE[rid];
     h += `<div class="recipe-h"><span class="sw" style="background:${r.color}"></span><b>${r.name}</b><span class="cite">${r.year} · ${CITE[r.cite] || ""}</span></div>
-      <p class="note" style="margin:6px 0 10px">${r.distinct}</p>`;
+      <p style="margin:6px 0 4px; color:${r.color}">${recipeShape(r)}</p>
+      <p class="note" style="margin:0 0 10px">${r.distinct}</p>`;
     r.stages.forEach((st, i) => {
       const parts = [st.u, ...st.d.filter(x => byId[x].kind !== "source"), ...st.r];
       h += `<div class="stage" style="--c:${r.color}"><span class="n">${i + 1}</span>${st.s}
@@ -1043,8 +1369,10 @@ function renderRecipePanel() {
    ============================================================ */
 function select(id) {
   state.sel = id;
-  if (id && byId[id] && (cur[id]?.o ?? 0) < 0.5) {
-    const lens = ["flow", "grid", "gran", "time"].find(l => LAYOUT[l]().pos[id]);
+  // Stay in the pipelines lens if the selection shows up there via its stages
+  const staysInStages = state.lens === "pipes" && id && byId[id] && stagesMatching(id).length > 0;
+  if (id && byId[id] && (cur[id]?.o ?? 0) < 0.5 && !staysInStages) {
+    const lens = ["flow", "pipes", "grid", "gran", "time"].find(l => LAYOUT[l]().pos[id]);
     if (lens && lens !== state.lens) applyLens(lens);
   }
   refresh(); renderPanel();
@@ -1055,6 +1383,7 @@ function toggleRecipe(rid) {
   if (i >= 0) state.recipes.splice(i, 1);
   else { state.recipes.push(rid); if (state.recipes.length > 3) state.recipes.shift(); }
   document.querySelectorAll("#recipes .chip").forEach(c => c.classList.toggle("on", state.recipes.includes(c.dataset.recipe)));
+  if (state.lens === "pipes") applyLens("pipes"); // chips filter the lanes here
   refresh(); renderPanel();
 }
 
@@ -1063,12 +1392,283 @@ const TRIES = {
   grpo: () => { if (state.lens !== "flow") applyLens("flow"); state.recipes = []; syncChips(); select("m-grpo"); },
   compare: () => { if (state.lens !== "flow") applyLens("flow"); state.sel = null; state.recipes = []; toggleRecipe("r1"); toggleRecipe("k3"); },
   opd: () => { applyLens("grid"); state.recipes = []; syncChips(); select("m-opd"); },
+  stages: () => { state.sel = null; state.recipes = ["r1", "k3"]; syncChips(); applyLens("pipes"); refresh(); renderPanel(); },
+  scorer: () => { state.recipes = []; syncChips(); applyLens("pipes"); select("p-r1-1"); },
+  mech: () => { if (state.lens !== "flow") applyLens("flow"); state.recipes = []; syncChips(); select("m-grpo"); },
+  cmp: () => { if (state.lens !== "flow") applyLens("flow"); state.recipes = []; syncChips(); select("f-reward"); openCompare("f-reward"); },
+  relate: () => { if (state.lens !== "flow") applyLens("flow"); state.recipes = []; syncChips(); setRel(true); select(null); },
 };
+function setRel(v) { state.showRel = v; $("reltoggle").classList.toggle("on", v); frame(); }
+$("reltoggle").onclick = () => setRel(!state.showRel);
 const syncChips = () => document.querySelectorAll("#recipes .chip").forEach(c => c.classList.toggle("on", state.recipes.includes(c.dataset.recipe)));
+
+/* ============================================================
+   MECHANISM CARDS (prototype: the scalar-rewards family)
+   One training step of an update rule, drawn with the same parts
+   as the article's method figures: weights (network glyph, bright =
+   trained), text (ruled cards), numbers (chips), computation (plain
+   box). Dashed rows are slots: the parts that vary within the family.
+   Hovering a substitute swaps it in and marks what changed.
+   ============================================================ */
+const MECH_R = [0.9, 0.2, 0.7, 0.0];   // the same four rewards in every card
+const MECH = {
+  "f-reward":    { generic: true },
+  "m-reinforce": { samples: 1,   base: "running", clip: "none",    kl: "in the reward" },
+  "m-rloo":      { samples: "G", base: "loo",     clip: "none",    kl: "in the reward" },
+  "m-ppo":       { samples: 1,   base: "critic",  clip: "token",   kl: "in the reward" },
+  "m-grpo":      { samples: "G", base: "group",   clip: "token",   kl: "in the loss" },
+  "m-gspo":      { samples: "G", base: "group",   clip: "seq",     kl: "optional" },
+  "m-cispo":     { samples: "G", base: "group",   clip: "weights", kl: "optional" },
+};
+const MECH_BASE = {
+  running: { t: "Running average", s: "of recent rewards", k: "running avg" },
+  loo:     { t: "Mean of the other k−1", s: "this prompt's other samples", k: "leave-one-out mean" },
+  critic:  { t: "Learned critic", s: "trained too; a value at every token", k: "learned critic" },
+  group:   { t: "Group mean, ÷ std", s: "all G samples for this prompt", k: "group mean ÷ std" },
+};
+const MECH_CLIP = {
+  none:    { t: "No clipping", s: "plain policy gradient", k: "none" },
+  token:   { t: "Clip each token's ratio", s: "caps one batch's push", k: "per token" },
+  seq:     { t: "Clip the sequence's ratio", s: "one ratio per response", k: "per sequence" },
+  weights: { t: "Clip the importance weights", s: "no token loses its gradient", k: "IS weights" },
+};
+// The slots, how to read each one's value, and how to describe it
+const MECH_SLOTS = [
+  ["samples", "Samples", m => m.samples === 1 ? "1 per prompt" : "G per prompt"],
+  ["base", "Baseline", m => MECH_BASE[m.base].k],
+  ["adv", "Advantage", m => m.base === "critic" ? "per token" : "per response"],
+  ["clip", "Clipping", m => MECH_CLIP[m.clip].k],
+  ["kl", "KL penalty", m => m.kl],
+];
+const mechKey = (m, k) => k === "adv" ? (m.base === "critic" ? "token" : "response") : m[k];
+
+// Advantages from the same rewards, so the baselines' differences are real numbers
+function mechAdv(m) {
+  if (m.samples === 1) {
+    if (m.base === "critic") return { r: [0.7], tok: [0.12, 0.05, 0.3, -0.22, 0.08, 0.35, -0.12, 0.18] }; // illustrative
+    return { r: [0.7], a: [0.7 - 0.5] };                                    // running average b = 0.5
+  }
+  const r = MECH_R, n = r.length, sum = r.reduce((x, y) => x + y, 0), mean = sum / n;
+  if (m.base === "loo") return { r, a: r.map(x => x - (sum - x) / (n - 1)) };
+  const sd = Math.sqrt(r.reduce((x, y) => x + (y - mean) ** 2, 0) / n);
+  return { r, a: r.map(x => (x - mean) / sd) };
+}
+const fmtA = v => (v >= 0 ? "+" : "−") + (Math.abs(v) >= 1 ? Math.abs(v).toFixed(1) : Math.abs(v).toFixed(2).replace(/^0/, ""));
+
+function mechSVG(id, fromId) {
+  const m = MECH[id], f = fromId ? MECH[fromId] : null, gen = !!m.generic;
+  const changed = k => !!f && !gen && (f.generic || mechKey(f, k) !== mechKey(m, k));
+  const X0 = 30, X1 = 280, GX = 300, CX = 155, o = [];
+  const T = (x, y, txt, cls, a = "start") => o.push(`<text class="${cls}" x="${x}" y="${y}" text-anchor="${a}">${txt}</text>`);
+  const row = (y, h, kind, hot) => {
+    const st = hot ? "fill:color-mix(in srgb, var(--reward) 13%, transparent);stroke:var(--reward);stroke-width:2"
+      : { trained: "fill:#161a22;stroke:#e8e8e8;stroke-width:2", frozen: "fill:#14161b;stroke:#8c919a;stroke-width:1.2",
+          plain: "fill:#12141a;stroke:#3a3f4a;stroke-width:1.2", slot: "fill:none;stroke:#6b7079;stroke-width:1.2;stroke-dasharray:4 3" }[kind];
+    o.push(`<rect x="${X0}" y="${y}" width="${X1 - X0}" height="${h}" rx="6" style="${st}"/>`);
+  };
+  const net = (cx, cy, trained) => {
+    const L = [2, 3, 2].map((k, i) => [...Array(k)].map((_, j) => [cx + (i - 1) * 10, cy + (j - (k - 1) / 2) * 8]));
+    for (let i = 0; i < 2; i++) for (const a of L[i]) for (const b of L[i + 1])
+      o.push(`<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="${trained ? "#6b7079" : "#3d4249"}" stroke-width="1"/>`);
+    for (const l of L) for (const [x, y] of l)
+      o.push(`<circle cx="${x}" cy="${y}" r="2.6" fill="${trained ? "#e8e8e8" : "#0f1115"}" stroke="${trained ? "#e8e8e8" : "#8c919a"}" stroke-width="1.1"/>`);
+  };
+  const card = (x, y, w, h, dim) => {
+    o.push(`<g opacity="${dim ? 0.4 : 1}"><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="2.5" fill="#0f1115" stroke="#b8bcc3" stroke-width="1.3"/>`
+      + [0.35, 0.62].map((t, i) => `<line x1="${x + 4}" y1="${y + h * t}" x2="${x + 4 + (w - 8) * (i ? 0.55 : 0.8)}" y2="${y + h * t}" stroke="#8c919a" stroke-width="1.6" stroke-linecap="round"/>`).join("") + `</g>`);
+  };
+  // signed values: light = made more likely, hatched = less likely (hue-free, so it can't be read as a family colour)
+  const vfill = v => v == null ? "#12141a" : v >= 0 ? `rgba(232,232,232,${(0.4 + 0.45 * Math.min(1, Math.abs(v))).toFixed(2)})` : "url(#mech-hatch)";
+  const chip = (x, y, w, h, label, v, dim) =>
+    o.push(`<g opacity="${dim ? 0.4 : 1}"><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="4" fill="${vfill(v)}" stroke="#8c919a" stroke-width="1"/>`
+      + (label ? `<text class="mnum${v != null && v >= 0 ? " dk" : ""}" x="${x + w / 2}" y="${y + h / 2 + 3.5}">${label}</text>` : "") + `</g>`);
+  const down = y => o.push(`<line x1="${CX}" y1="${y + 1}" x2="${CX}" y2="${y + 11}" stroke="#9a9fa7" stroke-width="1.3" marker-end="url(#mech-arr)"/>`);
+  const rightRow = (n, w, gap) => X1 - 8 - n * w - (n - 1) * gap;
+
+  let y = 2;
+  // Prompts → policy
+  card(6, y + 11, 14, 18);
+  o.push(`<line x1="21" y1="${y + 20}" x2="${X0 - 1}" y2="${y + 20}" stroke="#9a9fa7" stroke-width="1.3" marker-end="url(#mech-arr)"/>`);
+  row(y, 40, "trained"); net(X0 + 20, y + 20, true);
+  T(X0 + 40, y + 17, "Policy", "mt"); T(X0 + 40, y + 32, "writes the rollouts", "ms"); T(X1 - 8, y + 15, "TRAINED", "mtag", "end");
+  const polY = y + 20; y += 40; down(y); y += 14;
+
+  // Rollouts (slot)
+  const nS = gen ? 4 : m.samples === 1 ? 1 : 4;
+  row(y, 36, "slot", changed("samples"));
+  T(X0 + 10, y + 15, "Rollouts", "mt"); T(X0 + 10, y + 29, gen ? "one, or a group" : m.samples === 1 ? "one per prompt" : "G per prompt", "ms");
+  for (let i = 0, x0 = rightRow(nS, 18, 6); i < nS; i++) card(x0 + i * 24, y + 7, 18, 22, gen);
+  y += 36; down(y); y += 14;
+
+  // Scorer (frozen, same for every method here)
+  row(y, 36, "frozen"); net(X0 + 20, y + 18, false);
+  T(X0 + 40, y + 15, "Scorer", "mt"); T(X0 + 40, y + 29, "reward model, judge, or verifier", "ms");
+  T(X1 - 8, y + 15, "FROZEN", "mtag", "end"); T(X1 - 18, y + 30, "{ }", "mcode", "middle");
+  y += 36; down(y); y += 14;
+
+  // Rewards
+  const adv = gen ? { r: MECH_R } : mechAdv(m);
+  row(y, 30, "plain"); T(X0 + 10, y + 19, "Rewards r", "mt");
+  for (let i = 0, x0 = rightRow(adv.r.length, 32, 4); i < adv.r.length; i++) chip(x0 + i * 36, y + 6, 32, 18, adv.r[i].toFixed(1), null, gen);
+  y += 30; down(y); y += 14;
+
+  // Baseline (slot)
+  row(y, 42, "slot", changed("base"));
+  if (gen) { T(X0 + 10, y + 17, "Baseline b", "mt"); T(X0 + 10, y + 32, "critic, group mean, or running average", "ms"); }
+  else {
+    const B = MECH_BASE[m.base];
+    if (m.base === "critic") net(X0 + 20, y + 21, true);
+    else [0, 1, 2].forEach(k => chip(X0 + 8 + k * 9, y + 12 + (k === 1 ? -3 : 0) + 3, 8, 18, "", null));
+    T(X0 + 40, y + 17, B.t, "mt"); T(X0 + 40, y + 32, B.s, "ms");
+  }
+  y += 42; down(y); y += 14;
+
+  // Advantages (slot: per response, or per token with a critic)
+  row(y, 30, "slot", changed("adv"));
+  T(X0 + 10, y + 19, gen ? "Advantages A" : adv.tok ? "A, per token" : m.base === "group" ? "A, normalized" : "A = r − b", "mt");
+  if (gen) for (let i = 0, x0 = rightRow(4, 32, 4); i < 4; i++) chip(x0 + i * 36, y + 6, 32, 18, "?", null, true);
+  else if (adv.tok) for (let i = 0, x0 = rightRow(8, 12, 3); i < 8; i++) chip(x0 + i * 15, y + 8, 12, 14, "", adv.tok[i] / 0.35);
+  else for (let i = 0, x0 = rightRow(adv.a.length, 32, 4); i < adv.a.length; i++) chip(x0 + i * 36, y + 6, 32, 18, fmtA(adv.a[i]), adv.a[i] / 0.9);
+  y += 30; down(y); y += 14;
+
+  // Update (slot)
+  row(y, 42, "slot", changed("clip") || changed("kl"));
+  if (gen) { T(X0 + 10, y + 17, "Update", "mt"); T(X0 + 10, y + 32, "clipping and KL vary by method", "ms"); }
+  else { T(X0 + 10, y + 17, MECH_CLIP[m.clip].t, "mt"); T(X0 + 10, y + 32, `${MECH_CLIP[m.clip].s} · KL ${m.kl}`, "ms"); }
+  const updY = y + 21; y += 42;
+
+  // gradient: back up the right side into the trained policy (and into the critic, if there is one)
+  o.push(`<path d="M${X1},${updY} L${GX},${updY} L${GX},${polY} L${X1 + 3},${polY}" fill="none" stroke="#e8e8e8" stroke-width="1.3" stroke-dasharray="5 4" marker-end="url(#mech-arr-w)"/>`);
+  o.push(`<text class="ms" transform="translate(${GX + 11},${(polY + updY) / 2}) rotate(90)" text-anchor="middle">gradient</text>`);
+
+  const H = y + 4;
+  return `<svg viewBox="0 0 320 ${H}" role="img" aria-label="One training step of ${byId[id].label}">
+    <defs>
+      <marker id="mech-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,1 L9,5 L0,9 z" fill="#9a9fa7"/></marker>
+      <marker id="mech-arr-w" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,1 L9,5 L0,9 z" fill="#e8e8e8"/></marker>
+      <pattern id="mech-hatch" width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+        <rect width="4" height="4" fill="#1b1e25"/><line x1="0" y1="0" x2="0" y2="4" stroke="#8c919a" stroke-width="1.6"/></pattern>
+    </defs>${o.join("")}</svg>`;
+}
+
+function mechHead(base, show) {
+  if (!show) return `<b>${byId[base].label}</b>` + (MECH[base].generic ? " · the shared loop" : "");
+  if (MECH[base].generic) return `${byId[base].label} → <b>${byId[show].label}</b>`;
+  const n = MECH_SLOTS.filter(([k]) => mechKey(MECH[base], k) !== mechKey(MECH[show], k)).length;
+  return `${byId[base].label} → <b>${byId[show].label}</b> · <span class="n">${n} part${n === 1 ? "" : "s"} change</span>`;
+}
+function mechDiff(base, show) {
+  const b = MECH[base], s = show ? MECH[show] : null;
+  if (b.generic && !s) return `<li class="note">The parts every method here shares are solid; the dashed slots are what the methods choose differently.</li>`;
+  const m = s || b;
+  return MECH_SLOTS.map(([k, label, txt]) => {
+    if (!s || b.generic) return `<li><span class="k">${label}</span>${txt(m)}</li>`;
+    if (mechKey(b, k) === mechKey(s, k)) return `<li class="note"><span class="k">${label}</span>same</li>`;
+    return `<li><span class="k">${label}</span><span class="was">${txt(b)}</span> → <span class="now">${txt(s)}</span></li>`;
+  }).join("");
+}
+function mechSection(n) {
+  const gen = !!MECH[n.id].generic;
+  let h = `<h3>Inside one step</h3>
+    <div class="mech" data-base="${n.id}" data-show="">
+      <div class="mech-h">${mechHead(n.id)}</div>
+      <div class="mech-body">${mechSVG(n.id)}</div>
+      <ul class="mech-diff">${mechDiff(n.id)}</ul>
+    </div>
+    <p class="note mech-cap">${gen ? "Hover a method to fill in the slots." : "Hover a substitute marked ⇄ to swap it in."}
+      <button class="ref" data-compare="${n.id}">Compare side by side</button></p>`;
+  if (gen) {
+    const ids = NODES.filter(x => x.group === "reward" && x.kind === "method" && MECH[x.id]).map(x => x.id);
+    h += `<div class="pills">${ids.map(id => `<button class="pill" data-node="${id}">${byId[id].label}</button>`).join("")}</div>`;
+  } else if (n.subs) {
+    h += `<h3>Substitutes, and what changes</h3><ul>${n.subs.map(([id, note]) => MECH[id]
+      ? `<li class="mech-sub" data-mech="${id}"><span class="glyph">⇄</span>${nodeRef(id)} <span class="note">— ${note}</span></li>`
+      : `<li><span class="glyph"></span>${nodeRef(id)} <span class="note">— ${note}</span></li>`).join("")}</ul>`;
+  }
+  return h;
+}
+function mechShow(id) {
+  const card = P.querySelector(".mech"); if (!card) return;
+  const base = card.dataset.base, show = id && id !== base && MECH[id] && !MECH[id].generic ? id : "";
+  if (show === card.dataset.show) return;
+  card.dataset.show = show;
+  card.querySelector(".mech-h").innerHTML = mechHead(base, show);
+  card.querySelector(".mech-body").innerHTML = mechSVG(show || base, show ? base : null);
+  card.querySelector(".mech-diff").innerHTML = mechDiff(base, show);
+}
+P.addEventListener("pointerover", ev => {
+  const t = ev.target.closest("[data-mech], [data-node]");
+  mechShow(t && (t.dataset.mech || t.dataset.node));
+});
+P.addEventListener("pointerleave", () => mechShow(null));
+
+// ---- Compare view: the same cards side by side, diffed against a reference column
+const MECH_ORDER = ["m-reinforce", "m-ppo", "m-rloo", "m-grpo", "m-gspo", "m-cispo"];   // by year
+const CMP = $("compare");
+function openCompare(id) {
+  const m = MECH[id];
+  const pick = m.generic ? MECH_ORDER : [id, ...(byId[id].subs || []).map(s => s[0])];
+  const ids = MECH_ORDER.filter(x => pick.includes(x));
+  state.compare = { ids, ref: m.generic ? ids[0] : id };
+  renderCompare();
+}
+function closeCompare() { state.compare = null; renderCompare(); }
+function mechDiffCol(ref, id) {   // this column's own values; faded where they match the reference
+  const r = MECH[ref], m = MECH[id];
+  return MECH_SLOTS.map(([k, label, txt]) => mechKey(r, k) === mechKey(m, k) || ref === id
+    ? `<li${ref === id ? "" : ' class="note"'}><span class="k">${label}</span>${txt(m)}</li>`
+    : `<li><span class="k">${label}</span><span class="now">${txt(m)}</span></li>`).join("");
+}
+function renderCompare() {
+  const c = state.compare;
+  if (!c) { CMP.hidden = true; CMP.innerHTML = ""; return; }
+  CMP.hidden = false;
+  // Inputs (data, reward sources) shared by every column are said once, not repeated per column
+  const inputs = id => JSON.stringify([reachSplit(id, "up", ["data"]), reachSplit(id, "up", ["scorer"])]);
+  const sharedInputs = c.ids.every(id => inputs(id) === inputs(c.ids[0]));
+  const nDiff = id => MECH_SLOTS.filter(([k]) => mechKey(MECH[c.ref], k) !== mechKey(MECH[id], k)).length;
+  CMP.innerHTML = `
+    <div class="cmp-bar">
+      <div class="cmp-intro">
+        <div class="kind" style="color:var(--reward)">Scalar rewards · side by side</div>
+        <h2>One step of each update rule</h2>
+        <p>Same prompt, same scorer, same four rewards in every column. Outlined parts differ from the reference, the leftmost column; click another column's name to make it the reference.${sharedInputs
+          ? ` All of them take the same data and reward sources: see ${nodeRef("f-reward")}.` : ""}</p>
+      </div>
+      <div class="pills">${MECH_ORDER.map(id => `<button class="chip${c.ids.includes(id) ? " on" : ""}" style="--c:var(--reward)" data-cmp-toggle="${id}">${byId[id].label}</button>`).join("")}</div>
+      <button class="cmp-close" data-cmp-close="1">Close ✕</button>
+    </div>
+    <div class="cmp-cols">${[c.ref, ...c.ids.filter(x => x !== c.ref)].map(id => {
+      const ref = id === c.ref, n = nDiff(id);
+      return `<div class="cmp-col${ref ? " ref" : ""}">
+        <button class="cmp-h" data-cmp-ref="${id}"><b>${byId[id].label}</b><span class="yr">${byId[id].year}</span>
+          <span class="cmp-tag">${ref ? "reference" : n ? `${n} part${n > 1 ? "s" : ""} differ` : "same parts"}</span></button>
+        <div class="mech"><div class="mech-body">${mechSVG(id, ref ? null : c.ref)}</div><ul class="mech-diff">${mechDiffCol(c.ref, id)}</ul></div>
+        <button class="ref cmp-open" data-cmp-open="${id}">Open in the panel</button>
+        <div class="cmp-body">${nodePanelHTML(byId[id], true, sharedInputs)}</div>
+      </div>`; }).join("")}</div>`;
+}
+CMP.addEventListener("click", ev => {
+  const t = ev.target.closest("button"); if (!t) return;
+  const c = state.compare;
+  if (t.dataset.cmpClose) closeCompare();
+  else if (t.dataset.cmpOpen) { closeCompare(); select(t.dataset.cmpOpen); }
+  else if (t.dataset.cmpRef) { c.ref = t.dataset.cmpRef; renderCompare(); }
+  else if (t.dataset.node) { closeCompare(); select(t.dataset.node); }
+  else if (t.dataset.recipe) { closeCompare(); toggleRecipe(t.dataset.recipe); }
+  else if (t.dataset.cmpToggle) {
+    const id = t.dataset.cmpToggle;
+    if (c.ids.includes(id)) { if (c.ids.length > 1) c.ids = c.ids.filter(x => x !== id); }
+    else c.ids = MECH_ORDER.filter(x => x === id || c.ids.includes(x));
+    if (!c.ids.includes(c.ref)) c.ref = c.ids[0];
+    renderCompare();
+  }
+});
 
 P.addEventListener("click", ev => {
   const t = ev.target.closest("button"); if (!t) return;
-  if (t.dataset.node) select(t.dataset.node);
+  if (t.dataset.compare) openCompare(t.dataset.compare);
+  else if (t.dataset.node) select(t.dataset.node);
   else if (t.dataset.recipe) toggleRecipe(t.dataset.recipe);
   else if (t.dataset.try) TRIES[t.dataset.try]();
   else if (t.dataset.clear) select(null);
@@ -1108,7 +1708,43 @@ svg.addEventListener("wheel", ev => {
 $("zin").onclick = () => zoomAt(svg.clientWidth / 2, svg.clientHeight / 2, 1.25);
 $("zout").onclick = () => zoomAt(svg.clientWidth / 2, svg.clientHeight / 2, 0.8);
 $("zfit").onclick = () => { if (lastLayout) tween(Object.fromEntries(NODES.map(n => [n.id, { ...cur[n.id] }])), fitFor(lastLayout.pos, lastLayout.deco), 400); };
-document.addEventListener("keydown", ev => { if (ev.key === "Escape") select(null); });
+document.addEventListener("keydown", ev => { if (ev.key === "Escape") { if (state.compare) closeCompare(); else select(null); } });
+// ---- resizable side panel
+(() => {
+  const app = document.querySelector(".app"), handle = $("resizer");
+  const DEF = 420, MIN = 320, MAP_MIN = 360, KEY = "pt-explorer-panel-w";
+  const clamp = w => Math.round(Math.max(MIN, Math.min(w, app.clientWidth - MAP_MIN)));
+  const setW = w => { const v = clamp(w); app.style.setProperty("--panel-w", v + "px"); handle.setAttribute("aria-valuenow", v); return v; };
+  const save = w => { try { localStorage.setItem(KEY, String(w)); } catch (e) {} };
+  const refit = () => window.dispatchEvent(new Event("resize"));   // reuse the map's own refit
+  let saved = null; try { saved = Number(localStorage.getItem(KEY)) || null; } catch (e) {}
+  setW(saved || DEF);
+
+  let drag = null;
+  handle.addEventListener("pointerdown", ev => {
+    ev.preventDefault(); ev.stopPropagation();
+    handle.setPointerCapture(ev.pointerId);
+    drag = { right: app.getBoundingClientRect().right };
+    handle.classList.add("drag"); document.body.classList.add("resizing");
+  });
+  handle.addEventListener("pointermove", ev => { if (drag) setW(drag.right - ev.clientX); });
+  const end = () => {
+    if (!drag) return; drag = null;
+    handle.classList.remove("drag"); document.body.classList.remove("resizing");
+    save(parseInt(app.style.getPropertyValue("--panel-w"))); refit();
+  };
+  handle.addEventListener("pointerup", end);
+  handle.addEventListener("pointercancel", end);
+  handle.addEventListener("dblclick", () => { save(setW(DEF)); refit(); });
+  handle.addEventListener("keydown", ev => {
+    const step = ev.shiftKey ? 80 : 20, cur = parseInt(app.style.getPropertyValue("--panel-w")) || DEF;
+    if (ev.key === "ArrowLeft") { save(setW(cur + step)); refit(); ev.preventDefault(); }
+    else if (ev.key === "ArrowRight") { save(setW(cur - step)); refit(); ev.preventDefault(); }
+  });
+  // keep the width legal when the window shrinks
+  window.addEventListener("resize", () => setW(parseInt(app.style.getPropertyValue("--panel-w")) || DEF));
+})();
+
 let rz; window.addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => { if (lastLayout) { view = fitFor(lastLayout.pos, lastLayout.deco); frame(); renderLabels(); } }, 150); });
 
 /* ============================================================
