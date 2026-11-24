@@ -94,6 +94,21 @@ a.cite:hover { color: var(--text); text-decoration-color: currentColor; }
 .try { display: block; width: 100%; text-align: left; background: var(--surface); border: 1px solid var(--border);
   color: var(--text); border-radius: 8px; padding: 8px 10px; margin-bottom: 6px; cursor: pointer; font-size: 13px; }
 .try:hover { border-color: var(--faint); }
+.try-grp { font-size: 12px; color: var(--muted); margin: 12px 0 6px; }
+.try-ans { position: relative; background: var(--surface); border: 1px solid var(--border); border-left: 2px solid #e9d8a6;
+  border-radius: 8px; padding: 10px 30px 10px 12px; margin: 4px 0 16px; font-size: 13px; line-height: 1.5; }
+.try-ans .try-q { color: var(--muted); font-size: 12px; margin-bottom: 4px; }
+.try-ans p { margin: 0 0 6px; color: var(--text); }
+.try-ans ul { margin: 6px 0 8px; padding: 0; list-style: none; }
+.try-ans li { margin: 0 0 5px; }
+.try-x { position: absolute; top: 6px; right: 6px; background: none; border: 0; color: var(--faint); cursor: pointer;
+  font-size: 12px; padding: 2px 6px; border-radius: 4px; }
+.try-x:hover { color: var(--text); background: var(--surface2); }
+.try-more { background: none; border: 0; padding: 0; color: #e9d8a6; cursor: pointer; font-size: 12.5px; }
+.try-more:hover { text-decoration: underline; }
+/* the section a Try answer points to: a gold bar in the panel's left gutter */
+.tryhl { position: relative; }
+.tryhl::before { content: ""; position: absolute; left: -11px; top: -3px; bottom: -3px; width: 2px; background: #e9d8a6; border-radius: 1px; }
 .legend { display: grid; grid-template-columns: 34px 1fr; gap: 6px 10px; align-items: center; font-size: 12.5px; color: var(--muted); }
 .legend svg { display: block; }
 .stage { border-left: 2px solid var(--c); padding: 2px 0 2px 10px; margin-bottom: 10px; }
@@ -524,7 +539,7 @@ const NODES = [
     summary: "The student writes; a live teacher scores each token by how likely it would have been to write it. Dense like SFT, on-policy like RL. Formally close to policy gradient with a per-token reward: Kimi K3 uses the log ratio of teacher to student probability for each token as that reward.", cites: ["agarwal2023gkd", "lu2025onpolicy", "kimi2026k3"],
     subs: [["m-grpo", "One reward per response, but no teacher needed, so it can go beyond any existing model."],
            ["m-offdistill", "Cheaper to run, but off-policy."]],
-    effects: [["Needs a teacher that's already good, which is why it shows up last: after RL has trained the specialists.", "lu2025onpolicy"]] },
+    placement: ["Last in every pipeline here that uses it, because it needs a teacher that's already good. The teachers come from the stages before it: RL-trained specialists (Kimi K3, Nemotron 3 Ultra), the model's own earlier checkpoints (GLM-5), or the larger models of the same family (Qwen3).", "lu2025onpolicy"] },
 ];
 
 // [from, to, type, strength d|t, via]
@@ -1302,6 +1317,7 @@ function fitFor(pos, deco) {
 let lastLayout = null;
 function applyLens(id, animate = true) {
   state.lens = id;
+  if (state.tryOn) placeTry();                               // a Try answer belongs to the lens it landed in
   const { pos, deco } = LAYOUT[id]();
   if (state.sel && !pos[state.sel] && !(id === "pipes" && stagesMatching(state.sel).length)) {
     const n = byId[state.sel];
@@ -1438,13 +1454,15 @@ function reachSplit(id, dir, kinds) {
 }
 
 let panelKey = null;
+const panelKeyNow = () => state.sel || (state.alias ? "q:" + state.alias : state.recipes.length ? "r:" + state.recipes.join(",") : "intro");
 function renderPanel() {
-  const key = state.sel || (state.alias ? "q:" + state.alias : state.recipes.length ? "r:" + state.recipes.join(",") : "intro");
+  const key = panelKeyNow();
   if (key !== panelKey) { P.scrollTop = 0; panelKey = key; }
-  if (state.sel) return renderNodePanel(byId[state.sel]);
-  if (state.alias) return renderAliasPanel();
-  if (state.recipes.length) return renderRecipePanel();
-  renderIntro();
+  if (state.sel) renderNodePanel(byId[state.sel]);
+  else if (state.alias) renderAliasPanel();
+  else if (state.recipes.length) renderRecipePanel();
+  else renderIntro();
+  placeTry();
 }
 
 function renderIntro() {
@@ -1453,16 +1471,8 @@ function renderIntro() {
     <h2>Post-training, as a graph</h2>
     <p>Every training stage combines data from somewhere, a learning signal derived from it, and an update rule that changes the weights. Most of these can be substituted for one another along the edges here, but each substitution changes what the model learns, and published pipelines combine them differently.</p>
     <h3>Try</h3>
-    <button class="try" data-try="ratings">Where can expert ratings end up?</button>
-    <button class="try" data-try="grpo">What can feed GRPO, and what needs transforming first?</button>
-    <button class="try" data-try="compare">Compare DeepSeek-R1 with Kimi K3</button>
-    <button class="try" data-try="opd">Why does on-policy distillation come last?</button>
-    <button class="try" data-try="stages">How do the DeepSeek-R1 and Kimi K3 pipelines differ?</button>
-    <button class="try" data-try="scorer">Same algorithm, different scorer: what changes for GRPO?</button>
-    <button class="try" data-try="mech">Inside GRPO: what changes if you swap the baseline?</button>
-    <button class="try" data-try="cmp">Compare the RL update rules side by side</button>
-    <button class="try" data-try="relcmp">Rejection sampling next to REINFORCE: what does "special case" mean?</button>
-    <button class="try" data-try="relate">Which methods are special cases of others?</button>
+    ${["start", "deeper"].map(g => `<div class="try-grp">${g === "start" ? "Start here" : "Go deeper"}</div>${TRY.filter(t => t.group === g)
+      .map(t => `<button class="try" data-try="${t.id}">${t.q}</button>`).join("")}`).join("")}
     <h3>Legend</h3>
     <div class="legend">
       ${sw("#9a9fa7")}<span>direct use</span>
@@ -1495,6 +1505,7 @@ function nodePanelHTML(n, inCompare, skipInputs) {
   if (n.origin) h += originHTML(n.origin);
   const more = (n.cites || []).filter(k => !(n.origin || []).some(([o]) => o === k));
   if (more.length) h += `<p>${more.map(citeTxt).join(" · ")}</p>`;
+  if (n.placement && !inCompare) h += `<h3>Where it sits in a pipeline</h3><p>${n.placement[0]} ${citeTxt(n.placement[1])}</p>`;
   if (MECH[n.id] && !inCompare) h += mechSection(n);
 
   if ((n.kind === "method" || n.kind === "family") && !skipInputs) {
@@ -1591,18 +1602,68 @@ function toggleRecipe(rid) {
   refresh(); renderPanel();
 }
 
-const TRIES = {
-  ratings: () => { if (state.lens !== "flow") applyLens("flow"); state.recipes = []; syncChips(); select("d-ratings"); },
-  grpo: () => { if (state.lens !== "flow") applyLens("flow"); state.recipes = []; syncChips(); select("m-grpo"); },
-  compare: () => { if (state.lens !== "flow") applyLens("flow"); state.sel = null; state.recipes = []; toggleRecipe("r1"); toggleRecipe("k3"); },
-  opd: () => { applyLens("grid"); state.recipes = []; syncChips(); select("m-opd"); },
-  stages: () => { state.sel = null; state.recipes = ["r1", "k3"]; syncChips(); applyLens("pipes"); refresh(); renderPanel(); },
-  scorer: () => { state.recipes = []; syncChips(); applyLens("pipes"); select("p-r1-1"); },
-  mech: () => { if (state.lens !== "flow") applyLens("flow"); state.recipes = []; syncChips(); select("m-grpo"); },
-  cmp: () => { if (state.lens !== "flow") applyLens("flow"); state.recipes = []; syncChips(); select("f-reward"); openCompare("f-reward"); },
-  relcmp: () => { if (state.lens !== "flow") applyLens("flow"); state.recipes = []; syncChips(); select("m-rs"); openRelCompare(RELATIONS.findIndex(r => r.from === "m-rs" && r.to === "m-reinforce")); },
-  relate: () => { if (state.lens !== "flow") applyLens("flow"); state.recipes = []; syncChips(); setRel(true); select(null); },
-};
+// Try prompts. go() sets up the view; a is the answer shown at the top of the panel (or of Compare);
+// more names the panel section (its h3) that holds the detail; after() runs each time the answer is placed.
+// The answer stays while the view it was written for is on screen, and drops once the reader moves on.
+const flowNoRecipes = () => { if (state.lens !== "flow") applyLens("flow"); state.recipes = []; syncChips(); };
+const TRY = [
+  { id: "ratings", group: "start", q: "Where can expert ratings end up?",
+    go: () => { flowNoRecipes(); select("d-ratings"); },
+    a: "Only one place takes them as they are: a reward model can learn to predict the scores, and RL then trains against it. Everywhere else they need a transformation first: threshold them into good/bad labels for KTO, turn them into pairs for DPO and the other preference methods, or keep the top-rated responses as SFT data.",
+    more: "How" },
+  { id: "stages", group: "start", q: "How do the DeepSeek-R1 and Kimi K3 pipelines differ?",
+    go: () => { state.sel = null; state.alias = null; state.recipes = ["r1", "k3"]; syncChips(); applyLens("pipes"); refresh(); renderPanel(); },
+    a: "Both start with SFT, then run RL scored by verifiers. After that they split. DeepSeek-R1 alternates: it keeps the RL model's best outputs, fine-tunes a fresh base model on them, and runs RL again. Kimi K3 trains nine specialists with RL and folds them into one model with on-policy distillation, each specialist grading the student's tokens." },
+  { id: "opd", group: "start", q: "Why does on-policy distillation come last?",
+    go: () => { state.recipes = []; syncChips(); applyLens("pipes"); select("m-opd"); },
+    a: "It needs a teacher that's already good, and the stages before it make the teachers. The lit boxes on the map are every on-policy distillation stage; each one sits at the end of its pipeline.",
+    more: "Where it sits in a pipeline" },
+  { id: "scorer", group: "deeper", q: "Same algorithm, different scorer: what changes for GRPO?",
+    go: () => { state.recipes = []; syncChips(); applyLens("pipes"); select("p-r1-1"); },
+    a: "Nothing in the update rule. The scorer decides where the feedback lands: a program verifier only checks the end result, adding a reward model gives one judgment on the whole response, and a process reward model (in DeepSeekMath) scores each reasoning step.",
+    more: "How the scorer changes the feedback" },
+  { id: "mech", group: "deeper", q: "Inside GRPO: what changes if you swap the baseline?",
+    go: () => { flowNoRecipes(); select("m-grpo"); },
+    after: () => { const card = P.querySelector(".mech"); if (card) { card.dataset.pin = "m-ppo"; card.dataset.show = "\u0000"; mechShow("m-ppo"); } },
+    a: "The card below has PPO swapped in: a learned critic replaces the group mean, so one sample per prompt is enough and the advantage is per token, at the cost of a second network to train. (KL moves too; that's a separate choice.) Tap RLOO for the other option: keep the group, but leave each sample out of its own baseline.",
+    more: "Inside one step" },
+  { id: "cmp", group: "deeper", q: "Compare the RL update rules side by side",
+    go: () => { flowNoRecipes(); select("f-reward"); openCompare("f-reward"); },
+    a: "Every column gets the same prompt and the same four rewards, so the differences are in the five rows: samples per prompt, baseline, advantage, clipping, and where the KL penalty goes. Read across from REINFORCE, the reference column: PPO swaps the running average for a learned critic and adds clipping, RLOO and GRPO use a group of samples per prompt instead, and GSPO and CISPO mostly change what gets clipped." },
+  { id: "relate", group: "deeper", q: "Which methods are special cases of others?",
+    go: () => { flowNoRecipes(); setRel(true); select(null); },
+    a: () => `<p>Six relations, drawn as gold ≈ arcs on the map. A special case is the general method with some settings fixed: rejection sampling is REINFORCE with a 0/1 reward that trains only on the passes.</p>
+      <ul>${RELATIONS.map((r, i) => `<li><span class="glyph">≈</span>${nodeRef(r.from)} is ${r.rel} ${nodeRef(r.to)}${relCanCmp(r)
+        ? ` <button class="ref cmp-rel" data-cmp-rel="${i}">compare</button>` : ""}</li>`).join("")}</ul>
+      <p class="note">Related isn't interchangeable: each relation holds under its own assumptions.</p>` },
+];
+const TRY_BY = Object.fromEntries(TRY.map(t => [t.id, t]));
+const viewKey = () => [panelKeyNow(), state.lens, state.compare ? state.compare.fam || (state.compare.mix ? "mix" : "pair-" + state.compare.rel) : ""].join("|");
+function runTry(id) {
+  const t = TRY_BY[id]; if (!t) return;
+  state.tryOn = null;
+  if (state.compare) closeCompare();
+  t.go();
+  state.tryOn = { id, key: viewKey() };
+  placeTry(); syncHash();
+}
+function placeTry() {
+  if (state.tryOn && state.tryOn.key !== viewKey()) { state.tryOn = null; syncHash(); }
+  document.querySelectorAll(".try-ans").forEach(e => e.remove());
+  P.querySelectorAll(".tryhl").forEach(e => e.classList.remove("tryhl"));
+  const t = state.tryOn && TRY_BY[state.tryOn.id];
+  if (!t) return;
+  const html = `<div class="try-ans" role="note"><button class="try-x" data-try-x="1" aria-label="Dismiss this answer">✕</button>
+    <div class="try-q">${t.q}</div>${typeof t.a === "function" ? t.a() : `<p>${t.a}</p>`}${t.more ? `<button class="try-more" data-try-more="1">Show the detail ↓</button>` : ""}</div>`;
+  if (state.compare) { CMP.querySelector(".cmp-intro")?.insertAdjacentHTML("afterbegin", html); return; }
+  const back = P.querySelector(".back");
+  back ? back.insertAdjacentHTML("afterend", html) : P.insertAdjacentHTML("afterbegin", html);
+  const h = tryHead(t);
+  for (let el = h; el && (el === h || el.tagName !== "H3"); el = el.nextElementSibling) el.classList.add("tryhl");
+  t.after?.();
+}
+const tryHead = t => t.more && [...P.querySelectorAll("h3")].find(h => h.textContent.trim().startsWith(t.more));
+function dismissTry() { state.tryOn = null; placeTry(); syncHash(); }
 function setRel(v) { state.showRel = v; $("reltoggle").classList.toggle("on", v); frame(); syncHash(); }
 $("reltoggle").onclick = () => setRel(!state.showRel);
 const syncChips = () => document.querySelectorAll("#recipes .chip").forEach(c => c.classList.toggle("on", state.recipes.includes(c.dataset.recipe)));
@@ -2151,7 +2212,7 @@ function renderCompare() {
   const c = state.compare;
   syncHash();
   $("cmpbtn").textContent = c ? "✕ Close compare" : "⇆ Compare methods";
-  if (!c) { CMP.hidden = true; CMP.innerHTML = ""; return; }
+  if (!c) { CMP.hidden = true; CMP.innerHTML = ""; return placeTry(); }
   CMP.hidden = false;
   const mixed = !c.fam, F = mixed ? null : FAM_MECH[c.fam], famId = mixed ? null : "f-" + c.fam;
   CMP.style.setProperty("--fc", mixed ? "var(--text)" : F.color);
@@ -2202,11 +2263,13 @@ function renderCompare() {
         <button class="ref cmp-open" data-cmp-open="${id}">Open in the panel</button>
         <div class="cmp-body">${nodePanelHTML(byId[id], true, sharedInputs)}</div>
       </div>`; }).join("")}</div>`;
+  placeTry();
 }
 CMP.addEventListener("click", ev => {
   const t = ev.target.closest("button"); if (!t) return;
   const c = state.compare;
-  if (t.dataset.cmpClose) closeCompare();
+  if (t.dataset.tryX) dismissTry();
+  else if (t.dataset.cmpClose) closeCompare();
   else if (t.dataset.cmpOpen) { closeCompare(); select(t.dataset.cmpOpen); }
   else if (t.dataset.cmpRef) { c.ref = t.dataset.cmpRef; renderCompare(); }
   else if (t.dataset.cmpRel) openRelCompare(+t.dataset.cmpRel);
@@ -2330,6 +2393,7 @@ function renderAliasPanel() {
 let hashLock = false, hashT = null;
 const MIX_ORDER = () => CMP_FAMS.flatMap(f => FAM_MECH[f].order);
 function hashFor() {
+  if (state.tryOn) return "try=" + state.tryOn.id;
   const p = [];
   if (state.lens !== "flow") p.push("lens=" + state.lens);
   if (state.alias) p.push("q=" + state.alias);
@@ -2352,6 +2416,8 @@ function applyHash() {
   const p = new URLSearchParams(location.hash.slice(1));
   hashLock = true;
   try {
+    if (TRY_BY[p.get("try")]) return runTry(p.get("try"));
+    state.tryOn = null;
     const lens = p.get("lens") || "flow";
     if (LAYOUT[lens] && lens !== state.lens) applyLens(lens);
     if (p.get("rel") === "1" !== state.showRel) setRel(p.get("rel") === "1");
@@ -2391,7 +2457,9 @@ P.addEventListener("click", ev => {
   else if (t.dataset.cmpRel) openRelCompare(+t.dataset.cmpRel);
   else if (t.dataset.node) select(t.dataset.node);
   else if (t.dataset.recipe) toggleRecipe(t.dataset.recipe);
-  else if (t.dataset.try) TRIES[t.dataset.try]();
+  else if (t.dataset.try) runTry(t.dataset.try);
+  else if (t.dataset.tryX) dismissTry();
+  else if (t.dataset.tryMore) { const h = tryHead(TRY_BY[state.tryOn?.id] || {}); h && h.scrollIntoView({ behavior: "smooth", block: "start" }); }
   else if (t.dataset.clear) select(null);
   else if (t.dataset.clearRecipes) { state.recipes = []; syncChips(); refresh(); renderPanel(); }
 });
