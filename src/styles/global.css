@@ -107,6 +107,9 @@
 .katex-display {
   margin: 0 0 1.5rem;
   font-size: 1.1em;
+  /* Wide equations scroll in place instead of widening the page on phones. */
+  overflow-x: auto;
+  overflow-y: hidden;
 }
 
 /* Dark theme variables */

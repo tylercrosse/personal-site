@@ -1,0 +1,147 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2000 330" width="2000" height="330" role="img" aria-labelledby="title">
+  <title id="title">Key to the method diagrams</title>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#e8e8e8"/>
+    </marker>
+    <marker id="arrow-dim" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#9a9fa7"/>
+    </marker>
+    <style>
+      .bg { fill: #0f1115; }
+      .box { fill: #0f1115; stroke: #e8e8e8; stroke-width: 2.5; }
+      .trained { fill: #161a22; stroke: #e8e8e8; stroke-width: 4.5; }
+      .frozen { fill: #14161b; stroke: #8c919a; stroke-width: 2.5; }
+      .data { fill: #0f1115; stroke: #b8bcc3; stroke-width: 2; }
+      .data-back { fill: #0f1115; stroke: #4a4f57; stroke-width: 2; }
+      .dash { stroke-dasharray: 12 8; }
+      .group { fill: none; stroke: #6b7079; stroke-width: 2; stroke-dasharray: 6 8; }
+      .inner { fill: none; stroke: #4a4f57; stroke-width: 2; }
+      .rule { stroke: #2a2e35; stroke-width: 2; }
+      .rl { stroke: #8c919a; stroke-width: 3; stroke-linecap: round; }
+      .line { fill: none; stroke: #e8e8e8; stroke-width: 2.5; }
+      .line-dash { fill: none; stroke: #e8e8e8; stroke-width: 2.5; stroke-dasharray: 12 8; }
+      .line-dim { fill: none; stroke: #9a9fa7; stroke-width: 2; stroke-dasharray: 6 6; }
+      .title { font-family: Inter, "Helvetica Neue", Helvetica, Arial, sans-serif; font-weight: 700; font-size: 29px; fill: #f2f2f2; text-anchor: middle; }
+      .sub { font-family: Inter, "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 22px; fill: #a3a8b0; text-anchor: middle; }
+      .item { font-family: Inter, "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 22px; fill: #d4d6da; }
+      .ftitle { font-family: Inter, "Helvetica Neue", Helvetica, Arial, sans-serif; font-weight: 700; font-size: 34px; fill: #f2f2f2; }
+      .desc { font-family: Inter, "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 23px; fill: #a3a8b0; }
+      .num { font-family: "IBM Plex Mono", Menlo, Consolas, "Courier New", monospace; font-size: 20px; fill: #e8e8e8; text-anchor: middle; }
+      .lab { font-family: Inter, "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 21px; fill: #d4d6da; }
+      .mono { font-family: "IBM Plex Mono", Menlo, Consolas, "Courier New", monospace; font-size: 18px; letter-spacing: 3.5px; fill: #8c919a; }
+      .head { font-family: "IBM Plex Mono", Menlo, Consolas, "Courier New", monospace; font-size: 21px; letter-spacing: 4px; fill: #d4d6da; }
+      .tag { font-family: "IBM Plex Mono", Menlo, Consolas, "Courier New", monospace; font-size: 14px; letter-spacing: 3px; fill: #8c919a; text-anchor: middle; }
+      .tag-on { fill: #e8e8e8; }
+      .code { font-family: "IBM Plex Mono", Menlo, Consolas, "Courier New", monospace; font-size: 22px; font-weight: 700; fill: #8c919a; text-anchor: middle; }
+      .note { font-family: "IBM Plex Mono", Menlo, Consolas, "Courier New", monospace; font-size: 18px; fill: #8c919a; }
+    </style>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="2000" height="330"/>
+
+  <text class="head" x="60" y="60" text-anchor="start">KEY</text>
+  <line x1="77.5" y1="130.5" x2="110.0" y2="120.8" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="77.5" y1="130.5" x2="110.0" y2="140.2" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="77.5" y1="130.5" x2="110.0" y2="159.8" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="77.5" y1="130.5" x2="110.0" y2="179.2" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="77.5" y1="150.0" x2="110.0" y2="120.8" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="77.5" y1="150.0" x2="110.0" y2="140.2" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="77.5" y1="150.0" x2="110.0" y2="159.8" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="77.5" y1="150.0" x2="110.0" y2="179.2" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="77.5" y1="169.5" x2="110.0" y2="120.8" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="77.5" y1="169.5" x2="110.0" y2="140.2" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="77.5" y1="169.5" x2="110.0" y2="159.8" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="77.5" y1="169.5" x2="110.0" y2="179.2" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="110.0" y1="120.8" x2="142.5" y2="130.5" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="110.0" y1="120.8" x2="142.5" y2="150.0" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="110.0" y1="120.8" x2="142.5" y2="169.5" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="110.0" y1="140.2" x2="142.5" y2="130.5" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="110.0" y1="140.2" x2="142.5" y2="150.0" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="110.0" y1="140.2" x2="142.5" y2="169.5" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="110.0" y1="159.8" x2="142.5" y2="130.5" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="110.0" y1="159.8" x2="142.5" y2="150.0" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="110.0" y1="159.8" x2="142.5" y2="169.5" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="110.0" y1="179.2" x2="142.5" y2="130.5" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="110.0" y1="179.2" x2="142.5" y2="150.0" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="110.0" y1="179.2" x2="142.5" y2="169.5" stroke="#6b7079" stroke-width="1.43"/>
+  <circle cx="77.5" cy="130.5" r="5.5" fill="#e8e8e8" stroke="#e8e8e8" stroke-width="2.08"/>
+  <circle cx="77.5" cy="150.0" r="5.5" fill="#e8e8e8" stroke="#e8e8e8" stroke-width="2.08"/>
+  <circle cx="77.5" cy="169.5" r="5.5" fill="#e8e8e8" stroke="#e8e8e8" stroke-width="2.08"/>
+  <circle cx="110.0" cy="120.8" r="5.5" fill="#e8e8e8" stroke="#e8e8e8" stroke-width="2.08"/>
+  <circle cx="110.0" cy="140.2" r="5.5" fill="#e8e8e8" stroke="#e8e8e8" stroke-width="2.08"/>
+  <circle cx="110.0" cy="159.8" r="5.5" fill="#e8e8e8" stroke="#e8e8e8" stroke-width="2.08"/>
+  <circle cx="110.0" cy="179.2" r="5.5" fill="#e8e8e8" stroke="#e8e8e8" stroke-width="2.08"/>
+  <circle cx="142.5" cy="130.5" r="5.5" fill="#e8e8e8" stroke="#e8e8e8" stroke-width="2.08"/>
+  <circle cx="142.5" cy="150.0" r="5.5" fill="#e8e8e8" stroke="#e8e8e8" stroke-width="2.08"/>
+  <circle cx="142.5" cy="169.5" r="5.5" fill="#e8e8e8" stroke="#e8e8e8" stroke-width="2.08"/>
+  <text class="item" x="160" y="146" text-anchor="start">Trained weights</text>
+  <text class="note" x="160" y="174" text-anchor="start">the update changes these</text>
+  <line x1="487.5" y1="130.5" x2="520.0" y2="120.8" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="487.5" y1="130.5" x2="520.0" y2="140.2" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="487.5" y1="130.5" x2="520.0" y2="159.8" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="487.5" y1="130.5" x2="520.0" y2="179.2" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="487.5" y1="150.0" x2="520.0" y2="120.8" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="487.5" y1="150.0" x2="520.0" y2="140.2" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="487.5" y1="150.0" x2="520.0" y2="159.8" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="487.5" y1="150.0" x2="520.0" y2="179.2" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="487.5" y1="169.5" x2="520.0" y2="120.8" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="487.5" y1="169.5" x2="520.0" y2="140.2" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="487.5" y1="169.5" x2="520.0" y2="159.8" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="487.5" y1="169.5" x2="520.0" y2="179.2" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="520.0" y1="120.8" x2="552.5" y2="130.5" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="520.0" y1="120.8" x2="552.5" y2="150.0" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="520.0" y1="120.8" x2="552.5" y2="169.5" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="520.0" y1="140.2" x2="552.5" y2="130.5" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="520.0" y1="140.2" x2="552.5" y2="150.0" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="520.0" y1="140.2" x2="552.5" y2="169.5" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="520.0" y1="159.8" x2="552.5" y2="130.5" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="520.0" y1="159.8" x2="552.5" y2="150.0" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="520.0" y1="159.8" x2="552.5" y2="169.5" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="520.0" y1="179.2" x2="552.5" y2="130.5" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="520.0" y1="179.2" x2="552.5" y2="150.0" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="520.0" y1="179.2" x2="552.5" y2="169.5" stroke="#3d4249" stroke-width="1.43"/>
+  <circle cx="487.5" cy="130.5" r="5.5" fill="#0f1115" stroke="#8c919a" stroke-width="2.08"/>
+  <circle cx="487.5" cy="150.0" r="5.5" fill="#0f1115" stroke="#8c919a" stroke-width="2.08"/>
+  <circle cx="487.5" cy="169.5" r="5.5" fill="#0f1115" stroke="#8c919a" stroke-width="2.08"/>
+  <circle cx="520.0" cy="120.8" r="5.5" fill="#0f1115" stroke="#8c919a" stroke-width="2.08"/>
+  <circle cx="520.0" cy="140.2" r="5.5" fill="#0f1115" stroke="#8c919a" stroke-width="2.08"/>
+  <circle cx="520.0" cy="159.8" r="5.5" fill="#0f1115" stroke="#8c919a" stroke-width="2.08"/>
+  <circle cx="520.0" cy="179.2" r="5.5" fill="#0f1115" stroke="#8c919a" stroke-width="2.08"/>
+  <circle cx="552.5" cy="130.5" r="5.5" fill="#0f1115" stroke="#8c919a" stroke-width="2.08"/>
+  <circle cx="552.5" cy="150.0" r="5.5" fill="#0f1115" stroke="#8c919a" stroke-width="2.08"/>
+  <circle cx="552.5" cy="169.5" r="5.5" fill="#0f1115" stroke="#8c919a" stroke-width="2.08"/>
+  <text class="item" x="570" y="146" text-anchor="start">Frozen weights</text>
+  <text class="note" x="570" y="174" text-anchor="start">used, never updated</text>
+  <rect class="data-back" x="914" y="106" width="48" height="60" rx="4"/>
+  <rect class="data-back" x="907" y="113" width="48" height="60" rx="4"/>
+  <rect x="900" y="120" width="48" height="60" rx="4" fill="#0f1115" stroke="#b8bcc3" stroke-width="2"/>
+  <line class="rl" x1="909" y1="135.0" x2="930.6" y2="135.0"/>
+  <line class="rl" x1="909" y1="150.0" x2="925.5" y2="150.0"/>
+  <line class="rl" x1="909" y1="165.0" x2="928.8" y2="165.0"/>
+  <text class="item" x="980" y="146" text-anchor="start">Stored text</text>
+  <text class="note" x="980" y="174" text-anchor="start">a fixed dataset</text>
+  <rect x="1260" y="120" width="48" height="60" rx="4" fill="#0f1115" stroke="#b8bcc3" stroke-width="2"/>
+  <line class="rl" x1="1269" y1="135.0" x2="1290.6" y2="135.0"/>
+  <line class="rl" x1="1269" y1="150.0" x2="1285.5" y2="150.0"/>
+  <line class="rl" x1="1269" y1="165.0" x2="1288.8" y2="165.0"/>
+  <text class="item" x="1330" y="146" text-anchor="start">Generated text</text>
+  <text class="note" x="1330" y="174" text-anchor="start">written during training</text>
+  <rect x="1650" y="128" width="64" height="44" rx="8" fill="#0f1115" stroke="#8c919a" stroke-width="2"/>
+  <text class="num" x="1682.0" y="157.0" text-anchor="middle">0.7</text>
+  <text class="item" x="1730" y="146" text-anchor="start">Numbers</text>
+  <text class="note" x="1730" y="174" text-anchor="start">scores, log-probs</text>
+  <rect class="box" x="60" y="234" width="96" height="52" rx="6"/>
+  <text class="item" x="176" y="267" text-anchor="start">Computation, no weights</text>
+  <rect x="520" y="244" width="32" height="32" rx="6" fill="#268bd0"/>
+  <rect x="558" y="244" width="32" height="32" rx="6" fill="#bb7d2e"/>
+  <text class="item" x="606" y="267" text-anchor="start">made more / less likely</text>
+  <path class="line" d="M900,260 L990,260" marker-end="url(#arrow)"/>
+  <text class="item" x="1004" y="267" text-anchor="start">data</text>
+  <path class="line-dash" d="M1110,260 L1200,260" marker-end="url(#arrow)"/>
+  <text class="item" x="1214" y="267" text-anchor="start">gradient</text>
+  <path class="line-dim" d="M1360,260 L1450,260" marker-end="url(#arrow-dim)"/>
+  <text class="item" x="1464" y="267" text-anchor="start">optional</text>
+  <rect class="group" x="1650" y="234" width="64" height="52" rx="8"/>
+  <text class="item" x="1730" y="267" text-anchor="start">batch, or pick one</text>
+</svg>

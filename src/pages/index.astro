@@ -53,6 +53,11 @@ const interpretability = getPost("2026/llm-morality-mech-interp");
 const paperLinks = (post: typeof lead) =>
   (post.research?.links ?? []).filter((link) => link.label !== "Write-up");
 
+// Companion posts (e.g. a paper's explainer), same source as the Research page cards.
+const research = await getResearchProjects();
+const companionsFor = (post: typeof lead) =>
+  research.find((paper) => slugOf(paper.id) === post.slug)?.companions ?? [];
+
 const showcase = {
   post: {
     ...lead,
@@ -62,6 +67,7 @@ const showcase = {
   meta: ["NeurIPS 2026", "Co-first author"],
   highlight: "<strong>20–28 percentage-point drop</strong> in measured safety at a 1% audit budget across two environments.",
   links: paperLinks(lead),
+  companions: companionsFor(lead),
 };
 
 const rail = [
@@ -73,6 +79,7 @@ const rail = [
     },
     meta: ["ICLR 2026 workshops", "AI-WILD spotlight"],
     links: paperLinks(goalDrift),
+    companions: companionsFor(goalDrift),
   },
   {
     post: {
@@ -86,7 +93,6 @@ const rail = [
 ];
 
 // Recent Work: the remaining papers plus talks.
-const research = await getResearchProjects();
 const highlightedSlugs = new Set([lead.slug, goalDrift.slug]);
 
 type WorkItem = {
@@ -170,12 +176,19 @@ const notebook = [
         meta={showcase.meta}
         highlight={showcase.highlight}
         links={showcase.links}
+        companions={showcase.companions}
         eager
       />
     </div>
     <div class="showcase-rail">
       {rail.map((item) => (
-        <PostCard post={item.post} variant="compact" meta={item.meta} links={item.links} />
+        <PostCard
+          post={item.post}
+          variant="compact"
+          meta={item.meta}
+          links={item.links}
+          companions={item.companions}
+        />
       ))}
     </div>
   </section>

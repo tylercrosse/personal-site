@@ -1,0 +1,272 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2000 880" width="2000" height="880" role="img" aria-labelledby="title">
+  <title id="title">Scalar rewards: a policy-gradient loop with swappable scorer and baseline</title>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#e8e8e8"/>
+    </marker>
+    <marker id="arrow-dim" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#9a9fa7"/>
+    </marker>
+    <style>
+      .bg { fill: #0f1115; }
+      .box { fill: #0f1115; stroke: #e8e8e8; stroke-width: 2.5; }
+      .trained { fill: #161a22; stroke: #e8e8e8; stroke-width: 4.5; }
+      .frozen { fill: #14161b; stroke: #8c919a; stroke-width: 2.5; }
+      .data { fill: #0f1115; stroke: #b8bcc3; stroke-width: 2; }
+      .data-back { fill: #0f1115; stroke: #4a4f57; stroke-width: 2; }
+      .dash { stroke-dasharray: 12 8; }
+      .group { fill: none; stroke: #6b7079; stroke-width: 2; stroke-dasharray: 6 8; }
+      .inner { fill: none; stroke: #4a4f57; stroke-width: 2; }
+      .rule { stroke: #2a2e35; stroke-width: 2; }
+      .rl { stroke: #8c919a; stroke-width: 3; stroke-linecap: round; }
+      .line { fill: none; stroke: #e8e8e8; stroke-width: 2.5; }
+      .line-dash { fill: none; stroke: #e8e8e8; stroke-width: 2.5; stroke-dasharray: 12 8; }
+      .line-dim { fill: none; stroke: #9a9fa7; stroke-width: 2; stroke-dasharray: 6 6; }
+      .title { font-family: Inter, "Helvetica Neue", Helvetica, Arial, sans-serif; font-weight: 700; font-size: 29px; fill: #f2f2f2; text-anchor: middle; }
+      .sub { font-family: Inter, "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 22px; fill: #a3a8b0; text-anchor: middle; }
+      .item { font-family: Inter, "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 22px; fill: #d4d6da; }
+      .ftitle { font-family: Inter, "Helvetica Neue", Helvetica, Arial, sans-serif; font-weight: 700; font-size: 34px; fill: #f2f2f2; }
+      .desc { font-family: Inter, "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 23px; fill: #a3a8b0; }
+      .num { font-family: "IBM Plex Mono", Menlo, Consolas, "Courier New", monospace; font-size: 20px; fill: #e8e8e8; text-anchor: middle; }
+      .lab { font-family: Inter, "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 21px; fill: #d4d6da; }
+      .mono { font-family: "IBM Plex Mono", Menlo, Consolas, "Courier New", monospace; font-size: 18px; letter-spacing: 3.5px; fill: #8c919a; }
+      .head { font-family: "IBM Plex Mono", Menlo, Consolas, "Courier New", monospace; font-size: 21px; letter-spacing: 4px; fill: #d4d6da; }
+      .tag { font-family: "IBM Plex Mono", Menlo, Consolas, "Courier New", monospace; font-size: 14px; letter-spacing: 3px; fill: #8c919a; text-anchor: middle; }
+      .tag-on { fill: #e8e8e8; }
+      .code { font-family: "IBM Plex Mono", Menlo, Consolas, "Courier New", monospace; font-size: 22px; font-weight: 700; fill: #8c919a; text-anchor: middle; }
+      .note { font-family: "IBM Plex Mono", Menlo, Consolas, "Courier New", monospace; font-size: 18px; fill: #8c919a; }
+    </style>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="2000" height="880"/>
+
+  <text class="ftitle" x="60" y="66" text-anchor="start">Scalar rewards: “that attempt scored 0.7.”</text>
+  <text class="desc" x="60" y="108" text-anchor="start">One loop with two slots. The scorer gives RLHF, RLAIF or RLVR; the baseline gives PPO, GRPO or RLOO.</text>
+  <rect class="data-back" x="74" y="281" width="230" height="130" rx="6"/>
+  <rect class="data-back" x="67" y="288" width="230" height="130" rx="6"/>
+  <rect class="data" x="60" y="295" width="230" height="130" rx="6"/>
+  <rect x="84" y="334.0" width="42" height="52" rx="4" fill="#0f1115" stroke="#b8bcc3" stroke-width="2"/>
+  <line class="rl" x1="93" y1="347.0" x2="110.3" y2="347.0"/>
+  <line class="rl" x1="93" y1="360.0" x2="106.2" y2="360.0"/>
+  <line class="rl" x1="93" y1="373.0" x2="108.8" y2="373.0"/>
+  <text class="title" x="209.0" y="354.0" text-anchor="middle">Prompts</text>
+  <text class="sub" x="209.0" y="388.0" text-anchor="middle">x</text>
+  <path class="line" d="M290,360 L336,360" marker-end="url(#arrow)"/>
+  <rect class="trained" x="340" y="295" width="260" height="130" rx="6"/>
+  <line x1="363.5" y1="340.5" x2="396.0" y2="330.8" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="363.5" y1="340.5" x2="396.0" y2="350.2" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="363.5" y1="340.5" x2="396.0" y2="369.8" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="363.5" y1="340.5" x2="396.0" y2="389.2" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="363.5" y1="360.0" x2="396.0" y2="330.8" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="363.5" y1="360.0" x2="396.0" y2="350.2" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="363.5" y1="360.0" x2="396.0" y2="369.8" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="363.5" y1="360.0" x2="396.0" y2="389.2" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="363.5" y1="379.5" x2="396.0" y2="330.8" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="363.5" y1="379.5" x2="396.0" y2="350.2" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="363.5" y1="379.5" x2="396.0" y2="369.8" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="363.5" y1="379.5" x2="396.0" y2="389.2" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="396.0" y1="330.8" x2="428.5" y2="340.5" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="396.0" y1="330.8" x2="428.5" y2="360.0" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="396.0" y1="330.8" x2="428.5" y2="379.5" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="396.0" y1="350.2" x2="428.5" y2="340.5" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="396.0" y1="350.2" x2="428.5" y2="360.0" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="396.0" y1="350.2" x2="428.5" y2="379.5" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="396.0" y1="369.8" x2="428.5" y2="340.5" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="396.0" y1="369.8" x2="428.5" y2="360.0" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="396.0" y1="369.8" x2="428.5" y2="379.5" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="396.0" y1="389.2" x2="428.5" y2="340.5" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="396.0" y1="389.2" x2="428.5" y2="360.0" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="396.0" y1="389.2" x2="428.5" y2="379.5" stroke="#6b7079" stroke-width="1.43"/>
+  <circle cx="363.5" cy="340.5" r="5.5" fill="#e8e8e8" stroke="#e8e8e8" stroke-width="2.08"/>
+  <circle cx="363.5" cy="360.0" r="5.5" fill="#e8e8e8" stroke="#e8e8e8" stroke-width="2.08"/>
+  <circle cx="363.5" cy="379.5" r="5.5" fill="#e8e8e8" stroke="#e8e8e8" stroke-width="2.08"/>
+  <circle cx="396.0" cy="330.8" r="5.5" fill="#e8e8e8" stroke="#e8e8e8" stroke-width="2.08"/>
+  <circle cx="396.0" cy="350.2" r="5.5" fill="#e8e8e8" stroke="#e8e8e8" stroke-width="2.08"/>
+  <circle cx="396.0" cy="369.8" r="5.5" fill="#e8e8e8" stroke="#e8e8e8" stroke-width="2.08"/>
+  <circle cx="396.0" cy="389.2" r="5.5" fill="#e8e8e8" stroke="#e8e8e8" stroke-width="2.08"/>
+  <circle cx="428.5" cy="340.5" r="5.5" fill="#e8e8e8" stroke="#e8e8e8" stroke-width="2.08"/>
+  <circle cx="428.5" cy="360.0" r="5.5" fill="#e8e8e8" stroke="#e8e8e8" stroke-width="2.08"/>
+  <circle cx="428.5" cy="379.5" r="5.5" fill="#e8e8e8" stroke="#e8e8e8" stroke-width="2.08"/>
+  <text class="tag tag-on" x="514.0" y="323">TRAINED</text>
+  <text class="title" x="514.0" y="371.0" text-anchor="middle">Policy</text>
+  <text class="sub" x="514.0" y="405.0" text-anchor="middle">π<tspan baseline-shift="sub" font-size="0.7em">θ</tspan></text>
+  <path class="line" d="M600,360 L656,360" marker-end="url(#arrow)"/>
+  <text class="mono" x="628" y="346" text-anchor="middle">G</text>
+  <rect class="group" x="660" y="240.0" width="148" height="240" rx="8"/>
+  <text class="mono" x="734.0" y="226.0" text-anchor="middle">rollouts</text>
+  <rect x="674" y="254.0" width="120" height="44" rx="4" fill="#0f1115" stroke="#b8bcc3" stroke-width="2"/>
+  <text class="lab" x="688" y="283.0" text-anchor="start">y₁</text>
+  <line class="rl" x1="724" y1="268.7" x2="776.2" y2="268.7"/>
+  <line class="rl" x1="724" y1="283.3" x2="758.8" y2="283.3"/>
+  <rect x="674" y="310.0" width="120" height="44" rx="4" fill="#0f1115" stroke="#b8bcc3" stroke-width="2"/>
+  <text class="lab" x="688" y="339.0" text-anchor="start">y₂</text>
+  <line class="rl" x1="724" y1="324.7" x2="776.2" y2="324.7"/>
+  <line class="rl" x1="724" y1="339.3" x2="758.8" y2="339.3"/>
+  <rect x="674" y="366.0" width="120" height="44" rx="4" fill="#0f1115" stroke="#b8bcc3" stroke-width="2"/>
+  <text class="lab" x="688" y="395.0" text-anchor="start">y₃</text>
+  <line class="rl" x1="724" y1="380.7" x2="776.2" y2="380.7"/>
+  <line class="rl" x1="724" y1="395.3" x2="758.8" y2="395.3"/>
+  <rect x="674" y="422.0" width="120" height="44" rx="4" fill="#0f1115" stroke="#b8bcc3" stroke-width="2"/>
+  <text class="lab" x="688" y="451.0" text-anchor="start">y₄</text>
+  <line class="rl" x1="724" y1="436.7" x2="776.2" y2="436.7"/>
+  <line class="rl" x1="724" y1="451.3" x2="758.8" y2="451.3"/>
+  <path class="line" d="M808,360 L856,360" marker-end="url(#arrow)"/>
+  <rect class="group" x="860" y="220" width="350" height="280" rx="8"/>
+  <text class="mono" x="1035.0" y="536" text-anchor="middle">pick one</text>
+  <text class="title" x="1035.0" y="270" text-anchor="middle">Scorer</text>
+  <rect class="frozen" x="876" y="298" width="318" height="54" rx="5"/>
+  <line x1="891.6" y1="317.5" x2="912.0" y2="310.0" stroke="#3d4249" stroke-width="1.00"/>
+  <line x1="891.6" y1="317.5" x2="912.0" y2="325.0" stroke="#3d4249" stroke-width="1.00"/>
+  <line x1="891.6" y1="317.5" x2="912.0" y2="340.0" stroke="#3d4249" stroke-width="1.00"/>
+  <line x1="891.6" y1="332.5" x2="912.0" y2="310.0" stroke="#3d4249" stroke-width="1.00"/>
+  <line x1="891.6" y1="332.5" x2="912.0" y2="325.0" stroke="#3d4249" stroke-width="1.00"/>
+  <line x1="891.6" y1="332.5" x2="912.0" y2="340.0" stroke="#3d4249" stroke-width="1.00"/>
+  <line x1="912.0" y1="310.0" x2="932.4" y2="317.5" stroke="#3d4249" stroke-width="1.00"/>
+  <line x1="912.0" y1="310.0" x2="932.4" y2="332.5" stroke="#3d4249" stroke-width="1.00"/>
+  <line x1="912.0" y1="325.0" x2="932.4" y2="317.5" stroke="#3d4249" stroke-width="1.00"/>
+  <line x1="912.0" y1="325.0" x2="932.4" y2="332.5" stroke="#3d4249" stroke-width="1.00"/>
+  <line x1="912.0" y1="340.0" x2="932.4" y2="317.5" stroke="#3d4249" stroke-width="1.00"/>
+  <line x1="912.0" y1="340.0" x2="932.4" y2="332.5" stroke="#3d4249" stroke-width="1.00"/>
+  <circle cx="891.6" cy="317.5" r="3.7" fill="#0f1115" stroke="#8c919a" stroke-width="1.09"/>
+  <circle cx="891.6" cy="332.5" r="3.7" fill="#0f1115" stroke="#8c919a" stroke-width="1.09"/>
+  <circle cx="912.0" cy="310.0" r="3.7" fill="#0f1115" stroke="#8c919a" stroke-width="1.09"/>
+  <circle cx="912.0" cy="325.0" r="3.7" fill="#0f1115" stroke="#8c919a" stroke-width="1.09"/>
+  <circle cx="912.0" cy="340.0" r="3.7" fill="#0f1115" stroke="#8c919a" stroke-width="1.09"/>
+  <circle cx="932.4" cy="317.5" r="3.7" fill="#0f1115" stroke="#8c919a" stroke-width="1.09"/>
+  <circle cx="932.4" cy="332.5" r="3.7" fill="#0f1115" stroke="#8c919a" stroke-width="1.09"/>
+  <text class="item" x="948" y="333" text-anchor="start">Reward model</text>
+  <text class="note" x="1178" y="332" text-anchor="end">RLHF</text>
+  <rect class="frozen" x="876" y="362" width="318" height="54" rx="5"/>
+  <line x1="891.6" y1="381.5" x2="912.0" y2="374.0" stroke="#3d4249" stroke-width="1.00"/>
+  <line x1="891.6" y1="381.5" x2="912.0" y2="389.0" stroke="#3d4249" stroke-width="1.00"/>
+  <line x1="891.6" y1="381.5" x2="912.0" y2="404.0" stroke="#3d4249" stroke-width="1.00"/>
+  <line x1="891.6" y1="396.5" x2="912.0" y2="374.0" stroke="#3d4249" stroke-width="1.00"/>
+  <line x1="891.6" y1="396.5" x2="912.0" y2="389.0" stroke="#3d4249" stroke-width="1.00"/>
+  <line x1="891.6" y1="396.5" x2="912.0" y2="404.0" stroke="#3d4249" stroke-width="1.00"/>
+  <line x1="912.0" y1="374.0" x2="932.4" y2="381.5" stroke="#3d4249" stroke-width="1.00"/>
+  <line x1="912.0" y1="374.0" x2="932.4" y2="396.5" stroke="#3d4249" stroke-width="1.00"/>
+  <line x1="912.0" y1="389.0" x2="932.4" y2="381.5" stroke="#3d4249" stroke-width="1.00"/>
+  <line x1="912.0" y1="389.0" x2="932.4" y2="396.5" stroke="#3d4249" stroke-width="1.00"/>
+  <line x1="912.0" y1="404.0" x2="932.4" y2="381.5" stroke="#3d4249" stroke-width="1.00"/>
+  <line x1="912.0" y1="404.0" x2="932.4" y2="396.5" stroke="#3d4249" stroke-width="1.00"/>
+  <circle cx="891.6" cy="381.5" r="3.7" fill="#0f1115" stroke="#8c919a" stroke-width="1.09"/>
+  <circle cx="891.6" cy="396.5" r="3.7" fill="#0f1115" stroke="#8c919a" stroke-width="1.09"/>
+  <circle cx="912.0" cy="374.0" r="3.7" fill="#0f1115" stroke="#8c919a" stroke-width="1.09"/>
+  <circle cx="912.0" cy="389.0" r="3.7" fill="#0f1115" stroke="#8c919a" stroke-width="1.09"/>
+  <circle cx="912.0" cy="404.0" r="3.7" fill="#0f1115" stroke="#8c919a" stroke-width="1.09"/>
+  <circle cx="932.4" cy="381.5" r="3.7" fill="#0f1115" stroke="#8c919a" stroke-width="1.09"/>
+  <circle cx="932.4" cy="396.5" r="3.7" fill="#0f1115" stroke="#8c919a" stroke-width="1.09"/>
+  <text class="item" x="948" y="397" text-anchor="start">LLM judge</text>
+  <text class="note" x="1178" y="396" text-anchor="end">RLAIF</text>
+  <rect class="box" x="876" y="426" width="318" height="54" rx="5" style="stroke:#6b7079;stroke-width:2"/>
+  <text class="code" x="912" y="461" text-anchor="middle">{ }</text>
+  <text class="item" x="948" y="461" text-anchor="start">Verifier</text>
+  <text class="note" x="1178" y="460" text-anchor="end">RLVR</text>
+  <path class="line" d="M1210,360 L1276,360" marker-end="url(#arrow)"/>
+  <rect class="group" x="1280" y="240.0" width="118" height="240" rx="8"/>
+  <text class="mono" x="1339.0" y="226.0" text-anchor="middle">r</text>
+  <rect x="1294" y="254.0" width="90" height="44" rx="8" fill="#0f1115" stroke="#8c919a" stroke-width="2"/>
+  <text class="num" x="1339.0" y="283.0" text-anchor="middle">0.9</text>
+  <rect x="1294" y="310.0" width="90" height="44" rx="8" fill="#0f1115" stroke="#8c919a" stroke-width="2"/>
+  <text class="num" x="1339.0" y="339.0" text-anchor="middle">0.2</text>
+  <rect x="1294" y="366.0" width="90" height="44" rx="8" fill="#0f1115" stroke="#8c919a" stroke-width="2"/>
+  <text class="num" x="1339.0" y="395.0" text-anchor="middle">0.7</text>
+  <rect x="1294" y="422.0" width="90" height="44" rx="8" fill="#0f1115" stroke="#8c919a" stroke-width="2"/>
+  <text class="num" x="1339.0" y="451.0" text-anchor="middle">0.0</text>
+  <path class="line" d="M1398,360 L1456,360" marker-end="url(#arrow)"/>
+  <rect class="group" x="1460" y="220" width="320" height="280" rx="8"/>
+  <text class="mono" x="1620.0" y="536" text-anchor="middle">pick one</text>
+  <text class="title" x="1620.0" y="270" text-anchor="middle">Baseline</text>
+  <text class="sub" x="1620.0" y="302" text-anchor="middle">A = r − b</text>
+  <rect class="trained" x="1476" y="322" width="288" height="76" rx="5" style="stroke-width:3"/>
+  <line x1="1491.6" y1="352.5" x2="1512.0" y2="345.0" stroke="#6b7079" stroke-width="1.00"/>
+  <line x1="1491.6" y1="352.5" x2="1512.0" y2="360.0" stroke="#6b7079" stroke-width="1.00"/>
+  <line x1="1491.6" y1="352.5" x2="1512.0" y2="375.0" stroke="#6b7079" stroke-width="1.00"/>
+  <line x1="1491.6" y1="367.5" x2="1512.0" y2="345.0" stroke="#6b7079" stroke-width="1.00"/>
+  <line x1="1491.6" y1="367.5" x2="1512.0" y2="360.0" stroke="#6b7079" stroke-width="1.00"/>
+  <line x1="1491.6" y1="367.5" x2="1512.0" y2="375.0" stroke="#6b7079" stroke-width="1.00"/>
+  <line x1="1512.0" y1="345.0" x2="1532.4" y2="352.5" stroke="#6b7079" stroke-width="1.00"/>
+  <line x1="1512.0" y1="345.0" x2="1532.4" y2="367.5" stroke="#6b7079" stroke-width="1.00"/>
+  <line x1="1512.0" y1="360.0" x2="1532.4" y2="352.5" stroke="#6b7079" stroke-width="1.00"/>
+  <line x1="1512.0" y1="360.0" x2="1532.4" y2="367.5" stroke="#6b7079" stroke-width="1.00"/>
+  <line x1="1512.0" y1="375.0" x2="1532.4" y2="352.5" stroke="#6b7079" stroke-width="1.00"/>
+  <line x1="1512.0" y1="375.0" x2="1532.4" y2="367.5" stroke="#6b7079" stroke-width="1.00"/>
+  <circle cx="1491.6" cy="352.5" r="3.7" fill="#e8e8e8" stroke="#e8e8e8" stroke-width="1.09"/>
+  <circle cx="1491.6" cy="367.5" r="3.7" fill="#e8e8e8" stroke="#e8e8e8" stroke-width="1.09"/>
+  <circle cx="1512.0" cy="345.0" r="3.7" fill="#e8e8e8" stroke="#e8e8e8" stroke-width="1.09"/>
+  <circle cx="1512.0" cy="360.0" r="3.7" fill="#e8e8e8" stroke="#e8e8e8" stroke-width="1.09"/>
+  <circle cx="1512.0" cy="375.0" r="3.7" fill="#e8e8e8" stroke="#e8e8e8" stroke-width="1.09"/>
+  <circle cx="1532.4" cy="352.5" r="3.7" fill="#e8e8e8" stroke="#e8e8e8" stroke-width="1.09"/>
+  <circle cx="1532.4" cy="367.5" r="3.7" fill="#e8e8e8" stroke="#e8e8e8" stroke-width="1.09"/>
+  <text class="item" x="1548" y="354" text-anchor="start">Learned critic</text>
+  <text class="note" x="1548" y="380" text-anchor="start">trained too</text>
+  <text class="note" x="1748" y="354" text-anchor="end">PPO</text>
+  <rect class="box" x="1476" y="410" width="288" height="76" rx="5" style="stroke:#6b7079;stroke-width:2"/>
+  <rect x="1492" y="434" width="14" height="26" rx="8" fill="#0f1115" stroke="#8c919a" stroke-width="2"/>
+  <rect x="1505" y="426" width="14" height="26" rx="8" fill="#0f1115" stroke="#8c919a" stroke-width="2"/>
+  <rect x="1518" y="434" width="14" height="26" rx="8" fill="#0f1115" stroke="#8c919a" stroke-width="2"/>
+  <text class="item" x="1548" y="442" text-anchor="start">Other rollouts</text>
+  <text class="note" x="1548" y="468" text-anchor="start">their mean</text>
+  <text class="note" x="1748" y="442" text-anchor="end">GRPO</text>
+  <text class="note" x="1748" y="468" text-anchor="end">RLOO</text>
+  <path class="line" d="M1780,360 L1830,360" marker-end="url(#arrow)"/>
+  <rect class="group" x="1834" y="240.0" width="118" height="240" rx="8"/>
+  <text class="mono" x="1893.0" y="226.0" text-anchor="middle">A</text>
+  <rect x="1848" y="254.0" width="90" height="44" rx="8" fill="#2aa1f1" stroke="#8c919a" stroke-width="2"/>
+  <text class="num" x="1893.0" y="283.0" text-anchor="middle">+.45</text>
+  <rect x="1848" y="310.0" width="90" height="44" rx="8" fill="#966628" stroke="#8c919a" stroke-width="2"/>
+  <text class="num" x="1893.0" y="339.0" text-anchor="middle">−.25</text>
+  <rect x="1848" y="366.0" width="90" height="44" rx="8" fill="#2171a8" stroke="#8c919a" stroke-width="2"/>
+  <text class="num" x="1893.0" y="395.0" text-anchor="middle">+.25</text>
+  <rect x="1848" y="422.0" width="90" height="44" rx="8" fill="#d99032" stroke="#8c919a" stroke-width="2"/>
+  <text class="num" x="1893.0" y="451.0" text-anchor="middle">−.45</text>
+  <path class="line" d="M734,480.0 L734,621" marker-end="url(#arrow)"/>
+  <rect class="frozen dash" x="600" y="625" width="300" height="130" rx="6"/>
+  <line x1="623.5" y1="670.5" x2="656.0" y2="660.8" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="623.5" y1="670.5" x2="656.0" y2="680.2" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="623.5" y1="670.5" x2="656.0" y2="699.8" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="623.5" y1="670.5" x2="656.0" y2="719.2" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="623.5" y1="690.0" x2="656.0" y2="660.8" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="623.5" y1="690.0" x2="656.0" y2="680.2" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="623.5" y1="690.0" x2="656.0" y2="699.8" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="623.5" y1="690.0" x2="656.0" y2="719.2" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="623.5" y1="709.5" x2="656.0" y2="660.8" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="623.5" y1="709.5" x2="656.0" y2="680.2" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="623.5" y1="709.5" x2="656.0" y2="699.8" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="623.5" y1="709.5" x2="656.0" y2="719.2" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="656.0" y1="660.8" x2="688.5" y2="670.5" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="656.0" y1="660.8" x2="688.5" y2="690.0" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="656.0" y1="660.8" x2="688.5" y2="709.5" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="656.0" y1="680.2" x2="688.5" y2="670.5" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="656.0" y1="680.2" x2="688.5" y2="690.0" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="656.0" y1="680.2" x2="688.5" y2="709.5" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="656.0" y1="699.8" x2="688.5" y2="670.5" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="656.0" y1="699.8" x2="688.5" y2="690.0" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="656.0" y1="699.8" x2="688.5" y2="709.5" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="656.0" y1="719.2" x2="688.5" y2="670.5" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="656.0" y1="719.2" x2="688.5" y2="690.0" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="656.0" y1="719.2" x2="688.5" y2="709.5" stroke="#3d4249" stroke-width="1.43"/>
+  <circle cx="623.5" cy="670.5" r="5.5" fill="#0f1115" stroke="#8c919a" stroke-width="2.08"/>
+  <circle cx="623.5" cy="690.0" r="5.5" fill="#0f1115" stroke="#8c919a" stroke-width="2.08"/>
+  <circle cx="623.5" cy="709.5" r="5.5" fill="#0f1115" stroke="#8c919a" stroke-width="2.08"/>
+  <circle cx="656.0" cy="660.8" r="5.5" fill="#0f1115" stroke="#8c919a" stroke-width="2.08"/>
+  <circle cx="656.0" cy="680.2" r="5.5" fill="#0f1115" stroke="#8c919a" stroke-width="2.08"/>
+  <circle cx="656.0" cy="699.8" r="5.5" fill="#0f1115" stroke="#8c919a" stroke-width="2.08"/>
+  <circle cx="656.0" cy="719.2" r="5.5" fill="#0f1115" stroke="#8c919a" stroke-width="2.08"/>
+  <circle cx="688.5" cy="670.5" r="5.5" fill="#0f1115" stroke="#8c919a" stroke-width="2.08"/>
+  <circle cx="688.5" cy="690.0" r="5.5" fill="#0f1115" stroke="#8c919a" stroke-width="2.08"/>
+  <circle cx="688.5" cy="709.5" r="5.5" fill="#0f1115" stroke="#8c919a" stroke-width="2.08"/>
+  <text class="tag" x="794.0" y="653">FROZEN</text>
+  <text class="title" x="794.0" y="701.0" text-anchor="middle">Reference</text>
+  <text class="sub" x="794.0" y="735.0" text-anchor="middle">optional</text>
+  <path class="line-dim" d="M900,690 L1296,690" marker-end="url(#arrow-dim)"/>
+  <text class="mono" x="1098" y="676" text-anchor="middle">KL penalty</text>
+  <rect class="box" x="1300" y="625" width="480" height="130" rx="6"/>
+  <text class="title" x="1540.0" y="684.0" text-anchor="middle">Policy-gradient update</text>
+  <text class="sub" x="1540.0" y="718.0" text-anchor="middle">clipped; raise A&gt;0, lower A&lt;0</text>
+  <path class="line" d="M1893,480.0 L1893,690 L1784,690" marker-end="url(#arrow)"/>
+  <text class="note" x="1840" y="790" text-anchor="middle">SIGNAL: one number</text>
+  <text class="note" x="1840" y="816" text-anchor="middle">per rollout</text>
+  <path class="line-dash" d="M1540,755 L1540,840 L470,840 L470,429" marker-end="url(#arrow)"/>
+  <text class="mono" x="1005" y="828" text-anchor="middle">gradient</text>
+</svg>

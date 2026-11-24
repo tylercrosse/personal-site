@@ -2,6 +2,8 @@
 import { Image } from "astro:assets";
 import { ExternalLink } from "lucide-astro";
 import GradientThumb from "./GradientThumb.astro";
+import CompanionPosts from "./CompanionPosts.astro";
+import type { Companion } from "../utils/research";
 import { getIconForType, getColorForType, capitalize } from "../utils/postIcons";
 
 interface PostData {
@@ -32,10 +34,21 @@ interface Props {
   links?: CardLink[];
   /** Extra emphasized line under the description, e.g. a headline result. */
   highlight?: string;
+  /** Posts nested under this one (e.g. a paper's explainer), listed above the links. */
+  companions?: Companion[];
   eager?: boolean;
 }
 
-const { post, variant = "compact", showDescription, meta, links, highlight, eager = false } = Astro.props;
+const {
+  post,
+  variant = "compact",
+  showDescription,
+  meta,
+  links,
+  highlight,
+  companions = [],
+  eager = false,
+} = Astro.props;
 const href = `/ideas/${post.slug}/`;
 const isExternal = (url: string) => /^https?:\/\//.test(url);
 
@@ -102,6 +115,8 @@ const gradientAspect =
     )}
 
     {highlight && <p class="post-card-highlight" set:html={highlight} />}
+
+    <CompanionPosts companions={companions} />
 
     {links && links.length > 0 && (
       <div class="post-card-links">

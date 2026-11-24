@@ -2,6 +2,8 @@
 import { Image } from "astro:assets";
 import { ExternalLink } from "lucide-astro";
 import GradientThumb from "./GradientThumb.astro";
+import CompanionPosts from "./CompanionPosts.astro";
+import type { Companion } from "../utils/research";
 import { getIconForType, getColorForType, capitalize } from "../utils/postIcons";
 
 interface CardLink {
@@ -22,6 +24,8 @@ interface Props {
   meta?: string[];
   note?: string;
   links?: CardLink[];
+  /** Posts written alongside this one (e.g. a paper's explainer), shown nested in the card. */
+  companions?: Companion[];
   variant?: "feature" | "compact";
 }
 
@@ -35,6 +39,7 @@ const {
   meta = [],
   note,
   links = [],
+  companions = [],
   variant = "compact",
 } = Astro.props;
 
@@ -62,6 +67,7 @@ const isExternal = (url: string) => /^https?:\/\//.test(url);
     <h3>{href ? <a class="research-link" href={href}>{title}</a> : title}</h3>
     <p class="finding">{description}</p>
     {note && <p class="note">{note}</p>}
+    <CompanionPosts companions={companions} />
     {links.length > 0 && (
       <div class="links">
         {links.map((link) => (
@@ -255,7 +261,6 @@ const isExternal = (url: string) => /^https?:\/\//.test(url);
     position: relative;
     z-index: 3;
   }
-
 
   .links {
     display: flex;

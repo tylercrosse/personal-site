@@ -49,6 +49,7 @@ accepts them, but no template reads them.
 | Field | Use |
 | --- | --- |
 | `cite: true` | "Cite this write-up" footer block. Original, sole-authored pieces only — never `paper` posts. |
+| `citeKey` | BibTeX key for that block. Defaults to `crosse<year><first title word>`; set it when the title opens with a filler word. Don't change it on a published post — readers may have copied the old key. |
 | `license` | CC BY 4.0 footer line. Defaults to `cite`; set `false` to suppress. |
 | `sources` | Bib keys for the works the post is notes on; rendered inside the References section. |
 | `credits` | Third-party media obligations. A figure from a cited work points at its bib entry via `sourceKey`; media with no bib work (a stock photo, a CC image) is attributed inline via `author`/`url`. |

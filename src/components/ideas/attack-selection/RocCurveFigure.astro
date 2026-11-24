@@ -1,0 +1,109 @@
+---
+/**
+ * The toy monitor's ROC curve on a linear and a log false-positive axis,
+ * drawn at build time from model.js as theme-aware inline SVG. No selection
+ * here, so the curve uses the neutral text color (blue = kept attacks).
+ *
+ * Name ends in "Figure" so remarkCrossRefs counts it in the figure sequence.
+ */
+import SvgFigure from "../../SvgFigure.astro";
+import { ALL_ATTACKS, logSpace, thresholdFor, tprAt } from "./model.js";
+import { C, fmtBudget, linePath, pct, r } from "./figureKit.js";
+
+interface Props {
+  id?: string;
+  caption?: string;
+  numbered?: boolean;
+}
+
+const {
+  id,
+  numbered = true,
+  caption = "The ROC curve for the toy model in Figure 1, traced by sliding τ across the honest distribution. Both panels show the same curve, and the shaded band marks audit budgets between 0.1% and 5%.",
+} = Astro.props;
+
+const W = 800;
+const H = 450;
+const PT = 128; // plot top (below title, subtitle and panel titles)
+const PB = H - 76; // plot bottom
+const plotH = PB - PT;
+const LEFT = { x0: 84, x1: 296 };
+const RIGHT = { x0: 376, x1: 776 };
+const BAND = [0.001, 0.05]; // budgets that matter
+
+const tpr = (f: number) => (f <= 0 ? 0 : tprAt(ALL_ATTACKS, thresholdFor(f, 1)));
+const sy = (v: number) => r(PB - v * plotH);
+const lx = (f: number) => r(LEFT.x0 + f * (LEFT.x1 - LEFT.x0));
+const gx = (f: number) => r(RIGHT.x0 + ((Math.log10(f) + 4) / 4) * (RIGHT.x1 - RIGHT.x0));
+
+// Log-spaced samples keep the steep start of the linear panel smooth.
+const linPts = [[0, 0], ...logSpace(-6, 0, 240).map((f) => [f, tpr(f)])].map(([f, t]) => [lx(f), sy(t)]);
+const logPts = logSpace(-4, 0, 180).map((f) => [gx(f), sy(tpr(f))]);
+
+const marks = [
+  { f: 0.001, dx: 12, dy: 24, anchor: "start" },
+  { f: 0.01, dx: 12, dy: 26, anchor: "start" },
+  { f: 0.05, dx: -12, dy: -14, anchor: "end" },
+].map((m) => ({ ...m, t: tpr(m.f) }));
+
+const yTicks = [0, 0.25, 0.5, 0.75, 1];
+const logTicks = [-4, -3, -2, -1, 0].map((e) => 10 ** e);
+
+const alt = `The toy monitor's ROC curve drawn twice. On a linear false-positive axis it shoots up almost vertically and the 0.1% to 5% budget band is a sliver at the left edge. On a log axis the same curve rises smoothly, and budgets of 0.1%, 1% and 5% catch ${marks.map((m) => pct(m.t)).join(", ")} of attacks.`;
+---
+
+<SvgFigure id={id} alt={alt} caption={caption} numbered={numbered} maxWidth={800}>
+  <svg viewBox={`0 0 ${W} ${H}`} width="100%" aria-hidden="true" class="as-figure">
+    <text x="24" y="28" fill={C.text} font-size="20" font-weight="650">Each audit budget picks out one point on the ROC curve</text>
+    <text x="24" y="52" fill={C.muted} font-size="15">Toy model from Figure 1. A log axis spreads out the budgets that matter.</text>
+
+    <text x={LEFT.x0} y={PT - 18} fill={C.text} font-size="15" font-weight="650">Linear FPR axis</text>
+    <text x={RIGHT.x0} y={PT - 18} fill={C.text} font-size="15" font-weight="650">Log FPR axis</text>
+
+    {/* budget bands */}
+    <rect x={lx(0)} y={PT} width={r(lx(BAND[1]) - lx(0))} height={plotH} fill={C.dim} fill-opacity="0.18" />
+    <rect x={gx(BAND[0])} y={PT} width={r(gx(BAND[1]) - gx(BAND[0]))} height={plotH} fill={C.dim} fill-opacity="0.13" />
+    <text x={r(gx(BAND[0]) + 10)} y={PT + 22} fill={C.muted} font-size="14">0.1% to 5% budgets</text>
+    <text x={r(lx(BAND[1]) + 8)} y={PB - 14} fill={C.muted} font-size="14">← 0.1% to 5%</text>
+
+    {/* grid and y labels for both panels */}
+    {[LEFT, RIGHT].map((p) =>
+      yTicks.map((v) => (
+        <>
+          <line x1={p.x0} x2={p.x1} y1={sy(v)} y2={sy(v)} stroke={v === 0 ? C.rule : C.grid} stroke-width="1" />
+          <text x={p.x0 - 8} y={sy(v) + 5} fill={C.muted} font-size="14" text-anchor="end">{pct(v)}</text>
+        </>
+      )),
+    )}
+
+    {/* x ticks */}
+    {[0, 0.5, 1].map((f, i) => (
+      <text x={lx(f)} y={PB + 22} fill={C.muted} font-size="14" text-anchor={i === 0 ? "start" : i === 2 ? "end" : "middle"}>{pct(f)}</text>
+    ))}
+    {logTicks.map((f, i) => (
+      <text x={gx(f)} y={PB + 22} fill={C.muted} font-size="14" text-anchor={i === 0 ? "start" : i === logTicks.length - 1 ? "end" : "middle"}>{fmtBudget(f)}</text>
+    ))}
+    <text x={(LEFT.x0 + RIGHT.x1) / 2} y={H - 10} fill={C.muted} font-size="15" text-anchor="middle">False-positive rate (the audit budget)</text>
+    <text transform={`translate(20 ${PT + plotH / 2}) rotate(-90)`} fill={C.muted} font-size="15" text-anchor="middle">True-positive rate (caught rate)</text>
+
+    {/* the curve, twice */}
+    <path d={linePath(linPts)} fill="none" stroke={C.text} stroke-width="2.6" />
+    <path d={linePath(logPts)} fill="none" stroke={C.text} stroke-width="2.6" />
+
+    {marks.map((m) => (
+      <>
+        <circle cx={gx(m.f)} cy={sy(m.t)} r="6" fill={C.text} stroke="var(--bg-0, white)" stroke-width="2" />
+        <text x={r(gx(m.f) + m.dx)} y={r(sy(m.t) + m.dy)} fill={C.text} font-size="15" text-anchor={m.anchor}>
+          {fmtBudget(m.f)} budget catches {pct(m.t)}
+        </text>
+      </>
+    ))}
+  </svg>
+</SvgFigure>
+
+<style>
+  .as-figure {
+    display: block;
+    font-family: var(--font-body);
+  }
+</style>
