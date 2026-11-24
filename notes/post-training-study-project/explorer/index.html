@@ -180,6 +180,15 @@ aside li.mech-sub:hover { background: var(--surface); }
 .cmp-body h3 { margin-top: 16px; }
 .cmp-body .tradeoff { color: var(--muted); }
 .cmp-open { margin: 8px 4px 0; font-size: 12px; }
+/* Profile strip: five questions every method answers, so cards from different families can be compared */
+.prof-h { font-size: 10px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--faint); margin: 0 6px 4px; }
+.prof { list-style: none; padding: 0 0 8px; margin: 0 6px 8px; font-size: 12px; border-bottom: 1px solid var(--border); }
+aside .prof li, .prof li { margin: 0 0 2px; color: #cfd2d7; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.prof .k { color: var(--faint); display: inline-block; width: 82px; }
+.prof li.d { color: var(--fc, var(--text)); }
+.prof li.s { color: var(--faint); }
+.cmp-rel { font-size: 12px; margin-left: 4px; }
+.cmp-intro .caveat { color: var(--faint); margin-top: 4px; }
 @media (max-width: 860px) {
   .app { grid-template-columns: 1fr; grid-template-rows: minmax(0, 1fr) 42vh; }
   .resizer { display: none; }
@@ -1313,6 +1322,7 @@ function renderIntro() {
     <button class="try" data-try="scorer">Same algorithm, different scorer: what changes for GRPO?</button>
     <button class="try" data-try="mech">Inside GRPO: what changes if you swap the baseline?</button>
     <button class="try" data-try="cmp">Compare the RL update rules side by side</button>
+    <button class="try" data-try="relcmp">Rejection sampling next to REINFORCE: what does "special case" mean?</button>
     <button class="try" data-try="relate">Which methods are special cases of others?</button>
     <h3>Legend</h3>
     <div class="legend">
@@ -1363,7 +1373,9 @@ function nodePanelHTML(n, inCompare, skipInputs) {
   }
   const rels = RELATIONS.filter(r => r.from === n.id || r.to === n.id);
   if (rels.length) {
-    h += `<h3>How it relates</h3><ul>${rels.map(r => `<li><span class="glyph">≈</span>${nodeRef(r.from)} is ${r.rel} ${nodeRef(r.to)}: <span class="note">${r.text}</span> ${citeTxt(r.cite)}</li>`).join("")}</ul>`;
+    const canCmp = r => PROF[r.from] && PROF[r.to] && !MECH[r.from].generic && !MECH[r.to].generic;
+    h += `<h3>How it relates</h3><ul>${rels.map(r => `<li><span class="glyph">≈</span>${nodeRef(r.from)} is ${r.rel} ${nodeRef(r.to)}: <span class="note">${r.text}</span> ${citeTxt(r.cite)}${canCmp(r)
+      ? `<button class="ref cmp-rel" data-cmp-rel="${RELATIONS.indexOf(r)}">compare</button>` : ""}</li>`).join("")}</ul>`;
   }
   const inPipes = stagesMatching(n.id);
   if (inPipes.length) h += `<h3>In the pipelines</h3><div class="pills">${inPipes.map(s => stagePill(s.id)).join("")}</div>`;
@@ -1447,6 +1459,7 @@ const TRIES = {
   scorer: () => { state.recipes = []; syncChips(); applyLens("pipes"); select("p-r1-1"); },
   mech: () => { if (state.lens !== "flow") applyLens("flow"); state.recipes = []; syncChips(); select("m-grpo"); },
   cmp: () => { if (state.lens !== "flow") applyLens("flow"); state.recipes = []; syncChips(); select("f-reward"); openCompare("f-reward"); },
+  relcmp: () => { if (state.lens !== "flow") applyLens("flow"); state.recipes = []; syncChips(); select("m-rs"); openRelCompare(RELATIONS.findIndex(r => r.from === "m-rs" && r.to === "m-reinforce")); },
   relate: () => { if (state.lens !== "flow") applyLens("flow"); state.recipes = []; syncChips(); setRel(true); select(null); },
 };
 function setRel(v) { state.showRel = v; $("reltoggle").classList.toggle("on", v); frame(); }
@@ -1639,6 +1652,35 @@ const FAM_MECH = {
       ["loss", "Loss", m => m.writer === "teacher" ? "next-token" : "per-token log-ratio"],
       ["signal", "Signal", m => m.writer === "teacher" ? "all up" : "up or down, per token"]] },
 };
+// The same five questions for every method, whatever its family. Within a family these mostly
+// match; across families they are the only rows that can be compared one to one.
+const PROF_ROWS = [["who", "Text by"], ["judge", "Judged by"], ["lands", "Lands on"], ["dir", "Push"], ["extra", "Also loaded"]];
+const RL_PROF = { who: "the policy", judge: "a scorer", lands: "the whole response", dir: "up and down", extra: "a scorer, a reference" };
+const DPO_PROF = { who: "someone else, usually", judge: "a label in the data", lands: "a pair of responses", dir: "up and down", extra: "a reference" };
+const PROF = {
+  "f-demo":    { who: "someone else, or the policy", judge: "nothing, or a filter", lands: "every token, or the response", dir: "up only", extra: "nothing, or a grader" },
+  "f-pref":    { who: "someone else, or the policy", judge: "a label, or a scorer", lands: "pairs, or single responses", dir: "up and down", extra: "a reference, usually" },
+  "f-reward":  { ...RL_PROF, extra: "a scorer, and more" },
+  "f-teacher": { who: "a teacher, or the policy", judge: "nothing, or a teacher", lands: "every token", dir: "up only, or both ways", extra: "nothing, or a teacher" },
+  "m-sft":        { who: "someone else", judge: "nothing", lands: "every token", dir: "up only", extra: "nothing" },
+  "m-rs":         { who: "the policy", judge: "a grader, as a filter", lands: "the whole response", dir: "up only", extra: "a grader" },
+  "m-offdistill": { who: "a teacher", judge: "nothing", lands: "every token", dir: "up only", extra: "nothing" },
+  "m-opd":        { who: "the policy", judge: "a teacher", lands: "every token", dir: "up and down", extra: "a teacher" },
+  "m-dpo": DPO_PROF, "m-ipo": DPO_PROF,
+  "m-kto":   { ...DPO_PROF, judge: "a good/bad label", lands: "each response" },
+  "m-simpo": { ...DPO_PROF, extra: "nothing" },
+  "m-odpo":  { who: "the policy", judge: "a scorer, labeling pairs", lands: "a pair of responses", dir: "up and down", extra: "a scorer, a reference" },
+  "m-reinforce": RL_PROF, "m-rloo": RL_PROF, "m-grpo": RL_PROF,
+  "m-ppo":   { ...RL_PROF, extra: "a scorer, a reference, a critic" },
+  "m-gspo":  { ...RL_PROF, extra: "a scorer" },
+  "m-cispo": { ...RL_PROF, extra: "a scorer" },
+};
+const profDiff = (a, b) => PROF_ROWS.filter(([k]) => PROF[a][k] !== PROF[b][k]).length;
+function profHTML(id, refId) {
+  const p = PROF[id], r = refId && refId !== id ? PROF[refId] : null;
+  return `<div class="prof-h">Profile</div><ul class="prof">${PROF_ROWS.map(([k, label]) =>
+    `<li class="${r ? (r[k] !== p[k] ? "d" : "s") : ""}"><span class="k">${label}</span>${p[k]}</li>`).join("")}</ul>`;
+}
 const famM = id => FAM_MECH[MECH[id].fam];
 const mechKey = (m, k) => (FAM_MECH[m.fam].key || ((x, j) => x[j]))(m, k);
 const sameFam = (a, b) => MECH[a] && MECH[b] && MECH[a].fam === MECH[b].fam;
@@ -1736,6 +1778,7 @@ function mechSection(n) {
   let h = `<h3>Inside one step</h3>
     <div class="mech" style="--fc:${F.color}" data-base="${n.id}" data-show="">
       <div class="mech-h">${mechHead(n.id)}</div>
+      <div class="mech-prof">${profHTML(n.id)}</div>
       <div class="mech-body">${mechSVG(n.id)}</div>
       <ul class="mech-diff">${mechDiff(n.id)}</ul>
     </div>
@@ -1755,6 +1798,7 @@ function mechShow(id) {
   if (show === card.dataset.show) return;
   card.dataset.show = show;
   card.querySelector(".mech-h").innerHTML = mechHead(base, show);
+  card.querySelector(".mech-prof").innerHTML = profHTML(show || base, show && !MECH[base].generic ? base : null);
   card.querySelector(".mech-body").innerHTML = mechSVG(show || base, show ? base : null);
   card.querySelector(".mech-diff").innerHTML = mechDiff(base, show);
 }
@@ -1781,33 +1825,49 @@ function mechDiffCol(ref, id) {   // this column's own values; faded where they 
     ? `<li${ref === id ? "" : ' class="note"'}><span class="k">${label}</span>${txt(m)}</li>`
     : `<li><span class="k">${label}</span><span class="now">${txt(m)}</span></li>`).join("");
 }
+function openRelCompare(i) {
+  const r = RELATIONS[i];
+  if (sameFam(r.from, r.to)) state.compare = { fam: MECH[r.from].fam, ids: famM(r.from).order.filter(x => x === r.from || x === r.to), ref: r.from };
+  else state.compare = { fam: null, rel: i, ids: [r.from, r.to], ref: r.from };
+  renderCompare();
+}
 function renderCompare() {
   const c = state.compare;
   if (!c) { CMP.hidden = true; CMP.innerHTML = ""; return; }
-  const F = FAM_MECH[c.fam], famId = "f-" + c.fam;
   CMP.hidden = false;
-  CMP.style.setProperty("--fc", F.color);
+  const mixed = !c.fam, F = mixed ? null : FAM_MECH[c.fam], famId = mixed ? null : "f-" + c.fam;
+  CMP.style.setProperty("--fc", mixed ? "var(--text)" : F.color);
   // Inputs (data, reward sources) shared by every column are said once, not repeated per column
   const inputs = id => JSON.stringify([reachSplit(id, "up", ["data"]), reachSplit(id, "up", ["scorer"])]);
-  const sharedInputs = c.ids.every(id => inputs(id) === inputs(c.ids[0]));
-  const nDiff = id => F.slots.filter(([k]) => mechKey(MECH[c.ref], k) !== mechKey(MECH[id], k)).length;
+  const sharedInputs = !mixed && c.ids.every(id => inputs(id) === inputs(c.ids[0]));
+  const nDiff = id => mixed ? profDiff(c.ref, id) : F.slots.filter(([k]) => mechKey(MECH[c.ref], k) !== mechKey(MECH[id], k)).length;
+  const tag = (id, n) => id === c.ref ? "reference" : mixed ? `${n} of ${PROF_ROWS.length} differ` : n ? `${n} part${n > 1 ? "s" : ""} differ` : "same parts";
+  let intro;
+  if (mixed) {
+    const r = RELATIONS[c.rel], fam = id => FAM_NAME[MECH[id].fam];
+    intro = `<div class="kind" style="color:var(--muted)">Related across families · ${fam(r.from)} and ${fam(r.to)}</div>
+      <h2>${byId[r.from].label} is ${r.rel} ${byId[r.to].label}</h2>
+      <p>${r.text.charAt(0).toUpperCase() + r.text.slice(1)} ${citeTxt(r.cite)}</p>
+      <p class="caveat">The two cards come from different families, so their rows don't line up; only the profile strips are compared, and each card keeps its own family's slots. Related isn't interchangeable: the relation holds under its own assumptions.</p>`;
+  } else {
+    intro = `<div class="kind" style="color:var(--fc)">${byId[famId].label} · side by side</div>
+      <h2>One step of each update rule</h2>
+      <p>${F.note} Outlined parts differ from the reference, the leftmost column; click another column's name to make it the reference.${sharedInputs
+        ? ` All of them take the same data and reward sources: see ${nodeRef(famId)}.` : ""}</p>`;
+  }
   CMP.innerHTML = `
     <div class="cmp-bar">
-      <div class="cmp-intro">
-        <div class="kind" style="color:var(--fc)">${byId[famId].label} · side by side</div>
-        <h2>One step of each update rule</h2>
-        <p>${F.note} Outlined parts differ from the reference, the leftmost column; click another column's name to make it the reference.${sharedInputs
-          ? ` All of them take the same data and reward sources: see ${nodeRef(famId)}.` : ""}</p>
-      </div>
-      <div class="pills">${F.order.map(id => `<button class="chip${c.ids.includes(id) ? " on" : ""}" style="--c:var(--fc)" data-cmp-toggle="${id}">${byId[id].label}</button>`).join("")}</div>
+      <div class="cmp-intro">${intro}</div>
+      ${mixed ? "" : `<div class="pills">${F.order.map(id => `<button class="chip${c.ids.includes(id) ? " on" : ""}" style="--c:var(--fc)" data-cmp-toggle="${id}">${byId[id].label}</button>`).join("")}</div>`}
       <button class="cmp-close" data-cmp-close="1">Close ✕</button>
     </div>
     <div class="cmp-cols">${[c.ref, ...c.ids.filter(x => x !== c.ref)].map(id => {
-      const ref = id === c.ref, n = nDiff(id);
-      return `<div class="cmp-col${ref ? " ref" : ""}">
+      const ref = id === c.ref, n = nDiff(id), col = famM(id).color;
+      return `<div class="cmp-col${ref ? " ref" : ""}" style="--fc:${col}">
         <button class="cmp-h" data-cmp-ref="${id}"><b>${byId[id].label}</b><span class="yr">${byId[id].year}</span>
-          <span class="cmp-tag">${ref ? "reference" : n ? `${n} part${n > 1 ? "s" : ""} differ` : "same parts"}</span></button>
-        <div class="mech"><div class="mech-body">${mechSVG(id, ref ? null : c.ref)}</div><ul class="mech-diff">${mechDiffCol(c.ref, id)}</ul></div>
+          <span class="cmp-tag">${tag(id, n)}</span></button>
+        <div class="mech">${profHTML(id, ref ? null : c.ref)}<div class="mech-body">${mechSVG(id, ref || mixed ? null : c.ref)}</div>
+          <ul class="mech-diff">${mixed ? mechDiff(id) : mechDiffCol(c.ref, id)}</ul></div>
         <button class="ref cmp-open" data-cmp-open="${id}">Open in the panel</button>
         <div class="cmp-body">${nodePanelHTML(byId[id], true, sharedInputs)}</div>
       </div>`; }).join("")}</div>`;
@@ -1818,6 +1878,7 @@ CMP.addEventListener("click", ev => {
   if (t.dataset.cmpClose) closeCompare();
   else if (t.dataset.cmpOpen) { closeCompare(); select(t.dataset.cmpOpen); }
   else if (t.dataset.cmpRef) { c.ref = t.dataset.cmpRef; renderCompare(); }
+  else if (t.dataset.cmpRel) openRelCompare(+t.dataset.cmpRel);
   else if (t.dataset.node) { closeCompare(); select(t.dataset.node); }
   else if (t.dataset.recipe) { closeCompare(); toggleRecipe(t.dataset.recipe); }
   else if (t.dataset.cmpToggle) {
@@ -1832,6 +1893,7 @@ CMP.addEventListener("click", ev => {
 P.addEventListener("click", ev => {
   const t = ev.target.closest("button"); if (!t) return;
   if (t.dataset.compare) openCompare(t.dataset.compare);
+  else if (t.dataset.cmpRel) openRelCompare(+t.dataset.cmpRel);
   else if (t.dataset.node) select(t.dataset.node);
   else if (t.dataset.recipe) toggleRecipe(t.dataset.recipe);
   else if (t.dataset.try) TRIES[t.dataset.try]();
