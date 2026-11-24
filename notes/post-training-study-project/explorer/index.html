@@ -135,7 +135,7 @@ aside li, .cmp-body li { margin: 0 0 8px; }
 .mech { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 10px 6px 8px; }
 .mech-h { font-size: 12.5px; color: var(--muted); padding: 0 6px 6px; min-height: 1.5em; }
 .mech-h b { color: var(--text); font-weight: 600; }
-.mech-h .n { color: var(--reward); }
+.mech-h .n { color: var(--fc, var(--reward)); }
 .mech svg { display: block; width: 100%; height: auto; }
 .mech text { font-family: Inter, system-ui, sans-serif; }
 .mech .mt { font-size: 12px; font-weight: 600; fill: var(--text); }
@@ -144,12 +144,13 @@ aside li, .cmp-body li { margin: 0 0 8px; }
 .mech .mnum { font-size: 10px; font-family: "IBM Plex Mono", Menlo, monospace; fill: #e8e8e8; text-anchor: middle;
   paint-order: stroke; stroke: #0f1115; stroke-width: 2.5px; }
 .mech .mnum.dk { fill: #0f1115; stroke: none; font-weight: 600; }
+.mech .off { fill: #6b7079; }
 .mech .mcode { font-size: 11px; font-weight: 700; font-family: Menlo, monospace; fill: #8c919a; text-anchor: middle; }
-.mech-diff { list-style: none; padding: 0; margin: 8px 6px 0; min-height: 96px; font-size: 12px; }
+.mech-diff { list-style: none; padding: 0; margin: 8px 6px 0; min-height: 108px; font-size: 12px; }
 .mech-diff li { margin: 0 0 3px; color: #cfd2d7; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mech-diff .k { color: var(--faint); display: inline-block; width: 74px; }
 .mech-diff .was { color: var(--faint); text-decoration: line-through; }
-.mech-diff .now { color: var(--reward); }
+.mech-diff .now { color: var(--fc, var(--reward)); }
 .mech-cap { font-size: 12px; margin-top: 8px !important; }
 aside li.mech-sub { border-radius: 6px; padding: 3px 6px; margin: 0 -6px 4px; }
 aside li.mech-sub:hover { background: var(--surface); }
@@ -170,10 +171,10 @@ aside li.mech-sub:hover { background: var(--surface); }
 .cmp-h { display: flex; align-items: baseline; gap: 6px; width: 100%; background: none; border: 0; color: var(--text);
   padding: 0 4px 8px; cursor: pointer; text-align: left; font-size: 14.5px; }
 .cmp-h .yr { color: var(--faint); font-size: 12px; }
-.cmp-h .cmp-tag { margin-left: auto; font-size: 11.5px; color: var(--reward); }
-.cmp-col.ref .cmp-tag { color: var(--text); border: 1px solid var(--reward); border-radius: 999px; padding: 0 7px; }
+.cmp-h .cmp-tag { margin-left: auto; font-size: 11.5px; color: var(--fc, var(--reward)); }
+.cmp-col.ref .cmp-tag { color: var(--text); border: 1px solid var(--fc, var(--reward)); border-radius: 999px; padding: 0 7px; }
 .cmp-col:not(.ref) .cmp-h:hover .cmp-tag::after { content: " · make reference"; color: var(--faint); }
-.cmp-col.ref .mech { border-color: var(--reward); }
+.cmp-col.ref .mech { border-color: var(--fc, var(--reward)); }
 .cmp-col .mech-diff { min-height: 0; }
 .cmp-body { font-size: 12.5px; line-height: 1.45; padding: 12px 4px 0; }
 .cmp-body h3 { margin-top: 16px; }
@@ -246,7 +247,7 @@ const CITE = {
   shenfeld2025: "Shenfeld et al. 2025", macdiarmid2025: "MacDiarmid et al. 2025", singhal2023: "Singhal et al. 2023",
   cui2025: "Cui et al. 2025", schulman2017: "Schulman et al. 2017", agarwal2023: "Agarwal et al. 2023 (GKD)",
   guo2024: "Guo et al. 2024 (OAIF)", uesato2022: "Uesato et al. 2022", zelikman2022: "Zelikman et al. 2022 (STaR)",
-  touvron2023: "Touvron et al. 2023 (Llama 2)",
+  touvron2023: "Touvron et al. 2023 (Llama 2)", llama3: "Llama Team 2024 (Llama 3)", glm5: "GLM-5 report 2026",
 };
 
 const NODES = [
@@ -470,6 +471,21 @@ const RECIPES = [
       { s: "A reward model trained on labelers' rankings of model outputs", u: "s-rm", d: ["d-ratings"], r: [] },
       { s: "PPO on prompts, with the policy's rollouts scored by the reward model", u: "m-ppo", d: ["d-prompts", "d-rollouts"], r: ["s-rm"] },
     ] },
+  { id: "cai", name: "Constitutional AI", year: 2022, color: "#c77dff", cite: "bai2022",
+    distinct: "Harmlessness is supervised by AI feedback alone: the model critiques and revises its own answers against a written constitution, and a feedback model labels harmlessness comparisons. Starts from a helpful-only RLHF model, and helpfulness labels stay human.",
+    stages: [
+      { s: "SL-CAI: the helpful RLHF model critiques and revises its own answers to red-team prompts, one sampled principle at a time; a pretrained model is fine-tuned on the revisions plus helpfulness samples", u: "m-sft", d: ["d-revisions", "d-critiques", "src-self"], r: [] },
+      { s: "Preference model trained on human helpfulness labels and AI harmlessness labels, produced by a separate feedback model comparing pairs of answers", u: "s-rm", d: ["d-pairs"], r: ["s-judge"] },
+      { s: "RL-CAI: RL from the SL-CAI model against that preference model (RLAIF)", u: "f-reward", d: ["d-prompts", "d-rollouts"], r: ["s-rm"] },
+    ] },
+  { id: "llama3", name: "Llama 3", year: 2024, color: "#48cae4", cite: "llama3",
+    loop: "repeated for 6 rounds · models averaged at each stage",
+    distinct: "No PPO: a reward model, rejection-sampled SFT and DPO, repeated over six rounds with fresh human preference data each round. Models trained with different data or settings are averaged at each stage.",
+    stages: [
+      { s: "Reward model trained on human preference rankings of responses", u: "s-rm", d: ["d-pairs", "d-ratings"], r: [] },
+      { s: "Rejection-sampled SFT: the reward model picks the best of K samples from the latest model, mixed with synthetic and human-curated data", u: "m-rs", d: ["d-prompts", "d-rollouts", "d-demos"], r: ["s-rm"] },
+      { s: "DPO on the most recent preference batches, with formatting tokens masked out and an extra likelihood term on the chosen response", u: "m-dpo", d: ["d-pairs"], r: [] },
+    ] },
   { id: "r1", name: "DeepSeek-R1", year: 2025, color: "#4fd1c5", cite: "deepseek2025",
     distinct: "Alternates imitation and exploration. The middle SFT stage is built from the RL model's own best outputs but trains a fresh copy of the base model; the same data then distills small models.",
     stages: [
@@ -502,12 +518,28 @@ const RECIPES = [
       { s: "DPO on preference pairs", u: "m-dpo", d: ["d-pairs"], r: [] },
       { s: "RLVR on math, code, and instruction-following tasks", u: "m-grpo", d: ["d-tasks", "d-rollouts"], r: ["s-verifier"] },
     ] },
+  { id: "glm45", name: "GLM-4.5", year: 2025, color: "#b08968", cite: "glm2025",
+    distinct: "Three experts (reasoning, agent, general chat) trained separately, then merged with plain SFT on millions of their outputs. Whether RL runs after the merge isn't clear from what we read. The same lab's GLM-5 switches to on-policy distillation.",
+    stages: [
+      { s: "Cold-start SFT on a small set of long chain-of-thought responses", u: "m-sft", d: ["d-demos"], r: [] },
+      { s: "Expert RL, one expert each for reasoning, agents and general chat: answer checks and unit tests for the first two, reward models and AI rubric scoring for chat", u: "f-reward", d: ["d-tasks", "d-envs", "d-rollouts"], r: ["s-verifier", "s-rm", "s-judge"] },
+      { s: "Unified SFT on millions of expert outputs, filtered by format and correctness checks and reward models, mixing thinking and non-thinking answers", u: "m-offdistill", d: ["d-teachertext"], r: [] },
+    ] },
   { id: "k3", name: "Kimi K3", year: 2026, color: "#f2f2f2", cite: "kimi2026",
     distinct: "Nine specialists (general, general agent, coding agent, each at three effort levels), consolidated by on-policy distillation. Effort levels come from shrinking the token budget of a max-effort expert.",
     stages: [
       { s: "Cold-start SFT on trajectories from earlier specialist Kimi models, verified in several stages and annotated by humans", u: "m-sft", d: ["d-traj", "src-teachers", "src-experts"], r: [] },
       { s: "Specialist RL: a max-budget expert per domain, then lower budgets for the high- and low-effort experts. Verifiers plus a generative reward model that writes a rubric per task", u: "f-reward", d: ["d-envs", "d-tasks", "d-rollouts"], r: ["s-verifier", "s-judge"] },
       { s: "Multi-teacher on-policy distillation: the student writes, the matching specialist scores every token by log ratio", u: "m-opd", d: ["d-rollouts"], r: ["s-teacher"] },
+    ] },
+  { id: "glm5", name: "GLM-5", year: 2026, color: "#ddb892", cite: "glm5",
+    distinct: "Trains capabilities one after another instead of as parallel specialists, then uses on-policy distillation from its own earlier checkpoints to undo the forgetting (“cumulative degradation”) that training in sequence causes. Agentic RL runs fully asynchronously.",
+    stages: [
+      { s: "SFT on chat, reasoning and agent data built with expert RL and rejection sampling; erroneous trajectory segments are masked out of the loss", u: "m-sft", d: ["d-demos", "d-traj"], r: [] },
+      { s: "Reasoning RL: GRPO with no KL term, with pass/fail outcome rewards from domain-specific judge models or evaluation systems", u: "m-grpo", d: ["d-tasks", "d-rollouts"], r: ["s-verifier", "s-judge"] },
+      { s: "Agentic RL, fully asynchronous, on more than 10K software, terminal and search environments, with importance weights to correct for stale rollouts", u: "f-reward", d: ["d-envs", "d-rollouts"], r: ["s-verifier"] },
+      { s: "General RL with rule-based rewards, outcome reward models and generative reward models", u: "f-reward", d: ["d-prompts", "d-rollouts"], r: ["s-verifier", "s-rm", "s-judge"] },
+      { s: "On-policy cross-stage distillation: the final checkpoints of the earlier stages act as teachers for one student", u: "m-opd", d: ["d-rollouts"], r: ["s-teacher"] },
     ] },
   { id: "nemotron", name: "Nemotron 3 Ultra", year: 2026, color: "#ffa95c", cite: "nvidia2026",
     distinct: "Same specialists-then-distill shape as K3, but runs one RL stage over every environment first, warms the student up on teacher data, and distills twice.",
@@ -560,6 +592,10 @@ const STAGE_AT = {
   k2: [["token", "off"], ["response", "on"]],
   olmo3: [["token", "off"], ["response", "off"], ["outcome", "on"]],
   k3: [["token", "off"], ["response", "on"], ["token", "on"]],
+  cai: [["token", "off"], ["response", "off"], ["response", "on"]],
+  llama3: [["response", "off"], ["response", "rounds"], ["response", "rounds"]],
+  glm45: [["token", "off"], ["response", "on"], ["token", "off"]],
+  glm5: [["token", "off"], ["outcome", "on"], ["outcome", "on"], ["response", "on"], ["token", "on"]],
   nemotron: [["token", "off"], ["outcome", "on"], ["outcome", "on"], ["token", "off"], ["token", "on"], ["token", "on"]],
 };
 // Configurations from papers rather than the recipes above
@@ -581,9 +617,13 @@ const STAGE_LABEL = {
   k2: ["SFT · tool-use data", "RL · verifier + self-critique"],
   olmo3: ["SFT", "DPO", "RLVR (GRPO)"],
   k3: ["SFT", "×9 specialists · RL", "Multi-teacher distill"],
+  cai: ["SL-CAI · SFT on self-revisions", "Preference model · AI labels", "RL-CAI (RLAIF)"],
+  llama3: ["Reward model", "Rejection-sampled SFT", "DPO"],
+  glm45: ["Cold-start SFT", "×3 experts · RL", "Distill experts (SFT)"],
+  glm5: ["SFT", "Reasoning RL (GRPO)", "Agentic RL · async", "General RL", "Cross-stage distill"],
   nemotron: ["SFT", "RL · all environments", "10+ specialists", "SFT warmup", "Multi-teacher distill", "Round 2: distill again"],
 };
-const STACKED = new Set(["k3-1", "nemotron-2"]); // stages that train many specialists at once
+const STACKED = new Set(["k3-1", "nemotron-2", "glm45-1"]); // stages that train many specialists at once
 // One node per recipe stage
 const STAGES = [];
 RECIPES.forEach(rec => rec.stages.forEach((st, i) => {
@@ -748,7 +788,7 @@ function layoutTime() {
 
 function layoutPipes() {
   const pos = {}, deco = [];
-  const LANE = 78, GAP = 46;
+  const LANE = 82, GAP = 46;
   const lanes = state.recipes.length ? RECIPES.filter(r => state.recipes.includes(r.id)) : RECIPES;
   lanes.forEach((r, li) => {
     const y = li * LANE;
@@ -1061,6 +1101,17 @@ function drawLanes() {
       const o = Math.min(A.o, B.o); if (o < 0.05) continue;
       el("line", { x1: A.x + a.w / 2 + (a.stacked ? 9 : 2), y1: A.y, x2: B.x - b.w / 2 - 4, y2: B.y,
         stroke: "#6b7079", "stroke-width": 1.4, opacity: o, "marker-end": "url(#arr-lane)" }, G.routes);
+    }
+    if (r.loop && lane.length > 1) {
+      const a = lane[lane.length - 1], b = lane[0], A = cur[a.id], B = cur[b.id];
+      const o = Math.min(A.o, B.o);
+      if (o >= 0.05) {
+        const y0 = A.y + a.h / 2 + 2, dip = A.y + a.h / 2 + 16;
+        el("path", { d: `M${A.x},${y0} C${A.x},${dip + 6} ${B.x},${dip + 6} ${B.x},${B.y + b.h / 2 + 4}`, fill: "none",
+          stroke: r.color, "stroke-width": 1.4, "stroke-dasharray": "4 3", opacity: o, "marker-end": "url(#arr-lane)" }, G.routes);
+        const t = el("text", { x: (A.x + B.x) / 2, y: dip + 14, "text-anchor": "middle", class: "rmark", opacity: o }, G.routes);
+        t.textContent = "↺ " + r.loop;
+      }
     }
   }
 }
@@ -1403,23 +1454,48 @@ $("reltoggle").onclick = () => setRel(!state.showRel);
 const syncChips = () => document.querySelectorAll("#recipes .chip").forEach(c => c.classList.toggle("on", state.recipes.includes(c.dataset.recipe)));
 
 /* ============================================================
-   MECHANISM CARDS (prototype: the scalar-rewards family)
-   One training step of an update rule, drawn with the same parts
-   as the article's method figures: weights (network glyph, bright =
-   trained), text (ruled cards), numbers (chips), computation (plain
-   box). Dashed rows are slots: the parts that vary within the family.
-   Hovering a substitute swaps it in and marks what changed.
+   MECHANISM CARDS
+   One training step of an update rule, drawn with the same parts as
+   the article's method figures: weights (network glyph; bright =
+   trained), text (ruled cards; a stack = stored), numbers (chips),
+   computation (plain box). Each family has one skeleton of rows;
+   dashed rows are slots, the parts its methods choose differently,
+   and a faint row is an empty slot. Hovering a substitute from the
+   same family swaps it in and marks what changed.
    ============================================================ */
-const MECH_R = [0.9, 0.2, 0.7, 0.0];   // the same four rewards in every card
+const SB = s => `<tspan baseline-shift="sub" font-size="0.75em">${s}</tspan>`;
+const PI_T = `π${SB("θ")}`;
+const MECH_R = [0.9, 0.2, 0.7, 0.0];                       // the same four rewards in every RL card
+const SFT_TOK = [0.35, 0.15, 0.6, 0.2, 0.1, 0.85, 0.3, 0.15]; // every target token pushed up, harder where surprising
+const OPD_TOK = [0.2, -0.45, 0.1, 0.25, -0.95, 0.15, -0.7, 0.2]; // the teacher disagrees at a few tokens
+
 const MECH = {
-  "f-reward":    { generic: true },
-  "m-reinforce": { samples: 1,   base: "running", clip: "none",    kl: "in the reward" },
-  "m-rloo":      { samples: "G", base: "loo",     clip: "none",    kl: "in the reward" },
-  "m-ppo":       { samples: 1,   base: "critic",  clip: "token",   kl: "in the reward" },
-  "m-grpo":      { samples: "G", base: "group",   clip: "token",   kl: "in the loss" },
-  "m-gspo":      { samples: "G", base: "group",   clip: "seq",     kl: "optional" },
-  "m-cispo":     { samples: "G", base: "group",   clip: "weights", kl: "optional" },
+  // scalar rewards
+  "f-reward":    { fam: "reward", generic: true },
+  "m-reinforce": { fam: "reward", samples: 1,   base: "running", clip: "none",    kl: "in the reward" },
+  "m-rloo":      { fam: "reward", samples: "G", base: "loo",     clip: "none",    kl: "in the reward" },
+  "m-ppo":       { fam: "reward", samples: 1,   base: "critic",  clip: "token",   kl: "in the reward" },
+  "m-grpo":      { fam: "reward", samples: "G", base: "group",   clip: "token",   kl: "in the loss" },
+  "m-gspo":      { fam: "reward", samples: "G", base: "group",   clip: "seq",     kl: "optional" },
+  "m-cispo":     { fam: "reward", samples: "G", base: "group",   clip: "weights", kl: "optional" },
+  // preferences
+  "f-pref":  { fam: "pref", generic: true },
+  "m-dpo":   { fam: "pref", data: "pairs",    scorer: "none", ref: "yes", reward: "logratio", loss: "logistic" },
+  "m-ipo":   { fam: "pref", data: "pairs",    scorer: "none", ref: "yes", reward: "logratio", loss: "squared" },
+  "m-kto":   { fam: "pref", data: "unpaired", scorer: "none", ref: "yes", reward: "logratio", loss: "prospect" },
+  "m-simpo": { fam: "pref", data: "pairs",    scorer: "none", ref: "no",  reward: "avglogp",  loss: "margin" },
+  "m-odpo":  { fam: "pref", data: "fresh",    scorer: "live", ref: "yes", reward: "logratio", loss: "logistic" },
+  // demonstrations
+  "f-demo": { fam: "demo", generic: true },
+  "m-sft":  { fam: "demo", source: "written", filter: "none" },
+  "m-rs":   { fam: "demo", source: "sampled", filter: "grader" },
+  // teacher distributions
+  "f-teacher":    { fam: "teacher", generic: true },
+  "m-offdistill": { fam: "teacher", writer: "teacher" },
+  "m-opd":        { fam: "teacher", writer: "student" },
 };
+
+// ---- scalar rewards
 const MECH_BASE = {
   running: { t: "Running average", s: "of recent rewards", k: "running avg" },
   loo:     { t: "Mean of the other k−1", s: "this prompt's other samples", k: "leave-one-out mean" },
@@ -1432,16 +1508,6 @@ const MECH_CLIP = {
   seq:     { t: "Clip the sequence's ratio", s: "one ratio per response", k: "per sequence" },
   weights: { t: "Clip the importance weights", s: "no token loses its gradient", k: "IS weights" },
 };
-// The slots, how to read each one's value, and how to describe it
-const MECH_SLOTS = [
-  ["samples", "Samples", m => m.samples === 1 ? "1 per prompt" : "G per prompt"],
-  ["base", "Baseline", m => MECH_BASE[m.base].k],
-  ["adv", "Advantage", m => m.base === "critic" ? "per token" : "per response"],
-  ["clip", "Clipping", m => MECH_CLIP[m.clip].k],
-  ["kl", "KL penalty", m => m.kl],
-];
-const mechKey = (m, k) => k === "adv" ? (m.base === "critic" ? "token" : "response") : m[k];
-
 // Advantages from the same rewards, so the baselines' differences are real numbers
 function mechAdv(m) {
   if (m.samples === 1) {
@@ -1455,17 +1521,134 @@ function mechAdv(m) {
 }
 const fmtA = v => (v >= 0 ? "+" : "−") + (Math.abs(v) >= 1 ? Math.abs(v).toFixed(1) : Math.abs(v).toFixed(2).replace(/^0/, ""));
 
+function rewardRows(m, gen) {
+  const adv = gen ? { r: MECH_R } : mechAdv(m), B = MECH_BASE[m.base], C = MECH_CLIP[m.clip];
+  return [
+    { type: "model", h: 40, trained: true, title: "Policy", sub: "writes the rollouts", prompt: true, gradTo: true },
+    { type: "text", h: 36, slot: "samples", title: "Rollouts", sub: gen ? "one, or a group" : m.samples === 1 ? "one per prompt" : "G per prompt",
+      cards: gen || m.samples !== 1 ? 4 : 1, dim: gen },
+    { type: "model", h: 36, trained: false, title: "Scorer", sub: "reward model, judge, or verifier", code: true },
+    { type: "chips", h: 30, title: "Rewards r", values: adv.r.map(x => ({ label: x.toFixed(1) })), dim: gen },
+    gen ? { type: "op", h: 42, slot: "base", title: "Baseline b", sub: "critic, group mean, or running average" }
+        : { type: "op", h: 42, slot: "base", glyph: m.base === "critic" ? "net" : "chips", title: B.t, sub: B.s },
+    gen ? { type: "chips", h: 30, slot: "adv", title: "Advantages A", values: [0, 1, 2, 3].map(() => ({ label: "?" })), dim: true }
+      : adv.tok ? { type: "strip", h: 30, slot: "adv", title: "A, per token", values: adv.tok.map(v => v / 0.35) }
+      : { type: "chips", h: 30, slot: "adv", title: m.base === "group" ? "A, normalized" : "A = r − b", values: adv.a.map(a => ({ label: fmtA(a), v: a / 0.9 })) },
+    { type: "op", h: 42, slot: ["clip", "kl"], title: gen ? "Update" : C.t, sub: gen ? "clipping and KL vary by method" : `${C.s} · KL ${m.kl}`, gradFrom: true },
+  ];
+}
+
+// ---- preferences
+const PREF_DATA = {
+  pairs:    { t: "Preference pairs", s: "prompt, chosen, rejected", stack: true, n: 2, k: "stored pairs" },
+  unpaired: { t: "Labeled responses", s: "each marked good or bad", stack: true, n: 1, k: "good/bad labels" },
+  fresh:    { t: "Fresh pairs", s: "the policy samples two each step", stack: false, n: 2, k: "fresh pairs" },
+};
+const PREF_LOSS = {
+  logistic: { t: "Logistic loss on the gap", s: "−log σ(r̂ chosen − r̂ rejected)", k: "logistic" },
+  squared:  { t: "Squared loss on the gap", s: "regularized; won't overfit the gap", k: "squared" },
+  prospect: { t: "Each vs a reference point", s: "a prospect-theory value per response", k: "vs a reference point" },
+  margin:   { t: "Logistic, with a margin γ", s: "−log σ(r̂ chosen − r̂ rejected − γ)", k: "logistic + margin" },
+};
+function prefRows(m, gen) {
+  const D = PREF_DATA[m.data], L = PREF_LOSS[m.loss];
+  return [
+    gen ? { type: "text", h: 36, slot: "data", title: "Comparison data", sub: "pairs, labels, or fresh samples", cards: 2, stack: true, dim: true }
+        : { type: "text", h: 36, slot: "data", title: D.t, sub: D.s, cards: D.n, stack: D.stack },
+    gen ? { type: "op", h: 36, slot: "scorer", title: "Labeler", sub: "in the data, or a live scorer" }
+      : m.scorer === "live" ? { type: "model", h: 36, slot: "scorer", trained: false, title: "Scorer labels them", sub: "reward model, judge, or verifier", code: true }
+      : { type: "op", h: 36, slot: "scorer", off: true, title: "No scorer during training", sub: "the labels came with the data" },
+    { type: "model", h: 40, trained: true, title: "Policy", sub: "a log-prob for each response", gradTo: true },
+    gen ? { type: "op", h: 36, slot: "ref", title: "Reference", sub: "a frozen copy, or none" }
+      : m.ref === "yes" ? { type: "model", h: 36, slot: "ref", trained: false, title: "Reference", sub: "frozen starting copy" }
+      : { type: "op", h: 36, slot: "ref", off: true, title: "No reference model", sub: "only the policy is loaded" },
+    { type: "op", h: 42, slot: "reward", title: "Implied reward r̂",
+      sub: gen ? "how each response is scored" : m.reward === "logratio" ? `β · log(${PI_T} / π${SB("ref")}), per response` : "β · log-prob ÷ length, per response" },
+    { type: "op", h: 42, slot: "loss", title: gen ? "Loss" : L.t, sub: gen ? "varies by method" : L.s, gradFrom: true },
+    { type: "bars", h: 44, title: "Signal", sub: "one per response", dim: gen,
+      items: m.data === "unpaired" ? [["good ↑", 0.85], ["bad ↓", -0.85]] : [["chosen ↑", 0.85], ["rejected ↓", -0.85]] },
+  ];
+}
+
+// ---- demonstrations
+function demoRows(m, gen) {
+  return [
+    gen ? { type: "text", h: 36, slot: "source", title: "Target text", sub: "written ahead, or sampled", cards: 1, stack: true, dim: true }
+      : m.source === "written" ? { type: "text", h: 36, slot: "source", title: "Demonstrations", sub: "people or a stronger model wrote them", cards: 1, stack: true }
+      : { type: "text", h: 36, slot: "source", title: "K samples", sub: "the policy's own attempts", cards: 4 },
+    gen ? { type: "op", h: 36, slot: "filter", title: "Filter", sub: "none, or a grader" }
+      : m.filter === "none" ? { type: "op", h: 36, slot: "filter", off: true, title: "No filter", sub: "every example is used" }
+      : { type: "model", h: 36, slot: "filter", trained: false, title: "Grader keeps the best", sub: "its scores never reach the loss", code: true },
+    { type: "text", h: 36, title: "Target y*", sub: "what the policy imitates", cards: 1 },
+    { type: "model", h: 40, trained: true, title: "Policy", sub: "a log-prob for every target token", gradTo: true },
+    { type: "op", h: 42, title: "Next-token loss", sub: `−Σ log ${PI_T}(y*${SB("t")})`, gradFrom: true },
+    { type: "strip", h: 30, title: "Signal, per token", values: SFT_TOK, dim: gen },
+  ];
+}
+
+// ---- teacher distributions: the same two models, swapping who writes and who reads
+function teacherRows(m, gen) {
+  const off = m.writer === "teacher";
+  return [
+    gen ? { type: "op", h: 40, slot: "writer", title: "Writer", sub: "teacher or student", prompt: true }
+      : off ? { type: "model", h: 40, slot: "writer", trained: false, title: "Teacher writes", sub: "a stronger model, ahead of time", prompt: true }
+      : { type: "model", h: 40, slot: "writer", trained: true, title: "Student writes", sub: "its own answer, each step", prompt: true, gradTo: true },
+    gen ? { type: "text", h: 36, slot: "text", title: "The text", sub: "stored, or fresh", cards: 1, dim: true }
+      : off ? { type: "text", h: 36, slot: "text", title: "Teacher's answers", sub: "written once, reused", cards: 1, stack: true }
+      : { type: "text", h: 36, slot: "text", title: "Student's answer", sub: "fresh each step", cards: 1 },
+    gen ? { type: "op", h: 40, slot: "reader", title: "Reader", sub: "student or teacher" }
+      : off ? { type: "model", h: 40, slot: "reader", trained: true, title: "Student reads", sub: "a log-prob per token", gradTo: true }
+      : { type: "model", h: 40, slot: "reader", trained: false, title: "Teacher reads", sub: "scores every token" },
+    { type: "op", h: 42, slot: "loss", title: gen ? "Loss" : off ? "Next-token loss" : "Per-token reward",
+      sub: gen ? "varies by method" : off ? "or match its full distribution" : `log p${SB("T")}(y${SB("t")}) − log p${SB("S")}(y${SB("t")})`, gradFrom: true },
+    { type: "strip", h: 30, slot: "signal", title: "Signal, per token", values: gen || off ? SFT_TOK : OPD_TOK, dim: gen },
+  ];
+}
+
+// Each family: column order (by year), colour, the slots and how to describe them, the row skeleton
+const FAM_MECH = {
+  reward: { order: ["m-reinforce", "m-ppo", "m-rloo", "m-grpo", "m-gspo", "m-cispo"], color: "var(--reward)", rows: rewardRows,
+    note: "Same prompt, same scorer, same four rewards in every column.",
+    key: (m, k) => k === "adv" ? (m.base === "critic" ? "token" : "response") : m[k],
+    slots: [
+      ["samples", "Samples", m => m.samples === 1 ? "1 per prompt" : "G per prompt"],
+      ["base", "Baseline", m => MECH_BASE[m.base].k],
+      ["adv", "Advantage", m => m.base === "critic" ? "per token" : "per response"],
+      ["clip", "Clipping", m => MECH_CLIP[m.clip].k],
+      ["kl", "KL penalty", m => m.kl]] },
+  pref: { order: ["m-dpo", "m-ipo", "m-kto", "m-simpo", "m-odpo"], color: "var(--pref)", rows: prefRows,
+    note: "Every column learns from comparisons and pushes the preferred response up relative to the other.",
+    slots: [
+      ["data", "Data", m => PREF_DATA[m.data].k],
+      ["scorer", "Labeler", m => m.scorer === "live" ? "live scorer" : "came with the data"],
+      ["ref", "Reference", m => m.ref === "yes" ? "frozen copy" : "none"],
+      ["reward", "Reward", m => m.reward === "logratio" ? "log-ratio to ref" : "length-normalized"],
+      ["loss", "Loss", m => PREF_LOSS[m.loss].k]] },
+  demo: { order: ["m-sft", "m-rs"], color: "var(--demo)", rows: demoRows,
+    note: "Both columns imitate a target text with the same loss; they differ in where the target comes from.",
+    slots: [
+      ["source", "Target text", m => m.source === "written" ? "written ahead" : "own samples"],
+      ["filter", "Filter", m => m.filter === "none" ? "none" : "grader keeps the best"]] },
+  teacher: { order: ["m-offdistill", "m-opd"], color: "var(--teacher)", rows: teacherRows,
+    note: "The same teacher and student in both columns; they swap who writes the text and who reads it.",
+    key: (m, k) => m.writer,   // every slot follows from who writes
+    slots: [
+      ["writer", "Writes", m => m.writer],
+      ["text", "Text", m => m.writer === "teacher" ? "stored, written once" : "fresh each step"],
+      ["reader", "Reads", m => m.writer === "teacher" ? "student" : "teacher"],
+      ["loss", "Loss", m => m.writer === "teacher" ? "next-token" : "per-token log-ratio"],
+      ["signal", "Signal", m => m.writer === "teacher" ? "all up" : "up or down, per token"]] },
+};
+const famM = id => FAM_MECH[MECH[id].fam];
+const mechKey = (m, k) => (FAM_MECH[m.fam].key || ((x, j) => x[j]))(m, k);
+const sameFam = (a, b) => MECH[a] && MECH[b] && MECH[a].fam === MECH[b].fam;
+
 function mechSVG(id, fromId) {
   const m = MECH[id], f = fromId ? MECH[fromId] : null, gen = !!m.generic;
-  const changed = k => !!f && !gen && (f.generic || mechKey(f, k) !== mechKey(m, k));
+  const keys = k => Array.isArray(k) ? k : [k];
+  const changed = k => !!k && !!f && !gen && (f.generic || keys(k).some(x => mechKey(f, x) !== mechKey(m, x)));
   const X0 = 30, X1 = 280, GX = 300, CX = 155, o = [];
   const T = (x, y, txt, cls, a = "start") => o.push(`<text class="${cls}" x="${x}" y="${y}" text-anchor="${a}">${txt}</text>`);
-  const row = (y, h, kind, hot) => {
-    const st = hot ? "fill:color-mix(in srgb, var(--reward) 13%, transparent);stroke:var(--reward);stroke-width:2"
-      : { trained: "fill:#161a22;stroke:#e8e8e8;stroke-width:2", frozen: "fill:#14161b;stroke:#8c919a;stroke-width:1.2",
-          plain: "fill:#12141a;stroke:#3a3f4a;stroke-width:1.2", slot: "fill:none;stroke:#6b7079;stroke-width:1.2;stroke-dasharray:4 3" }[kind];
-    o.push(`<rect x="${X0}" y="${y}" width="${X1 - X0}" height="${h}" rx="6" style="${st}"/>`);
-  };
   const net = (cx, cy, trained) => {
     const L = [2, 3, 2].map((k, i) => [...Array(k)].map((_, j) => [cx + (i - 1) * 10, cy + (j - (k - 1) / 2) * 8]));
     for (let i = 0; i < 2; i++) for (const a of L[i]) for (const b of L[i + 1])
@@ -1473,76 +1656,57 @@ function mechSVG(id, fromId) {
     for (const l of L) for (const [x, y] of l)
       o.push(`<circle cx="${x}" cy="${y}" r="2.6" fill="${trained ? "#e8e8e8" : "#0f1115"}" stroke="${trained ? "#e8e8e8" : "#8c919a"}" stroke-width="1.1"/>`);
   };
-  const card = (x, y, w, h, dim) => {
-    o.push(`<g opacity="${dim ? 0.4 : 1}"><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="2.5" fill="#0f1115" stroke="#b8bcc3" stroke-width="1.3"/>`
-      + [0.35, 0.62].map((t, i) => `<line x1="${x + 4}" y1="${y + h * t}" x2="${x + 4 + (w - 8) * (i ? 0.55 : 0.8)}" y2="${y + h * t}" stroke="#8c919a" stroke-width="1.6" stroke-linecap="round"/>`).join("") + `</g>`);
-  };
-  // signed values: light = made more likely, hatched = less likely (hue-free, so it can't be read as a family colour)
+  const card = (x, y, w, h, dim) => o.push(`<g opacity="${dim ? 0.4 : 1}"><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="2.5" fill="#0f1115" stroke="#b8bcc3" stroke-width="1.3"/>`
+    + [0.35, 0.62].map((t, i) => `<line x1="${x + 4}" y1="${y + h * t}" x2="${x + 4 + (w - 8) * (i ? 0.55 : 0.8)}" y2="${y + h * t}" stroke="#8c919a" stroke-width="1.6" stroke-linecap="round"/>`).join("") + `</g>`);
+  const back = (x, y, w, h, dim) => o.push(`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="2.5" fill="#0f1115" stroke="#4a4f57" stroke-width="1.2" opacity="${dim ? 0.4 : 1}"/>`);
+  // signed values: light = made more likely, hatched = less likely (hue-free, so they can't be read as a family colour)
   const vfill = v => v == null ? "#12141a" : v >= 0 ? `rgba(232,232,232,${(0.4 + 0.45 * Math.min(1, Math.abs(v))).toFixed(2)})` : "url(#mech-hatch)";
   const chip = (x, y, w, h, label, v, dim) =>
     o.push(`<g opacity="${dim ? 0.4 : 1}"><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="4" fill="${vfill(v)}" stroke="#8c919a" stroke-width="1"/>`
       + (label ? `<text class="mnum${v != null && v >= 0 ? " dk" : ""}" x="${x + w / 2}" y="${y + h / 2 + 3.5}">${label}</text>` : "") + `</g>`);
-  const down = y => o.push(`<line x1="${CX}" y1="${y + 1}" x2="${CX}" y2="${y + 11}" stroke="#9a9fa7" stroke-width="1.3" marker-end="url(#mech-arr)"/>`);
-  const rightRow = (n, w, gap) => X1 - 8 - n * w - (n - 1) * gap;
+  const arrow = (x1, y1, x2, y2) => o.push(`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#9a9fa7" stroke-width="1.3" marker-end="url(#mech-arr)"/>`);
+  const right = (n, w, gap) => X1 - 8 - n * w - (n - 1) * gap;
 
-  let y = 2;
-  // Prompts → policy
-  card(6, y + 11, 14, 18);
-  o.push(`<line x1="21" y1="${y + 20}" x2="${X0 - 1}" y2="${y + 20}" stroke="#9a9fa7" stroke-width="1.3" marker-end="url(#mech-arr)"/>`);
-  row(y, 40, "trained"); net(X0 + 20, y + 20, true);
-  T(X0 + 40, y + 17, "Policy", "mt"); T(X0 + 40, y + 32, "writes the rollouts", "ms"); T(X1 - 8, y + 15, "TRAINED", "mtag", "end");
-  const polY = y + 20; y += 40; down(y); y += 14;
+  let y = 2, from = null; const to = [];
+  FAM_MECH[m.fam].rows(m, gen).forEach((r, i) => {
+    if (i) { arrow(CX, y + 1, CX, y + 11); y += 14; }
+    const hot = changed(r.slot), mid = y + r.h / 2;
+    const base = r.off ? "fill:none;stroke:#3a3f4a;stroke-width:1.2"
+      : r.type === "model" ? (r.trained ? "fill:#161a22;stroke:#e8e8e8;stroke-width:2" : "fill:#14161b;stroke:#8c919a;stroke-width:1.2")
+      : r.slot ? "fill:none;stroke:#6b7079;stroke-width:1.2" : "fill:#12141a;stroke:#3a3f4a;stroke-width:1.2";
+    const st = hot ? "fill:color-mix(in srgb, var(--fc) 13%, transparent);stroke:var(--fc);stroke-width:2" : base + (r.slot ? ";stroke-dasharray:4 3" : "");
+    o.push(`<rect x="${X0}" y="${y}" width="${X1 - X0}" height="${r.h}" rx="6" style="${st}"/>`);
+    if (r.prompt) { card(6, mid - 9, 14, 18); arrow(21, mid, X0 - 1, mid); }
+    const ty1 = r.sub ? mid - 3 : mid + 4, ty2 = mid + 12;
+    let tx = X0 + 10;
+    if (r.type === "model" && !r.off) {
+      net(X0 + 20, mid, r.trained); tx = X0 + 40;
+      T(X1 - 8, y + 15, r.trained ? "TRAINED" : "FROZEN", "mtag", "end");
+      if (r.code) T(X1 - 18, y + r.h - 6, "{ }", "mcode", "middle");
+    } else if (r.glyph === "net") { net(X0 + 20, mid, true); tx = X0 + 40; }
+    else if (r.glyph === "chips") { [0, 1, 2].forEach(k => chip(X0 + 8 + k * 9, mid - 9 + (k === 1 ? -3 : 0), 8, 18, "", null)); tx = X0 + 40; }
+    T(tx, ty1, r.title, "mt" + (r.off ? " off" : ""));
+    if (r.sub) T(tx, ty2, r.sub, "ms" + (r.off ? " off" : ""));
+    if (r.type === "text") {
+      const n = r.cards;
+      if (r.stack) { const x0 = right(1, 18, 0); back(x0 + 6, mid - 17, 18, 22, r.dim); back(x0 + 3, mid - 14, 18, 22, r.dim); card(x0, mid - 11, 18, 22, r.dim); }
+      else for (let k = 0, x0 = right(n, 18, 6); k < n; k++) card(x0 + k * 24, mid - 11, 18, 22, r.dim);
+    } else if (r.type === "chips") {
+      for (let k = 0, x0 = right(r.values.length, 32, 4); k < r.values.length; k++) chip(x0 + k * 36, mid - 9, 32, 18, r.values[k].label, r.values[k].v, r.dim);
+    } else if (r.type === "strip") {
+      for (let k = 0, x0 = right(r.values.length, 12, 3); k < r.values.length; k++) chip(x0 + k * 15, mid - 7, 12, 14, "", r.values[k], r.dim);
+    } else if (r.type === "bars") {
+      r.items.forEach(([lab, v], k) => chip(right(1, 104, 0), mid - 17 + k * 19, 104, 15, lab, v, r.dim));
+    }
+    if (r.gradTo) to.push(mid);
+    if (r.gradFrom) from = mid;
+    y += r.h;
+  });
+  // gradient: up (or down) the right side into the trained weights
+  if (from != null) to.forEach(t => o.push(`<path d="M${X1},${from} L${GX},${from} L${GX},${t} L${X1 + 3},${t}" fill="none" stroke="#e8e8e8" stroke-width="1.3" stroke-dasharray="5 4" marker-end="url(#mech-arr-w)"/>`));
+  if (from != null && to.length) o.push(`<text class="ms" transform="translate(${GX + 11},${(from + to[0]) / 2}) rotate(90)" text-anchor="middle">gradient</text>`);
 
-  // Rollouts (slot)
-  const nS = gen ? 4 : m.samples === 1 ? 1 : 4;
-  row(y, 36, "slot", changed("samples"));
-  T(X0 + 10, y + 15, "Rollouts", "mt"); T(X0 + 10, y + 29, gen ? "one, or a group" : m.samples === 1 ? "one per prompt" : "G per prompt", "ms");
-  for (let i = 0, x0 = rightRow(nS, 18, 6); i < nS; i++) card(x0 + i * 24, y + 7, 18, 22, gen);
-  y += 36; down(y); y += 14;
-
-  // Scorer (frozen, same for every method here)
-  row(y, 36, "frozen"); net(X0 + 20, y + 18, false);
-  T(X0 + 40, y + 15, "Scorer", "mt"); T(X0 + 40, y + 29, "reward model, judge, or verifier", "ms");
-  T(X1 - 8, y + 15, "FROZEN", "mtag", "end"); T(X1 - 18, y + 30, "{ }", "mcode", "middle");
-  y += 36; down(y); y += 14;
-
-  // Rewards
-  const adv = gen ? { r: MECH_R } : mechAdv(m);
-  row(y, 30, "plain"); T(X0 + 10, y + 19, "Rewards r", "mt");
-  for (let i = 0, x0 = rightRow(adv.r.length, 32, 4); i < adv.r.length; i++) chip(x0 + i * 36, y + 6, 32, 18, adv.r[i].toFixed(1), null, gen);
-  y += 30; down(y); y += 14;
-
-  // Baseline (slot)
-  row(y, 42, "slot", changed("base"));
-  if (gen) { T(X0 + 10, y + 17, "Baseline b", "mt"); T(X0 + 10, y + 32, "critic, group mean, or running average", "ms"); }
-  else {
-    const B = MECH_BASE[m.base];
-    if (m.base === "critic") net(X0 + 20, y + 21, true);
-    else [0, 1, 2].forEach(k => chip(X0 + 8 + k * 9, y + 12 + (k === 1 ? -3 : 0) + 3, 8, 18, "", null));
-    T(X0 + 40, y + 17, B.t, "mt"); T(X0 + 40, y + 32, B.s, "ms");
-  }
-  y += 42; down(y); y += 14;
-
-  // Advantages (slot: per response, or per token with a critic)
-  row(y, 30, "slot", changed("adv"));
-  T(X0 + 10, y + 19, gen ? "Advantages A" : adv.tok ? "A, per token" : m.base === "group" ? "A, normalized" : "A = r − b", "mt");
-  if (gen) for (let i = 0, x0 = rightRow(4, 32, 4); i < 4; i++) chip(x0 + i * 36, y + 6, 32, 18, "?", null, true);
-  else if (adv.tok) for (let i = 0, x0 = rightRow(8, 12, 3); i < 8; i++) chip(x0 + i * 15, y + 8, 12, 14, "", adv.tok[i] / 0.35);
-  else for (let i = 0, x0 = rightRow(adv.a.length, 32, 4); i < adv.a.length; i++) chip(x0 + i * 36, y + 6, 32, 18, fmtA(adv.a[i]), adv.a[i] / 0.9);
-  y += 30; down(y); y += 14;
-
-  // Update (slot)
-  row(y, 42, "slot", changed("clip") || changed("kl"));
-  if (gen) { T(X0 + 10, y + 17, "Update", "mt"); T(X0 + 10, y + 32, "clipping and KL vary by method", "ms"); }
-  else { T(X0 + 10, y + 17, MECH_CLIP[m.clip].t, "mt"); T(X0 + 10, y + 32, `${MECH_CLIP[m.clip].s} · KL ${m.kl}`, "ms"); }
-  const updY = y + 21; y += 42;
-
-  // gradient: back up the right side into the trained policy (and into the critic, if there is one)
-  o.push(`<path d="M${X1},${updY} L${GX},${updY} L${GX},${polY} L${X1 + 3},${polY}" fill="none" stroke="#e8e8e8" stroke-width="1.3" stroke-dasharray="5 4" marker-end="url(#mech-arr-w)"/>`);
-  o.push(`<text class="ms" transform="translate(${GX + 11},${(polY + updY) / 2}) rotate(90)" text-anchor="middle">gradient</text>`);
-
-  const H = y + 4;
-  return `<svg viewBox="0 0 320 ${H}" role="img" aria-label="One training step of ${byId[id].label}">
+  return `<svg viewBox="0 0 320 ${y + 4}" role="img" aria-label="One training step of ${byId[id].label}">
     <defs>
       <marker id="mech-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,1 L9,5 L0,9 z" fill="#9a9fa7"/></marker>
       <marker id="mech-arr-w" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,1 L9,5 L0,9 z" fill="#e8e8e8"/></marker>
@@ -1554,34 +1718,32 @@ function mechSVG(id, fromId) {
 function mechHead(base, show) {
   if (!show) return `<b>${byId[base].label}</b>` + (MECH[base].generic ? " · the shared loop" : "");
   if (MECH[base].generic) return `${byId[base].label} → <b>${byId[show].label}</b>`;
-  const n = MECH_SLOTS.filter(([k]) => mechKey(MECH[base], k) !== mechKey(MECH[show], k)).length;
+  const n = famM(base).slots.filter(([k]) => mechKey(MECH[base], k) !== mechKey(MECH[show], k)).length;
   return `${byId[base].label} → <b>${byId[show].label}</b> · <span class="n">${n} part${n === 1 ? "" : "s"} change</span>`;
 }
 function mechDiff(base, show) {
   const b = MECH[base], s = show ? MECH[show] : null;
-  if (b.generic && !s) return `<li class="note">The parts every method here shares are solid; the dashed slots are what the methods choose differently.</li>`;
+  if (b.generic && !s) return `<li class="note">Solid parts are shared by every method here; dashed slots are what they choose differently.</li>`;
   const m = s || b;
-  return MECH_SLOTS.map(([k, label, txt]) => {
+  return famM(base).slots.map(([k, label, txt]) => {
     if (!s || b.generic) return `<li><span class="k">${label}</span>${txt(m)}</li>`;
     if (mechKey(b, k) === mechKey(s, k)) return `<li class="note"><span class="k">${label}</span>same</li>`;
     return `<li><span class="k">${label}</span><span class="was">${txt(b)}</span> → <span class="now">${txt(s)}</span></li>`;
   }).join("");
 }
 function mechSection(n) {
-  const gen = !!MECH[n.id].generic;
+  const F = famM(n.id), gen = !!MECH[n.id].generic;
   let h = `<h3>Inside one step</h3>
-    <div class="mech" data-base="${n.id}" data-show="">
+    <div class="mech" style="--fc:${F.color}" data-base="${n.id}" data-show="">
       <div class="mech-h">${mechHead(n.id)}</div>
       <div class="mech-body">${mechSVG(n.id)}</div>
       <ul class="mech-diff">${mechDiff(n.id)}</ul>
     </div>
     <p class="note mech-cap">${gen ? "Hover a method to fill in the slots." : "Hover a substitute marked ⇄ to swap it in."}
       <button class="ref" data-compare="${n.id}">Compare side by side</button></p>`;
-  if (gen) {
-    const ids = NODES.filter(x => x.group === "reward" && x.kind === "method" && MECH[x.id]).map(x => x.id);
-    h += `<div class="pills">${ids.map(id => `<button class="pill" data-node="${id}">${byId[id].label}</button>`).join("")}</div>`;
-  } else if (n.subs) {
-    h += `<h3>Substitutes, and what changes</h3><ul>${n.subs.map(([id, note]) => MECH[id]
+  if (gen) h += `<div class="pills">${F.order.map(id => `<button class="pill" data-node="${id}">${byId[id].label}</button>`).join("")}</div>`;
+  else if (n.subs) {
+    h += `<h3>Substitutes, and what changes</h3><ul>${n.subs.map(([id, note]) => sameFam(id, n.id)
       ? `<li class="mech-sub" data-mech="${id}"><span class="glyph">⇄</span>${nodeRef(id)} <span class="note">— ${note}</span></li>`
       : `<li><span class="glyph"></span>${nodeRef(id)} <span class="note">— ${note}</span></li>`).join("")}</ul>`;
   }
@@ -1589,7 +1751,7 @@ function mechSection(n) {
 }
 function mechShow(id) {
   const card = P.querySelector(".mech"); if (!card) return;
-  const base = card.dataset.base, show = id && id !== base && MECH[id] && !MECH[id].generic ? id : "";
+  const base = card.dataset.base, show = id && id !== base && sameFam(id, base) && !MECH[id].generic ? id : "";
   if (show === card.dataset.show) return;
   card.dataset.show = show;
   card.querySelector(".mech-h").innerHTML = mechHead(base, show);
@@ -1602,40 +1764,42 @@ P.addEventListener("pointerover", ev => {
 });
 P.addEventListener("pointerleave", () => mechShow(null));
 
-// ---- Compare view: the same cards side by side, diffed against a reference column
-const MECH_ORDER = ["m-reinforce", "m-ppo", "m-rloo", "m-grpo", "m-gspo", "m-cispo"];   // by year
+// ---- Compare view: one family's cards side by side, diffed against a reference column
 const CMP = $("compare");
 function openCompare(id) {
-  const m = MECH[id];
-  const pick = m.generic ? MECH_ORDER : [id, ...(byId[id].subs || []).map(s => s[0])];
-  const ids = MECH_ORDER.filter(x => pick.includes(x));
-  state.compare = { ids, ref: m.generic ? ids[0] : id };
+  const m = MECH[id], F = famM(id);
+  let pick = m.generic ? F.order : [id, ...(byId[id].subs || []).map(s => s[0])];
+  let ids = F.order.filter(x => pick.includes(x));
+  if (ids.length < 2) ids = [...F.order];
+  state.compare = { fam: m.fam, ids, ref: m.generic ? ids[0] : id };
   renderCompare();
 }
 function closeCompare() { state.compare = null; renderCompare(); }
 function mechDiffCol(ref, id) {   // this column's own values; faded where they match the reference
   const r = MECH[ref], m = MECH[id];
-  return MECH_SLOTS.map(([k, label, txt]) => mechKey(r, k) === mechKey(m, k) || ref === id
+  return famM(ref).slots.map(([k, label, txt]) => mechKey(r, k) === mechKey(m, k) || ref === id
     ? `<li${ref === id ? "" : ' class="note"'}><span class="k">${label}</span>${txt(m)}</li>`
     : `<li><span class="k">${label}</span><span class="now">${txt(m)}</span></li>`).join("");
 }
 function renderCompare() {
   const c = state.compare;
   if (!c) { CMP.hidden = true; CMP.innerHTML = ""; return; }
+  const F = FAM_MECH[c.fam], famId = "f-" + c.fam;
   CMP.hidden = false;
+  CMP.style.setProperty("--fc", F.color);
   // Inputs (data, reward sources) shared by every column are said once, not repeated per column
   const inputs = id => JSON.stringify([reachSplit(id, "up", ["data"]), reachSplit(id, "up", ["scorer"])]);
   const sharedInputs = c.ids.every(id => inputs(id) === inputs(c.ids[0]));
-  const nDiff = id => MECH_SLOTS.filter(([k]) => mechKey(MECH[c.ref], k) !== mechKey(MECH[id], k)).length;
+  const nDiff = id => F.slots.filter(([k]) => mechKey(MECH[c.ref], k) !== mechKey(MECH[id], k)).length;
   CMP.innerHTML = `
     <div class="cmp-bar">
       <div class="cmp-intro">
-        <div class="kind" style="color:var(--reward)">Scalar rewards · side by side</div>
+        <div class="kind" style="color:var(--fc)">${byId[famId].label} · side by side</div>
         <h2>One step of each update rule</h2>
-        <p>Same prompt, same scorer, same four rewards in every column. Outlined parts differ from the reference, the leftmost column; click another column's name to make it the reference.${sharedInputs
-          ? ` All of them take the same data and reward sources: see ${nodeRef("f-reward")}.` : ""}</p>
+        <p>${F.note} Outlined parts differ from the reference, the leftmost column; click another column's name to make it the reference.${sharedInputs
+          ? ` All of them take the same data and reward sources: see ${nodeRef(famId)}.` : ""}</p>
       </div>
-      <div class="pills">${MECH_ORDER.map(id => `<button class="chip${c.ids.includes(id) ? " on" : ""}" style="--c:var(--reward)" data-cmp-toggle="${id}">${byId[id].label}</button>`).join("")}</div>
+      <div class="pills">${F.order.map(id => `<button class="chip${c.ids.includes(id) ? " on" : ""}" style="--c:var(--fc)" data-cmp-toggle="${id}">${byId[id].label}</button>`).join("")}</div>
       <button class="cmp-close" data-cmp-close="1">Close ✕</button>
     </div>
     <div class="cmp-cols">${[c.ref, ...c.ids.filter(x => x !== c.ref)].map(id => {
@@ -1657,9 +1821,9 @@ CMP.addEventListener("click", ev => {
   else if (t.dataset.node) { closeCompare(); select(t.dataset.node); }
   else if (t.dataset.recipe) { closeCompare(); toggleRecipe(t.dataset.recipe); }
   else if (t.dataset.cmpToggle) {
-    const id = t.dataset.cmpToggle;
+    const id = t.dataset.cmpToggle, order = FAM_MECH[c.fam].order;
     if (c.ids.includes(id)) { if (c.ids.length > 1) c.ids = c.ids.filter(x => x !== id); }
-    else c.ids = MECH_ORDER.filter(x => x === id || c.ids.includes(x));
+    else c.ids = order.filter(x => x === id || c.ids.includes(x));
     if (!c.ids.includes(c.ref)) c.ref = c.ids[0];
     renderCompare();
   }
