@@ -1,0 +1,1134 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Post-training map</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f1115; --surface: #171a21; --surface2: #20242d; --panel: #12141a;
+  --border: #2a2f3a; --text: #e8e8e8; --muted: #9a9fa7; --faint: #6b7079;
+  --demo: #6fbf8e; --pref: #e8b04a; --reward: #b48ad8; --teacher: #6aa2e0; --neutral: #8c919a;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
+  font-family: Inter, system-ui, -apple-system, sans-serif; }
+body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+button { font: inherit; }
+
+header { display: flex; align-items: center; gap: 14px 18px; padding: 10px 16px;
+  border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+header h1 { font-size: 15px; font-weight: 600; margin: 0; white-space: nowrap; }
+.tabs { display: flex; gap: 2px; background: var(--surface); padding: 3px; border-radius: 8px;
+  border: 1px solid var(--border); flex-wrap: wrap; }
+.tabs button { background: none; border: 0; color: var(--muted); padding: 5px 10px; border-radius: 6px;
+  font-size: 12.5px; cursor: pointer; }
+.tabs button:hover { color: var(--text); }
+.tabs button.on { background: var(--surface2); color: var(--text); }
+.lensdesc { color: var(--muted); font-size: 12.5px; flex: 1 1 280px; line-height: 1.4; }
+
+.app { flex: 1; display: grid; grid-template-columns: minmax(0, 1fr) 360px; min-height: 0; }
+.canvas { position: relative; min-width: 0; min-height: 0; overflow: hidden; }
+svg#map { width: 100%; height: 100%; display: block; cursor: grab; touch-action: none; user-select: none; }
+svg#map.grabbing { cursor: grabbing; }
+
+.recipes { position: absolute; left: 12px; right: 60px; bottom: 12px; display: flex; gap: 6px;
+  flex-wrap: wrap; align-items: center; pointer-events: none; }
+.recipes > * { pointer-events: auto; }
+.recipes .lbl { color: var(--faint); font-size: 11.5px; margin-right: 2px; pointer-events: none; }
+.chip { border: 1px solid var(--border); background: rgba(23,26,33,.92); color: var(--muted);
+  border-radius: 999px; padding: 4px 10px; font-size: 12px; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 6px; }
+.chip:hover { color: var(--text); }
+.chip .sw { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.chip.on { color: var(--text); border-color: var(--c); background: color-mix(in srgb, var(--c) 14%, #171a21); }
+
+.zoom { position: absolute; right: 12px; top: 12px; display: flex; flex-direction: column; gap: 4px; }
+.zoom button { width: 32px; height: 32px; border-radius: 7px; border: 1px solid var(--border);
+  background: rgba(23,26,33,.92); color: var(--muted); cursor: pointer; font-size: 15px; }
+.zoom button:hover { color: var(--text); }
+.hint { position: absolute; right: 54px; top: 18px; color: var(--faint); font-size: 11px; pointer-events: none; }
+
+aside { border-left: 1px solid var(--border); overflow: auto; padding: 18px 20px 48px; background: var(--panel);
+  font-size: 13.5px; line-height: 1.5; }
+aside h2 { font-size: 18px; margin: 2px 0 8px; font-weight: 600; }
+aside h3 { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--faint);
+  margin: 20px 0 8px; font-weight: 600; }
+aside p { margin: 0 0 10px; color: #cfd2d7; }
+aside ul { margin: 0; padding: 0; list-style: none; }
+aside li { margin: 0 0 8px; }
+.kind { font-size: 11.5px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
+.tradeoff { color: var(--muted); font-style: italic; }
+.ref { background: none; border: 0; padding: 0; color: var(--text); cursor: pointer; font-weight: 500;
+  border-bottom: 1px dotted var(--faint); }
+.ref:hover { border-bottom-color: var(--text); }
+.note { color: var(--muted); }
+.cite { color: var(--faint); font-size: 12px; }
+.verify { font-size: 10.5px; color: #d9a35b; border: 1px solid #5c4630; border-radius: 4px; padding: 0 4px;
+  margin-left: 4px; white-space: nowrap; }
+.pills { display: flex; flex-wrap: wrap; gap: 5px; }
+.pill { border: 1px solid var(--border); background: var(--surface); color: var(--text); border-radius: 6px;
+  padding: 2px 8px; font-size: 12px; cursor: pointer; }
+.pill:hover { border-color: var(--faint); }
+.pill.t { border-style: dashed; color: var(--muted); }
+.glyph { display: inline-block; width: 14px; color: var(--faint); }
+.try { display: block; width: 100%; text-align: left; background: var(--surface); border: 1px solid var(--border);
+  color: var(--text); border-radius: 8px; padding: 8px 10px; margin-bottom: 6px; cursor: pointer; font-size: 13px; }
+.try:hover { border-color: var(--faint); }
+.legend { display: grid; grid-template-columns: 34px 1fr; gap: 6px 10px; align-items: center; font-size: 12.5px; color: var(--muted); }
+.legend svg { display: block; }
+.stage { border-left: 2px solid var(--c); padding: 2px 0 2px 10px; margin-bottom: 10px; }
+.stage .n { color: var(--c); font-weight: 600; margin-right: 4px; }
+.stage .pills { margin-top: 5px; }
+.recipe-h { display: flex; align-items: center; gap: 8px; margin-top: 18px; }
+.recipe-h .sw { width: 10px; height: 10px; border-radius: 50%; }
+.recipe-h b { font-size: 15px; }
+.foot { margin-top: 26px; color: var(--faint); font-size: 11.5px; }
+.back { background: none; border: 0; color: var(--muted); cursor: pointer; padding: 0; font-size: 12px; margin-bottom: 10px; }
+.back:hover { color: var(--text); }
+
+/* SVG */
+.node { cursor: pointer; }
+.node text { font-size: 12.5px; font-weight: 500; fill: var(--text); pointer-events: none; }
+.node text.fam { font-size: 13.5px; font-weight: 600; }
+.node text.sub { font-size: 11px; font-weight: 400; fill: var(--muted); }
+.node .state { transition: opacity .18s; }
+.node .state.dim { opacity: .13; }
+.node .state.soft { opacity: .38; }
+.node .box { transition: stroke .15s, stroke-width .15s; }
+.node.sel .box { stroke: #fff !important; stroke-width: 2; }
+.node:hover .box { stroke-width: 2; }
+.edge { fill: none; stroke-width: 1.25; }
+.edge.t { stroke-dasharray: 4 4; }
+.subarc { fill: none; stroke: #f2f2f2; stroke-width: 1.3; stroke-dasharray: 2 4; opacity: .8; }
+.elabel text { font-size: 10.5px; fill: #d5d8dd; }
+.elabel rect { fill: #0f1115; opacity: .92; }
+.colhead { font-size: 11px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; fill: var(--faint); }
+.axislbl { font-size: 12px; font-weight: 600; fill: var(--muted); }
+.axissub { font-size: 11px; fill: var(--faint); }
+.quad { fill: #14171d; stroke: #262a33; }
+.axis { stroke: #3a3f4a; stroke-width: 1; }
+.caption { font-size: 11.5px; fill: var(--faint); font-style: italic; }
+.tick { font-size: 11px; fill: var(--faint); }
+.rmark { font-size: 11.5px; fill: var(--muted); }
+.fadein { animation: fadein .5s ease both; }
+@keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+.badge text { font-size: 10px; font-weight: 700; fill: #0f1115; }
+
+@media (max-width: 860px) {
+  .app { grid-template-columns: 1fr; grid-template-rows: minmax(0, 1fr) 42vh; }
+  aside { border-left: 0; border-top: 1px solid var(--border); }
+  .hint { display: none; }
+  .recipes { flex-wrap: nowrap; overflow-x: auto; right: 12px; bottom: 8px; scrollbar-width: none; }
+  .recipes .chip { flex: none; }
+  .lensdesc { display: none; }
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>Post-training map</h1>
+  <div class="tabs" id="tabs"></div>
+  <div class="lensdesc" id="lensdesc"></div>
+</header>
+<div class="app">
+  <div class="canvas" id="canvas">
+    <svg id="map">
+      <defs id="defs"></defs>
+      <g id="vp">
+        <g id="bg"></g>
+        <g id="edges"></g>
+        <g id="subarcs"></g>
+        <g id="routes"></g>
+        <g id="nodes"></g>
+        <g id="overlay"></g>
+        <g id="labels"></g>
+      </g>
+    </svg>
+    <div class="hint">drag to pan · pinch or ⌘/ctrl-scroll to zoom</div>
+    <div class="zoom">
+      <button id="zin" title="Zoom in">+</button>
+      <button id="zout" title="Zoom out">−</button>
+      <button id="zfit" title="Fit">⤢</button>
+    </div>
+    <div class="recipes" id="recipes"><span class="lbl">Recipes</span></div>
+  </div>
+  <aside id="panel"></aside>
+</div>
+
+<script>
+/* ============================================================
+   CONTENT
+   Claims come from the building-blocks draft (cited keys) or the
+   study notes. Items with v:true come from notes/…/later-ideas.md
+   and are unverified.
+   ============================================================ */
+
+const CITE = {
+  ouyang2022: "Ouyang et al. 2022", deepseek2025: "DeepSeek-AI 2025", yue2025: "Yue et al. 2025",
+  rafailov2023: "Rafailov et al. 2023", lambert2024: "Lambert et al. 2024 (Tülu 3)", bai2022: "Bai et al. 2022",
+  shao2024: "Shao et al. 2024", ahmadian2024: "Ahmadian et al. 2024", lightman2023: "Lightman et al. 2023",
+  lu2025: "Lu 2025", kimi2026: "Kimi K3 report 2026", nvidia2026: "Nemotron 3 Ultra report 2026",
+  olmo2025: "Olmo 3 report 2025", qwen2025: "Qwen3 report 2025", kimi2025k2: "Kimi K2 report 2025",
+  openai2025: "OpenAI 2025", sharma2023: "Sharma et al. 2023", baker2025: "Baker et al. 2025",
+  glm2025: "GLM-4.5 report 2025", lambert2025: "Lambert, RLHF book",
+  gudibande2023: "Gudibande et al. 2023", betley2025: "Betley et al. 2025", chu2025: "Chu et al. 2025",
+  shenfeld2025: "Shenfeld et al. 2025", macdiarmid2025: "MacDiarmid et al. 2025", singhal2023: "Singhal et al. 2023",
+  cui2025: "Cui et al. 2025", schulman2017: "Schulman et al. 2017", agarwal2023: "Agarwal et al. 2023 (GKD)",
+  guo2024: "Guo et al. 2024 (OAIF)", uesato2022: "Uesato et al. 2022", zelikman2022: "Zelikman et al. 2022 (STaR)",
+};
+
+const NODES = [
+  // ---- Sources
+  { id: "src-experts", kind: "source", label: "Human experts",
+    summary: "Specialists who write demonstrations, rate and critique outputs, design rubrics, and build environments and graders.",
+    tradeoff: "Rich and trustworthy, but slow and expensive." },
+  { id: "src-users", kind: "source", label: "Real users",
+    summary: "People using a deployed model: their requests, their edits, their thumbs up and down.",
+    tradeoff: "Shows what people actually ask, but skews toward whoever bothers to give feedback.",
+    effects: [["A new reward signal from users' thumbs up/down was one of several changes OpenAI said “may have played a part” in GPT-4o's sycophancy, rolled back in April 2025.", "openai2025"]] },
+  { id: "src-programs", kind: "source", label: "Programs",
+    summary: "Code that generates problems, answer keys, test suites, and simulated environments.",
+    tradeoff: "Verifiable, but narrow and easy to overfit." },
+  { id: "src-self", kind: "source", label: "The model itself",
+    summary: "The policy being trained, sampling its own attempts during training.",
+    tradeoff: "Exactly on-policy, but only as good as the model currently is." },
+  { id: "src-teachers", kind: "source", label: "Teacher models",
+    summary: "Stronger or specialist models that write answers, critiques and judgments, or expose their token probabilities.",
+    tradeoff: "Cheap at scale, but inherits the teacher's errors." },
+
+  // ---- Data shapes
+  { id: "d-demos", kind: "data", group: "demo", label: "Demonstrations", gran: "token",
+    summary: "A prompt with a target response: single answers, multi-turn conversations, worked solutions. Every token of the target is supervised." },
+  { id: "d-revisions", kind: "data", group: "demo", label: "Revisions", gran: "span",
+    summary: "An original response and an improved version of it. Paired with the original, a revision is already a preference pair." },
+  { id: "d-traj", kind: "data", group: "demo", label: "Agent trajectories", gran: "trajectory",
+    summary: "Recorded agent runs: observations, tool calls, tool results. They're someone else's text, so RL can use them only indirectly, for example as cold-start data." },
+  { id: "d-pairs", kind: "data", group: "pref", label: "Preference pairs", gran: "response",
+    summary: "A prompt with a chosen and a rejected response. You only have to judge which is better, which is often much easier than writing the ideal answer.",
+    effects: [["Sycophancy from human-preference training was documented well before the GPT-4o rollback.", "sharma2023"]] },
+  { id: "d-ratings", kind: "data", group: "pref", label: "Ratings & rankings", gran: "response",
+    summary: "Scores on a scale, or an ordering of several responses. They have to be turned into pairs before DPO can use them; KTO takes good/bad labels directly." },
+  { id: "d-critiques", kind: "data", group: "pref", label: "Critiques", gran: "span",
+    summary: "Written explanations of what's wrong with a response, and why. They mostly train judges rather than the policy." },
+  { id: "d-steps", kind: "data", group: "pref", label: "Step labels", gran: "step",
+    summary: "Correct/incorrect labels on intermediate reasoning steps. What process reward models train on.", cites: ["lightman2023"] },
+  { id: "d-rubrics", kind: "data", group: "pref", label: "Rubrics", gran: "response",
+    summary: "Task-specific criteria for a good answer. They become RL rewards when a model judge scores responses against them." },
+  { id: "d-tasks", kind: "data", group: "reward", label: "Verifiable tasks", gran: "outcome",
+    summary: "A problem plus a way to check any attempt: an answer key, a set of unit tests." },
+  { id: "d-envs", kind: "data", group: "reward", label: "Interactive environments", gran: "outcome",
+    summary: "A task, a world to act in (tools, files, records), and a grader. Graded by the state of the world afterwards rather than a final answer. The newest unit of sale for data vendors." },
+  { id: "d-prompts", kind: "data", group: "neutral", label: "Prompts & task sets",
+    summary: "Prompts on their own. The main input to RL and on-policy distillation, which generate their own responses and need only a scorer or a teacher alongside." },
+  { id: "d-rollouts", kind: "data", group: "neutral", label: "The model's own rollouts",
+    summary: "The policy's fresh attempts. Unlike the other data shapes, these aren't collected ahead of time: they're generated during training, and they're what every on-policy method learns from." },
+  { id: "d-teachertext", kind: "data", group: "teacher", label: "Teacher-written text", gran: "token",
+    summary: "Responses a stronger model wrote. Training on them with SFT is offline (sequence-level) distillation." },
+  { id: "d-teacherprobs", kind: "data", group: "teacher", label: "Teacher token probabilities", gran: "token",
+    summary: "The teacher's full next-token distribution at each position, not just the token it sampled." },
+
+  // ---- Scorers
+  { id: "s-rm", kind: "scorer", group: "reward", label: "Reward model", trained: true, year: 2017, gran: "response",
+    summary: "A model trained on comparisons or ratings to predict which response a person would prefer, so you can score responses nobody labeled. Training it is itself a transformation of the data.",
+    effects: [["Reward models can learn shortcuts such as favoring longer answers.", "singhal2023", true]] },
+  { id: "s-prm", kind: "scorer", group: "reward", label: "Process reward model", trained: true, year: 2022, gran: "step",
+    summary: "Scores each reasoning step rather than only the final answer. A denser signal, but step labels are expensive and can be overly prescriptive. Lightman et al. used theirs to rerank best-of-N samples rather than for RL.", cites: ["uesato2022", "lightman2023"] },
+  { id: "s-judge", kind: "scorer", group: "reward", label: "LLM judge + rubric", year: 2022, gran: "response",
+    summary: "A language model that scores against a rubric or a set of principles (RLAIF). The judge can be another model or the policy itself, as in Constitutional AI and Kimi K2's self-critique. Kimi K3's generative reward model writes a rubric for each task and compares candidates head to head.", cites: ["bai2022", "kimi2026"] },
+  { id: "s-verifier", kind: "scorer", group: "reward", label: "Program verifier", year: 2022, gran: "outcome",
+    summary: "A program that checks the answer: exact match, unit tests, or the final state of an environment. RL against program checks predates the name RLVR, which Tülu 3 introduced in 2024.", cites: ["lambert2024"],
+    effects: [["In coding RL, models have learned to make tests pass without solving the problem: special-casing test inputs, editing the tests.", "baker2025"],
+              ["Reward hacking learned in production RL environments can generalize to broader misalignment.", "macdiarmid2025", true]] },
+  { id: "s-teacher", kind: "scorer", group: "teacher", label: "Live teacher", gran: "token",
+    summary: "A teacher model running during training, scoring each token the student writes by how likely the teacher would have been to write it. Kimi K3 uses the per-token log ratio of teacher to student probability as the reward. A dense scorer: it plays the role for on-policy distillation that a reward model plays for RL.", cites: ["agarwal2023", "kimi2026"] },
+
+  // ---- Learning-signal families
+  { id: "f-demo", kind: "family", group: "demo", label: "Demonstrations", sub: "“respond like this”",
+    summary: "The model sees a prompt and a target response; the update raises the probability of each target token. The same next-token objective as pretraining, applied to curated text." },
+  { id: "f-pref", kind: "family", group: "pref", label: "Preferences", sub: "“this one, not that one”",
+    summary: "The model sees two responses, one marked better, and pushes up the chosen one relative to the rejected one. The same comparisons can instead train a reward model for RL.",
+    effects: [["Sycophancy from human-preference training.", "sharma2023"]] },
+  { id: "f-reward", kind: "family", group: "reward", label: "Scalar rewards", sub: "“that attempt scored 0.7”",
+    summary: "The model generates its own attempts, something scores each one, and above-average attempts become more likely. RLHF, RLAIF and RLVR name where the reward comes from; the optimizer can be the same in all three.",
+    effects: [["RL-trained models beat their base models at one try, but given many tries the base models overtake them, suggesting RL mostly sharpens what the base model could already find.", "yue2025"]] },
+  { id: "f-teacher", kind: "family", group: "teacher", label: "Teacher distributions", sub: "“here's what I would have said”",
+    summary: "A teacher model supplies its probabilities for each next token, and the student learns to match them. The teacher is often stronger, but it can be a same-size specialist or an earlier copy of the model." },
+
+  // ---- Update rules (methods)
+  { id: "m-sft", kind: "method", group: "demo", label: "SFT", year: 2021, pol: "off", dens: "dense",
+    summary: "Supervised fine-tuning: the pretraining objective on curated responses. Teaches format, and gets the model to where its own attempts are worth learning from, which is why it's the cold start for RL.",
+    subs: [["m-rs", "Trains on the model's own filtered samples instead. Needs a grader; much closer to on-policy."],
+           ["m-offdistill", "The same loss when a teacher wrote the data. Logit distillation also passes on the teacher's full distribution."],
+           ["m-dpo", "Needs a worse response as well, but you only have to judge, not write."]],
+    effects: [["R1-Zero, trained with RL straight from the base model, reasoned well but wrote hard-to-read output mixing languages. In R1, a small cold-start SFT stage plus a language-consistency reward during RL largely fixed it.", "deepseek2025"],
+              ["SFT on another model's outputs copies style more than capability.", "gudibande2023", true],
+              ["Narrow fine-tuning (insecure code) produced broadly misaligned behavior.", "betley2025", true],
+              ["“SFT memorizes, RL generalizes.”", "chu2025", true]] },
+  { id: "m-rs", kind: "method", group: "demo", label: "Rejection sampling", year: 2022, pol: "on", dens: "sparse",
+    summary: "Sample several candidates, keep the ones a grader likes, run SFT on the keepers. The grader picks the data but never enters the gradient. Trains on the model's own text with one pass/fail judgment per response, which puts it close to RL: STaR, ReST and expert iteration are versions of it. Usually run in batches or rounds, so it's only roughly on-policy.", cites: ["zelikman2022"],
+    subs: [["m-sft", "Imitates someone else's text; no grader needed, but the model never practices on its own outputs."],
+           ["m-grpo", "Puts the scores in the gradient, so failures push probability down instead of just being dropped."],
+           ["m-odpo", "Keeps the losers too, as the rejected side of pairs."]],
+    effects: [["DeepSeek-R1 collected its RL checkpoint's best outputs, filtered by rules and a DeepSeek-V3 judge, and used them with general data to fine-tune a fresh copy of the base model rather than continuing from the RL checkpoint.", "deepseek2025"]] },
+  { id: "m-dpo", kind: "method", group: "pref", label: "DPO", year: 2023, pol: "off", dens: "sparse",
+    summary: "Direct preference optimization: raise the chosen response's log-probability relative to the rejected one's, measured against a frozen reference model. No reward model, no sampling during training. Usually off-policy, but that depends on where the pairs come from.", cites: ["rafailov2023"],
+    subs: [["m-ppo", "The same pairs can train a reward model for PPO instead. RL is on-policy and learns from its own mistakes, at much higher cost."],
+           ["m-ipo", "Regularized so it doesn't drive near-deterministic preferences to extremes."],
+           ["m-kto", "Works from unpaired good/bad labels."],
+           ["m-simpo", "Drops the reference model; length-normalized log-probability with a margin."],
+           ["m-odpo", "Generates fresh pairs from the current model as training goes."]],
+    effects: [["Olmo 3 ran the same RL from its SFT and its DPO checkpoints; the DPO start came out ahead at 7B (one run each).", "olmo2025"]] },
+  { id: "m-ipo", kind: "method", group: "pref", label: "IPO", year: 2023, pol: "off", dens: "sparse",
+    summary: "Identity preference optimization: a DPO variant with a regularized objective, designed not to overfit when preferences are nearly deterministic.",
+    subs: [["m-dpo", "Simpler and more common; can overfit when one response always wins."]] },
+  { id: "m-kto", kind: "method", group: "pref", label: "KTO", year: 2024, pol: "off", dens: "sparse",
+    summary: "Kahneman–Tversky optimization: learns from single responses labeled good or bad, with no pairing.",
+    subs: [["m-dpo", "Needs matched pairs on the same prompt."]] },
+  { id: "m-simpo", kind: "method", group: "pref", label: "SimPO", year: 2024, pol: "off", dens: "sparse",
+    summary: "Simple preference optimization: uses a response's average log-probability as the implicit reward, adds a margin, and needs no reference model.",
+    subs: [["m-dpo", "Keeps a reference model in memory and anchors to it."]] },
+  { id: "m-odpo", kind: "method", group: "pref", label: "Online DPO", year: 2024, pol: "on", dens: "sparse",
+    summary: "Generate fresh pairs from the current model and label them (with a reward model, a judge, a verifier, or people) as training goes. Sits between preference tuning and RL. (Tülu 3 is a halfway case: it builds some pairs from its own samples but trains on them offline.)", cites: ["guo2024"],
+    subs: [["m-dpo", "Fixed, offline pairs: cheaper, but the model never sees feedback on its current mistakes."],
+           ["m-grpo", "Uses a scalar score per response directly instead of forming pairs."]] },
+  { id: "m-reinforce", kind: "method", group: "reward", label: "REINFORCE", year: 1992, pol: "on", dens: "sparse",
+    summary: "The basic policy gradient: raise each sampled response's log-probability in proportion to its reward minus a baseline.",
+    subs: [["m-rloo", "A better baseline from the other samples for the same prompt."],
+           ["m-ppo", "Adds a learned critic and clipping for stability."]] },
+  { id: "m-rloo", kind: "method", group: "reward", label: "RLOO", year: 2024, pol: "on", dens: "sparse",
+    summary: "REINFORCE leave-one-out: sample k responses per prompt; each one's baseline is the mean reward of the other k−1. No critic.", cites: ["ahmadian2024"],
+    subs: [["m-grpo", "Similar group baseline, plus clipping and normalizing by the group's spread."],
+           ["m-reinforce", "Simpler baseline; noisier."]] },
+  { id: "m-ppo", kind: "method", group: "reward", label: "PPO", year: 2017, pol: "on", dens: "sparse",
+    summary: "Proximal policy optimization: a learned critic predicts a value at every token, which spreads one response-level reward into per-token advantages, and each token's update is clipped so one batch can't move the model too far. In RLHF it's usually paired with a per-token KL penalty toward the starting model. The classic RLHF optimizer.", cites: ["schulman2017", "ouyang2022"],
+    subs: [["m-grpo", "Drops the critic for a group baseline. Saves a lot of memory and engineering, but needs several samples per prompt."],
+           ["m-dpo", "Skips the reward model and sampling entirely if you have preference pairs; off-policy."]] },
+  { id: "m-grpo", kind: "method", group: "reward", label: "GRPO", year: 2024, pol: "on", dens: "sparse",
+    summary: "Group relative policy optimization: sample a group of responses per prompt and use the group's scores as the baseline. No critic. Spread fast after DeepSeek used it.", cites: ["shao2024"],
+    subs: [["m-ppo", "Learned critic instead of a group baseline; one sample per prompt is enough."],
+           ["m-rloo", "Leave-one-out mean as baseline, typically without clipping."],
+           ["m-gspo", "Computes the ratio and clips per sequence instead of per token."],
+           ["m-cispo", "Clips the importance weights; every token keeps contributing gradient."],
+           ["m-opd", "A per-token signal from a teacher instead of one reward per response. Far denser, but needs a teacher that's already good."]],
+    effects: [["Given many tries per problem, base models overtake their RL-trained versions.", "yue2025"],
+              ["Policy entropy collapses during RL, limiting exploration.", "cui2025", true],
+              ["RL forgets less of what the model already knew than SFT does.", "shenfeld2025", true]] },
+  { id: "m-gspo", kind: "method", group: "reward", label: "GSPO", year: 2025, pol: "on", dens: "sparse",
+    summary: "Group sequence policy optimization: the importance ratio and clipping are computed for the whole sequence rather than each token.",
+    subs: [["m-grpo", "Per-token ratios and clipping."]] },
+  { id: "m-cispo", kind: "method", group: "reward", label: "CISPO", year: 2025, pol: "on", dens: "sparse",
+    summary: "Clips the importance-sampling weights (the correction for rollouts from a slightly older copy of the model) rather than the update itself, so every token still contributes to the gradient.",
+    subs: [["m-grpo", "Clipping can zero out the gradient for some tokens entirely."]] },
+  { id: "m-offdistill", kind: "method", group: "teacher", label: "Offline distillation", year: 2015, pol: "off", dens: "dense",
+    summary: "Train the student on text a teacher wrote (sequence-level), or on the teacher's token distributions over that text (logit distillation). Off-policy: the student never practices recovering from its own mistakes. GLM-4.5 consolidated its experts this way.", cites: ["glm2025"],
+    subs: [["m-opd", "The student writes and the teacher grades every token: dense and on-policy."],
+           ["m-sft", "Identical when only the teacher's sampled text is used."]],
+    effects: [["DeepSeek-R1 distilled into small dense models with plain SFT on about 800k R1 samples; at that scale this beat running large-scale RL on the small models directly.", "deepseek2025"]] },
+  { id: "m-opd", kind: "method", group: "teacher", label: "On-policy distillation", year: 2023, pol: "on", dens: "dense",
+    summary: "The student writes; a live teacher scores each token by how likely it would have been to write it. Dense like SFT, on-policy like RL. Formally close to policy gradient with a per-token reward: Kimi K3 uses the log ratio of teacher to student probability for each token as that reward.", cites: ["agarwal2023", "lu2025", "kimi2026"],
+    subs: [["m-grpo", "One reward per response, but no teacher needed, so it can go beyond any existing model."],
+           ["m-offdistill", "Cheaper to run, but off-policy."]],
+    effects: [["Needs a teacher that's already good, which is why it shows up last: after RL has trained the specialists.", "lu2025"]] },
+];
+
+// [from, to, type, strength d|t, via]
+const RAW_EDGES = [
+  ...["d-demos","d-revisions","d-traj","d-pairs","d-ratings","d-critiques","d-steps","d-rubrics","d-tasks","d-envs"].map(d => ["src-experts", d, "make", "d"]),
+  ...["d-prompts","d-pairs","d-ratings","d-revisions"].map(d => ["src-users", d, "make", "d"]),
+  ...["d-tasks","d-envs","d-prompts","d-steps"].map(d => ["src-programs", d, "make", "d"]),
+  ["src-self", "d-rollouts", "make", "d"],
+  ["src-self", "s-judge", "make", "d", "the policy judges itself (self-rewarding, self-critique)"],
+  ...["d-demos","d-pairs","d-ratings","d-critiques","d-rubrics","d-traj","d-teachertext","d-teacherprobs","d-prompts","d-tasks","d-envs"].map(d => ["src-teachers", d, "make", "d"]),
+  ["src-teachers", "s-judge", "make", "d", "another model acts as judge"],
+  ["src-teachers", "s-teacher", "make", "d", "run the teacher during training"],
+
+  ["d-demos", "f-demo", "feed", "d", "imitate every token"],
+  ["d-demos", "f-pref", "feed", "t", "pair with a worse response"],
+  ["d-revisions", "f-demo", "feed", "d", "imitate the improved version"],
+  ["d-revisions", "f-pref", "feed", "d", "original vs. revision is a pair"],
+  ["d-revisions", "s-rm", "feed", "d", "train on original vs. revision"],
+  ["d-traj", "f-demo", "feed", "d", "cold-start SFT"],
+  ["d-traj", "f-reward", "feed", "t", "only indirectly: RL needs its own text"],
+  ["d-pairs", "f-pref", "feed", "d", "DPO, IPO, SimPO"],
+  ["d-pairs", "f-demo", "feed", "t", "keep the chosen side"],
+  ["d-pairs", "s-rm", "feed", "d", "classic RLHF reward model"],
+  ["d-ratings", "s-rm", "feed", "d", "learn to predict the scores"],
+  ["d-ratings", "m-kto", "feed", "t", "threshold scores into good/bad"],
+  ["d-ratings", "f-pref", "feed", "t", "compare: turn scores into pairs"],
+  ["d-ratings", "f-demo", "feed", "t", "filter: keep the top-rated"],
+  ["d-critiques", "s-judge", "feed", "t", "train a judge on them"],
+  ["d-steps", "s-prm", "feed", "d", "label each reasoning step"],
+  ["d-rubrics", "s-judge", "feed", "d", "judge scores against the rubric"],
+  ["d-tasks", "s-verifier", "feed", "d", "answer key or unit tests"],
+  ["d-envs", "s-verifier", "feed", "d", "check the world state afterwards"],
+  ["d-envs", "s-judge", "feed", "d", "rubric for what a program can't check"],
+  ["d-prompts", "f-reward", "feed", "d", "policy writes; a scorer grades"],
+  ["d-prompts", "m-opd", "feed", "d", "student writes; teacher scores tokens"],
+  ["d-prompts", "m-offdistill", "feed", "t", "a teacher writes responses first"],
+  ["d-prompts", "f-demo", "feed", "t", "someone writes responses first"],
+  ["d-prompts", "m-rs", "feed", "d", "sample, filter, imitate"],
+  ["d-prompts", "m-odpo", "feed", "d", "sample pairs, then label them"],
+  ["d-rollouts", "f-reward", "feed", "d", "scored, then reinforced"],
+  ["d-rollouts", "m-rs", "feed", "d", "filtered by a grader, then imitated"],
+  ["d-rollouts", "m-odpo", "feed", "d", "fresh pairs from the current model"],
+  ["d-rollouts", "m-opd", "feed", "d", "teacher scores every token"],
+  ["d-teachertext", "m-offdistill", "feed", "d", "sequence-level distillation"],
+  ["d-teachertext", "f-demo", "feed", "d", "SFT on teacher outputs"],
+  ["d-teacherprobs", "m-offdistill", "feed", "d", "logit distillation: match the stored distribution"],
+
+  ["s-rm", "f-reward", "score", "d", "RLHF"],
+  ["s-rm", "m-rs", "score", "d", "best-of-n selection"],
+  ["s-rm", "m-odpo", "score", "d", "label fresh pairs"],
+  ["s-prm", "f-reward", "score", "d", "step-level rewards"],
+  ["s-prm", "m-rs", "score", "d", "best-of-N reranking"],
+  ["s-judge", "f-reward", "score", "d", "RLAIF, rubric rewards"],
+  ["s-judge", "m-odpo", "score", "d", "label fresh pairs"],
+  ["s-judge", "m-rs", "score", "d", "judge picks the keepers"],
+  ["s-verifier", "f-reward", "score", "d", "RLVR"],
+  ["s-verifier", "m-rs", "score", "d", "keep only passing solutions"],
+  ["s-verifier", "m-odpo", "score", "d", "correct vs. incorrect pairs"],
+  ["s-teacher", "m-opd", "score", "d", "per-token reward on the student's text"],
+];
+
+const RECIPES = [
+  { id: "instructgpt", name: "InstructGPT", year: 2022, color: "#ff7a6b", cite: "ouyang2022",
+    distinct: "The classic RLHF shape: humans write demonstrations and compare outputs.",
+    stages: [
+      { s: "SFT on demonstrations written by human labelers", u: "m-sft", d: ["d-demos", "src-experts"], r: [] },
+      { s: "A reward model trained on labelers' rankings of model outputs", u: "s-rm", d: ["d-ratings"], r: [] },
+      { s: "PPO on prompts, with the policy's rollouts scored by the reward model", u: "m-ppo", d: ["d-prompts", "d-rollouts"], r: ["s-rm"] },
+    ] },
+  { id: "r1", name: "DeepSeek-R1", year: 2025, color: "#4fd1c5", cite: "deepseek2025",
+    distinct: "Alternates imitation and exploration. The middle SFT stage is built from the RL model's own best outputs but trains a fresh copy of the base model; the same data then distills small models.",
+    stages: [
+      { s: "Cold-start SFT on a small set of long chain-of-thought examples", u: "m-sft", d: ["d-demos"], r: [] },
+      { s: "GRPO on reasoning tasks, scored by answer checkers plus a language-consistency reward", u: "m-grpo", d: ["d-tasks", "d-rollouts"], r: ["s-verifier"] },
+      { s: "Rejection sampling from that checkpoint, filtered by rules and a DeepSeek-V3 judge; about 800k samples with general data fine-tune a fresh DeepSeek-V3-Base", u: "m-rs", d: ["d-rollouts", "d-demos"], r: ["s-verifier", "s-judge"] },
+      { s: "RL across all scenarios: rule-based rewards for reasoning, reward models for general behavior", u: "m-grpo", d: ["d-prompts", "d-rollouts"], r: ["s-verifier", "s-rm"] },
+      { s: "Small dense models fine-tuned on the same ~800k samples (offline distillation), which beat RL on those models directly", u: "m-offdistill", d: ["d-teachertext"], r: [] },
+    ] },
+  { id: "qwen3", name: "Qwen3", year: 2025, color: "#f7e463", cite: "qwen2025",
+    distinct: "Fuses thinking and non-thinking behavior into one model; smaller models are distilled from larger ones.",
+    stages: [
+      { s: "Cold-start SFT on reasoning data", u: "m-sft", d: ["d-demos"], r: [] },
+      { s: "Reasoning RL on verifiable problems", u: "m-grpo", d: ["d-tasks", "d-rollouts"], r: ["s-verifier"] },
+      { s: "Thinking-mode fusion: SFT on a mix of thinking and non-thinking responses", u: "m-sft", d: ["d-demos"], r: [] },
+      { s: "General RL with rule-based rewards, model judges, and a preference-trained reward model", u: "f-reward", d: ["d-prompts", "d-rollouts"], r: ["s-verifier", "s-judge", "s-rm"] },
+      { s: "Smaller models: offline distillation from the large ones…", u: "m-offdistill", d: ["d-teachertext"], r: [] },
+      { s: "…then on-policy distillation", u: "m-opd", d: ["d-rollouts"], r: ["s-teacher"] },
+    ] },
+  { id: "k2", name: "Kimi K2", year: 2025, color: "#ff8fd0", cite: "kimi2025k2",
+    distinct: "One RL stage mixing verifiable rewards with rubric-based self-critique.",
+    stages: [
+      { s: "SFT, including large-scale synthetic tool-use trajectories", u: "m-sft", d: ["d-traj"], r: [] },
+      { s: "Joint RL mixing verifiable rewards with rubric-based self-critique", u: "f-reward", d: ["d-tasks", "d-envs", "d-rollouts"], r: ["s-verifier", "s-judge"] },
+    ] },
+  { id: "olmo3", name: "Olmo 3 Think", year: 2025, color: "#9be15d", cite: "olmo2025",
+    distinct: "Fully open data and code; keeps a preference-tuning stage before RL.",
+    stages: [
+      { s: "SFT on reasoning traces", u: "m-sft", d: ["d-demos"], r: [] },
+      { s: "DPO on preference pairs", u: "m-dpo", d: ["d-pairs"], r: [] },
+      { s: "RLVR on math, code, and instruction-following tasks", u: "m-grpo", d: ["d-tasks", "d-rollouts"], r: ["s-verifier"] },
+    ] },
+  { id: "k3", name: "Kimi K3", year: 2026, color: "#f2f2f2", cite: "kimi2026",
+    distinct: "Nine specialists (general, general agent, coding agent, each at three effort levels), consolidated by on-policy distillation. Effort levels come from shrinking the token budget of a max-effort expert.",
+    stages: [
+      { s: "Cold-start SFT on trajectories from earlier specialist Kimi models, verified in several stages and annotated by humans", u: "m-sft", d: ["d-traj", "src-teachers", "src-experts"], r: [] },
+      { s: "Specialist RL: a max-budget expert per domain, then lower budgets for the high- and low-effort experts. Verifiers plus a generative reward model that writes a rubric per task", u: "f-reward", d: ["d-envs", "d-tasks", "d-rollouts"], r: ["s-verifier", "s-judge"] },
+      { s: "Multi-teacher on-policy distillation: the student writes, the matching specialist scores every token by log ratio", u: "m-opd", d: ["d-rollouts"], r: ["s-teacher"] },
+    ] },
+  { id: "nemotron", name: "Nemotron 3 Ultra", year: 2026, color: "#ffa95c", cite: "nvidia2026",
+    distinct: "Same specialists-then-distill shape as K3, but runs one RL stage over every environment first, warms the student up on teacher data, and distills twice.",
+    stages: [
+      { s: "SFT", u: "m-sft", d: ["d-demos"], r: [] },
+      { s: "One RLVR stage over all training environments at once", u: "f-reward", d: ["d-envs", "d-tasks", "d-rollouts"], r: ["s-verifier"] },
+      { s: "More than ten specialist teachers, started from different checkpoints and given extra SFT or RL on their own domain", u: "f-reward", d: ["d-envs", "d-rollouts"], r: ["s-verifier"] },
+      { s: "Brief SFT warmup for the student on data from the teachers' training distributions", u: "m-sft", d: ["d-teachertext"], r: [] },
+      { s: "Multi-teacher on-policy distillation", u: "m-opd", d: ["d-rollouts"], r: ["s-teacher"] },
+      { s: "Second round: new teachers branched from the distilled student, then distill again", u: "m-opd", d: ["d-rollouts"], r: ["s-teacher"] },
+    ] },
+];
+
+/* ============================================================
+   GRAPH
+   ============================================================ */
+const COLORS = { demo: "#6fbf8e", pref: "#e8b04a", reward: "#b48ad8", teacher: "#6aa2e0", neutral: "#8c919a" };
+const FAM_NAME = { demo: "demonstrations", pref: "preferences", reward: "scalar rewards", teacher: "teacher distributions", neutral: "" };
+const byId = Object.fromEntries(NODES.map(n => [n.id, n]));
+const EDGES = RAW_EDGES.map(([from, to, type, s, via]) => ({ from, to, type, s, via: via || "" }));
+NODES.filter(n => n.kind === "method").forEach(n => EDGES.push({ from: "f-" + n.group, to: n.id, type: "member", s: "d", via: "" }));
+const RECIPE = Object.fromEntries(RECIPES.map(r => [r.id, r]));
+const colorOf = n => COLORS[n.group || "neutral"];
+
+const outE = {}, inE = {};
+NODES.forEach(n => { outE[n.id] = []; inE[n.id] = []; });
+EDGES.forEach(e => { outE[e.from].push(e); inE[e.to].push(e); });
+
+// BFS; directOnly skips dashed edges and doesn't pass *through* trained scorers
+function reach(id, dir, directOnly) {
+  const seen = new Map([[id, 0]]); const q = [id];
+  while (q.length) {
+    const u = q.shift();
+    if (directOnly && u !== id && byId[u].trained) continue;
+    for (const e of (dir === "down" ? outE[u] : inE[u])) {
+      if (directOnly && e.s === "t") continue;
+      const v = dir === "down" ? e.to : e.from;
+      if (!seen.has(v)) { seen.set(v, seen.get(u) + 1); q.push(v); }
+    }
+  }
+  return seen;
+}
+
+/* ============================================================
+   LENSES
+   ============================================================ */
+const LENSES = [
+  { id: "flow", label: "Parts flow",
+    desc: "Who makes the data → its shape → what turns it into a reward → the learning signal → the update rule. Solid edges are direct use; dashed edges need a transformation. Click anything to trace it." },
+  { id: "grid", label: "Whose text × density",
+    desc: "Each update rule placed by whose text it learns from and how much each example says. Three cells follow Lu (2025); the cells blur at the edges." },
+  { id: "gran", label: "Granularity",
+    desc: "Data and scorers placed by the unit the feedback attaches to. Further right, one judgment covers more text and says less about where things went wrong. Cost is a separate question: teacher probabilities are dense but cheap." },
+  { id: "time", label: "Timeline",
+    desc: "Update rules and reward sources by the year they appeared, with published recipes underneath. Years are approximate and need checking." },
+];
+
+function layoutFlow() {
+  const pos = {}, deco = [];
+  const X = { source: 0, data: 250, scorer: 510, family: 750, method: 980 };
+  const fams = ["demo", "pref", "reward", "teacher"];
+  let y = 0; const famY = {};
+  fams.forEach(f => {
+    const ids = NODES.filter(n => n.kind === "method" && n.group === f).map(n => n.id);
+    const y0 = y; ids.forEach(id => { pos[id] = { x: X.method, y }; y += 38; });
+    famY[f] = (y0 + y - 38) / 2; y += 26;
+  });
+  const H = y - 26 - 38;
+  fams.forEach(f => pos["f-" + f] = { x: X.family, y: famY[f] });
+  const dataOrder = [["d-demos", "d-revisions", "d-traj"], ["d-pairs", "d-ratings", "d-critiques", "d-steps", "d-rubrics"],
+    ["d-tasks", "d-envs", "d-prompts", "d-rollouts"], ["d-teachertext", "d-teacherprobs"]];
+  let dy = 0; const dp = [];
+  dataOrder.forEach(g => { g.forEach(id => { dp.push([id, dy]); dy += 38; }); dy += 22; });
+  dy -= 22 + 38;
+  const off = (H - dy) / 2;
+  dp.forEach(([id, v]) => pos[id] = { x: X.data, y: v + off });
+  const sc = ["s-rm", "s-prm", "s-judge", "s-verifier"];
+  const cy = (famY.pref + famY.reward) / 2;
+  sc.forEach((id, i) => pos[id] = { x: X.scorer, y: cy + (i - (sc.length - 1) / 2) * 54 });
+  pos["s-teacher"] = { x: X.scorer, y: famY.teacher };
+  const src = ["src-experts", "src-users", "src-programs", "src-self", "src-teachers"];
+  src.forEach((id, i) => pos[id] = { x: X.source, y: off + dy * i / (src.length - 1) });
+  const hy = Math.min(0, off) - 46;
+  [["Who makes it", X.source], ["Data shape", X.data], ["Turned into a reward by", X.scorer],
+   ["Learning signal", X.family], ["Update rule", X.method]]
+    .forEach(([s, x]) => deco.push({ t: "text", x, y: hy, s, cls: "colhead", anchor: "middle" }));
+  return { pos, deco };
+}
+
+function place(pos, ids, cx, cy, cols, dx = 160, dy = 42) {
+  const rows = Math.ceil(ids.length / cols);
+  ids.forEach((id, i) => {
+    const r = Math.floor(i / cols), c = i % cols;
+    const nInRow = Math.min(cols, ids.length - r * cols);
+    pos[id] = { x: cx + (c - (nInRow - 1) / 2) * dx, y: cy + (r - (rows - 1) / 2) * dy };
+  });
+}
+
+function layoutGrid() {
+  const pos = {}, deco = []; const W = 440, H = 270;
+  [[0, 0], [W, 0], [0, H], [W, H]].forEach(([x, y]) => deco.push({ t: "rect", x, y, w: W, h: H, cls: "quad" }));
+  deco.push({ t: "text", x: W / 2, y: -34, s: "Signal on every token", cls: "axislbl", anchor: "middle" });
+  deco.push({ t: "text", x: W / 2, y: -17, s: "dense", cls: "axissub", anchor: "middle" });
+  deco.push({ t: "text", x: 1.5 * W, y: -34, s: "One signal per response", cls: "axislbl", anchor: "middle" });
+  deco.push({ t: "text", x: 1.5 * W, y: -17, s: "sparse", cls: "axissub", anchor: "middle" });
+  deco.push({ t: "text", x: -18, y: H / 2 - 8, s: "Someone else's text", cls: "axislbl", anchor: "end" });
+  deco.push({ t: "text", x: -18, y: H / 2 + 10, s: "off-policy", cls: "axissub", anchor: "end" });
+  deco.push({ t: "text", x: -18, y: 1.5 * H - 8, s: "The model's own text", cls: "axislbl", anchor: "end" });
+  deco.push({ t: "text", x: -18, y: 1.5 * H + 10, s: "on-policy", cls: "axissub", anchor: "end" });
+  deco.push({ t: "text", x: W, y: 2 * H + 30, s: "Rejection sampling and online DPO train on the model's own samples, but usually in batches or rounds, so they sit on the line.", cls: "caption", anchor: "middle" });
+  deco.push({ t: "text", x: W, y: 2 * H + 50, s: "Density really belongs to the scorer: a process reward model makes any RL method step-dense, and PPO's critic spreads one reward across tokens.", cls: "caption", anchor: "middle" });
+  place(pos, ["m-sft", "m-offdistill"], W / 2, H / 2, 1);
+  place(pos, ["m-dpo", "m-ipo", "m-kto", "m-simpo"], 1.5 * W, H / 2 - 10, 2);
+  place(pos, ["m-opd"], W / 2, 1.5 * H, 1);
+  place(pos, ["m-reinforce", "m-rloo", "m-ppo", "m-grpo", "m-gspo", "m-cispo"], 1.5 * W, 1.5 * H + 22, 2);
+  pos["m-rs"] = { x: 1.5 * W - 100, y: H };
+  pos["m-odpo"] = { x: 1.5 * W + 100, y: H };
+  return { pos, deco };
+}
+
+function layoutGran() {
+  const pos = {}, deco = []; const DX = 215;
+  const cols = [["Every token", ["d-demos", "d-traj", "d-teachertext", "d-teacherprobs", "s-teacher"]], ["Span", ["d-revisions", "d-critiques"]],
+    ["Reasoning step", ["d-steps", "s-prm"]], ["Whole response", ["d-pairs", "d-ratings", "d-rubrics", "s-rm", "s-judge"]],
+    ["Final outcome / world state", ["d-tasks", "d-envs", "s-verifier"]]];
+  let maxY = 0;
+  cols.forEach(([h, ids], i) => {
+    deco.push({ t: "text", x: i * DX, y: -40, s: h, cls: "colhead", anchor: "middle" });
+    ids.forEach((id, j) => { pos[id] = { x: i * DX, y: j * 46 }; maxY = Math.max(maxY, j * 46); });
+  });
+  const ay = maxY + 62, x2 = (cols.length - 1) * DX;
+  deco.push({ t: "line", x1: -60, y1: ay, x2: x2 + 60, y2: ay, cls: "axis" });
+  deco.push({ t: "text", x: -60, y: ay + 20, s: "← feedback says exactly where", cls: "caption", anchor: "start" });
+  deco.push({ t: "text", x: x2 + 60, y: ay + 20, s: "one judgment at the end; credit assignment is hard →", cls: "caption", anchor: "end" });
+  return { pos, deco };
+}
+
+function layoutTime() {
+  const pos = {}, deco = [];
+  // Early years compressed: 1992 · 2015 · 2017 are spaced evenly, then linear from 2021
+  const EARLY = { 1992: -480, 2015: -330, 2017: -180 };
+  const xOf = y => EARLY[y] ?? (y - 2021) * 190;
+  const items = NODES.filter(n => n.year).sort((a, b) => (a.kind === "scorer") - (b.kind === "scorer") || a.label.localeCompare(b.label));
+  const byYear = {};
+  items.forEach(n => (byYear[n.year] ||= []).push(n.id));
+  let maxStack = 0;
+  Object.entries(byYear).forEach(([yr, ids]) => {
+    ids.forEach((id, i) => pos[id] = { x: xOf(+yr), y: i * 42 });
+    maxStack = Math.max(maxStack, (ids.length - 1) * 42);
+  });
+  const ay = -44;
+  deco.push({ t: "line", x1: xOf(1992) - 70, y1: ay, x2: xOf(2026) + 90, y2: ay, cls: "axis" });
+  [[1992, 2015], [2017, 2021]].forEach(([a, b]) =>
+    deco.push({ t: "text", x: (xOf(a) + xOf(b)) / 2, y: ay - 10, s: "· · ·", cls: "tick", anchor: "middle" }));
+  [1992, 2015, 2017, 2021, 2022, 2023, 2024, 2025, 2026].forEach(y =>
+    deco.push({ t: "text", x: xOf(y), y: ay - 10, s: String(y), cls: "tick", anchor: "middle" }));
+  const ry = maxStack + 70;
+  deco.push({ t: "text", x: xOf(1992) - 70, y: ry, s: "PUBLISHED RECIPES", cls: "colhead", anchor: "start" });
+  const ryear = {};
+  RECIPES.forEach(r => {
+    const k = (ryear[r.year] = (ryear[r.year] || 0) + 1) - 1;
+    deco.push({ t: "dot", x: xOf(r.year), y: ry + k * 22 - 4, c: r.color });
+    deco.push({ t: "text", x: xOf(r.year) + 10, y: ry + k * 22, s: r.name, cls: "rmark", anchor: "start" });
+  });
+  deco.push({ t: "text", x: xOf(1992) - 70, y: ry + 4 * 22 + 20, s: "Years are approximate (e.g. RLOO's idea predates its 2024 LLM paper; SFT means instruction tuning). Check before citing.", cls: "caption", anchor: "start" });
+  return { pos, deco };
+}
+
+const LAYOUT = { flow: layoutFlow, grid: layoutGrid, gran: layoutGran, time: layoutTime };
+
+/* ============================================================
+   RENDERING
+   ============================================================ */
+const NS = "http://www.w3.org/2000/svg";
+const $ = id => document.getElementById(id);
+function el(tag, attrs = {}, parent) {
+  const e = document.createElementNS(NS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(e);
+  return e;
+}
+const svg = $("map"), vp = $("vp");
+const G = { bg: $("bg"), edges: $("edges"), subarcs: $("subarcs"), routes: $("routes"), nodes: $("nodes"), overlay: $("overlay"), labels: $("labels") };
+
+const state = { lens: "flow", sel: null, hover: null, recipes: [] };
+const cur = {}; // id -> {x,y,o}
+let view = { k: 1, tx: 0, ty: 0 };
+let animating = false;
+
+const mctx = document.createElement("canvas").getContext("2d");
+const textW = (s, font) => { mctx.font = font; return mctx.measureText(s).width; };
+
+function buildNodes() {
+  for (const n of NODES) {
+    const fam = n.kind === "family";
+    n.h = fam ? 44 : 28;
+    const lw = textW(n.label, `${fam ? 600 : 500} ${fam ? 13.5 : 12.5}px Inter, system-ui, sans-serif`);
+    const sw = n.sub ? textW(n.sub, "400 11px Inter, system-ui, sans-serif") : 0;
+    n.w = Math.ceil(Math.max(lw, sw)) + (n.kind === "data" ? 32 : 26);
+    const c = colorOf(n);
+    const g = el("g", { class: "node", "data-id": n.id }, G.nodes);
+    const s = el("g", { class: "state" }, g);
+    const box = { x: -n.w / 2, y: -n.h / 2, width: n.w, height: n.h, class: "box" };
+    if (n.kind === "source") el("rect", { ...box, rx: n.h / 2, fill: "#171a21", stroke: "#4a4f5a" }, s);
+    else if (n.kind === "data") {
+      el("rect", { ...box, rx: 5, fill: "#171a21", stroke: "#2f3440" }, s);
+      el("rect", { x: -n.w / 2, y: -n.h / 2, width: 4, height: n.h, fill: c, rx: 1 }, s);
+    } else if (n.kind === "scorer") el("rect", { ...box, rx: 5, fill: "#171a21", stroke: c, "stroke-dasharray": "3 2.5" }, s);
+    else if (fam) el("rect", { ...box, rx: 8, fill: c + "26", stroke: c }, s);
+    else el("rect", { ...box, rx: 5, fill: "#171a21", stroke: c, "stroke-width": 1.3 }, s);
+    if (fam) {
+      el("text", { class: "fam", x: 0, y: -7, "text-anchor": "middle", "dominant-baseline": "central" }, s).textContent = n.label;
+      el("text", { class: "sub", x: 0, y: 10, "text-anchor": "middle", "dominant-baseline": "central" }, s).textContent = n.sub;
+    } else {
+      el("text", { x: n.kind === "data" ? 2 : 0, y: 0.5, "text-anchor": "middle", "dominant-baseline": "central" }, s).textContent = n.label;
+    }
+    g.addEventListener("click", ev => { ev.stopPropagation(); select(n.id); });
+    g.addEventListener("pointerenter", () => { state.hover = n.id; refresh(); });
+    g.addEventListener("pointerleave", () => { if (state.hover === n.id) { state.hover = null; refresh(); } });
+    n.g = g; n.s = s;
+  }
+  for (const e of EDGES) {
+    e.p = el("path", { class: "edge" + (e.s === "t" ? " t" : "") }, G.edges);
+  }
+}
+
+function anchorPath(a, b, lr) {
+  const A = cur[a.id], B = cur[b.id];
+  let x1, y1, x2, y2, c1x, c1y, c2x, c2y;
+  if (lr || Math.abs(B.x - A.x) > Math.abs(B.y - A.y)) {
+    const sgn = B.x >= A.x ? 1 : -1;
+    x1 = A.x + sgn * a.w / 2; y1 = A.y; x2 = B.x - sgn * b.w / 2; y2 = B.y;
+    const dx = Math.max(30, Math.abs(x2 - x1) / 2) * sgn;
+    c1x = x1 + dx; c1y = y1; c2x = x2 - dx; c2y = y2;
+  } else {
+    const sgn = B.y >= A.y ? 1 : -1;
+    x1 = A.x; y1 = A.y + sgn * a.h / 2; x2 = B.x; y2 = B.y - sgn * b.h / 2;
+    const dy = Math.max(20, Math.abs(y2 - y1) / 2) * sgn;
+    c1x = x1; c1y = y1 + dy; c2x = x2; c2y = y2 - dy;
+  }
+  return { d: `M${x1},${y1} C${c1x},${c1y} ${c2x},${c2y} ${x2},${y2}`,
+    mx: (x1 + 3 * c1x + 3 * c2x + x2) / 8, my: (y1 + 3 * c1y + 3 * c2y + y2) / 8 };
+}
+
+function rectExit(n, tx, ty) {
+  const c = cur[n.id]; const dx = tx - c.x, dy = ty - c.y;
+  if (!dx && !dy) return { x: c.x, y: c.y };
+  const s = Math.min(Math.abs((n.w / 2 + 3) / (dx || 1e-9)), Math.abs((n.h / 2 + 3) / (dy || 1e-9)));
+  return { x: c.x + dx * s, y: c.y + dy * s };
+}
+
+// ---- interaction-derived sets
+let litNodes = null, litEdges = new Set(), adjEdges = new Set(), recipeUsed = null;
+
+function computeSets() {
+  litNodes = null; litEdges = new Set(); adjEdges = new Set();
+  const focus = state.sel || state.hover;
+  if (state.sel) {
+    const up = reach(state.sel, "up", false), down = reach(state.sel, "down", false);
+    litNodes = new Set([...up.keys(), ...down.keys()]);
+    EDGES.forEach(e => {
+      if ((up.has(e.from) && up.has(e.to)) || (down.has(e.from) && down.has(e.to))) litEdges.add(e);
+    });
+  } else if (state.hover) {
+    litNodes = new Set([state.hover]);
+    [...outE[state.hover], ...inE[state.hover]].forEach(e => { litEdges.add(e); litNodes.add(e.from); litNodes.add(e.to); });
+  }
+  if (focus) [...outE[focus], ...inE[focus]].forEach(e => adjEdges.add(e));
+  recipeUsed = null;
+  if (state.recipes.length) {
+    recipeUsed = new Set();
+    state.recipes.forEach(rid => RECIPE[rid].stages.forEach(st => [st.u, ...st.d, ...st.r].forEach(id => recipeUsed.add(id))));
+  }
+}
+
+function refresh() {
+  computeSets();
+  for (const n of NODES) {
+    let cls = "state";
+    if (litNodes) { if (!litNodes.has(n.id)) cls += state.sel ? " dim" : " soft"; }
+    else if (recipeUsed && !recipeUsed.has(n.id)) cls += " soft";
+    n.s.setAttribute("class", cls);
+    n.g.classList.toggle("sel", n.id === state.sel);
+  }
+  frame();
+  renderLabels();
+}
+
+function frame() {
+  vp.setAttribute("transform", `translate(${view.tx},${view.ty}) scale(${view.k})`);
+  const lr = state.lens === "flow";
+  for (const n of NODES) {
+    const c = cur[n.id];
+    n.g.setAttribute("transform", `translate(${c.x},${c.y})`);
+    n.g.setAttribute("opacity", c.o);
+    n.g.style.pointerEvents = c.o > 0.5 ? "" : "none";
+  }
+  for (const e of EDGES) {
+    const a = byId[e.from], b = byId[e.to];
+    const vis = Math.min(cur[a.id].o, cur[b.id].o);
+    const lit = litEdges.has(e);
+    let op;
+    if (lr) op = litNodes ? (lit ? (e.type === "make" ? 0.4 : 0.9) : 0.05) : (recipeUsed ? 0.1 : 0.3);
+    else op = lit ? 0.9 : 0;
+    op *= vis;
+    if (op < 0.01) { e.p.setAttribute("opacity", 0); continue; }
+    const { d, mx, my } = anchorPath(a, b, lr);
+    e.mx = mx; e.my = my;
+    e.p.setAttribute("d", d);
+    e.p.setAttribute("opacity", op);
+    e.p.setAttribute("stroke", lit ? (e.type === "make" ? "#b9bdc4" : colorOf(b.kind === "family" || b.kind === "method" ? b : (b.kind === "scorer" ? b : a))) : "#6b7079");
+  }
+  drawSubArcs();
+  drawRoutes();
+}
+
+function drawSubArcs() {
+  G.subarcs.innerHTML = "";
+  const n = state.sel && byId[state.sel];
+  if (!n || !n.subs) return;
+  for (const [sid] of n.subs) {
+    const m = byId[sid]; const A = cur[n.id], B = cur[sid];
+    if (Math.min(A.o, B.o) < 0.5) continue;
+    let d;
+    if (Math.abs(A.x - B.x) < 30) {
+      const bulge = 70 + Math.abs(A.y - B.y) * 0.18;
+      const x1 = A.x + n.w / 2, x2 = B.x + m.w / 2;
+      d = `M${x1},${A.y} C${Math.max(x1, x2) + bulge},${A.y} ${Math.max(x1, x2) + bulge},${B.y} ${x2},${B.y}`;
+    } else {
+      const mx = (A.x + B.x) / 2, my = (A.y + B.y) / 2, dx = B.x - A.x, dy = B.y - A.y, L = Math.hypot(dx, dy) || 1;
+      const cx = mx - dy / L * 40, cy = my + dx / L * 40;
+      const p1 = rectExit(n, cx, cy), p2 = rectExit(m, cx, cy);
+      d = `M${p1.x},${p1.y} Q${cx},${cy} ${p2.x},${p2.y}`;
+    }
+    el("path", { d, class: "subarc" }, G.subarcs);
+  }
+}
+
+function ensureMarker(r) {
+  if ($("arr-" + r.id)) return;
+  const m = el("marker", { id: "arr-" + r.id, viewBox: "0 0 10 10", refX: 8, refY: 5, markerWidth: 7, markerHeight: 7, orient: "auto-start-reverse" }, $("defs"));
+  el("path", { d: "M0,1 L9,5 L0,9 z", fill: r.color }, m);
+}
+
+function drawRoutes() {
+  G.routes.innerHTML = ""; G.overlay.innerHTML = "";
+  const badgeSlots = {}, dotSlots = {};
+  state.recipes.forEach((rid, ri) => {
+    const r = RECIPE[rid]; ensureMarker(r);
+    const fade = state.sel ? 0.35 : 1;
+    const nums = {};
+    r.stages.forEach((st, i) => (nums[st.u] ||= []).push(i + 1));
+    for (let i = 0; i < r.stages.length - 1; i++) {
+      const a = byId[r.stages[i].u], b = byId[r.stages[i + 1].u];
+      if (a === b) continue;
+      const A = cur[a.id], B = cur[b.id];
+      if (Math.min(A.o, B.o) < 0.5) continue;
+      let d;
+      if (Math.abs(A.x - B.x) < 30) {
+        // same column: arc out to the right so the route doesn't run through other nodes
+        const x1 = A.x + a.w / 2 + 3, x2 = B.x + b.w / 2 + 3;
+        const bx = Math.max(x1, x2) + 34 + ri * 22 + Math.abs(B.y - A.y) * 0.06;
+        d = `M${x1},${A.y} C${bx},${A.y} ${bx},${B.y} ${x2 + 4},${B.y}`;
+      } else {
+        const mx = (A.x + B.x) / 2, my = (A.y + B.y) / 2, dx = B.x - A.x, dy = B.y - A.y, L = Math.hypot(dx, dy) || 1;
+        const off = (34 + ri * 16) * (i % 2 ? -1 : 1);
+        const cx = mx - dy / L * off, cy = my + dx / L * off;
+        const p1 = rectExit(a, cx, cy), p2 = rectExit(b, cx, cy);
+        d = `M${p1.x},${p1.y} Q${cx},${cy} ${p2.x},${p2.y}`;
+      }
+      el("path", { d, fill: "none", stroke: r.color, "stroke-width": 2,
+        opacity: 0.85 * fade, "marker-end": `url(#arr-${r.id})` }, G.routes);
+    }
+    for (const [id, list] of Object.entries(nums)) {
+      const n = byId[id], c = cur[id]; if (c.o < 0.5) continue;
+      const k = (badgeSlots[id] = (badgeSlots[id] || 0) + 1) - 1;
+      const txt = list.join("·"), w = Math.max(17, txt.length * 6.2 + 9);
+      const g = el("g", { class: "badge", transform: `translate(${c.x + n.w / 2 - w / 2 + 4 - k * (w + 3)},${c.y - n.h / 2 - 2})`, opacity: fade }, G.overlay);
+      el("rect", { x: -w / 2, y: -8.5, width: w, height: 17, rx: 8.5, fill: r.color }, g);
+      el("text", { x: 0, y: 0.5, "text-anchor": "middle", "dominant-baseline": "central" }, g).textContent = txt;
+    }
+    const used = new Set(); r.stages.forEach(st => [...st.d, ...st.r].forEach(id => { if (!nums[id]) used.add(id); }));
+    used.forEach(id => {
+      const n = byId[id], c = cur[id]; if (c.o < 0.5) return;
+      const k = (dotSlots[id] = (dotSlots[id] || 0) + 1) - 1;
+      el("circle", { cx: c.x - n.w / 2 + 10 + k * 11, cy: c.y - n.h / 2, r: 4.5, fill: r.color, stroke: "#0f1115", "stroke-width": 1.5, opacity: fade }, G.overlay);
+    });
+  });
+}
+
+function renderLabels() {
+  G.labels.innerHTML = "";
+  if (animating) return;
+  const focus = state.sel || state.hover;
+  if (!focus) return;
+  for (const e of adjEdges) {
+    if (!e.via || !litEdges.has(e)) continue;
+    if (Math.min(cur[e.from].o, cur[e.to].o) < 0.5) continue;
+    if (e.mx == null) continue;
+    const g = el("g", { class: "elabel", transform: `translate(${e.mx},${e.my})` }, G.labels);
+    const t = el("text", { x: 0, y: 0.5, "text-anchor": "middle", "dominant-baseline": "central" }, g);
+    t.textContent = e.via;
+    const w = textW(e.via, "400 10.5px Inter, system-ui, sans-serif") + 10;
+    g.insertBefore(el("rect", { x: -w / 2, y: -8, width: w, height: 16, rx: 3 }), t);
+  }
+}
+
+function renderDeco(deco) {
+  G.bg.innerHTML = "";
+  for (const d of deco) {
+    let e;
+    if (d.t === "text") { e = el("text", { x: d.x, y: d.y, class: d.cls + " fadein", "text-anchor": d.anchor || "start" }, G.bg); e.textContent = d.s; }
+    else if (d.t === "rect") e = el("rect", { x: d.x, y: d.y, width: d.w, height: d.h, class: d.cls + " fadein" }, G.bg);
+    else if (d.t === "line") e = el("line", { x1: d.x1, y1: d.y1, x2: d.x2, y2: d.y2, class: d.cls + " fadein" }, G.bg);
+    else if (d.t === "dot") e = el("circle", { cx: d.x, cy: d.y, r: 4.5, fill: d.c, class: "fadein" }, G.bg);
+  }
+}
+
+function fitFor(pos, deco) {
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  const add = (a, b, c, d) => { x0 = Math.min(x0, a); y0 = Math.min(y0, b); x1 = Math.max(x1, c); y1 = Math.max(y1, d); };
+  for (const id in pos) { const n = byId[id], p = pos[id]; add(p.x - n.w / 2, p.y - n.h / 2 - 12, p.x + n.w / 2, p.y + n.h / 2); }
+  for (const d of deco) {
+    if (d.t === "text") {
+      const w = d.s.length * 6.3;
+      const xa = d.anchor === "middle" ? d.x - w / 2 : d.anchor === "end" ? d.x - w : d.x;
+      add(xa, d.y - 14, xa + w, d.y + 4);
+    } else if (d.t === "rect") add(d.x, d.y, d.x + d.w, d.y + d.h);
+    else if (d.t === "line") add(Math.min(d.x1, d.x2), d.y1 - 2, Math.max(d.x1, d.x2), d.y2 + 2);
+  }
+  // room on the right for substitute arcs and same-column recipe routes
+  if (state.lens === "flow" || state.lens === "time") x1 += 110;
+  const W = svg.clientWidth, H = svg.clientHeight - 56, pad = 36;
+  const bw = x1 - x0 + pad * 2, bh = y1 - y0 + pad * 2;
+  const k = Math.max(0.3, Math.min(W / bw, H / bh, 1.3));
+  return { k, tx: (W - (x1 - x0) * k) / 2 - x0 * k, ty: (H - (y1 - y0) * k) / 2 - y0 * k + 4 };
+}
+
+let lastLayout = null;
+function applyLens(id, animate = true) {
+  state.lens = id;
+  document.querySelectorAll("#tabs button").forEach(b => b.classList.toggle("on", b.dataset.lens === id));
+  $("lensdesc").textContent = LENSES.find(l => l.id === id).desc;
+  const { pos, deco } = LAYOUT[id]();
+  lastLayout = { pos, deco };
+  renderDeco(deco);
+  const target = {};
+  for (const n of NODES) {
+    const p = pos[n.id];
+    const c = cur[n.id] || { x: p ? p.x : 0, y: p ? p.y : 0, o: 0 };
+    target[n.id] = p ? { x: p.x, y: p.y, o: 1 } : { x: c.x, y: c.y, o: 0 };
+  }
+  const tv = fitFor(pos, deco);
+  if (!animate) { Object.assign(cur, target); view = tv; refresh(); return; }
+  tween(target, tv);
+}
+
+let raf = null;
+function tween(target, tv, dur = 620) {
+  const from = {}; for (const id in cur) from[id] = { ...cur[id] };
+  const v0 = { ...view }; const t0 = performance.now();
+  animating = true; G.labels.innerHTML = "";
+  cancelAnimationFrame(raf);
+  const ease = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+  const step = now => {
+    const t = Math.min(1, (now - t0) / dur), k = ease(t);
+    for (const id in target) {
+      const a = from[id], b = target[id];
+      cur[id] = { x: a.x + (b.x - a.x) * k, y: a.y + (b.y - a.y) * k, o: a.o + (b.o - a.o) * k };
+    }
+    if (tv) view = { k: v0.k + (tv.k - v0.k) * k, tx: v0.tx + (tv.tx - v0.tx) * k, ty: v0.ty + (tv.ty - v0.ty) * k };
+    frame();
+    if (t < 1) raf = requestAnimationFrame(step);
+    else { animating = false; refresh(); }
+  };
+  raf = requestAnimationFrame(step);
+}
+
+/* ============================================================
+   PANEL
+   ============================================================ */
+const P = $("panel");
+const nodeRef = id => `<button class="ref" data-node="${id}">${byId[id].label}</button>`;
+const citeTxt = key => key ? `<span class="cite">${CITE[key] || key}</span>` : "";
+const KIND = { source: "Source", data: "Data shape", scorer: "Reward source", family: "Learning signal", method: "Update rule" };
+
+function pillList(ids, dashed) {
+  if (!ids.length) return `<span class="note">none</span>`;
+  return `<div class="pills">${ids.map(id => `<button class="pill${dashed ? " t" : ""}" data-node="${id}">${byId[id].label}</button>`).join("")}</div>`;
+}
+
+function reachSplit(id, dir, kinds) {
+  // A family's inputs are the union of its members' inputs (some data feeds a member directly)
+  const starts = byId[id].kind === "family" && dir === "up"
+    ? [id, ...outE[id].filter(e => e.type === "member").map(e => e.to)] : [id];
+  const all = new Map(), direct = new Map();
+  starts.forEach(s => { reach(s, dir, false).forEach((v, k) => all.set(k, v)); reach(s, dir, true).forEach((v, k) => direct.set(k, v)); });
+  starts.forEach(s => { if (s !== id) { all.delete(s); direct.delete(s); } });
+  const order = NODES.map(n => n.id);
+  const keep = x => x !== id && kinds.includes(byId[x].kind);
+  const d = order.filter(x => direct.has(x) && keep(x));
+  const t = order.filter(x => all.has(x) && !direct.has(x) && keep(x));
+  return { d, t };
+}
+
+function renderPanel() {
+  if (state.sel) return renderNodePanel(byId[state.sel]);
+  if (state.recipes.length) return renderRecipePanel();
+  renderIntro();
+}
+
+function renderIntro() {
+  const sw = c => `<svg width="34" height="12"><line x1="2" y1="6" x2="32" y2="6" stroke="${c}" stroke-width="1.6"/></svg>`;
+  P.innerHTML = `
+    <h2>Post-training, as a graph</h2>
+    <p>Every training stage combines data from somewhere, a learning signal derived from it, and an update rule that changes the weights. Most of these can be substituted for one another along the edges here, but each substitution changes what the model learns, and published pipelines combine them differently.</p>
+    <h3>Try</h3>
+    <button class="try" data-try="ratings">Where can expert ratings end up?</button>
+    <button class="try" data-try="grpo">What can feed GRPO, and what needs transforming first?</button>
+    <button class="try" data-try="compare">Compare DeepSeek-R1 with Kimi K3</button>
+    <button class="try" data-try="opd">Why does on-policy distillation come last?</button>
+    <h3>Legend</h3>
+    <div class="legend">
+      ${sw("#9a9fa7")}<span>direct use</span>
+      <svg width="34" height="12"><line x1="2" y1="6" x2="32" y2="6" stroke="#9a9fa7" stroke-width="1.6" stroke-dasharray="4 4"/></svg><span>needs a transformation: filter, compare, train a scorer, or generate first</span>
+      <svg width="34" height="12"><line x1="2" y1="6" x2="32" y2="6" stroke="#f2f2f2" stroke-width="1.4" stroke-dasharray="2 4"/></svg><span>substitute (shown when an update rule is selected)</span>
+      ${sw(COLORS.demo)}<span>demonstrations</span>
+      ${sw(COLORS.pref)}<span>preferences</span>
+      ${sw(COLORS.reward)}<span>scalar rewards</span>
+      ${sw(COLORS.teacher)}<span>teacher distributions</span>
+    </div>
+    <p class="foot">Prototype. Content comes from the building-blocks draft and the study notes. Items marked <span class="verify">to verify</span> come from the parked literature list and haven't been checked.</p>`;
+}
+
+function renderNodePanel(n) {
+  const c = colorOf(n);
+  const fam = n.group && n.group !== "neutral" ? ` · ${FAM_NAME[n.group]}` : "";
+  let h = `<button class="back" data-clear="1">← overview</button>
+    <div class="kind" style="color:${n.kind === "source" ? "var(--muted)" : c}">${KIND[n.kind]}${n.kind === "family" ? "" : fam}${n.year ? " · " + n.year : ""}</div>
+    <h2>${n.label}</h2><p>${n.summary}</p>`;
+  if (n.tradeoff) h += `<p class="tradeoff">${n.tradeoff}</p>`;
+  if (n.cites) h += `<p>${n.cites.map(citeTxt).join(" · ")}</p>`;
+
+  if (n.kind === "method" || n.kind === "family") {
+    const { d, t } = reachSplit(n.id, "up", ["data"]);
+    h += `<h3>Data that can feed it</h3><p class="note" style="margin-bottom:6px">Directly:</p>${pillList(d)}
+          <p class="note" style="margin:10px 0 6px">After a transformation:</p>${pillList(t, true)}`;
+    const sc = reachSplit(n.id, "up", ["scorer"]);
+    if (sc.d.length + sc.t.length) h += `<h3>Reward sources</h3>${pillList([...sc.d, ...sc.t])}`;
+  }
+  if (n.kind === "family") {
+    h += `<h3>Update rules in this family</h3>${pillList(outE[n.id].filter(e => e.type === "member").map(e => e.to))}`;
+  }
+  if (n.kind === "data" || n.kind === "scorer") {
+    const { d, t } = reachSplit(n.id, "down", ["method"]);
+    h += `<h3>Update rules it can drive</h3><p class="note" style="margin-bottom:6px">Directly:</p>${pillList(d)}
+          <p class="note" style="margin:10px 0 6px">After a transformation:</p>${pillList(t, true)}`;
+    const imm = outE[n.id].filter(e => e.via);
+    if (imm.length) h += `<h3>How</h3><ul>${imm.map(e => `<li><span class="glyph">${e.s === "t" ? "◐" : "●"}</span>${nodeRef(e.to)} <span class="note">— ${e.via}</span></li>`).join("")}</ul>`;
+    const src = inE[n.id].filter(e => e.type === "make").map(e => e.from);
+    if (src.length) h += `<h3>Who makes it</h3>${pillList(src)}`;
+    const ins = inE[n.id].filter(e => e.type !== "make");
+    if (ins.length) h += `<h3>Built from</h3><ul>${ins.map(e => `<li><span class="glyph">${e.s === "t" ? "◐" : "●"}</span>${nodeRef(e.from)} <span class="note">— ${e.via}</span></li>`).join("")}</ul>`;
+  }
+  if (n.kind === "source") {
+    h += `<h3>What it produces</h3>${pillList(outE[n.id].map(e => e.to))}`;
+  }
+  if (n.subs) {
+    h += `<h3>Substitutes, and what changes</h3><ul>${n.subs.map(([id, note]) => `<li>${nodeRef(id)} <span class="note">— ${note}</span></li>`).join("")}</ul>`;
+  }
+  if (n.effects) {
+    h += `<h3>Effects on the model</h3><ul>${n.effects.map(([txt, key, v]) => `<li>${txt} ${citeTxt(key)}${v ? '<span class="verify">to verify</span>' : ""}</li>`).join("")}</ul>`;
+  }
+  const inR = RECIPES.filter(r => r.stages.some(st => st.u === n.id || st.d.includes(n.id) || st.r.includes(n.id)));
+  if (inR.length) {
+    h += `<h3>In recipes</h3><div class="pills">${inR.map(r => `<button class="chip${state.recipes.includes(r.id) ? " on" : ""}" style="--c:${r.color}" data-recipe="${r.id}"><span class="sw" style="background:${r.color}"></span>${r.name}</button>`).join("")}</div>`;
+  }
+  P.innerHTML = h;
+}
+
+function renderRecipePanel() {
+  let h = `<button class="back" data-clear-recipes="1">← overview</button>
+    <h2>${state.recipes.length > 1 ? "Recipes, side by side" : "Recipe"}</h2>
+    <p class="note">Each stage written as its parts: which data, which signal, which update. Numbers on the map mark the update rule at each stage; dots mark the data and reward sources it used.</p>`;
+  for (const rid of state.recipes) {
+    const r = RECIPE[rid];
+    h += `<div class="recipe-h"><span class="sw" style="background:${r.color}"></span><b>${r.name}</b><span class="cite">${r.year} · ${CITE[r.cite] || ""}</span></div>
+      <p class="note" style="margin:6px 0 10px">${r.distinct}</p>`;
+    r.stages.forEach((st, i) => {
+      const parts = [st.u, ...st.d.filter(x => byId[x].kind !== "source"), ...st.r];
+      h += `<div class="stage" style="--c:${r.color}"><span class="n">${i + 1}</span>${st.s}
+        <div class="pills">${parts.map(id => `<button class="pill" data-node="${id}">${byId[id].label}</button>`).join("")}</div></div>`;
+    });
+  }
+  h += `<p class="foot">Simplified from published reports; every recipe omits stages and details.</p>`;
+  P.innerHTML = h;
+}
+
+/* ============================================================
+   ACTIONS
+   ============================================================ */
+function select(id) {
+  state.sel = id;
+  if (id && byId[id] && (cur[id]?.o ?? 0) < 0.5) {
+    const lens = ["flow", "grid", "gran", "time"].find(l => LAYOUT[l]().pos[id]);
+    if (lens && lens !== state.lens) applyLens(lens);
+  }
+  refresh(); renderPanel();
+}
+
+function toggleRecipe(rid) {
+  const i = state.recipes.indexOf(rid);
+  if (i >= 0) state.recipes.splice(i, 1);
+  else { state.recipes.push(rid); if (state.recipes.length > 3) state.recipes.shift(); }
+  document.querySelectorAll("#recipes .chip").forEach(c => c.classList.toggle("on", state.recipes.includes(c.dataset.recipe)));
+  refresh(); renderPanel();
+}
+
+const TRIES = {
+  ratings: () => { if (state.lens !== "flow") applyLens("flow"); state.recipes = []; syncChips(); select("d-ratings"); },
+  grpo: () => { if (state.lens !== "flow") applyLens("flow"); state.recipes = []; syncChips(); select("m-grpo"); },
+  compare: () => { if (state.lens !== "flow") applyLens("flow"); state.sel = null; state.recipes = []; toggleRecipe("r1"); toggleRecipe("k3"); },
+  opd: () => { applyLens("grid"); state.recipes = []; syncChips(); select("m-opd"); },
+};
+const syncChips = () => document.querySelectorAll("#recipes .chip").forEach(c => c.classList.toggle("on", state.recipes.includes(c.dataset.recipe)));
+
+P.addEventListener("click", ev => {
+  const t = ev.target.closest("button"); if (!t) return;
+  if (t.dataset.node) select(t.dataset.node);
+  else if (t.dataset.recipe) toggleRecipe(t.dataset.recipe);
+  else if (t.dataset.try) TRIES[t.dataset.try]();
+  else if (t.dataset.clear) select(null);
+  else if (t.dataset.clearRecipes) { state.recipes = []; syncChips(); refresh(); renderPanel(); }
+});
+
+// ---- pan / zoom
+let drag = null;
+svg.addEventListener("pointerdown", ev => {
+  if (ev.target.closest(".node")) return;
+  drag = { x: ev.clientX, y: ev.clientY, tx: view.tx, ty: view.ty, moved: false };
+  svg.setPointerCapture(ev.pointerId); svg.classList.add("grabbing");
+});
+svg.addEventListener("pointermove", ev => {
+  if (!drag) return;
+  const dx = ev.clientX - drag.x, dy = ev.clientY - drag.y;
+  if (Math.abs(dx) + Math.abs(dy) > 3) drag.moved = true;
+  view.tx = drag.tx + dx; view.ty = drag.ty + dy; frame();
+});
+svg.addEventListener("pointerup", () => {
+  if (drag && !drag.moved && state.sel) select(null);
+  drag = null; svg.classList.remove("grabbing");
+  if (!animating) renderLabels();
+});
+function zoomAt(px, py, f) {
+  const k2 = Math.max(0.25, Math.min(3, view.k * f));
+  view.tx = px - (px - view.tx) * k2 / view.k; view.ty = py - (py - view.ty) * k2 / view.k; view.k = k2;
+  frame(); renderLabels();
+}
+svg.addEventListener("wheel", ev => {
+  ev.preventDefault();
+  if (ev.ctrlKey || ev.metaKey) {
+    const r = svg.getBoundingClientRect();
+    zoomAt(ev.clientX - r.left, ev.clientY - r.top, Math.exp(-Math.max(-60, Math.min(60, ev.deltaY)) * 0.01));
+  } else { view.tx -= ev.deltaX; view.ty -= ev.deltaY; frame(); }
+}, { passive: false });
+$("zin").onclick = () => zoomAt(svg.clientWidth / 2, svg.clientHeight / 2, 1.25);
+$("zout").onclick = () => zoomAt(svg.clientWidth / 2, svg.clientHeight / 2, 0.8);
+$("zfit").onclick = () => { if (lastLayout) tween(Object.fromEntries(NODES.map(n => [n.id, { ...cur[n.id] }])), fitFor(lastLayout.pos, lastLayout.deco), 400); };
+document.addEventListener("keydown", ev => { if (ev.key === "Escape") select(null); });
+let rz; window.addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => { if (lastLayout) { view = fitFor(lastLayout.pos, lastLayout.deco); frame(); renderLabels(); } }, 150); });
+
+/* ============================================================
+   INIT
+   ============================================================ */
+function init() {
+  LENSES.forEach(l => {
+    const b = document.createElement("button"); b.textContent = l.label; b.dataset.lens = l.id;
+    b.onclick = () => applyLens(l.id); $("tabs").appendChild(b);
+  });
+  RECIPES.forEach(r => {
+    const b = document.createElement("button"); b.className = "chip"; b.dataset.recipe = r.id; b.style.setProperty("--c", r.color);
+    b.innerHTML = `<span class="sw" style="background:${r.color}"></span>${r.name}`;
+    b.onclick = () => toggleRecipe(r.id); $("recipes").appendChild(b);
+  });
+  buildNodes();
+  applyLens("flow", false);
+  renderPanel();
+}
+Promise.race([document.fonts.ready, new Promise(r => setTimeout(r, 1500))]).then(init);
+</script>
+</body>
+</html>
