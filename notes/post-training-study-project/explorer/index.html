@@ -189,6 +189,19 @@ aside .prof li, .prof li { margin: 0 0 2px; color: #cfd2d7; white-space: nowrap;
 .prof li.s { color: var(--faint); }
 .cmp-rel { font-size: 12px; margin-left: 4px; }
 .cmp-intro .caveat { color: var(--faint); margin-top: 4px; }
+/* Ways into the compare view */
+.cmpbtn { margin-left: auto; background: var(--surface); border: 1px solid var(--border); color: var(--text); border-radius: 8px;
+  padding: 5px 11px; font-size: 12.5px; cursor: pointer; white-space: nowrap; }
+.cmpbtn:hover { border-color: var(--faint); }
+.mech-h { display: flex; align-items: center; gap: 8px; }
+.mech-h .mh { flex: 1; min-width: 0; }
+.mech-cmp { background: none; border: 1px solid var(--border); color: var(--muted); border-radius: 6px; padding: 2px 8px;
+  font-size: 11.5px; cursor: pointer; white-space: nowrap; }
+.mech-cmp:hover { color: var(--text); border-color: var(--fc, var(--faint)); }
+.cmp-tabs { margin-bottom: 14px; display: inline-flex; }
+.cmp-pairs { margin-top: 10px; }
+.relmark.cmp { cursor: pointer; }
+.relmark.cmp:hover circle { fill: #2a2615; }
 @media (max-width: 860px) {
   .app { grid-template-columns: 1fr; grid-template-rows: minmax(0, 1fr) 42vh; }
   .resizer { display: none; }
@@ -205,6 +218,7 @@ aside .prof li, .prof li { margin: 0 0 2px; color: #cfd2d7; white-space: nowrap;
   <h1>Post-training map</h1>
   <div class="tabs" id="tabs"></div>
   <div class="lensdesc" id="lensdesc"></div>
+  <button class="cmpbtn" id="cmpbtn" title="Compare update rules side by side">⇆ Compare methods</button>
 </header>
 <div class="app">
   <div class="canvas" id="canvas">
@@ -1015,7 +1029,14 @@ function drawRelArcs() {
     }
     const op = state.sel && !on ? 0.15 : on ? 0.95 : 0.55;
     el("path", { d, class: "relarc", opacity: op }, G.relarcs);
-    const m = el("g", { class: "relmark", transform: `translate(${mx},${my})`, opacity: op }, G.relmarks);
+    const can = relCanCmp(r);
+    const m = el("g", { class: "relmark" + (can ? " cmp" : ""), transform: `translate(${mx},${my})`, opacity: op }, G.relmarks);
+    if (can) {
+      const i = RELATIONS.indexOf(r);
+      el("title", {}, m).textContent = `Compare ${a.label} and ${b.label} side by side`;
+      m.addEventListener("pointerdown", ev => ev.stopPropagation());   // don't start a pan
+      m.addEventListener("click", ev => { ev.stopPropagation(); openRelCompare(i); });
+    }
     el("circle", { r: 8 }, m);
     el("text", { x: 0, y: 0.5, "text-anchor": "middle", "dominant-baseline": "central" }, m).textContent = "≈";
     if (on && !animating) {
@@ -1334,7 +1355,7 @@ function renderIntro() {
       ${sw(COLORS.reward)}<span>scalar rewards</span>
       ${sw(COLORS.teacher)}<span>teacher distributions</span>
       <svg width="34" height="14"><rect x="3" y="2" width="28" height="10" rx="3" fill="none" stroke="${splitGradient("demo", "reward")}" stroke-width="1.6"/></svg><span>two-colour border: straddles two families</span>
-      <svg width="34" height="16"><line x1="2" y1="8" x2="32" y2="8" stroke="#e9d8a6" stroke-width="1.4"/><circle cx="17" cy="8" r="6.5" fill="#0f1115" stroke="#e9d8a6"/><text x="17" y="8.5" text-anchor="middle" dominant-baseline="central" font-size="10" fill="#e9d8a6">≈</text></svg><span>one method is a special case or form of another</span>
+      <svg width="34" height="16"><line x1="2" y1="8" x2="32" y2="8" stroke="#e9d8a6" stroke-width="1.4"/><circle cx="17" cy="8" r="6.5" fill="#0f1115" stroke="#e9d8a6"/><text x="17" y="8.5" text-anchor="middle" dominant-baseline="central" font-size="10" fill="#e9d8a6">≈</text></svg><span>one method is a special case or form of another; click ≈ to compare them</span>
     </div>
     <p class="foot">Prototype. Content comes from the building-blocks draft and the study notes. Items marked <span class="verify">to verify</span> come from the parked literature list and haven't been checked.</p>`;
 }
@@ -1373,8 +1394,7 @@ function nodePanelHTML(n, inCompare, skipInputs) {
   }
   const rels = RELATIONS.filter(r => r.from === n.id || r.to === n.id);
   if (rels.length) {
-    const canCmp = r => PROF[r.from] && PROF[r.to] && !MECH[r.from].generic && !MECH[r.to].generic;
-    h += `<h3>How it relates</h3><ul>${rels.map(r => `<li><span class="glyph">≈</span>${nodeRef(r.from)} is ${r.rel} ${nodeRef(r.to)}: <span class="note">${r.text}</span> ${citeTxt(r.cite)}${canCmp(r)
+    h += `<h3>How it relates</h3><ul>${rels.map(r => `<li><span class="glyph">≈</span>${nodeRef(r.from)} is ${r.rel} ${nodeRef(r.to)}: <span class="note">${r.text}</span> ${citeTxt(r.cite)}${relCanCmp(r)
       ? `<button class="ref cmp-rel" data-cmp-rel="${RELATIONS.indexOf(r)}">compare</button>` : ""}</li>`).join("")}</ul>`;
   }
   const inPipes = stagesMatching(n.id);
@@ -1682,6 +1702,7 @@ function profHTML(id, refId) {
     `<li class="${r ? (r[k] !== p[k] ? "d" : "s") : ""}"><span class="k">${label}</span>${p[k]}</li>`).join("")}</ul>`;
 }
 const famM = id => FAM_MECH[MECH[id].fam];
+const relCanCmp = r => !!(PROF[r.from] && PROF[r.to] && !MECH[r.from].generic && !MECH[r.to].generic);
 const mechKey = (m, k) => (FAM_MECH[m.fam].key || ((x, j) => x[j]))(m, k);
 const sameFam = (a, b) => MECH[a] && MECH[b] && MECH[a].fam === MECH[b].fam;
 
@@ -1777,13 +1798,12 @@ function mechSection(n) {
   const F = famM(n.id), gen = !!MECH[n.id].generic;
   let h = `<h3>Inside one step</h3>
     <div class="mech" style="--fc:${F.color}" data-base="${n.id}" data-show="">
-      <div class="mech-h">${mechHead(n.id)}</div>
+      <div class="mech-h"><span class="mh">${mechHead(n.id)}</span><button class="mech-cmp" data-compare="${n.id}">⇆ Compare</button></div>
       <div class="mech-prof">${profHTML(n.id)}</div>
       <div class="mech-body">${mechSVG(n.id)}</div>
       <ul class="mech-diff">${mechDiff(n.id)}</ul>
     </div>
-    <p class="note mech-cap">${gen ? "Hover a method to fill in the slots." : "Hover a substitute marked ⇄ to swap it in."}
-      <button class="ref" data-compare="${n.id}">Compare side by side</button></p>`;
+    <p class="note mech-cap">${gen ? "Hover a method to fill in the slots." : "Hover a substitute marked ⇄ to swap it in."}</p>`;
   if (gen) h += `<div class="pills">${F.order.map(id => `<button class="pill" data-node="${id}">${byId[id].label}</button>`).join("")}</div>`;
   else if (n.subs) {
     h += `<h3>Substitutes, and what changes</h3><ul>${n.subs.map(([id, note]) => sameFam(id, n.id)
@@ -1797,7 +1817,7 @@ function mechShow(id) {
   const base = card.dataset.base, show = id && id !== base && sameFam(id, base) && !MECH[id].generic ? id : "";
   if (show === card.dataset.show) return;
   card.dataset.show = show;
-  card.querySelector(".mech-h").innerHTML = mechHead(base, show);
+  card.querySelector(".mech-h .mh").innerHTML = mechHead(base, show);
   card.querySelector(".mech-prof").innerHTML = profHTML(show || base, show && !MECH[base].generic ? base : null);
   card.querySelector(".mech-body").innerHTML = mechSVG(show || base, show ? base : null);
   card.querySelector(".mech-diff").innerHTML = mechDiff(base, show);
@@ -1815,10 +1835,23 @@ function openCompare(id) {
   let pick = m.generic ? F.order : [id, ...(byId[id].subs || []).map(s => s[0])];
   let ids = F.order.filter(x => pick.includes(x));
   if (ids.length < 2) ids = [...F.order];
-  state.compare = { fam: m.fam, ids, ref: m.generic ? ids[0] : id };
+  state.compare = state.lastCompare = { fam: m.fam, ids, ref: m.generic ? ids[0] : id };
   renderCompare();
 }
 function closeCompare() { state.compare = null; renderCompare(); }
+const CMP_FAMS = ["demo", "pref", "reward", "teacher"];
+const CROSS_PAIRS = () => RELATIONS.map((r, i) => i).filter(i => relCanCmp(RELATIONS[i]) && !sameFam(RELATIONS[i].from, RELATIONS[i].to));
+// Header button: the selected method's family, else wherever you last were, else scalar rewards
+$("cmpbtn").onclick = () => {
+  if (state.compare) return closeCompare();
+  if (state.sel && MECH[state.sel]) {   // the whole family, with the selected method as the reference
+    const m = MECH[state.sel], order = FAM_MECH[m.fam].order;
+    state.compare = state.lastCompare = { fam: m.fam, ids: [...order], ref: m.generic ? order[0] : state.sel };
+    return renderCompare();
+  }
+  if (state.lastCompare) { state.compare = state.lastCompare; return renderCompare(); }
+  openCompare("f-reward");
+};
 function mechDiffCol(ref, id) {   // this column's own values; faded where they match the reference
   const r = MECH[ref], m = MECH[id];
   return famM(ref).slots.map(([k, label, txt]) => mechKey(r, k) === mechKey(m, k) || ref === id
@@ -1829,10 +1862,12 @@ function openRelCompare(i) {
   const r = RELATIONS[i];
   if (sameFam(r.from, r.to)) state.compare = { fam: MECH[r.from].fam, ids: famM(r.from).order.filter(x => x === r.from || x === r.to), ref: r.from };
   else state.compare = { fam: null, rel: i, ids: [r.from, r.to], ref: r.from };
+  state.lastCompare = state.compare;
   renderCompare();
 }
 function renderCompare() {
   const c = state.compare;
+  $("cmpbtn").textContent = c ? "✕ Close compare" : "⇆ Compare methods";
   if (!c) { CMP.hidden = true; CMP.innerHTML = ""; return; }
   CMP.hidden = false;
   const mixed = !c.fam, F = mixed ? null : FAM_MECH[c.fam], famId = mixed ? null : "f-" + c.fam;
@@ -1855,11 +1890,14 @@ function renderCompare() {
       <p>${F.note} Outlined parts differ from the reference, the leftmost column; click another column's name to make it the reference.${sharedInputs
         ? ` All of them take the same data and reward sources: see ${nodeRef(famId)}.` : ""}</p>`;
   }
-  CMP.innerHTML = `
+  const tabs = `<div class="tabs cmp-tabs">${CMP_FAMS.map(f => `<button class="${c.fam === f ? "on" : ""}" data-cmp-fam="${f}">${byId["f-" + f].label}</button>`).join("")}
+    <button class="${mixed ? "on" : ""}" data-cmp-pairs="1">Related pairs</button></div>`;
+  const pairs = mixed ? `<div class="pills cmp-pairs">${CROSS_PAIRS().map(i => { const r = RELATIONS[i];
+    return `<button class="chip${i === c.rel ? " on" : ""}" style="--c:#e9d8a6" data-cmp-rel="${i}">${byId[r.from].label} ≈ ${byId[r.to].label}</button>`; }).join("")}</div>` : "";
+  CMP.innerHTML = `${tabs}
     <div class="cmp-bar">
-      <div class="cmp-intro">${intro}</div>
+      <div class="cmp-intro">${intro}${pairs}</div>
       ${mixed ? "" : `<div class="pills">${F.order.map(id => `<button class="chip${c.ids.includes(id) ? " on" : ""}" style="--c:var(--fc)" data-cmp-toggle="${id}">${byId[id].label}</button>`).join("")}</div>`}
-      <button class="cmp-close" data-cmp-close="1">Close ✕</button>
     </div>
     <div class="cmp-cols">${[c.ref, ...c.ids.filter(x => x !== c.ref)].map(id => {
       const ref = id === c.ref, n = nDiff(id), col = famM(id).color;
@@ -1879,6 +1917,8 @@ CMP.addEventListener("click", ev => {
   else if (t.dataset.cmpOpen) { closeCompare(); select(t.dataset.cmpOpen); }
   else if (t.dataset.cmpRef) { c.ref = t.dataset.cmpRef; renderCompare(); }
   else if (t.dataset.cmpRel) openRelCompare(+t.dataset.cmpRel);
+  else if (t.dataset.cmpFam) openCompare("f-" + t.dataset.cmpFam);
+  else if (t.dataset.cmpPairs) openRelCompare(CROSS_PAIRS()[0]);
   else if (t.dataset.node) { closeCompare(); select(t.dataset.node); }
   else if (t.dataset.recipe) { closeCompare(); toggleRecipe(t.dataset.recipe); }
   else if (t.dataset.cmpToggle) {
