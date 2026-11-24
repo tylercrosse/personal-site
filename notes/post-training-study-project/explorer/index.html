@@ -244,7 +244,7 @@ aside .prof li, .prof li { margin: 0 0 2px; color: #cfd2d7; white-space: nowrap;
       <button id="zout" title="Zoom out">−</button>
       <button id="zfit" title="Fit">⤢</button>
     </div>
-    <div class="recipes" id="recipes"><span class="lbl">Recipes</span></div>
+    <div class="recipes" id="recipes"><span class="lbl">Recipes · up to 3</span></div>
   </div>
   <aside id="panel"></aside>
   <div class="compare" id="compare" hidden></div>
@@ -1197,10 +1197,15 @@ function fitFor(pos, deco) {
 let lastLayout = null;
 function applyLens(id, animate = true) {
   state.lens = id;
+  const { pos, deco } = LAYOUT[id]();
+  if (state.sel && !pos[state.sel] && !(id === "pipes" && stagesMatching(state.sel).length)) {
+    const n = byId[state.sel];
+    state.sel = n && n.kind === "stage" && pos[n.u] ? n.u : null;
+    if (P.firstChild) setTimeout(renderPanel);
+  }
   if (P.firstChild && !state.sel) setTimeout(renderPanel);
   document.querySelectorAll("#tabs button").forEach(b => b.classList.toggle("on", b.dataset.lens === id));
   $("lensdesc").textContent = LENSES.find(l => l.id === id).desc;
-  const { pos, deco } = LAYOUT[id]();
   lastLayout = { pos, deco };
   renderDeco(deco);
   const target = {};
@@ -1323,7 +1328,10 @@ function reachSplit(id, dir, kinds) {
   return { d, t };
 }
 
+let panelKey = null;
 function renderPanel() {
+  const key = state.sel || (state.recipes.length ? "r:" + state.recipes.join(",") : "intro");
+  if (key !== panelKey) { P.scrollTop = 0; panelKey = key; }
   if (state.sel) return renderNodePanel(byId[state.sel]);
   if (state.recipes.length) return renderRecipePanel();
   renderIntro();
@@ -1462,6 +1470,7 @@ function select(id) {
 }
 
 function toggleRecipe(rid) {
+  state.sel = null;   // whatever was clicked last owns the panel
   const i = state.recipes.indexOf(rid);
   if (i >= 0) state.recipes.splice(i, 1);
   else { state.recipes.push(rid); if (state.recipes.length > 3) state.recipes.shift(); }
@@ -2019,7 +2028,8 @@ let rz; window.addEventListener("resize", () => { clearTimeout(rz); rz = setTime
 function init() {
   LENSES.forEach(l => {
     const b = document.createElement("button"); b.textContent = l.label; b.dataset.lens = l.id;
-    b.onclick = () => applyLens(l.id); $("tabs").appendChild(b);
+    b.onclick = () => { if (state.compare) closeCompare(); applyLens(l.id); };   // a lens click should never look dead
+    $("tabs").appendChild(b);
   });
   RECIPES.forEach(r => {
     const b = document.createElement("button"); b.className = "chip"; b.dataset.recipe = r.id; b.style.setProperty("--c", r.color);
