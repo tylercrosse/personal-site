@@ -202,7 +202,43 @@ aside .prof li, .prof li { margin: 0 0 2px; color: #cfd2d7; white-space: nowrap;
 .cmp-pairs { margin-top: 10px; }
 .relmark.cmp { cursor: pointer; }
 .relmark.cmp:hover circle { fill: #2a2615; }
+/* Swap switcher inside a card: hover previews, click or tap pins (works on touch) */
+.mech-sw { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 6px 10px; }
+.mech-sw button { background: none; border: 1px solid var(--border); color: var(--muted); border-radius: 6px; padding: 2px 8px;
+  font-size: 11.5px; cursor: pointer; }
+.mech-sw button:hover { color: var(--text); }
+.mech-sw button.on { color: var(--text); border-color: var(--fc, var(--faint)); background: color-mix(in srgb, var(--fc, #888) 14%, transparent); }
+.mech-sw button.pinned { box-shadow: inset 0 -2px 0 var(--fc, var(--faint)); }
+/* Search */
+.srchbtn { background: var(--surface); border: 1px solid var(--border); color: var(--muted); border-radius: 8px; padding: 5px 10px;
+  font-size: 12.5px; cursor: pointer; white-space: nowrap; margin-left: auto; }
+.srchbtn:hover { color: var(--text); border-color: var(--faint); }
+.srchbtn kbd, .search-foot kbd { font: 11px/1 Menlo, monospace; color: var(--faint); border: 1px solid var(--border); border-radius: 4px; padding: 1px 4px; margin-left: 6px; }
+.cmpbtn { margin-left: 0; }
+.search { position: fixed; inset: 0; z-index: 50; background: rgba(5, 6, 8, .55); }
+.search[hidden] { display: none; }
+.search-box { width: min(580px, 92vw); margin: 9vh auto 0; background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.5); overflow: hidden; }
+.search-box input { width: 100%; background: none; border: 0; border-bottom: 1px solid var(--border); color: var(--text);
+  font: 15px Inter, system-ui, sans-serif; padding: 14px 16px; outline: none; }
+.search-res { list-style: none; margin: 0; padding: 6px; max-height: 56vh; overflow: auto; }
+.search-res button { display: flex; align-items: baseline; gap: 10px; width: 100%; text-align: left; background: none; border: 0;
+  color: var(--text); padding: 8px 10px; border-radius: 7px; cursor: pointer; font-size: 13.5px; }
+.search-res button.act { background: var(--surface2); }
+.search-res .sw { width: 8px; height: 8px; border-radius: 50%; flex: none; align-self: center; }
+.search-res .sub { color: var(--muted); font-size: 12px; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.search-res .kd { color: var(--faint); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; white-space: nowrap; }
+.search-res .empty { color: var(--muted); padding: 10px; font-size: 13px; }
+.search-res .grp { color: var(--faint); font-size: 10.5px; text-transform: uppercase; letter-spacing: .08em; padding: 8px 10px 2px; }
+.search-foot { color: var(--faint); font-size: 11.5px; padding: 8px 14px; border-top: 1px solid var(--border); }
+/* Mix & match picker */
+.cmp-mix { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 10px; }
+.cmp-mix .fam { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
+.cmp-mix .chip[disabled] { opacity: .4; cursor: not-allowed; }
+.cmp-mix-note { color: var(--faint); font-size: 12px; margin-top: 6px; }
+.tabsep { width: 1px; align-self: stretch; margin: 4px 3px; background: var(--border); }
 @media (max-width: 860px) {
+  .srchbtn kbd { display: none; }
   .app { grid-template-columns: 1fr; grid-template-rows: minmax(0, 1fr) 42vh; }
   .resizer { display: none; }
   aside { border-left: 0; border-top: 1px solid var(--border); }
@@ -218,6 +254,7 @@ aside .prof li, .prof li { margin: 0 0 2px; color: #cfd2d7; white-space: nowrap;
   <h1>Post-training map</h1>
   <div class="tabs" id="tabs"></div>
   <div class="lensdesc" id="lensdesc"></div>
+  <button class="srchbtn" id="srchbtn" title="Search (⌘K or /)">⌕ Search<kbd>⌘K</kbd></button>
   <button class="cmpbtn" id="cmpbtn" title="Compare update rules side by side">⇆ Compare methods</button>
 </header>
 <div class="app">
@@ -248,6 +285,13 @@ aside .prof li, .prof li { margin: 0 0 2px; color: #cfd2d7; white-space: nowrap;
   </div>
   <aside id="panel"></aside>
   <div class="compare" id="compare" hidden></div>
+</div>
+<div class="search" id="search" hidden role="dialog" aria-label="Search">
+  <div class="search-box">
+    <input id="sq" type="search" placeholder="Search methods, data, scorers, recipes, or names like RLHF and best-of-n" autocomplete="off" spellcheck="false">
+    <ul class="search-res" id="sres"></ul>
+    <div class="search-foot"><kbd>↑</kbd><kbd>↓</kbd> to move · <kbd>Enter</kbd> to open · <kbd>Esc</kbd> to close</div>
+  </div>
 </div>
 
 <script>
@@ -685,17 +729,17 @@ function reach(id, dir, directOnly) {
 /* ============================================================
    LENSES
    ============================================================ */
-const LENSES = [
+const LENSES = [   // how the parts fit together, then what people built with them
   { id: "flow", label: "Parts flow",
     desc: "Who makes the data → its shape → what turns it into a reward → the learning signal → the update rule. Solid edges are direct use; dashed edges need a transformation. Click anything to trace it." },
-  { id: "pipes", label: "Pipelines",
-    desc: "Each published recipe as a lane of stages, in order. Colour is the learning signal; fill and the strip under each label show whose text it learns from and where the feedback lands. Hover a stage to find the same update rule in other pipelines." },
   { id: "grid", label: "Whose text × density",
     desc: "Each update rule placed by whose text it learns from and how much each example says. Three cells follow Lu (2025); the cells blur at the edges." },
   { id: "gran", label: "Granularity",
     desc: "Data and scorers placed by the unit the feedback attaches to. Further right, one judgment covers more text and says less about where things went wrong. Cost is a separate question: teacher probabilities are dense but cheap." },
   { id: "time", label: "Timeline",
     desc: "Update rules and reward sources by the year they appeared, with published recipes underneath. Years are approximate and need checking." },
+  { id: "pipes", label: "Pipelines",
+    desc: "Each published recipe as a lane of stages, in order. Colour is the learning signal; fill and the strip under each label show whose text it learns from and where the feedback lands. Hover a stage to find the same update rule in other pipelines." },
 ];
 
 function layoutFlow() {
@@ -843,7 +887,7 @@ function el(tag, attrs = {}, parent) {
 const svg = $("map"), vp = $("vp");
 const G = { bg: $("bg"), edges: $("edges"), relarcs: $("relarcs"), relmarks: $("relmarks"), subarcs: $("subarcs"), routes: $("routes"), nodes: $("nodes"), overlay: $("overlay"), labels: $("labels") };
 
-const state = { lens: "flow", sel: null, hover: null, recipes: [], showRel: false, compare: null };
+const state = { lens: "flow", sel: null, alias: null, hover: null, recipes: [], showRel: false, compare: null };
 const cur = {}; // id -> {x,y,o}
 let view = { k: 1, tx: 0, ty: 0 };
 let animating = false;
@@ -946,6 +990,10 @@ function computeSets() {
     EDGES.forEach(e => {
       if ((up.has(e.from) && up.has(e.to)) || (down.has(e.from) && down.has(e.to))) litEdges.add(e);
     });
+  } else if (state.alias) {
+    const A = ALIAS_BY_ID[state.alias];
+    litNodes = new Set(A.path);
+    EDGES.forEach(e => { if (litNodes.has(e.from) && litNodes.has(e.to) && e.type !== "member2") litEdges.add(e); });
   } else if (state.hover) {
     litNodes = new Set([state.hover]);
     [...outE[state.hover], ...inE[state.hover]].forEach(e => { litEdges.add(e); litNodes.add(e.from); litNodes.add(e.to); });
@@ -964,10 +1012,11 @@ function computeSets() {
 }
 
 function refresh() {
+  syncHash();
   computeSets();
   for (const n of NODES) {
     let cls = "state";
-    if (litNodes) { if (!litNodes.has(n.id)) cls += state.sel ? " dim" : " soft"; }
+    if (litNodes) { if (!litNodes.has(n.id)) cls += state.sel || state.alias ? " dim" : " soft"; }
     else if (recipeUsed && !recipeUsed.has(n.id) && state.lens !== "pipes") cls += " soft";
     n.s.setAttribute("class", cls);
     n.g.classList.toggle("sel", n.id === state.sel);
@@ -1330,9 +1379,10 @@ function reachSplit(id, dir, kinds) {
 
 let panelKey = null;
 function renderPanel() {
-  const key = state.sel || (state.recipes.length ? "r:" + state.recipes.join(",") : "intro");
+  const key = state.sel || (state.alias ? "q:" + state.alias : state.recipes.length ? "r:" + state.recipes.join(",") : "intro");
   if (key !== panelKey) { P.scrollTop = 0; panelKey = key; }
   if (state.sel) return renderNodePanel(byId[state.sel]);
+  if (state.alias) return renderAliasPanel();
   if (state.recipes.length) return renderRecipePanel();
   renderIntro();
 }
@@ -1459,7 +1509,7 @@ function renderRecipePanel() {
    ACTIONS
    ============================================================ */
 function select(id) {
-  state.sel = id;
+  state.sel = id; state.alias = null;
   // Stay in the pipelines lens if the selection shows up there via its stages
   const staysInStages = state.lens === "pipes" && id && byId[id] && stagesMatching(id).length > 0;
   if (id && byId[id] && (cur[id]?.o ?? 0) < 0.5 && !staysInStages) {
@@ -1470,7 +1520,7 @@ function select(id) {
 }
 
 function toggleRecipe(rid) {
-  state.sel = null;   // whatever was clicked last owns the panel
+  state.sel = null; state.alias = null;   // whatever was clicked last owns the panel
   const i = state.recipes.indexOf(rid);
   if (i >= 0) state.recipes.splice(i, 1);
   else { state.recipes.push(rid); if (state.recipes.length > 3) state.recipes.shift(); }
@@ -1491,7 +1541,7 @@ const TRIES = {
   relcmp: () => { if (state.lens !== "flow") applyLens("flow"); state.recipes = []; syncChips(); select("m-rs"); openRelCompare(RELATIONS.findIndex(r => r.from === "m-rs" && r.to === "m-reinforce")); },
   relate: () => { if (state.lens !== "flow") applyLens("flow"); state.recipes = []; syncChips(); setRel(true); select(null); },
 };
-function setRel(v) { state.showRel = v; $("reltoggle").classList.toggle("on", v); frame(); }
+function setRel(v) { state.showRel = v; $("reltoggle").classList.toggle("on", v); frame(); syncHash(); }
 $("reltoggle").onclick = () => setRel(!state.showRel);
 const syncChips = () => document.querySelectorAll("#recipes .chip").forEach(c => c.classList.toggle("on", state.recipes.includes(c.dataset.recipe)));
 
@@ -1711,6 +1761,41 @@ function profHTML(id, refId) {
     `<li class="${r ? (r[k] !== p[k] ? "d" : "s") : ""}"><span class="k">${label}</span>${p[k]}</li>`).join("")}</ul>`;
 }
 const famM = id => FAM_MECH[MECH[id].fam];
+
+// ---- Names readers arrive with. Combinations name a path through the parts, not one node.
+const ALIASES = [
+  { id: "rlhf", name: "RLHF", long: "Reinforcement learning from human feedback", recipe: "instructgpt", cite: "ouyang2022",
+    terms: ["rlhf", "reinforcement learning from human feedback", "human feedback"],
+    text: "Not one method but a combination: a reward model trained on people's comparisons or rankings, then RL against it, classically PPO. The name says where the reward comes from; the RL update can be swapped.",
+    path: ["src-experts", "d-pairs", "d-ratings", "s-rm", "f-reward", "m-ppo"] },
+  { id: "rlaif", name: "RLAIF", long: "Reinforcement learning from AI feedback", recipe: "cai", cite: "bai2022",
+    terms: ["rlaif", "reinforcement learning from ai feedback", "ai feedback"],
+    text: "RL where a model, not a person, supplies the feedback: an LLM judge scores responses against a rubric or a set of principles, and its scores are the reward.",
+    path: ["src-teachers", "d-rubrics", "s-judge", "f-reward"] },
+  { id: "rlvr", name: "RLVR", long: "Reinforcement learning with verifiable rewards", recipe: "r1", cite: "lambert2024",
+    terms: ["rlvr", "reinforcement learning with verifiable rewards", "verifiable rewards"],
+    text: "RL where a program checks each answer (an answer key, unit tests, an environment's end state) and pass/fail is the reward. Any RL update works; GRPO is the common one.",
+    path: ["src-programs", "d-tasks", "d-envs", "s-verifier", "f-reward", "m-grpo"] },
+];
+const ALIAS_BY_ID = Object.fromEntries(ALIASES.map(a => [a.id, a]));
+// Other names for single parts
+const SYNONYMS = [   // display forms; matching ignores case, accents and hyphens
+  [["Best-of-n", "Expert iteration", "STaR", "ReST", "Rejection-sampled SFT", "Rejection sampling fine-tuning"], "m-rs"],
+  [["GKD", "Generalized knowledge distillation"], "m-opd"],
+  [["PRM", "Process supervision", "Step-level reward"], "s-prm"],
+  [["ORM", "Outcome reward model", "Bradley–Terry", "Preference model"], "s-rm"],
+  [["LLM-as-a-judge", "AI judge", "Constitutional principles"], "s-judge"],
+  [["Unit tests", "Answer key", "Checker"], "s-verifier"],
+  [["Instruction tuning", "Fine-tuning", "Supervised fine-tuning"], "m-sft"],
+  [["Knowledge distillation", "Logit distillation", "Sequence-level distillation"], "m-offdistill"],
+  [["Critic", "Value model", "Value function", "GAE", "Proximal policy optimization"], "m-ppo"],
+  [["Group relative policy optimization", "DeepSeekMath"], "m-grpo"],
+  [["Leave-one-out", "REINFORCE leave-one-out"], "m-rloo"],
+  [["Policy gradient", "Vanilla policy gradient"], "m-reinforce"],
+  [["Direct preference optimization"], "m-dpo"],
+  [["Kahneman–Tversky", "Prospect theory"], "m-kto"],
+  [["OAIF", "Online AI feedback", "Iterative DPO"], "m-odpo"],
+];
 const relCanCmp = r => !!(PROF[r.from] && PROF[r.to] && !MECH[r.from].generic && !MECH[r.to].generic);
 const mechKey = (m, k) => (FAM_MECH[m.fam].key || ((x, j) => x[j]))(m, k);
 const sameFam = (a, b) => MECH[a] && MECH[b] && MECH[a].fam === MECH[b].fam;
@@ -1805,16 +1890,21 @@ function mechDiff(base, show) {
 }
 function mechSection(n) {
   const F = famM(n.id), gen = !!MECH[n.id].generic;
+  // The switcher: this card plus the same-family methods it can swap with. Hover previews, click/tap pins.
+  const opts = gen ? F.order : (n.subs || []).map(s => s[0]).filter(id => sameFam(id, n.id));
+  const sw = opts.length ? `<div class="mech-sw" role="group" aria-label="Swap in a method">
+      <button class="on pinned" data-mech="" data-mech-pin="">${gen ? "Shared loop" : n.label}</button>${opts.map(id =>
+      `<button data-mech="${id}" data-mech-pin="${id}">${byId[id].label}</button>`).join("")}</div>` : "";
   let h = `<h3>Inside one step</h3>
     <div class="mech" style="--fc:${F.color}" data-base="${n.id}" data-show="">
       <div class="mech-h"><span class="mh">${mechHead(n.id)}</span><button class="mech-cmp" data-compare="${n.id}">⇆ Compare</button></div>
+      ${sw}
       <div class="mech-prof">${profHTML(n.id)}</div>
       <div class="mech-body">${mechSVG(n.id)}</div>
       <ul class="mech-diff">${mechDiff(n.id)}</ul>
     </div>
-    <p class="note mech-cap">${gen ? "Hover a method to fill in the slots." : "Hover a substitute marked ⇄ to swap it in."}</p>`;
-  if (gen) h += `<div class="pills">${F.order.map(id => `<button class="pill" data-node="${id}">${byId[id].label}</button>`).join("")}</div>`;
-  else if (n.subs) {
+    <p class="note mech-cap">${gen ? "Hover or tap a method above to fill in the slots." : opts.length ? "Hover or tap a method above to swap it in; tap again to go back." : ""}</p>`;
+  if (!gen && n.subs) {
     h += `<h3>Substitutes, and what changes</h3><ul>${n.subs.map(([id, note]) => sameFam(id, n.id)
       ? `<li class="mech-sub" data-mech="${id}"><span class="glyph">⇄</span>${nodeRef(id)} <span class="note">— ${note}</span></li>`
       : `<li><span class="glyph"></span>${nodeRef(id)} <span class="note">— ${note}</span></li>`).join("")}</ul>`;
@@ -1823,7 +1913,9 @@ function mechSection(n) {
 }
 function mechShow(id) {
   const card = P.querySelector(".mech"); if (!card) return;
-  const base = card.dataset.base, show = id && id !== base && sameFam(id, base) && !MECH[id].generic ? id : "";
+  if (id == null) id = card.dataset.pin || null;          // nothing hovered: back to whatever is pinned
+  const base = card.dataset.base, show = id && id !== "__base" && id !== base && sameFam(id, base) && !MECH[id].generic ? id : "";
+  card.querySelectorAll(".mech-sw button").forEach(b => { b.classList.toggle("on", b.dataset.mechPin === show); b.classList.toggle("pinned", b.dataset.mechPin === (card.dataset.pin || "")); });
   if (show === card.dataset.show) return;
   card.dataset.show = show;
   card.querySelector(".mech-h .mh").innerHTML = mechHead(base, show);
@@ -1832,8 +1924,9 @@ function mechShow(id) {
   card.querySelector(".mech-diff").innerHTML = mechDiff(base, show);
 }
 P.addEventListener("pointerover", ev => {
+  if (ev.pointerType === "touch") return;                    // touch uses tap-to-pin instead
   const t = ev.target.closest("[data-mech], [data-node]");
-  mechShow(t && (t.dataset.mech || t.dataset.node));
+  mechShow(t ? ("mech" in t.dataset ? (t.dataset.mech || "__base") : t.dataset.node) : null);
 });
 P.addEventListener("pointerleave", () => mechShow(null));
 
@@ -1859,7 +1952,7 @@ $("cmpbtn").onclick = () => {
     return renderCompare();
   }
   if (state.lastCompare) { state.compare = state.lastCompare; return renderCompare(); }
-  openCompare("f-reward");
+  openMix(["m-sft", "m-dpo", "m-grpo"]);                   // the comparison the article's 2×2 sets up
 };
 function mechDiffCol(ref, id) {   // this column's own values; faded where they match the reference
   const r = MECH[ref], m = MECH[id];
@@ -1876,6 +1969,7 @@ function openRelCompare(i) {
 }
 function renderCompare() {
   const c = state.compare;
+  syncHash();
   $("cmpbtn").textContent = c ? "✕ Close compare" : "⇆ Compare methods";
   if (!c) { CMP.hidden = true; CMP.innerHTML = ""; return; }
   CMP.hidden = false;
@@ -1887,7 +1981,11 @@ function renderCompare() {
   const nDiff = id => mixed ? profDiff(c.ref, id) : F.slots.filter(([k]) => mechKey(MECH[c.ref], k) !== mechKey(MECH[id], k)).length;
   const tag = (id, n) => id === c.ref ? "reference" : mixed ? `${n} of ${PROF_ROWS.length} differ` : n ? `${n} part${n > 1 ? "s" : ""} differ` : "same parts";
   let intro;
-  if (mixed) {
+  if (c.mix) {
+    intro = `<div class="kind" style="color:var(--muted)">Mix and match · any family</div>
+      <h2>Pick any methods to put side by side</h2>
+      <p>Cards from different families have different rows, so only the profile strips are compared against the reference, the leftmost column. Click another column's name to make it the reference.</p>`;
+  } else if (mixed) {
     const r = RELATIONS[c.rel], fam = id => FAM_NAME[MECH[id].fam];
     intro = `<div class="kind" style="color:var(--muted)">Related across families · ${fam(r.from)} and ${fam(r.to)}</div>
       <h2>${byId[r.from].label} is ${r.rel} ${byId[r.to].label}</h2>
@@ -1900,12 +1998,18 @@ function renderCompare() {
         ? ` All of them take the same data and reward sources: see ${nodeRef(famId)}.` : ""}</p>`;
   }
   const tabs = `<div class="tabs cmp-tabs">${CMP_FAMS.map(f => `<button class="${c.fam === f ? "on" : ""}" data-cmp-fam="${f}">${byId["f-" + f].label}</button>`).join("")}
-    <button class="${mixed ? "on" : ""}" data-cmp-pairs="1">Related pairs</button></div>`;
-  const pairs = mixed ? `<div class="pills cmp-pairs">${CROSS_PAIRS().map(i => { const r = RELATIONS[i];
+    <button class="${mixed && !c.mix ? "on" : ""}" data-cmp-pairs="1">Related pairs</button>
+    <button class="${c.mix ? "on" : ""}" data-cmp-mix="1">Mix &amp; match</button></div>`;
+  const full = c.mix && c.ids.length >= 4;
+  const mixPick = c.mix ? `<div class="cmp-mix">${CMP_FAMS.map(f => `<div class="fam">${FAM_MECH[f].order.map(id => {
+      const on = c.ids.includes(id);
+      return `<button class="chip${on ? " on" : ""}" style="--c:${FAM_MECH[f].color}" data-cmp-mixtoggle="${id}"${!on && full ? " disabled" : ""}><span class="sw" style="background:${FAM_MECH[f].color}"></span>${byId[id].label}</button>`; }).join("")}</div>`).join("")}</div>
+    <div class="cmp-mix-note">Up to four at once${full ? " · remove one to add another" : ""}.</div>` : "";
+  const pairs = mixed && !c.mix ? `<div class="pills cmp-pairs">${CROSS_PAIRS().map(i => { const r = RELATIONS[i];
     return `<button class="chip${i === c.rel ? " on" : ""}" style="--c:#e9d8a6" data-cmp-rel="${i}">${byId[r.from].label} ≈ ${byId[r.to].label}</button>`; }).join("")}</div>` : "";
   CMP.innerHTML = `${tabs}
     <div class="cmp-bar">
-      <div class="cmp-intro">${intro}${pairs}</div>
+      <div class="cmp-intro">${intro}${pairs}${mixPick}</div>
       ${mixed ? "" : `<div class="pills">${F.order.map(id => `<button class="chip${c.ids.includes(id) ? " on" : ""}" style="--c:var(--fc)" data-cmp-toggle="${id}">${byId[id].label}</button>`).join("")}</div>`}
     </div>
     <div class="cmp-cols">${[c.ref, ...c.ids.filter(x => x !== c.ref)].map(id => {
@@ -1928,6 +2032,13 @@ CMP.addEventListener("click", ev => {
   else if (t.dataset.cmpRel) openRelCompare(+t.dataset.cmpRel);
   else if (t.dataset.cmpFam) openCompare("f-" + t.dataset.cmpFam);
   else if (t.dataset.cmpPairs) openRelCompare(CROSS_PAIRS()[0]);
+  else if (t.dataset.cmpMix) openMix(state.lastMix ? state.lastMix.ids : ["m-sft", "m-dpo", "m-grpo"]);
+  else if (t.dataset.cmpMixtoggle) {
+    const id = t.dataset.cmpMixtoggle;
+    const ids = c.ids.includes(id) ? (c.ids.length > 1 ? c.ids.filter(x => x !== id) : c.ids) : [...c.ids, id];
+    const ref = ids.includes(c.ref) ? c.ref : ids[0];
+    openMix([ref, ...ids.filter(x => x !== ref)]);
+  }
   else if (t.dataset.node) { closeCompare(); select(t.dataset.node); }
   else if (t.dataset.recipe) { closeCompare(); toggleRecipe(t.dataset.recipe); }
   else if (t.dataset.cmpToggle) {
@@ -1939,8 +2050,163 @@ CMP.addEventListener("click", ev => {
   }
 });
 
+// ---- Search: labels, recipes, stages, summaries, and the names readers arrive with
+const SRCH = $("search"), SQ = $("sq"), SRES = $("sres");
+const norm = t => t.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[-–—]/g, " ").replace(/\s+/g, " ").trim();
+function scoreText(text, q) {
+  const t = norm(text);
+  if (t === q) return 100;
+  if (t.startsWith(q)) return 80;
+  if (q.length >= 2 && (t.includes(" " + q) || t.includes("(" + q))) return 60;
+  if (q.length >= 3 && t.includes(q)) return 40;
+  return 0;
+}
+const KIND_NAME = { source: "Source", data: "Data", scorer: "Reward source", family: "Learning signal", method: "Update rule", stage: "Pipeline stage" };
+function searchResults(raw) {
+  const q = norm(raw), out = [];
+  if (!q) {
+    return [...ALIASES.map(a => ({ t: "alias", id: a.id, s: 0 })), ...["m-grpo", "m-dpo", "m-opd"].map(id => ({ t: "node", id, s: 0 })), { t: "recipe", id: "r1", s: 0 }];
+  }
+  for (const a of ALIASES) { const s = Math.max(...a.terms.map(x => scoreText(x, q))); if (s) out.push({ t: "alias", id: a.id, s: s + 5 }); }
+  for (const n of NODES) {
+    let s = scoreText(n.label, q);
+    if (n.kind === "stage") s = Math.max(s, scoreText(RECIPE[n.rid].name + " " + n.label, q) * 0.8, q.length >= 4 ? scoreText(n.st.s, q) * 0.5 : 0);
+    if (!s && q.length >= 4 && n.summary && norm(n.summary).includes(q)) s = 15;
+    if (s) out.push({ t: "node", id: n.id, s: n.kind === "stage" ? s * 0.6 : s });
+  }
+  for (const [terms, id] of SYNONYMS) {
+    let best = 0, term = "";
+    for (const x of terms) { const s = scoreText(x, q) * (x.length <= 4 && norm(x) !== q ? 0.5 : 0.9); if (s > best) { best = s; term = x; } }
+    if (best) out.push({ t: "syn", id, term, s: best });
+  }
+  for (const r of RECIPES) { const s = scoreText(r.name, q); if (s) out.push({ t: "recipe", id: r.id, s: s + 2 }); }
+  // keep the best hit per target
+  const seen = new Map();
+  for (const r of out.sort((a, b) => b.s - a.s)) { const k = r.t === "syn" ? "node:" + r.id : r.t + ":" + r.id; if (!seen.has(k)) seen.set(k, r); }
+  return [...seen.values()].slice(0, 9);
+}
+let srchHits = [], srchAct = 0;
+function renderSearch() {
+  srchHits = searchResults(SQ.value);
+  if (srchAct >= srchHits.length) srchAct = 0;
+  const row = (h, i) => {
+    let label, sub, kd, color;
+    if (h.t === "alias") { const a = ALIAS_BY_ID[h.id]; label = a.name; sub = a.long + " · a combination of parts"; kd = "Name"; color = "var(--reward)"; }
+    else if (h.t === "recipe") { const r = RECIPE[h.id]; label = r.name; sub = `Published recipe, ${r.year} · open in Pipelines`; kd = "Recipe"; color = r.color; }
+    else {
+      const n = byId[h.id];
+      color = n.kind === "stage" ? RECIPE[n.rid].color : colorOf(n);
+      label = h.t === "syn" ? h.term : n.kind === "stage" ? `${RECIPE[n.rid].name} · ${n.i + 1}. ${n.label}` : n.label;
+      sub = h.t === "syn" ? `→ ${n.label}` : n.kind === "stage" ? n.st.s : (n.summary || "").split(". ")[0];
+      kd = KIND_NAME[n.kind] || n.kind;
+    }
+    return `<li><button class="${i === srchAct ? "act" : ""}" data-hit="${i}"><span class="sw" style="background:${color}"></span><span>${label}</span><span class="sub">${sub}</span><span class="kd">${kd}</span></button></li>`;
+  };
+  SRES.innerHTML = srchHits.length ? (SQ.value.trim() ? "" : `<li class="grp">Try</li>`) + srchHits.map(row).join("")
+    : `<li class="empty">Nothing matches “${SQ.value}”. Try a method (GRPO), a name (RLHF), or a recipe (Kimi K3).</li>`;
+}
+function openSearch() { SRCH.hidden = false; SQ.value = ""; srchAct = 0; renderSearch(); SQ.focus(); }
+function closeSearch() { SRCH.hidden = true; }
+function goHit(h) {
+  closeSearch();
+  if (state.compare) closeCompare();
+  if (h.t === "alias") return openAlias(h.id);
+  if (h.t === "recipe") { state.sel = null; state.alias = null; state.recipes = [h.id]; syncChips(); applyLens("pipes"); refresh(); renderPanel(); return; }
+  select(h.id);
+}
+$("srchbtn").onclick = openSearch;
+SQ.addEventListener("input", () => { srchAct = 0; renderSearch(); });
+SQ.addEventListener("keydown", ev => {
+  if (ev.key === "ArrowDown") { srchAct = Math.min(srchAct + 1, srchHits.length - 1); renderSearch(); ev.preventDefault(); }
+  else if (ev.key === "ArrowUp") { srchAct = Math.max(srchAct - 1, 0); renderSearch(); ev.preventDefault(); }
+  else if (ev.key === "Enter") { if (srchHits[srchAct]) goHit(srchHits[srchAct]); ev.preventDefault(); }
+  else if (ev.key === "Escape") { closeSearch(); ev.stopPropagation(); ev.preventDefault(); }
+});
+SRES.addEventListener("click", ev => { const b = ev.target.closest("button[data-hit]"); if (b) goHit(srchHits[+b.dataset.hit]); });
+SRCH.addEventListener("click", ev => { if (ev.target === SRCH) closeSearch(); });
+document.addEventListener("keydown", ev => {
+  const typing = /^(INPUT|TEXTAREA)$/.test(document.activeElement?.tagName);
+  if ((ev.metaKey || ev.ctrlKey) && ev.key.toLowerCase() === "k") { ev.preventDefault(); SRCH.hidden ? openSearch() : closeSearch(); }
+  else if (ev.key === "/" && !typing && SRCH.hidden) { ev.preventDefault(); openSearch(); }
+});
+
+// A named combination: its own panel, and its path lit on the map
+function openAlias(id) {
+  if (state.compare) closeCompare();
+  state.sel = null; state.recipes = []; syncChips(); state.alias = id;
+  if (state.lens !== "flow") applyLens("flow");
+  refresh(); renderPanel();
+}
+function renderAliasPanel() {
+  const A = ALIAS_BY_ID[state.alias];
+  P.innerHTML = `<button class="back" data-clear="1">← overview</button>
+    <div class="kind" style="color:var(--reward)">A name for a combination of parts</div>
+    <h2>${A.name}</h2><p class="note">${A.long}</p><p>${A.text}</p>${A.cite ? `<p>${citeTxt(A.cite)}</p>` : ""}
+    <h3>The parts, lit on the map</h3>${pillList(A.path)}
+    <h3>A recipe that uses it</h3><div class="pills">${recipeChip(A.recipe)}</div>`;
+}
+
+// ---- URL: the view lives in the hash, so it can be linked to and back/forward work
+let hashLock = false, hashT = null;
+const MIX_ORDER = () => CMP_FAMS.flatMap(f => FAM_MECH[f].order);
+function hashFor() {
+  const p = [];
+  if (state.lens !== "flow") p.push("lens=" + state.lens);
+  if (state.alias) p.push("q=" + state.alias);
+  else if (state.sel) p.push("sel=" + state.sel);
+  if (state.recipes.length) p.push("recipes=" + state.recipes.join(","));
+  if (state.showRel) p.push("rel=1");
+  const c = state.compare;
+  if (c) p.push("cmp=" + (c.fam || (c.mix ? "mix" : "pair-" + c.rel)), "cols=" + c.ids.join(","), "ref=" + c.ref);
+  return p.join("&");
+}
+function syncHash() {
+  if (hashLock) return;
+  clearTimeout(hashT);
+  hashT = setTimeout(() => {                                  // one history entry per interaction, not per step
+    const h = hashFor();
+    if (h !== location.hash.slice(1)) history.pushState(null, "", h ? "#" + h : location.pathname + location.search);
+  }, 0);
+}
+function applyHash() {
+  const p = new URLSearchParams(location.hash.slice(1));
+  hashLock = true;
+  try {
+    const lens = p.get("lens") || "flow";
+    if (LAYOUT[lens] && lens !== state.lens) applyLens(lens);
+    if (p.get("rel") === "1" !== state.showRel) setRel(p.get("rel") === "1");
+    const q = p.get("q"), sel = p.get("sel");
+    state.recipes = (p.get("recipes") || "").split(",").filter(r => RECIPE[r]).slice(0, 3); syncChips();
+    if (q && ALIAS_BY_ID[q]) { state.sel = null; state.alias = q; refresh(); renderPanel(); }
+    else { state.alias = null; select(sel && byId[sel] ? sel : null); }
+    const cmp = p.get("cmp"), cols = (p.get("cols") || "").split(",").filter(id => MECH[id] && !MECH[id].generic);
+    if (cmp && cols.length) {
+      let c;
+      if (FAM_MECH[cmp]) c = { fam: cmp, ids: FAM_MECH[cmp].order.filter(x => cols.includes(x)) };
+      else if (cmp.startsWith("pair-") && RELATIONS[+cmp.slice(5)]) c = { fam: null, rel: +cmp.slice(5), ids: cols };
+      else c = { fam: null, mix: true, ids: MIX_ORDER().filter(x => cols.includes(x)) };
+      c.ref = c.ids.includes(p.get("ref")) ? p.get("ref") : c.ids[0];
+      state.compare = state.lastCompare = c; renderCompare();
+    } else if (state.compare) closeCompare();
+  } finally { hashLock = false; }
+}
+window.addEventListener("popstate", applyHash);
+
+// ---- Mix & match: any methods, any family, compared on their profile strips
+function openMix(ids) {
+  const order = MIX_ORDER(), pick = order.filter(x => ids.includes(x)).slice(0, 4);
+  state.compare = state.lastCompare = state.lastMix = { fam: null, mix: true, ids: pick, ref: ids.find(x => pick.includes(x)) || pick[0] };
+  renderCompare();
+}
+
 P.addEventListener("click", ev => {
   const t = ev.target.closest("button"); if (!t) return;
+  if ("mechPin" in t.dataset) {                              // pin a swap (a second tap on the pinned one unpins)
+    const card = P.querySelector(".mech"), id = t.dataset.mechPin;
+    card.dataset.pin = card.dataset.pin === id ? "" : id;
+    card.dataset.show = "\u0000";                            // force a redraw
+    return mechShow(card.dataset.pin || "__base");
+  }
   if (t.dataset.compare) openCompare(t.dataset.compare);
   else if (t.dataset.cmpRel) openRelCompare(+t.dataset.cmpRel);
   else if (t.dataset.node) select(t.dataset.node);
@@ -1983,7 +2249,10 @@ svg.addEventListener("wheel", ev => {
 $("zin").onclick = () => zoomAt(svg.clientWidth / 2, svg.clientHeight / 2, 1.25);
 $("zout").onclick = () => zoomAt(svg.clientWidth / 2, svg.clientHeight / 2, 0.8);
 $("zfit").onclick = () => { if (lastLayout) tween(Object.fromEntries(NODES.map(n => [n.id, { ...cur[n.id] }])), fitFor(lastLayout.pos, lastLayout.deco), 400); };
-document.addEventListener("keydown", ev => { if (ev.key === "Escape") { if (state.compare) closeCompare(); else select(null); } });
+document.addEventListener("keydown", ev => {
+  if (ev.key !== "Escape") return;
+  if (!SRCH.hidden) closeSearch(); else if (state.compare) closeCompare(); else select(null);
+});
 // ---- resizable side panel
 (() => {
   const app = document.querySelector(".app"), handle = $("resizer");
@@ -2029,6 +2298,7 @@ function init() {
   LENSES.forEach(l => {
     const b = document.createElement("button"); b.textContent = l.label; b.dataset.lens = l.id;
     b.onclick = () => { if (state.compare) closeCompare(); applyLens(l.id); };   // a lens click should never look dead
+    if (l.id === "time") { const d = document.createElement("span"); d.className = "tabsep"; d.setAttribute("aria-hidden", "true"); $("tabs").appendChild(d); }
     $("tabs").appendChild(b);
   });
   RECIPES.forEach(r => {
@@ -2039,6 +2309,8 @@ function init() {
   buildNodes();
   applyLens("flow", false);
   renderPanel();
+  if (location.hash.length > 1) applyHash();                 // arriving from a link
+  history.replaceState(null, "", location.hash || location.pathname + location.search);
 }
 Promise.race([document.fonts.ready, new Promise(r => setTimeout(r, 1500))]).then(init);
 </script>
