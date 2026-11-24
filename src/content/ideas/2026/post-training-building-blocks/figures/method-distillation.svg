@@ -1,0 +1,287 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2000 960" width="2000" height="960" role="img" aria-labelledby="title">
+  <title id="title">Teacher distributions: offline and on-policy distillation</title>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#e8e8e8"/>
+    </marker>
+    <marker id="arrow-dim" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#9a9fa7"/>
+    </marker>
+    <style>
+      .bg { fill: #0f1115; }
+      .box { fill: #0f1115; stroke: #e8e8e8; stroke-width: 2.5; }
+      .trained { fill: #161a22; stroke: #e8e8e8; stroke-width: 4.5; }
+      .frozen { fill: #14161b; stroke: #8c919a; stroke-width: 2.5; }
+      .data { fill: #0f1115; stroke: #b8bcc3; stroke-width: 2; }
+      .data-back { fill: #0f1115; stroke: #4a4f57; stroke-width: 2; }
+      .dash { stroke-dasharray: 12 8; }
+      .group { fill: none; stroke: #6b7079; stroke-width: 2; stroke-dasharray: 6 8; }
+      .inner { fill: none; stroke: #4a4f57; stroke-width: 2; }
+      .rule { stroke: #2a2e35; stroke-width: 2; }
+      .rl { stroke: #8c919a; stroke-width: 3; stroke-linecap: round; }
+      .line { fill: none; stroke: #e8e8e8; stroke-width: 2.5; }
+      .line-dash { fill: none; stroke: #e8e8e8; stroke-width: 2.5; stroke-dasharray: 12 8; }
+      .line-dim { fill: none; stroke: #9a9fa7; stroke-width: 2; stroke-dasharray: 6 6; }
+      .title { font-family: Inter, "Helvetica Neue", Helvetica, Arial, sans-serif; font-weight: 700; font-size: 29px; fill: #f2f2f2; text-anchor: middle; }
+      .sub { font-family: Inter, "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 22px; fill: #a3a8b0; text-anchor: middle; }
+      .item { font-family: Inter, "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 22px; fill: #d4d6da; }
+      .ftitle { font-family: Inter, "Helvetica Neue", Helvetica, Arial, sans-serif; font-weight: 700; font-size: 34px; fill: #f2f2f2; }
+      .desc { font-family: Inter, "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 23px; fill: #a3a8b0; }
+      .num { font-family: "IBM Plex Mono", Menlo, Consolas, "Courier New", monospace; font-size: 20px; fill: #e8e8e8; text-anchor: middle; }
+      .lab { font-family: Inter, "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 21px; fill: #d4d6da; }
+      .mono { font-family: "IBM Plex Mono", Menlo, Consolas, "Courier New", monospace; font-size: 18px; letter-spacing: 3.5px; fill: #8c919a; }
+      .head { font-family: "IBM Plex Mono", Menlo, Consolas, "Courier New", monospace; font-size: 21px; letter-spacing: 4px; fill: #d4d6da; }
+      .tag { font-family: "IBM Plex Mono", Menlo, Consolas, "Courier New", monospace; font-size: 14px; letter-spacing: 3px; fill: #8c919a; text-anchor: middle; }
+      .tag-on { fill: #e8e8e8; }
+      .code { font-family: "IBM Plex Mono", Menlo, Consolas, "Courier New", monospace; font-size: 22px; font-weight: 700; fill: #8c919a; text-anchor: middle; }
+      .note { font-family: "IBM Plex Mono", Menlo, Consolas, "Courier New", monospace; font-size: 18px; fill: #8c919a; }
+    </style>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="2000" height="960"/>
+
+  <text class="ftitle" x="60" y="66" text-anchor="start">Teacher distributions: “here's what I would have said.”</text>
+  <text class="desc" x="60" y="108" text-anchor="start">Same teacher, same student. The rows swap which model writes the text and which one reads it.</text>
+  <rect x="320" y="150" width="330" height="790" rx="10" fill="#161921"/>
+  <rect x="1110" y="150" width="360" height="790" rx="10" fill="#161921"/>
+  <text class="mono" x="485.0" y="182" text-anchor="middle">WRITES THE TEXT</text>
+  <path d="M340,204 L340,195 L630,195 L630,204" fill="none" stroke="#4a4f57" stroke-width="2"/>
+  <text class="mono" x="875.0" y="182" text-anchor="middle">THE TEXT</text>
+  <path d="M690,204 L690,195 L1060,195 L1060,204" fill="none" stroke="#4a4f57" stroke-width="2"/>
+  <text class="mono" x="1290.0" y="182" text-anchor="middle">READS IT</text>
+  <path d="M1130,204 L1130,195 L1450,195 L1450,204" fill="none" stroke="#4a4f57" stroke-width="2"/>
+  <text class="mono" x="1710.0" y="182" text-anchor="middle">LOSS</text>
+  <path d="M1500,204 L1500,195 L1920,195 L1920,204" fill="none" stroke="#4a4f57" stroke-width="2"/>
+  <text class="head" x="60" y="260" text-anchor="start">OFFLINE</text>
+  <text class="desc" x="60" y="292" text-anchor="start">teacher writes, student reads</text>
+  <rect class="data-back" x="74" y="321" width="230" height="130" rx="6"/>
+  <rect class="data-back" x="67" y="328" width="230" height="130" rx="6"/>
+  <rect class="data" x="60" y="335" width="230" height="130" rx="6"/>
+  <rect x="84" y="374.0" width="42" height="52" rx="4" fill="#0f1115" stroke="#b8bcc3" stroke-width="2"/>
+  <line class="rl" x1="93" y1="387.0" x2="110.3" y2="387.0"/>
+  <line class="rl" x1="93" y1="400.0" x2="106.2" y2="400.0"/>
+  <line class="rl" x1="93" y1="413.0" x2="108.8" y2="413.0"/>
+  <text class="title" x="209.0" y="394.0" text-anchor="middle">Prompts</text>
+  <text class="sub" x="209.0" y="428.0" text-anchor="middle">x</text>
+  <path class="line" d="M290,400 L336,400" marker-end="url(#arrow)"/>
+  <rect class="frozen" x="340" y="335" width="290" height="130" rx="6"/>
+  <line x1="363.5" y1="380.5" x2="396.0" y2="370.8" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="363.5" y1="380.5" x2="396.0" y2="390.2" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="363.5" y1="380.5" x2="396.0" y2="409.8" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="363.5" y1="380.5" x2="396.0" y2="429.2" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="363.5" y1="400.0" x2="396.0" y2="370.8" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="363.5" y1="400.0" x2="396.0" y2="390.2" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="363.5" y1="400.0" x2="396.0" y2="409.8" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="363.5" y1="400.0" x2="396.0" y2="429.2" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="363.5" y1="419.5" x2="396.0" y2="370.8" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="363.5" y1="419.5" x2="396.0" y2="390.2" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="363.5" y1="419.5" x2="396.0" y2="409.8" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="363.5" y1="419.5" x2="396.0" y2="429.2" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="396.0" y1="370.8" x2="428.5" y2="380.5" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="396.0" y1="370.8" x2="428.5" y2="400.0" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="396.0" y1="370.8" x2="428.5" y2="419.5" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="396.0" y1="390.2" x2="428.5" y2="380.5" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="396.0" y1="390.2" x2="428.5" y2="400.0" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="396.0" y1="390.2" x2="428.5" y2="419.5" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="396.0" y1="409.8" x2="428.5" y2="380.5" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="396.0" y1="409.8" x2="428.5" y2="400.0" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="396.0" y1="409.8" x2="428.5" y2="419.5" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="396.0" y1="429.2" x2="428.5" y2="380.5" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="396.0" y1="429.2" x2="428.5" y2="400.0" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="396.0" y1="429.2" x2="428.5" y2="419.5" stroke="#3d4249" stroke-width="1.43"/>
+  <circle cx="363.5" cy="380.5" r="5.5" fill="#0f1115" stroke="#8c919a" stroke-width="2.08"/>
+  <circle cx="363.5" cy="400.0" r="5.5" fill="#0f1115" stroke="#8c919a" stroke-width="2.08"/>
+  <circle cx="363.5" cy="419.5" r="5.5" fill="#0f1115" stroke="#8c919a" stroke-width="2.08"/>
+  <circle cx="396.0" cy="370.8" r="5.5" fill="#0f1115" stroke="#8c919a" stroke-width="2.08"/>
+  <circle cx="396.0" cy="390.2" r="5.5" fill="#0f1115" stroke="#8c919a" stroke-width="2.08"/>
+  <circle cx="396.0" cy="409.8" r="5.5" fill="#0f1115" stroke="#8c919a" stroke-width="2.08"/>
+  <circle cx="396.0" cy="429.2" r="5.5" fill="#0f1115" stroke="#8c919a" stroke-width="2.08"/>
+  <circle cx="428.5" cy="380.5" r="5.5" fill="#0f1115" stroke="#8c919a" stroke-width="2.08"/>
+  <circle cx="428.5" cy="400.0" r="5.5" fill="#0f1115" stroke="#8c919a" stroke-width="2.08"/>
+  <circle cx="428.5" cy="419.5" r="5.5" fill="#0f1115" stroke="#8c919a" stroke-width="2.08"/>
+  <text class="tag" x="529.0" y="363">FROZEN</text>
+  <text class="title" x="529.0" y="411.0" text-anchor="middle">Teacher</text>
+  <text class="sub" x="529.0" y="445.0" text-anchor="middle">stronger model</text>
+  <path class="line" d="M630,400 L686,400" marker-end="url(#arrow)"/>
+  <rect class="data-back" x="704" y="321" width="370" height="130" rx="6"/>
+  <rect class="data-back" x="697" y="328" width="370" height="130" rx="6"/>
+  <rect class="data" x="690" y="335" width="370" height="130" rx="6"/>
+  <rect x="714" y="374.0" width="42" height="52" rx="4" fill="#0f1115" stroke="#b8bcc3" stroke-width="2"/>
+  <line class="rl" x1="723" y1="387.0" x2="740.3" y2="387.0"/>
+  <line class="rl" x1="723" y1="400.0" x2="736.2" y2="400.0"/>
+  <line class="rl" x1="723" y1="413.0" x2="738.8" y2="413.0"/>
+  <text class="title" x="909.0" y="394.0" text-anchor="middle">Teacher's answers</text>
+  <text class="sub" x="909.0" y="428.0" text-anchor="middle">written once</text>
+  <path class="line" d="M1060,400 L1126,400" marker-end="url(#arrow)"/>
+  <rect class="trained" x="1130" y="335" width="320" height="130" rx="6"/>
+  <line x1="1153.5" y1="380.5" x2="1186.0" y2="370.8" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="1153.5" y1="380.5" x2="1186.0" y2="390.2" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="1153.5" y1="380.5" x2="1186.0" y2="409.8" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="1153.5" y1="380.5" x2="1186.0" y2="429.2" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="1153.5" y1="400.0" x2="1186.0" y2="370.8" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="1153.5" y1="400.0" x2="1186.0" y2="390.2" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="1153.5" y1="400.0" x2="1186.0" y2="409.8" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="1153.5" y1="400.0" x2="1186.0" y2="429.2" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="1153.5" y1="419.5" x2="1186.0" y2="370.8" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="1153.5" y1="419.5" x2="1186.0" y2="390.2" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="1153.5" y1="419.5" x2="1186.0" y2="409.8" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="1153.5" y1="419.5" x2="1186.0" y2="429.2" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="1186.0" y1="370.8" x2="1218.5" y2="380.5" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="1186.0" y1="370.8" x2="1218.5" y2="400.0" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="1186.0" y1="370.8" x2="1218.5" y2="419.5" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="1186.0" y1="390.2" x2="1218.5" y2="380.5" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="1186.0" y1="390.2" x2="1218.5" y2="400.0" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="1186.0" y1="390.2" x2="1218.5" y2="419.5" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="1186.0" y1="409.8" x2="1218.5" y2="380.5" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="1186.0" y1="409.8" x2="1218.5" y2="400.0" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="1186.0" y1="409.8" x2="1218.5" y2="419.5" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="1186.0" y1="429.2" x2="1218.5" y2="380.5" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="1186.0" y1="429.2" x2="1218.5" y2="400.0" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="1186.0" y1="429.2" x2="1218.5" y2="419.5" stroke="#6b7079" stroke-width="1.43"/>
+  <circle cx="1153.5" cy="380.5" r="5.5" fill="#e8e8e8" stroke="#e8e8e8" stroke-width="2.08"/>
+  <circle cx="1153.5" cy="400.0" r="5.5" fill="#e8e8e8" stroke="#e8e8e8" stroke-width="2.08"/>
+  <circle cx="1153.5" cy="419.5" r="5.5" fill="#e8e8e8" stroke="#e8e8e8" stroke-width="2.08"/>
+  <circle cx="1186.0" cy="370.8" r="5.5" fill="#e8e8e8" stroke="#e8e8e8" stroke-width="2.08"/>
+  <circle cx="1186.0" cy="390.2" r="5.5" fill="#e8e8e8" stroke="#e8e8e8" stroke-width="2.08"/>
+  <circle cx="1186.0" cy="409.8" r="5.5" fill="#e8e8e8" stroke="#e8e8e8" stroke-width="2.08"/>
+  <circle cx="1186.0" cy="429.2" r="5.5" fill="#e8e8e8" stroke="#e8e8e8" stroke-width="2.08"/>
+  <circle cx="1218.5" cy="380.5" r="5.5" fill="#e8e8e8" stroke="#e8e8e8" stroke-width="2.08"/>
+  <circle cx="1218.5" cy="400.0" r="5.5" fill="#e8e8e8" stroke="#e8e8e8" stroke-width="2.08"/>
+  <circle cx="1218.5" cy="419.5" r="5.5" fill="#e8e8e8" stroke="#e8e8e8" stroke-width="2.08"/>
+  <text class="tag tag-on" x="1334.0" y="363">TRAINED</text>
+  <text class="title" x="1334.0" y="411.0" text-anchor="middle">Student</text>
+  <text class="sub" x="1334.0" y="445.0" text-anchor="middle">π<tspan baseline-shift="sub" font-size="0.7em">θ</tspan></text>
+  <path class="line" d="M1450,400 L1496,400" marker-end="url(#arrow)"/>
+  <rect class="box" x="1500" y="335" width="420" height="130" rx="6"/>
+  <text class="title" x="1710.0" y="394.0" text-anchor="middle">Next-token loss</text>
+  <text class="sub" x="1710.0" y="428.0" text-anchor="middle">on the teacher's tokens</text>
+  <path class="line-dash" d="M1710,335 L1710,300 L1290,300 L1290,331" marker-end="url(#arrow)"/>
+  <text class="mono" x="1500.0" y="288" text-anchor="middle">gradient</text>
+  <text class="mono" x="1500" y="491" text-anchor="start">SIGNAL</text>
+  <rect x="1500" y="505" width="30" height="30" rx="6" fill="#1d5b86" stroke="#3a3f47" stroke-width="1.5"/>
+  <rect x="1536" y="505" width="30" height="30" rx="6" fill="#194565" stroke="#3a3f47" stroke-width="1.5"/>
+  <rect x="1572" y="505" width="30" height="30" rx="6" fill="#2276af" stroke="#3a3f47" stroke-width="1.5"/>
+  <rect x="1608" y="505" width="30" height="30" rx="6" fill="#1a4b6d" stroke="#3a3f47" stroke-width="1.5"/>
+  <rect x="1644" y="505" width="30" height="30" rx="6" fill="#18405c" stroke="#3a3f47" stroke-width="1.5"/>
+  <rect x="1680" y="505" width="30" height="30" rx="6" fill="#2791d8" stroke="#3a3f47" stroke-width="1.5"/>
+  <rect x="1716" y="505" width="30" height="30" rx="6" fill="#1c557e" stroke="#3a3f47" stroke-width="1.5"/>
+  <rect x="1752" y="505" width="30" height="30" rx="6" fill="#194565" stroke="#3a3f47" stroke-width="1.5"/>
+  <rect x="1788" y="505" width="30" height="30" rx="6" fill="#206b9e" stroke="#3a3f47" stroke-width="1.5"/>
+  <rect x="1824" y="505" width="30" height="30" rx="6" fill="#1a4b6d" stroke="#3a3f47" stroke-width="1.5"/>
+  <text class="note" x="60" y="520" text-anchor="start">Variant: match the teacher's full</text>
+  <text class="note" x="60" y="546" text-anchor="start">next-token distribution.</text>
+  <text class="head" x="60" y="620" text-anchor="start">ON-POLICY</text>
+  <text class="desc" x="60" y="652" text-anchor="start">student writes, teacher reads</text>
+  <rect class="data-back" x="74" y="681" width="230" height="130" rx="6"/>
+  <rect class="data-back" x="67" y="688" width="230" height="130" rx="6"/>
+  <rect class="data" x="60" y="695" width="230" height="130" rx="6"/>
+  <rect x="84" y="734.0" width="42" height="52" rx="4" fill="#0f1115" stroke="#b8bcc3" stroke-width="2"/>
+  <line class="rl" x1="93" y1="747.0" x2="110.3" y2="747.0"/>
+  <line class="rl" x1="93" y1="760.0" x2="106.2" y2="760.0"/>
+  <line class="rl" x1="93" y1="773.0" x2="108.8" y2="773.0"/>
+  <text class="title" x="209.0" y="754.0" text-anchor="middle">Prompts</text>
+  <text class="sub" x="209.0" y="788.0" text-anchor="middle">x</text>
+  <path class="line" d="M290,760 L336,760" marker-end="url(#arrow)"/>
+  <rect class="trained" x="340" y="695" width="290" height="130" rx="6"/>
+  <line x1="363.5" y1="740.5" x2="396.0" y2="730.8" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="363.5" y1="740.5" x2="396.0" y2="750.2" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="363.5" y1="740.5" x2="396.0" y2="769.8" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="363.5" y1="740.5" x2="396.0" y2="789.2" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="363.5" y1="760.0" x2="396.0" y2="730.8" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="363.5" y1="760.0" x2="396.0" y2="750.2" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="363.5" y1="760.0" x2="396.0" y2="769.8" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="363.5" y1="760.0" x2="396.0" y2="789.2" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="363.5" y1="779.5" x2="396.0" y2="730.8" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="363.5" y1="779.5" x2="396.0" y2="750.2" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="363.5" y1="779.5" x2="396.0" y2="769.8" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="363.5" y1="779.5" x2="396.0" y2="789.2" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="396.0" y1="730.8" x2="428.5" y2="740.5" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="396.0" y1="730.8" x2="428.5" y2="760.0" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="396.0" y1="730.8" x2="428.5" y2="779.5" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="396.0" y1="750.2" x2="428.5" y2="740.5" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="396.0" y1="750.2" x2="428.5" y2="760.0" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="396.0" y1="750.2" x2="428.5" y2="779.5" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="396.0" y1="769.8" x2="428.5" y2="740.5" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="396.0" y1="769.8" x2="428.5" y2="760.0" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="396.0" y1="769.8" x2="428.5" y2="779.5" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="396.0" y1="789.2" x2="428.5" y2="740.5" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="396.0" y1="789.2" x2="428.5" y2="760.0" stroke="#6b7079" stroke-width="1.43"/>
+  <line x1="396.0" y1="789.2" x2="428.5" y2="779.5" stroke="#6b7079" stroke-width="1.43"/>
+  <circle cx="363.5" cy="740.5" r="5.5" fill="#e8e8e8" stroke="#e8e8e8" stroke-width="2.08"/>
+  <circle cx="363.5" cy="760.0" r="5.5" fill="#e8e8e8" stroke="#e8e8e8" stroke-width="2.08"/>
+  <circle cx="363.5" cy="779.5" r="5.5" fill="#e8e8e8" stroke="#e8e8e8" stroke-width="2.08"/>
+  <circle cx="396.0" cy="730.8" r="5.5" fill="#e8e8e8" stroke="#e8e8e8" stroke-width="2.08"/>
+  <circle cx="396.0" cy="750.2" r="5.5" fill="#e8e8e8" stroke="#e8e8e8" stroke-width="2.08"/>
+  <circle cx="396.0" cy="769.8" r="5.5" fill="#e8e8e8" stroke="#e8e8e8" stroke-width="2.08"/>
+  <circle cx="396.0" cy="789.2" r="5.5" fill="#e8e8e8" stroke="#e8e8e8" stroke-width="2.08"/>
+  <circle cx="428.5" cy="740.5" r="5.5" fill="#e8e8e8" stroke="#e8e8e8" stroke-width="2.08"/>
+  <circle cx="428.5" cy="760.0" r="5.5" fill="#e8e8e8" stroke="#e8e8e8" stroke-width="2.08"/>
+  <circle cx="428.5" cy="779.5" r="5.5" fill="#e8e8e8" stroke="#e8e8e8" stroke-width="2.08"/>
+  <text class="tag tag-on" x="529.0" y="723">TRAINED</text>
+  <text class="title" x="529.0" y="771.0" text-anchor="middle">Student</text>
+  <text class="sub" x="529.0" y="805.0" text-anchor="middle">π<tspan baseline-shift="sub" font-size="0.7em">θ</tspan></text>
+  <path class="line" d="M630,760 L686,760" marker-end="url(#arrow)"/>
+  <rect class="data" x="690" y="695" width="370" height="130" rx="6"/>
+  <rect x="714" y="734.0" width="42" height="52" rx="4" fill="#0f1115" stroke="#b8bcc3" stroke-width="2"/>
+  <line class="rl" x1="723" y1="747.0" x2="740.3" y2="747.0"/>
+  <line class="rl" x1="723" y1="760.0" x2="736.2" y2="760.0"/>
+  <line class="rl" x1="723" y1="773.0" x2="738.8" y2="773.0"/>
+  <text class="title" x="909.0" y="754.0" text-anchor="middle">Student's answer</text>
+  <text class="sub" x="909.0" y="788.0" text-anchor="middle">fresh each step</text>
+  <path class="line" d="M1060,760 L1126,760" marker-end="url(#arrow)"/>
+  <rect class="frozen" x="1130" y="695" width="320" height="130" rx="6"/>
+  <line x1="1153.5" y1="740.5" x2="1186.0" y2="730.8" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="1153.5" y1="740.5" x2="1186.0" y2="750.2" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="1153.5" y1="740.5" x2="1186.0" y2="769.8" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="1153.5" y1="740.5" x2="1186.0" y2="789.2" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="1153.5" y1="760.0" x2="1186.0" y2="730.8" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="1153.5" y1="760.0" x2="1186.0" y2="750.2" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="1153.5" y1="760.0" x2="1186.0" y2="769.8" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="1153.5" y1="760.0" x2="1186.0" y2="789.2" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="1153.5" y1="779.5" x2="1186.0" y2="730.8" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="1153.5" y1="779.5" x2="1186.0" y2="750.2" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="1153.5" y1="779.5" x2="1186.0" y2="769.8" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="1153.5" y1="779.5" x2="1186.0" y2="789.2" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="1186.0" y1="730.8" x2="1218.5" y2="740.5" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="1186.0" y1="730.8" x2="1218.5" y2="760.0" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="1186.0" y1="730.8" x2="1218.5" y2="779.5" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="1186.0" y1="750.2" x2="1218.5" y2="740.5" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="1186.0" y1="750.2" x2="1218.5" y2="760.0" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="1186.0" y1="750.2" x2="1218.5" y2="779.5" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="1186.0" y1="769.8" x2="1218.5" y2="740.5" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="1186.0" y1="769.8" x2="1218.5" y2="760.0" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="1186.0" y1="769.8" x2="1218.5" y2="779.5" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="1186.0" y1="789.2" x2="1218.5" y2="740.5" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="1186.0" y1="789.2" x2="1218.5" y2="760.0" stroke="#3d4249" stroke-width="1.43"/>
+  <line x1="1186.0" y1="789.2" x2="1218.5" y2="779.5" stroke="#3d4249" stroke-width="1.43"/>
+  <circle cx="1153.5" cy="740.5" r="5.5" fill="#0f1115" stroke="#8c919a" stroke-width="2.08"/>
+  <circle cx="1153.5" cy="760.0" r="5.5" fill="#0f1115" stroke="#8c919a" stroke-width="2.08"/>
+  <circle cx="1153.5" cy="779.5" r="5.5" fill="#0f1115" stroke="#8c919a" stroke-width="2.08"/>
+  <circle cx="1186.0" cy="730.8" r="5.5" fill="#0f1115" stroke="#8c919a" stroke-width="2.08"/>
+  <circle cx="1186.0" cy="750.2" r="5.5" fill="#0f1115" stroke="#8c919a" stroke-width="2.08"/>
+  <circle cx="1186.0" cy="769.8" r="5.5" fill="#0f1115" stroke="#8c919a" stroke-width="2.08"/>
+  <circle cx="1186.0" cy="789.2" r="5.5" fill="#0f1115" stroke="#8c919a" stroke-width="2.08"/>
+  <circle cx="1218.5" cy="740.5" r="5.5" fill="#0f1115" stroke="#8c919a" stroke-width="2.08"/>
+  <circle cx="1218.5" cy="760.0" r="5.5" fill="#0f1115" stroke="#8c919a" stroke-width="2.08"/>
+  <circle cx="1218.5" cy="779.5" r="5.5" fill="#0f1115" stroke="#8c919a" stroke-width="2.08"/>
+  <text class="tag" x="1334.0" y="723">FROZEN</text>
+  <text class="title" x="1334.0" y="771.0" text-anchor="middle">Teacher</text>
+  <text class="sub" x="1334.0" y="805.0" text-anchor="middle">scores each token</text>
+  <path class="line" d="M1450,760 L1496,760" marker-end="url(#arrow)"/>
+  <rect class="box" x="1500" y="695" width="420" height="130" rx="6"/>
+  <text class="title" x="1710.0" y="754.0" text-anchor="middle">Per-token reward</text>
+  <text class="sub" x="1710.0" y="788.0" text-anchor="middle">log p<tspan baseline-shift="sub" font-size="0.7em">T</tspan>(y<tspan baseline-shift="sub" font-size="0.7em">t</tspan>) − log p<tspan baseline-shift="sub" font-size="0.7em">S</tspan>(y<tspan baseline-shift="sub" font-size="0.7em">t</tspan>)</text>
+  <path class="line-dash" d="M1710,695 L1710,660 L485,660 L485,691" marker-end="url(#arrow)"/>
+  <text class="mono" x="1090" y="648" text-anchor="middle">gradient</text>
+  <text class="mono" x="1500" y="851" text-anchor="start">SIGNAL</text>
+  <rect x="1500" y="865" width="30" height="30" rx="6" fill="#1a4b6d" stroke="#3a3f47" stroke-width="1.5"/>
+  <rect x="1536" y="865" width="30" height="30" rx="6" fill="#865c26" stroke="#3a3f47" stroke-width="1.5"/>
+  <rect x="1572" y="865" width="30" height="30" rx="6" fill="#18405c" stroke="#3a3f47" stroke-width="1.5"/>
+  <rect x="1608" y="865" width="30" height="30" rx="6" fill="#1b5075" stroke="#3a3f47" stroke-width="1.5"/>
+  <rect x="1644" y="865" width="30" height="30" rx="6" fill="#173a54" stroke="#3a3f47" stroke-width="1.5"/>
+  <rect x="1680" y="865" width="30" height="30" rx="6" fill="#d18b31" stroke="#3a3f47" stroke-width="1.5"/>
+  <rect x="1716" y="865" width="30" height="30" rx="6" fill="#194565" stroke="#3a3f47" stroke-width="1.5"/>
+  <rect x="1752" y="865" width="30" height="30" rx="6" fill="#ac732b" stroke="#3a3f47" stroke-width="1.5"/>
+  <rect x="1788" y="865" width="30" height="30" rx="6" fill="#18405c" stroke="#3a3f47" stroke-width="1.5"/>
+  <rect x="1824" y="865" width="30" height="30" rx="6" fill="#1a4b6d" stroke="#3a3f47" stroke-width="1.5"/>
+</svg>
