@@ -181,7 +181,7 @@ There are dozens of named post-training algorithms, and most of the names descri
   state="hl=f-pref,m-dpo,m-ipo,m-kto,m-simpo,s-rm&zoom=scorer,family,method"
   desc="preferences lit, leading to DPO, IPO, KTO and SimPO, with the reward model also lit.">
 
-**Preferences: "this one, not that one."** The model sees a prompt with two responses, one marked better. Direct preference optimization (DPO) and its relatives push up the probability of the chosen response relative to the rejected one [@rafailov2023dpo]. This is preference tuning. You don't have to say what a perfect answer looks like, only which of two is better, which is often much easier for a person to judge. KTO, one of those relatives, works from single responses labelled good or bad, with no pairing. The same comparisons can instead train a separate reward model, which is how classical RLHF used them.
+**Preferences: "this one, not that one."** The model sees a prompt with two responses, one marked better. Direct preference optimization (DPO) and its relatives push up the probability of the chosen response relative to the rejected one [@rafailov2023dpo]. This is preference tuning. You don't have to say what a perfect answer looks like, only which of two is better, which is often much easier for a person to judge. KTO, one of those relatives, works from single responses labelled good or bad, with no pairing [@ethayarajh2024kto]. The same comparisons can instead train a separate reward model, which is how classical RLHF used them.
 
 </MapStep>
 
@@ -285,9 +285,9 @@ The last view isn't a training signal, but it shows where the learning happens. 
 > [!note]- Inside the RL box: what separates PPO, GRPO, and the rest
 > Most of the algorithm zoo lives in the scalar-reward family, and it's where I got lost first. What helped was noticing that the named algorithms mostly differ on two design choices.
 >
-> **"Better than what?"** A reward of 0.7 doesn't say much on its own. The model needs a baseline, an estimate of what's typical for this prompt, to tell whether 0.7 was good. PPO trains a second network, a critic, to predict it. GRPO [@shao2024deepseekmath] and RLOO [@ahmadian2024backtobasics] drop the critic and use the scores of other attempts at the same prompt as the baseline. Dropping the critic saves a lot of memory and engineering, which is a big part of why GRPO spread so fast after DeepSeek used it.
+> **"Better than what?"** A reward of 0.7 doesn't say much on its own. The model needs a baseline, an estimate of what's typical for this prompt, to tell whether 0.7 was good. PPO trains a second network, a critic, to predict it [@schulman2017ppo]. GRPO [@shao2024deepseekmath] and RLOO [@ahmadian2024backtobasics] drop the critic and use the scores of other attempts at the same prompt as the baseline. Dropping the critic saves a lot of memory and engineering, which is a big part of why GRPO spread so fast after DeepSeek used it.
 >
-> **"How far should one update move the model?"** PPO, GRPO, GSPO, and CISPO all clip something to keep one batch of rollouts from pushing the model too far, and they differ mostly in what they clip. PPO and GRPO clip each token's update, GSPO clips per sequence, and CISPO clips the importance-sampling weights (the correction for rollouts coming from a slightly older copy of the model) while still letting every token contribute to the gradient.
+> **"How far should one update move the model?"** PPO, GRPO, GSPO, and CISPO all clip something to keep one batch of rollouts from pushing the model too far, and they differ mostly in what they clip. PPO and GRPO clip each token's update, GSPO clips per sequence [@zheng2025gspo], and CISPO clips the importance-sampling weights (the correction for rollouts coming from a slightly older copy of the model) while still letting every token contribute to the gradient [@minimax2025m1].
 >
 > That's about as deep as I think you need to go to read a technical report. The RLHF book's policy-gradient chapter has the details [@lambert2025rlhfbook].
 
@@ -350,11 +350,11 @@ Teacher supervision is output from a stronger model, either sampled text or full
 
 </ScrollyMap>
 
-Here's what real rows from public datasets look like, one per shape except teacher supervision, which is mostly generated on the fly.
+Here's what real rows from public datasets look like: one each for demonstrations and evaluative annotations, and two kinds of reward-ready task. Teacher supervision is left out because it's mostly generated on the fly.
 
 <DataExamplesFigure
   id="data-examples"
-  caption="Real examples from public post-training data. The first three rows are copied verbatim from their datasets; the environment card summarizes one task from ART·E, an email-search environment described below, and its grader. Teacher supervision is left out because it's usually computed during training rather than stored."
+  caption="Real examples from public post-training data. The first three cards are copied verbatim from their datasets; the environment card summarizes one task from ART·E, an email-search environment described below, and its grader. Teacher supervision is left out because it's usually computed during training rather than stored."
 />
 
 Real data is messier than the categories suggest. The preference pair above is typical of Anthropic's HH-RLHF dataset: two short, imperfect answers, with a crowdworker's judgment of which is better. Single labels are noisy too. In another pair from the same dataset, someone asks for Cardi B's real name, and the *rejected* answer is the one that gets it right (Belcalis Almanzar). Preference data works in bulk because the noise averages out over many comparisons.
@@ -461,7 +461,7 @@ Here's where the lego metaphor earns its keep. Data and methods don't pair up on
   state="sel=d-ratings&zoom=data,method"
   desc="ratings and rankings selected, with everything they can reach lit: scorers, learning signals and most of the update rules.">
 
-Suppose you want a model that summarizes scientific papers accurately. You sample four summaries from your current model and have an expert rate them: A gets 5/5, B gets 4/5, C overstates the findings and gets 2/5, D makes up a result and gets 1/5. That one batch of ratings can drive almost every method in the previous section.
+Suppose you want a model that summarizes scientific papers accurately. You sample four summaries from your current model and have an expert rate them: A gets 5/5, B gets 4/5, C overstates the findings and gets 2/5, D makes up a result and gets 1/5. That one batch of ratings can drive almost every method on the map.
 
 </MapStep>
 
@@ -518,7 +518,7 @@ Distillation is the odd one out. It doesn't use the ratings at all. Offline dist
   state="hl=d-ratings,d-pairs,d-rollouts,f-demo,f-pref,s-rm,f-reward&labels=1&zoom=data,method"
   desc="ratings, preference pairs and the model's rollouts lit, with the reward model and three learning signals, and each edge between them named for the transformation it makes.">
 
-Four transformations do most of this work: **filtering** turns scored samples into demonstrations, **comparing** turns them into preference pairs, **training a reward model** turns preferences into a scorer that generalizes, and **scoring fresh samples** turns that scorer into on-policy rewards. This is why a company that sells preference labels can end up powering an RL run, even though its annotators never produce a reward.
+Four transformations do most of this work: **filtering** turns scored samples into demonstrations, **comparing** turns them into preference pairs, **training a reward model** turns ratings or preferences into a scorer that generalizes, and **scoring fresh samples** turns that scorer into on-policy rewards. This is why a company that sells preference labels can end up powering an RL run, even though its annotators never produce a reward.
 
 </MapStep>
 
