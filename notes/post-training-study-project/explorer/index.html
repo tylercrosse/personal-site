@@ -180,7 +180,7 @@ a.cite:hover { color: var(--text); text-decoration-color: currentColor; }
 .edge.t { stroke-dasharray: 4 4; }
 .subarc { fill: none; stroke: var(--sub); stroke-width: 1.3; stroke-dasharray: 2 4; opacity: .8; }
 .elabel text { font-size: 10.5px; fill: var(--text-2); }
-.elabel rect { fill: var(--bg); opacity: .92; }
+.elabel rect { fill: var(--bg); opacity: .92; stroke-width: .75; stroke-opacity: .7; }
 .colhead { font-size: 11px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; fill: var(--faint); }
 .axislbl { font-size: 12px; font-weight: 600; fill: var(--muted); }
 .axissub { font-size: 11px; fill: var(--faint); }
@@ -364,7 +364,8 @@ aside .prof li, .prof li { margin: 0 0 2px; color: var(--text-2); white-space: n
    1. ?theme=graphite|black|solarized|light in the URL (a host page pinning it; "dark" means solarized),
    2. inside a same-origin page that sets data-effective-theme on <html> (the site), follow that page live,
    3. the reader's last pick from the header menu,
-   4. the OS preference.
+   4. on the site, the site's own stored theme (light → light, dark → solarized),
+   5. the OS preference.
    A host page can also switch it at any time: iframe.contentWindow.postMessage({ type: "pt-explorer:theme", theme }, "*"). */
 (() => {
   const THEMES = ["graphite", "black", "solarized", "light"], ALIAS = { dark: "solarized" };
@@ -382,8 +383,19 @@ aside .prof li, .prof li { margin: 0 0 2px; color: var(--text-2); white-space: n
     follow();
     new MutationObserver(follow).observe(host, { attributes: true, attributeFilter: ["data-effective-theme"] });
   } else {
-    let saved = null; try { saved = localStorage.getItem(T.KEY); } catch (e) {}
-    T.set(THEMES.includes(saved) ? saved : matchMedia("(prefers-color-scheme: light)").matches ? "light" : "graphite");
+    // Standalone. On the site (served under /ideas/), a reader who hasn't picked a theme here gets the
+    // site's: its stored light/dark/system choice (localStorage "theme"), mapped as for a host page.
+    const onSite = location.pathname.startsWith("/ideas/");
+    const pick = () => {
+      let saved = null, site = null;
+      try { saved = localStorage.getItem(T.KEY); site = localStorage.getItem("theme"); } catch (e) {}
+      if (THEMES.includes(saved)) return saved;
+      const light = site === "light" || site === "dark" ? site === "light" : matchMedia("(prefers-color-scheme: light)").matches;
+      return light ? "light" : onSite ? "solarized" : "graphite";
+    };
+    T.set(pick());
+    // follow the site's toggle from another tab, until the reader picks a theme here
+    if (onSite) window.addEventListener("storage", ev => { if (ev.key === "theme" || ev.key === T.KEY) T.set(pick()); });
   }
   window.addEventListener("message", ev => {
     if (ev.data && ev.data.type === "pt-explorer:theme") { T.hosted = true; T.set(ev.data.theme); }
@@ -1085,6 +1097,8 @@ const state = { lens: "flow", sel: null, alias: null, hover: null, recipes: [], 
 const EMBED = document.documentElement.classList.contains("embed");
 const REDUCED = matchMedia("(prefers-reduced-motion: reduce)");
 const GHOST = 0.07;   // opacity of parts a reveal hasn't reached yet
+let viewParams = new URLSearchParams(location.hash.slice(1));   // the view being shown, as hash params
+let driven = false;   // an embed's host page has sent it a view
 const cur = {}; // id -> {x,y,o}
 let view = { k: 1, tx: 0, ty: 0 };
 let animating = false;
@@ -1165,7 +1179,7 @@ function anchorPath(a, b, lr) {
     c1x = x1; c1y = y1 + dy; c2x = x2; c2y = y2 - dy;
   }
   return { d: `M${x1},${y1} C${c1x},${c1y} ${c2x},${c2y} ${x2},${y2}`,
-    mx: (x1 + 3 * c1x + 3 * c2x + x2) / 8, my: (y1 + 3 * c1y + 3 * c2y + y2) / 8 };
+    mx: (x1 + 3 * c1x + 3 * c2x + x2) / 8, my: (y1 + 3 * c1y + 3 * c2y + y2) / 8, bz: [x1, y1, c1x, c1y, c2x, c2y, x2, y2] };
 }
 
 function rectExit(n, tx, ty) {
@@ -1245,8 +1259,8 @@ function frame() {
     else op = lit ? 0.9 : 0;
     op *= vis;
     if (op < 0.01) { e.p.setAttribute("opacity", 0); continue; }
-    const { d, mx, my } = anchorPath(a, b, lr);
-    e.mx = mx; e.my = my;
+    const { d, mx, my, bz } = anchorPath(a, b, lr);
+    e.mx = mx; e.my = my; e.bz = bz;
     e.p.setAttribute("d", d);
     e.p.setAttribute("opacity", op);
     e.p.style.stroke = (lit ? (e.type === "make" ? "var(--ink-2)" : colorOf(b.kind === "family" || b.kind === "method" ? b : (b.kind === "scorer" ? b : a))) : "var(--faint)");
@@ -1403,15 +1417,64 @@ function renderLabels() {
   const focus = state.sel || state.hover;
   const which = focus ? adjEdges : state.hl && state.labels ? litEdges : null;   // labels=1 names a highlight's edges
   if (!which) return;
-  for (const e of which) {
-    if (!e.via || !litEdges.has(e)) continue;
-    if (Math.min(cur[e.from].o, cur[e.to].o) < 0.5) continue;
-    if (e.mx == null) continue;
-    const g = el("g", { class: "elabel", transform: `translate(${e.mx},${e.my})` }, G.labels);
+  const todo = [...which].filter(e => e.via && litEdges.has(e) && e.bz && Math.min(cur[e.from].o, cur[e.to].o) >= 0.5);
+  if (!todo.length) return;
+  // A label should read as its own edge's, not a neighbouring box's or edge's. Where its edge is the only
+  // lit one leaving its source (or entering its target), the label sits on the edge right against that
+  // box: "Reward model ─[RLHF]─". Otherwise it slides along its own edge to the spot farthest from
+  // every other lit edge, leaning toward the end the edge doesn't share: by the source when several
+  // labelled edges meet at one target, by the target when one source fans out. Never onto a box or
+  // another label.
+  const at = (bz, t) => { const [x1, y1, ax, ay, bx, by, x2, y2] = bz, u = 1 - t;
+    return { x: u * u * u * x1 + 3 * u * u * t * ax + 3 * u * t * t * bx + t * t * t * x2, y: u * u * u * y1 + 3 * u * u * t * ay + 3 * u * t * t * by + t * t * t * y2 }; };
+  const visible = NODES.filter(n => cur[n.id].o > 0.5);
+  const boxes = visible.filter(n => !litNodes || litNodes.has(n.id)).map(n => ({ id: n.id, x: cur[n.id].x, y: cur[n.id].y, w: n.w + 6, h: n.h + 4 }));
+  const placed = [...boxes];
+  const faint = visible.filter(n => litNodes && !litNodes.has(n.id)).map(n => ({ x: cur[n.id].x, y: cur[n.id].y, w: n.w, h: n.h }));
+  const others = [...litEdges].filter(e => e.bz && e.p.getAttribute("opacity") > 0.2);
+  const samples = new Map(others.map(e => [e, Array.from({ length: 25 }, (_, i) => at(e.bz, i / 24))]));
+  const fanIn = {}, fanOut = {}, litIn = {}, litOut = {};
+  todo.forEach(e => { fanIn[e.to] = (fanIn[e.to] || 0) + 1; fanOut[e.from] = (fanOut[e.from] || 0) + 1; });
+  others.forEach(e => { litIn[e.to] = (litIn[e.to] || 0) + 1; litOut[e.from] = (litOut[e.from] || 0) + 1; });
+  const sideways = e => e.bz[3] === e.bz[1] && e.bz[5] === e.bz[7];
+  const anchored = e => sideways(e) && (litOut[e.from] === 1 || litIn[e.to] === 1);
+  todo.sort((a, b) => anchored(b) - anchored(a));   // labels that can sit against a box claim their spot first
+  const gap = (r, b) => Math.hypot(Math.max(Math.abs(b.x - r.x) - (b.w + r.w) / 2, 0), Math.max(Math.abs(b.y - r.y) - (b.h + r.h) / 2, 0));
+  const over = (r, b) => Math.abs(b.x - r.x) < (b.w + r.w) / 2 && Math.abs(b.y - r.y) < (b.h + r.h) / 2;
+  const overlap = (r, b) => Math.max(0, (b.w + r.w) / 2 - Math.abs(b.x - r.x)) * Math.max(0, (b.h + r.h) / 2 - Math.abs(b.y - r.y));
+  for (const e of todo) {
+    const w = textW(e.via, "400 10.5px Inter, system-ui, sans-serif") + 10, h = 16;
+    const nIn = fanIn[e.to], nOut = fanOut[e.from];
+    const pref = nIn > 1 && nIn >= nOut ? 0.22 : nOut > 1 ? 0.78 : 0.5;
+    const [x1, y1, , , , , x2, y2] = e.bz, dir = Math.sign(x2 - x1);
+    const spots = [];   // [t, x, y, bonus]
+    if (sideways(e) && litOut[e.from] === 1) spots.push([0, x1 + dir * (4 + w / 2), y1, 25]);
+    if (sideways(e) && litIn[e.to] === 1) spots.push([1, x2 - dir * (4 + w / 2), y2, 25]);
+    for (const dy of [0, 17, -17]) for (let t = 0.06; t < 0.95; t += 0.04) { const p = at(e.bz, t); spots.push([t, p.x, p.y + dy, dy ? -14 : 0]); }
+    let best = null, least = null;   // the best clear spot; failing that, the one covering the least
+    for (const [t, sx, sy, bonus] of spots) {
+      const r = { x: sx, y: sy, w, h };
+      const covered = placed.reduce((a, b) => a + overlap(r, b), 0);
+      if (covered) { if (!least || covered < least.covered) least = { ...r, covered }; continue; }
+      let clear = 40;   // distance from the label to the nearest other lit edge, capped
+      for (const [o, pts] of samples) {
+        if (o === e) continue;
+        for (const q of pts) {
+          const d = Math.hypot(Math.max(Math.abs(q.x - r.x) - w / 2, 0), Math.max(Math.abs(q.y - r.y) - h / 2, 0));
+          if (d < clear) clear = d;
+        }
+      }
+      // right up against some other box, a label reads as that box's
+      const near = Math.min(14, ...boxes.filter(b => b.id !== e.from && b.id !== e.to).map(b => gap(r, b)));
+      const score = clear + bonus - 30 * Math.abs(t - pref) - (faint.some(b => over(r, b)) ? 12 : 0) - 2 * (14 - near);
+      if (!best || score > best.score) best = { ...r, score };
+    }
+    const { x, y } = best || least;
+    placed.push({ x, y, w, h });
+    const g = el("g", { class: "elabel", transform: `translate(${x},${y})` }, G.labels);
     const t = el("text", { x: 0, y: 0.5, "text-anchor": "middle", "dominant-baseline": "central" }, g);
     t.textContent = e.via;
-    const w = textW(e.via, "400 10.5px Inter, system-ui, sans-serif") + 10;
-    g.insertBefore(el("rect", { x: -w / 2, y: -8, width: w, height: 16, rx: 3 }), t);
+    g.insertBefore(el("rect", { x: -w / 2, y: -h / 2, width: w, height: h, rx: 3, style: `stroke:${e.p.style.stroke}` }), t);
   }
 }
 
@@ -1439,9 +1502,11 @@ function fitFor(pos, deco, roomRight = true) {
     else if (d.t === "line") add(Math.min(d.x1, d.x2), d.y1 - 2, Math.max(d.x1, d.x2), d.y2 + 2);
   }
   // room on the right for substitute arcs and same-column recipe routes
-  if (roomRight && (state.lens === "flow" || state.lens === "time")) x1 += 110;
+  // (an embed needs it only when its view draws them: recipe routes, or a selection's substitutes)
+  const arcs = !EMBED || state.recipes.length || byId[viewParams.get("sel")]?.subs;
+  if (roomRight && arcs && (state.lens === "flow" || state.lens === "time")) x1 += 110;
   const legend = state.recipes.length && state.lens !== "pipes";   // an embed shows only the recipe legend
-  const W = svg.clientWidth, H = svg.clientHeight - (EMBED ? (legend ? 40 : 8) : 56), pad = EMBED ? 18 : 36;
+  const W = svg.clientWidth, H = svg.clientHeight - (EMBED ? (legend ? 40 : 8) : 56), pad = EMBED ? 18 : 36;   // 56: the recipe bar
   const bw = x1 - x0 + pad * 2, bh = y1 - y0 + pad * 2;
   const k = Math.max(EMBED ? 0.2 : 0.3, Math.min(W / bw, H / bh, 1.3));
   return { k, tx: (W - (x1 - x0) * k) / 2 - x0 * k, ty: (H - (y1 - y0) * k) / 2 - y0 * k + 4 };
@@ -1492,7 +1557,8 @@ function applyLens(id, animate = true) {
     target[n.id] = p ? { x: p.x, y: p.y, o: shown(n) ? 1 : GHOST } : { x: c.x, y: c.y, o: 0 };
   }
   const tv = fitView(pos, deco);
-  if (!animate || REDUCED.matches) { cancelAnimationFrame(raf); animating = false; Object.assign(cur, target); view = tv; refresh(); return; }
+  // an embed showing a fixed view (a figure) lands on it; one a host page drives moves between views
+  if (!animate || REDUCED.matches || (EMBED && !driven)) { cancelAnimationFrame(raf); animating = false; Object.assign(cur, target); view = tv; refresh(); return; }
   tween(target, tv);
 }
 
@@ -2735,7 +2801,7 @@ function syncHash() {
 }
 // Applies a view given as hash-style params; the URL hash by default, or a string from a host page
 function applyHash(str) {
-  const p = new URLSearchParams(typeof str === "string" ? str : location.hash.slice(1));
+  const p = viewParams = new URLSearchParams(typeof str === "string" ? str : location.hash.slice(1));
   const list = k => (p.get(k) || "").split(",").filter(Boolean);
   hashLock = true;
   try {
@@ -2776,6 +2842,7 @@ window.addEventListener("popstate", () => applyHash());
 let ready = false, pendingState = null;
 window.addEventListener("message", ev => {
   if (!ev.data || ev.data.type !== "pt-explorer:state" || typeof ev.data.state !== "string") return;
+  driven = true;
   if (ready) applyHash(ev.data.state); else pendingState = ev.data.state;
 });
 
