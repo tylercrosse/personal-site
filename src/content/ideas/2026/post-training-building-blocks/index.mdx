@@ -58,24 +58,24 @@ I've been working through Nathan Lambert's RLHF book [@lambert2025rlhfbook] and 
 </MapStep>
 
 <MapStep
-  state="hl=data,family&zoom=data,family"
-  desc="the learning-signal column named and lit: demonstrations, preferences, scalar rewards and teacher distributions, each fed by some of the data shapes.">
+  state="hl=data,scorer,family&zoom=data,family"
+  desc="the learning-signal column named and lit: demonstrations, preferences, scalar rewards and teacher distributions. Some data shapes feed a signal directly; others pass first through the column between them, the parts that turn data into a reward: a reward model, a process reward model, an LLM judge with a rubric, a program verifier and a live teacher.">
 
 - **A learning signal** derived from that data, which tells the model what better looks like.
 
 </MapStep>
 
 <MapStep
-  state="hl=family,method&mute=method&zoom=family,method"
-  desc="the update-rule column lit: seventeen update rules, named faintly, each joined to one of the four learning signals.">
+  state="hl=family,method&zoom=family,method"
+  desc="the update-rule column lit: fifteen update rules, from SFT and DPO to PPO, GRPO and on-policy distillation, each joined to the learning signal it mainly uses.">
 
 - **An update rule** that turns the signal into a change in the weights.
 
 </MapStep>
 
 <MapStep
-  state="recipes=instructgpt,k3&mute=scorer,method&zoom=data,method"
-  desc="two recipes, InstructGPT and Kimi K3, traced as numbered routes through the same parts. Each takes a different path.">
+  state="recipes=instructgpt,k3&route=stages&zoom=data,method"
+  desc="two recipes traced left to right through the parts, one line per stage, each numbered where it ends. InstructGPT: 1, demonstrations to the demonstrations signal and SFT; 2, ratings and rankings train a reward model; 3, prompts and the model's own rollouts, scored by that reward model, give scalar rewards for PPO. Kimi K3: 1, agent trajectories to SFT; 2, verifiable tasks, interactive environments and rollouts, scored by a program verifier and an LLM judge, give scalar rewards; 3, the model's own rollouts, scored by a live teacher, give teacher distributions for on-policy distillation.">
 
 A recipe is a particular assembly of those parts. Labs rearrange them every few months, a growing industry sells them, and the choices show up in how the finished model behaves.
 
