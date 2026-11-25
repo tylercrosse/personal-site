@@ -85,9 +85,11 @@ A recipe is a particular assembly of those parts. Labs rearrange them every few 
 
 ## What a pipeline looks like in 2026
 
+{/* D9: lead-in sentence goes here */}
+
 <PipelineFigure
   id="pipeline"
-  alt="Flow diagram. A generic pretraining row (pretraining, later pretraining, an optional midtraining stage, long-context extension) produces a base model, which goes through general SFT as a cold start for RL. One arrow leads to the student, trained with mixed-environment RLVR; another leads to a group of specialist teachers, one per domain (reasoning, agentic, general, and more), which start from the SFT model, the student, or each other. The student passes through an optional warmup of light SFT on the teachers' data. Teachers and student feed multi-teacher on-policy distillation, where the student writes and the matching teacher scores every token, producing the shipped model. A dashed iteration-2 arrow loops from distillation back to the whole teacher group."
+  alt="Flow diagram. On wide screens it first shows only the core path, a base model going through SFT, then RL, then distillation to a shipped model, and fills in the rest as it scrolls into view. Shaded bands mark the pretraining and post-training regions, with midtraining as a dashed slice of the pretraining band. A generic pretraining row (pretraining, later pretraining, an optional midtraining stage, long-context extension) produces a base model, which goes through general SFT as a cold start for RL. One arrow leads to the student, trained with mixed-environment RLVR; another leads to a group of specialist teachers, one per domain (reasoning, agentic, general, and more), which start from the SFT model, the student, or each other. The student passes through an optional warmup of light SFT on the teachers' data. Teachers and student feed multi-teacher on-policy distillation, where the student writes and the matching teacher scores every token, producing the shipped model. A dashed iteration-2 arrow loops from distillation back to the whole teacher group."
   caption="A simplified composite of recent open recipes; no single lab's pipeline looks exactly like this. The specialists-then-distillation shape follows Kimi K3 and Nemotron 3 Ultra. In Nemotron 3 Ultra, more than ten teachers start from different checkpoints, the student gets a brief SFT warmup on data from the teachers' training distributions, and the second round adds teachers initialized from the distilled student. Dashed boxes are steps only some recipes use."
 />
 

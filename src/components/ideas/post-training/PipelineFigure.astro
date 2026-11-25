@@ -10,11 +10,19 @@
  * green = demonstrations (SFT), purple = scalar rewards (RL), blue = teacher
  * distributions (distillation). Pretraining stays neutral. Specialist
  * teachers get the map's split border because each one gets SFT or RL.
- * Dashed boxes are steps only some recipes use.
+ * Dashed boxes are steps only some recipes use. Quiet shaded bands mark the
+ * pretraining and post-training regions, with a dashed midtraining slice.
  *
  * Two drawings of the same graph: a wide one that breaks out of the text
  * column on desktop, and a vertical one for phones. A container query picks
  * one, so a narrow column never shrinks the wide drawing past legibility.
+ *
+ * Simple first: on the wide drawing, the script stages the figure before it
+ * scrolls into view so it shows only the "core" parts (base model, SFT, RL,
+ * distillation, shipped model) with plain labels, then fades the rest in
+ * once the reader has it on screen. The core boxes never move. The markup
+ * and CSS default to the full figure, so without JavaScript, under reduced
+ * motion, and on the vertical drawing the full figure shows statically.
  *
  * Name ends in "Figure" so remarkCrossRefs counts it; it shares
  * Astro.locals.figureCounter with Figure.astro so the printed number matches.
@@ -47,8 +55,19 @@ type Node = {
   sub?: string[];
   fam: Fam;
   dashed?: boolean;
+  /** Shown in the simple first state. */
+  core?: boolean;
+  /** Plain labels for the simple state; the full labels fade in over them. */
+  simple?: { title: string; sub?: string[] };
 };
-type Edge = { d: string; dashed?: boolean; tone?: "teacher" };
+type Edge = {
+  d: string;
+  dashed?: boolean;
+  tone?: "teacher";
+  core?: boolean;
+  /** Only drawn in the simple state (a shortcut the full figure routes around). */
+  simpleOnly?: boolean;
+};
 type Label = {
   x: number;
   y: number;
@@ -57,6 +76,17 @@ type Label = {
   rotate?: boolean;
   tone?: "teacher";
 };
+/** A shaded band behind a phase of training. */
+type Region = {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  kind: "pre" | "mid" | "post";
+  label: string;
+  lx: number;
+  ly: number;
+};
 type Layout = {
   key: string;
   w: number;
@@ -64,10 +94,17 @@ type Layout = {
   /** Title and subtitle sizes (px in viewBox units). */
   t: number;
   s: number;
+  regions: Region[];
   group: { x: number; y: number; w: number; h: number };
   nodes: Node[];
   edges: Edge[];
   labels: Label[];
+};
+
+const SIMPLE = {
+  sft: { title: "SFT", sub: ["learn from demonstrations"] },
+  rl: { title: "RL", sub: ["learn from rewards"] },
+  distill: { title: "Distillation", sub: ["learn from teachers"] },
 };
 
 // ---- wide: the original diagram's arrangement, ~1100 units across
@@ -77,121 +114,133 @@ const wide: Layout = {
   h: 690,
   t: 14.5,
   s: 12,
+  regions: [
+    { x: 0, y: 2, w: 1100, h: 102, kind: "pre", label: "Pretraining", lx: 16, ly: 19 },
+    { x: 572, y: 2, w: 254, h: 102, kind: "mid", label: "Midtraining · some recipes", lx: 586, ly: 19 },
+    { x: 0, y: 184, w: 1100, h: 438, kind: "post", label: "Post-training", lx: 16, ly: 201 },
+  ],
   group: { x: 50, y: 304, w: 690, h: 120 },
   nodes: [
     { x: 50, y: 36, w: 226, h: 52, title: "Pretraining", sub: ["broad web mix"], fam: "pre" },
     { x: 318, y: 36, w: 226, h: 52, title: "Later pretraining", sub: ["higher-quality mix"], fam: "pre" },
-    { x: 586, y: 36, w: 226, h: 52, title: "Midtraining", sub: ["math, code, IF (some recipes)"], fam: "pre", dashed: true },
+    { x: 586, y: 36, w: 226, h: 52, title: "Midtraining", sub: ["math, code, instruction following"], fam: "pre", dashed: true },
     { x: 854, y: 36, w: 226, h: 52, title: "Long context", sub: ["extension"], fam: "pre" },
-    { x: 485, y: 124, w: 160, h: 40, title: "Base model", fam: "model" },
-    { x: 465, y: 204, w: 200, h: 52, title: "General SFT", sub: ["cold start for RL"], fam: "sft" },
-    { x: 70, y: 342, w: 152, h: 52, title: "Reasoning", sub: ["math, code, STEM"], fam: "split" },
-    { x: 236, y: 342, w: 152, h: 52, title: "Agentic", sub: ["SWE, terminal, search"], fam: "split" },
-    { x: 402, y: 342, w: 152, h: 52, title: "General", sub: ["chat, IF, safety"], fam: "split" },
-    { x: 568, y: 342, w: 152, h: 52, title: "…", sub: ["office, tool use, more"], fam: "split", dashed: true },
-    { x: 850, y: 342, w: 230, h: 52, title: "Student", sub: ["mixed-environment RLVR"], fam: "rl" },
+    { x: 485, y: 124, w: 160, h: 40, title: "Base model", fam: "model", core: true },
+    { x: 465, y: 204, w: 200, h: 52, title: "General SFT", sub: ["cold start for RL"], fam: "sft", core: true, simple: SIMPLE.sft },
+    { x: 70, y: 338, w: 152, h: 60, title: "Reasoning", sub: ["math, code, STEM"], fam: "split" },
+    { x: 236, y: 338, w: 152, h: 60, title: "Agentic", sub: ["software engineering,", "terminal, search"], fam: "split" },
+    { x: 402, y: 338, w: 152, h: 60, title: "General", sub: ["chat, safety,", "instruction following"], fam: "split" },
+    { x: 568, y: 338, w: 152, h: 60, title: "…", sub: ["office, tool use, more"], fam: "split", dashed: true },
+    { x: 850, y: 342, w: 230, h: 52, title: "Student", sub: ["mixed-environment RLVR"], fam: "rl", core: true, simple: SIMPLE.rl },
     { x: 850, y: 444, w: 230, h: 52, title: "Warmup", sub: ["light SFT on the teachers' data"], fam: "sft", dashed: true },
     {
       x: 50, y: 548, w: 1030, h: 52,
       title: "Multi-teacher on-policy distillation",
       sub: ["the student writes; the matching teacher scores every token"],
       fam: "distill",
+      core: true,
+      simple: SIMPLE.distill,
     },
-    { x: 485, y: 640, w: 160, h: 40, title: "Shipped model", fam: "model" },
+    { x: 485, y: 640, w: 160, h: 40, title: "Shipped model", fam: "model", core: true },
   ],
   edges: [
     { d: "M276,62 H312" },
     { d: "M544,62 H580" },
     { d: "M812,62 H848" },
     { d: "M967,88 C967,132 780,144 651,144" },
-    { d: "M565,164 V198" },
-    { d: "M665,230 C905,230 965,262 965,336" },
+    { d: "M565,164 V198", core: true },
+    { d: "M665,230 C905,230 965,262 965,336", core: true },
     { d: "M565,256 C565,286 395,272 395,298" },
     { d: "M850,368 H746", dashed: true },
     { d: "M965,394 V438" },
-    { d: "M146,394 V542", tone: "teacher" },
-    { d: "M312,394 V542", tone: "teacher" },
-    { d: "M478,394 V542", tone: "teacher" },
-    { d: "M644,394 V542", dashed: true, tone: "teacher" },
+    { d: "M965,394 V542", simpleOnly: true },
+    { d: "M146,398 V542", tone: "teacher" },
+    { d: "M312,398 V542", tone: "teacher" },
+    { d: "M478,398 V542", tone: "teacher" },
+    { d: "M644,398 V542", dashed: true, tone: "teacher" },
     { d: "M965,496 V542" },
     { d: "M50,574 H34 Q24,574 24,564 V374 Q24,364 34,364 H44", dashed: true },
-    { d: "M565,600 V634" },
+    { d: "M565,600 V634", core: true },
   ],
   labels: [
-    { x: 50, y: 20, text: "Pretraining" },
-    { x: 50, y: 230, text: "Post-training" },
-    { x: 70, y: 324, text: "Specialist teachers · from SFT, the student, or each other" },
+    { x: 70, y: 322, text: "Specialist teachers · from SFT, the student, or each other" },
     { x: 798, y: 358, text: "Seeds some", anchor: "middle" },
     { x: 561, y: 478, text: "Per-token scores", anchor: "middle", tone: "teacher" },
     { x: 12, y: 469, text: "Iteration 2", anchor: "middle", rotate: true },
   ],
 };
 
-// ---- narrow: a vertical reflow for phones, ~350 units across
+// ---- narrow: a vertical reflow for phones, ~350 units across. The top rows
+// snake (left to right, then right to left) so midtraining gets its own slice.
 const narrow: Layout = {
   key: "n",
   w: 350,
-  h: 792,
+  h: 826,
   t: 13.5,
   s: 11.5,
-  group: { x: 26, y: 340, w: 172, h: 262 },
+  regions: [
+    { x: 0, y: 0, w: 350, h: 184, kind: "pre", label: "Pretraining", lx: 12, ly: 13 },
+    { x: 184, y: 88, w: 164, h: 86, kind: "mid", label: "Midtraining", lx: 194, ly: 99 },
+    { x: 0, y: 244, w: 350, h: 528, kind: "post", label: "Post-training", lx: 12, ly: 257 },
+  ],
+  group: { x: 26, y: 358, w: 172, h: 290 },
   nodes: [
-    { x: 26, y: 22, w: 150, h: 52, title: "Pretraining", sub: ["broad web mix"], fam: "pre" },
-    { x: 194, y: 22, w: 150, h: 52, title: "Later pretraining", sub: ["higher-quality mix"], fam: "pre" },
-    { x: 26, y: 100, w: 150, h: 52, title: "Midtraining", sub: ["math, code, IF", "(some recipes)"], fam: "pre", dashed: true },
-    { x: 194, y: 100, w: 150, h: 52, title: "Long context", sub: ["extension"], fam: "pre" },
-    { x: 115, y: 182, w: 140, h: 36, title: "Base model", fam: "model" },
-    { x: 95, y: 250, w: 180, h: 46, title: "General SFT", sub: ["cold start for RL"], fam: "sft" },
-    { x: 38, y: 398, w: 148, h: 42, title: "Reasoning", sub: ["math, code, STEM"], fam: "split" },
-    { x: 38, y: 448, w: 148, h: 42, title: "Agentic", sub: ["SWE, terminal, search"], fam: "split" },
-    { x: 38, y: 498, w: 148, h: 42, title: "General", sub: ["chat, IF, safety"], fam: "split" },
-    { x: 38, y: 548, w: 148, h: 42, title: "…", sub: ["office, tool use, more"], fam: "split", dashed: true },
-    { x: 222, y: 340, w: 122, h: 58, title: "Student", sub: ["mixed-environment", "RLVR"], fam: "rl" },
-    { x: 222, y: 446, w: 122, h: 58, title: "Warmup", sub: ["light SFT on the", "teachers' data"], fam: "sft", dashed: true },
+    { x: 26, y: 26, w: 150, h: 52, title: "Pretraining", sub: ["broad web mix"], fam: "pre" },
+    { x: 194, y: 26, w: 150, h: 52, title: "Later pretraining", sub: ["higher-quality mix"], fam: "pre" },
+    { x: 194, y: 110, w: 144, h: 56, title: "Midtraining", sub: ["math, code,", "instruction following"], fam: "pre", dashed: true },
+    { x: 26, y: 110, w: 150, h: 56, title: "Long context", sub: ["extension"], fam: "pre" },
+    { x: 115, y: 196, w: 140, h: 36, title: "Base model", fam: "model", core: true },
+    { x: 95, y: 268, w: 180, h: 46, title: "General SFT", sub: ["cold start for RL"], fam: "sft", core: true, simple: SIMPLE.sft },
+    { x: 38, y: 416, w: 148, h: 42, title: "Reasoning", sub: ["math, code, STEM"], fam: "split" },
+    { x: 38, y: 466, w: 148, h: 56, title: "Agentic", sub: ["software engineering,", "terminal, search"], fam: "split" },
+    { x: 38, y: 530, w: 148, h: 56, title: "General", sub: ["chat, safety,", "instruction following"], fam: "split" },
+    { x: 38, y: 594, w: 148, h: 42, title: "…", sub: ["office, tool use, more"], fam: "split", dashed: true },
+    { x: 222, y: 358, w: 122, h: 58, title: "Student", sub: ["mixed-environment", "RLVR"], fam: "rl", core: true, simple: SIMPLE.rl },
+    { x: 222, y: 464, w: 122, h: 58, title: "Warmup", sub: ["light SFT on the", "teachers' data"], fam: "sft", dashed: true },
     {
-      x: 26, y: 648, w: 318, h: 62,
+      x: 26, y: 694, w: 318, h: 62,
       title: "Multi-teacher on-policy distillation",
       sub: ["the student writes; the matching", "teacher scores every token"],
       fam: "distill",
+      core: true,
+      simple: SIMPLE.distill,
     },
-    { x: 115, y: 750, w: 140, h: 36, title: "Shipped model", fam: "model" },
+    { x: 115, y: 784, w: 140, h: 36, title: "Shipped model", fam: "model", core: true },
   ],
   edges: [
-    { d: "M176,48 H188" },
-    { d: "M269,74 C269,92 101,80 101,94" },
-    { d: "M176,126 H188" },
-    { d: "M269,152 C269,172 185,162 185,176" },
-    { d: "M185,218 V244" },
-    { d: "M240,296 C240,318 283,312 283,334" },
-    { d: "M130,296 C130,318 111,314 111,334" },
-    { d: "M222,369 H204", dashed: true },
-    { d: "M283,398 V440" },
-    { d: "M111,602 V642", tone: "teacher" },
-    { d: "M283,504 V642" },
-    { d: "M26,679 H22 Q14,679 14,671 V479 Q14,471 22,471 H24", dashed: true },
-    { d: "M185,710 V744" },
+    { d: "M176,52 H188" },
+    { d: "M320,78 V104" },
+    { d: "M194,138 H182" },
+    { d: "M101,166 C101,186 185,176 185,190" },
+    { d: "M185,232 V262", core: true },
+    { d: "M240,314 C240,336 283,330 283,352", core: true },
+    { d: "M130,314 C130,336 111,332 111,352" },
+    { d: "M222,387 H204", dashed: true },
+    { d: "M283,416 V458" },
+    { d: "M283,416 V688", simpleOnly: true },
+    { d: "M111,648 V688", tone: "teacher" },
+    { d: "M283,522 V688" },
+    { d: "M26,725 H22 Q14,725 14,717 V511 Q14,503 22,503 H24", dashed: true },
+    { d: "M185,756 V778", core: true },
   ],
   labels: [
-    { x: 26, y: 12, text: "Pretraining" },
-    { x: 26, y: 238, text: "Post-training" },
-    { x: 38, y: 358, text: "Specialist teachers" },
-    { x: 38, y: 372, text: "from SFT, the student," },
-    { x: 38, y: 386, text: "or each other" },
-    { x: 120, y: 626, text: "Per-token scores", tone: "teacher" },
-    { x: 6, y: 560, text: "Iteration 2", anchor: "middle", rotate: true },
+    { x: 38, y: 376, text: "Specialist teachers" },
+    { x: 38, y: 390, text: "from SFT, the student," },
+    { x: 38, y: 404, text: "or each other" },
+    { x: 120, y: 672, text: "Per-token scores", tone: "teacher" },
+    { x: 6, y: 610, text: "Iteration 2", anchor: "middle", rotate: true },
   ],
 };
 
 // Vertical positions of a node's title and subtitle lines.
-function textRows(n: Node, layout: Layout) {
+function textRows(n: { y: number; h: number }, sub: string[], layout: Layout) {
   const cy = n.y + n.h / 2;
-  const subs = n.sub ?? [];
   const lh = layout.s + 3;
-  const block = layout.t + subs.length * lh;
+  const block = layout.t + sub.length * lh;
   const top = cy - block / 2;
   return {
     title: top + layout.t / 2 + 1,
-    subs: subs.map((_, i) => top + layout.t + 3 + lh * i + layout.s / 2),
+    subs: sub.map((_, i) => top + layout.t + 3 + lh * i + layout.s / 2),
   };
 }
 
@@ -240,8 +289,17 @@ const layouts = [wide, narrow];
             </linearGradient>
           </defs>
 
+          {L.regions.map((r) => (
+            <g class:list={["pt-region", r.kind, "pt-extra", "lag-0"]}>
+              <rect x={r.x} y={r.y} width={r.w} height={r.h} rx={r.kind === "mid" ? 8 : 12} />
+              <text class="pt-region-label" x={r.lx} y={r.ly}>
+                {r.label}
+              </text>
+            </g>
+          ))}
+
           <rect
-            class="pt-group"
+            class="pt-group pt-extra lag-1"
             x={L.group.x}
             y={L.group.y}
             width={L.group.w}
@@ -251,16 +309,23 @@ const layouts = [wide, narrow];
 
           {L.edges.map((e) => (
             <path
-              class:list={["pt-edge", e.dashed && "dashed", e.tone]}
+              class:list={[
+                "pt-edge",
+                e.dashed && "dashed",
+                e.tone,
+                e.simpleOnly ? "pt-simple-only" : !e.core && "pt-extra lag-2",
+              ]}
               d={e.d}
               marker-end={`url(#pt-${L.key}-arr${e.tone === "teacher" ? "-t" : ""})`}
             />
           ))}
 
           {L.nodes.map((n) => {
-            const rows = textRows(n, L);
+            const full = textRows(n, n.sub ?? [], L);
+            const simple = n.simple && textRows(n, n.simple.sub ?? [], L);
+            const cx = n.x + n.w / 2;
             return (
-              <g class:list={["pt-node", n.fam, n.dashed && "dashed"]}>
+              <g class:list={["pt-node", n.fam, n.dashed && "dashed", !n.core && "pt-extra lag-1"]}>
                 <rect
                   x={n.x}
                   y={n.y}
@@ -269,21 +334,35 @@ const layouts = [wide, narrow];
                   rx={n.fam === "model" ? n.h / 2 : 6}
                   style={n.fam === "split" ? `stroke: url(#pt-${L.key}-split)` : undefined}
                 />
-                <text class="pt-title" x={n.x + n.w / 2} y={rows.title}>
-                  {n.title}
-                </text>
-                {(n.sub ?? []).map((line, i) => (
-                  <text class="pt-sub" x={n.x + n.w / 2} y={rows.subs[i]}>
-                    {line}
+                <g class:list={[n.simple && "pt-full-text"]}>
+                  <text class="pt-title" x={cx} y={full.title}>
+                    {n.title}
                   </text>
-                ))}
+                  {(n.sub ?? []).map((line, i) => (
+                    <text class="pt-sub" x={cx} y={full.subs[i]}>
+                      {line}
+                    </text>
+                  ))}
+                </g>
+                {n.simple && simple && (
+                  <g class="pt-simple-text">
+                    <text class="pt-title" x={cx} y={simple.title}>
+                      {n.simple.title}
+                    </text>
+                    {(n.simple.sub ?? []).map((line, i) => (
+                      <text class="pt-sub" x={cx} y={simple.subs[i]}>
+                        {line}
+                      </text>
+                    ))}
+                  </g>
+                )}
               </g>
             );
           })}
 
           {L.labels.map((l) => (
             <text
-              class:list={["pt-head", l.tone]}
+              class:list={["pt-head", l.tone, "pt-extra", "lag-2"]}
               x={l.x}
               y={l.y}
               text-anchor={l.anchor ?? "start"}
@@ -300,8 +379,8 @@ const layouts = [wide, narrow];
       <li><span class="sw sft"></span>SFT · demonstrations</li>
       <li><span class="sw rl"></span>RL · scalar rewards</li>
       <li><span class="sw distill"></span>Distillation · teacher distributions</li>
-      <li><span class="sw split"></span>SFT or RL, per teacher</li>
-      <li><span class="sw pre"></span>Pretraining</li>
+      <li class="pt-key-extra"><span class="sw split"></span>SFT or RL, per teacher</li>
+      <li class="pt-key-extra"><span class="sw pre"></span>Pretraining</li>
     </ul>
   </div>
   {
@@ -315,9 +394,10 @@ const layouts = [wide, narrow];
 </figure>
 
 <script>
+  const figures = document.querySelectorAll<HTMLElement>(".pt-figure");
+
   // While the wide drawing is on screen it runs under the desktop table of
   // contents; fade the ToC out, as ScrollyMap does for the map.
-  const figures = document.querySelectorAll<HTMLElement>(".pt-figure");
   if (figures.length && "IntersectionObserver" in window) {
     const visible = new Set<Element>();
     const io = new IntersectionObserver(
@@ -333,6 +413,61 @@ const layouts = [wide, narrow];
       { rootMargin: "-10% 0px -10% 0px" },
     );
     figures.forEach((f) => io.observe(f));
+  }
+
+  // Simple first. Stage the wide drawing (core boxes only) while it is still
+  // below the fold, then reveal the full figure once the reader has the
+  // drawing on screen. Staging is skipped whenever the reader might land on
+  // the figure directly; every path out of it ends in the full figure.
+  const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (!reduced && "IntersectionObserver" in window) {
+    figures.forEach((fig) => {
+      const svg = fig.querySelector<SVGSVGElement>(".pt-wide");
+      if (!svg || getComputedStyle(svg).display === "none") return;
+      if (fig.id && location.hash === `#${fig.id}`) return;
+      // Already on screen (or above it, e.g. a restored scroll position).
+      if (svg.getBoundingClientRect().top < window.innerHeight) return;
+
+      fig.classList.add("is-staged");
+
+      let dwell: number | undefined;
+      let settle: number | undefined;
+      const reveal = () => {
+        if (!fig.classList.contains("is-staged")) return;
+        fig.classList.remove("is-staged");
+        window.clearTimeout(dwell);
+        window.clearTimeout(settle);
+        io.disconnect();
+        window.removeEventListener("hashchange", onHash);
+        window.removeEventListener("beforeprint", reveal);
+      };
+      const onHash = () => {
+        if (location.hash === `#${fig.id}`) reveal();
+      };
+
+      const io = new IntersectionObserver(
+        ([e]) => {
+          const r = e.boundingClientRect;
+          // Scrolled past the top, or jumped beyond it: no simple state.
+          if (r.top < 0 || (!e.isIntersecting && r.bottom < 0)) return reveal();
+          // The whole drawing is in view: a short beat, then fill it in.
+          if (e.intersectionRatio > 0.97 && settle === undefined) {
+            settle = window.setTimeout(reveal, 800);
+          }
+          // Most of it is in view (short windows): don't wait for the rest.
+          if (e.intersectionRatio > 0.45 && dwell === undefined) {
+            dwell = window.setTimeout(reveal, 2000);
+          }
+        },
+        { threshold: [0, 0.45, 0.6, 0.8, 0.98, 1] },
+      );
+      io.observe(svg);
+
+      window.addEventListener("hashchange", onHash);
+      window.addEventListener("beforeprint", reveal);
+      fig.addEventListener("pointerdown", reveal, { once: true });
+      fig.addEventListener("focusin", reveal, { once: true });
+    });
   }
 </script>
 
@@ -362,6 +497,8 @@ const layouts = [wide, narrow];
     --pt-faint: #878b92;
     --pt-line-strong: #a7abb1;
     --pt-edge: #8f949b;
+    --pt-band: color-mix(in srgb, var(--pt-neutral) 7%, var(--pt-surface));
+    --pt-region: #6b7078;
   }
 
   :global([data-effective-theme="dark"]) .pt-figure {
@@ -374,6 +511,8 @@ const layouts = [wide, narrow];
     --pt-faint: #7d9599;
     --pt-line-strong: #4d7f8b;
     --pt-edge: #6f8f95;
+    --pt-band: color-mix(in srgb, var(--pt-neutral) 9%, var(--pt-surface));
+    --pt-region: #8fa3a5;
   }
 
   .pt-figure {
@@ -522,6 +661,74 @@ const layouts = [wide, narrow];
   }
   .pt-head.teacher {
     fill: var(--pt-teacher);
+  }
+
+  /* ---- regions: quiet bands that orient, so the boxes stay the focus */
+  .pt-region rect {
+    fill: var(--pt-band);
+    stroke: none;
+  }
+  .pt-region.mid rect {
+    fill: var(--pt-surface);
+    stroke: var(--pt-line-strong);
+    stroke-width: 1.1;
+    stroke-dasharray: 4 4;
+  }
+
+  .pt-region-label {
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    fill: var(--pt-region);
+    dominant-baseline: central;
+  }
+  .pt-narrow .pt-region-label {
+    font-size: 9.5px;
+    letter-spacing: 0.08em;
+  }
+
+  /* ---- simple first (see the script). By default the full labels show and
+     the simple-only parts are hidden, so no JS means the full figure. */
+  .pt-simple-only,
+  .pt-simple-text {
+    opacity: 0;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .pt-wide .pt-extra,
+    .pt-wide .pt-full-text,
+    .pt-wide .pt-simple-text,
+    .pt-wide .pt-simple-only,
+    .pt-key-extra {
+      transition: opacity 0.45s ease;
+    }
+    .pt-wide .lag-1 {
+      transition-delay: 0.12s;
+    }
+    .pt-wide .lag-2 {
+      transition-delay: 0.26s;
+    }
+    /* Plain labels clear out quickly, then the full ones fade in. */
+    .pt-wide .pt-simple-only,
+    .pt-wide .pt-simple-text {
+      transition-duration: 0.2s;
+    }
+    .pt-wide .pt-full-text {
+      transition-delay: 0.16s;
+    }
+
+    /* Staging only ever applies to the wide drawing. */
+    @container (min-width: 940px) {
+      .pt-figure.is-staged .pt-wide :is(.pt-extra, .pt-full-text),
+      .pt-figure.is-staged .pt-key-extra {
+        opacity: 0;
+        transition: none;
+      }
+      .pt-figure.is-staged .pt-wide :is(.pt-simple-only, .pt-simple-text) {
+        opacity: 1;
+      }
+    }
   }
 
   /* ---- colour key */
