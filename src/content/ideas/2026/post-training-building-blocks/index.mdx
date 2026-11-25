@@ -45,7 +45,7 @@ For a while the short version was that post-training *elicits* what pretraining 
   state="mute=all&zoom=data,method"
   desc="four columns headed data shape, turned into a reward by, learning signal, and update rule, with the parts in each column named faintly.">
 
-I've been working through Nathan Lambert's RLHF book [@lambert2025rlhfbook] and a pile of technical reports, and what took me longest to see is that the named algorithms are assembled from a small set of interchangeable parts. I've come to think of them as lego: standard pieces that snap together in different ways. Each training stage combines three of them:
+I've been working through Nathan Lambert's book on RLHF, reinforcement learning from human feedback [@lambert2025rlhfbook], and a pile of technical reports, and what took me longest to see is that the named algorithms are assembled from a small set of interchangeable parts. I've come to think of them as lego: standard pieces that snap together in different ways. Each training stage combines three of them:
 
 </MapStep>
 
@@ -61,7 +61,7 @@ I've been working through Nathan Lambert's RLHF book [@lambert2025rlhfbook] and 
   state="hl=data,scorer,family&zoom=data,family"
   desc="the learning-signal column named and lit: demonstrations, preferences, scalar rewards and teacher distributions. Some data shapes feed a signal directly; others pass first through the column between them, the parts that turn data into a reward: a reward model, a process reward model, an LLM judge with a rubric, a program verifier and a live teacher.">
 
-- **A learning signal** derived from that data, which tells the model what better looks like.
+- **A learning signal** derived from that data, which tells the model what better looks like. For a reward, something has to do the scoring, such as a reward model, a model judge or a program. That's the map's "turned into a reward by" column.
 
 </MapStep>
 
@@ -185,7 +185,7 @@ There are dozens of named post-training algorithms, and most of the names descri
   state="hl=f-reward,m-reinforce,m-rloo,m-ppo,m-grpo,m-gspo,m-cispo,s-rm,s-judge,s-verifier&labels=1&zoom=scorer,family,method"
   desc="scalar rewards lit, leading to REINFORCE, RLOO, PPO, GRPO, GSPO and CISPO. Three scorers feed it: a reward model (labelled RLHF), an LLM judge with a rubric (RLAIF, rubric rewards) and a program verifier (RLVR).">
 
-**Scalar rewards: "that attempt scored 0.7."** Now the model generates its own attempts, something scores each one, and the update makes above-average attempts more likely and below-average ones less likely. This is reinforcement learning. In RL terms the model being trained is the policy, and each attempt is a rollout. The scorer can be a reward model trained on human preferences (RLHF), a model acting as judge (RLAIF [@bai2022constitutional]), or a program that checks the answer, such as unit tests or a math answer key (RLVR [@lambert2024tulu3]). Those three acronyms name where the reward comes from. The optimizer can be the same in all three.
+**Scalar rewards: "that attempt scored 0.7."** Now the model generates its own attempts, something scores each one, and the update makes above-average attempts more likely and below-average ones less likely. This is reinforcement learning. In RL terms the model being trained is the policy, and each attempt is a rollout. The scorer can be a reward model trained on human preferences (RLHF), a model acting as judge (RL from AI feedback, or RLAIF [@bai2022constitutional]), or a program that checks the answer, such as unit tests or a math answer key (RLVR [@lambert2024tulu3]). Those three acronyms name where the reward comes from. The optimizer can be the same in all three.
 
 </MapStep>
 
@@ -212,7 +212,7 @@ The third part, the update rule, is where I expected the differences to be: diff
   state="lens=grid&cell=bl,br&hl=m-opd,m-reinforce,m-rloo,m-ppo,m-grpo,m-gspo,m-cispo"
   desc="the grid's bottom row lit: on-policy distillation and the RL methods, which learn from the model's own text.">
 
-The first is **whose text the model is learning from**. In SFT, the training text was written by someone else: a person, a teacher model, or an earlier version of the model. That's called off-policy. In RL, the model learns from its own fresh attempts, which is on-policy. On-policy learning matters because the model gets feedback on the mistakes it actually makes, including the ones that only show up halfway through a long answer it wrote itself. DPO usually trains on a fixed set of pairs, so I file it as off-policy, but that depends on where the pairs come from. Tülu 3 builds some of its pairs from the model's own samples [@lambert2024tulu3], and online variants of DPO generate fresh pairs as training goes.
+The first is **whose text the model is learning from**. In SFT, the training text was written by someone else: a person, a teacher model, or an earlier version of the model. That's called off-policy. In RL, the model learns from its own fresh attempts, which is on-policy. On-policy learning matters because the model gets feedback on the mistakes it actually makes, including the ones that only show up halfway through a long answer it wrote itself. DPO usually trains on a fixed set of pairs, so I file it as off-policy, but that depends on where the pairs come from. Tülu 3, a fully open post-training recipe from Ai2, builds some of its pairs from the model's own samples [@lambert2024tulu3], and online variants of DPO generate fresh pairs as training goes.
 
 </MapStep>
 
@@ -220,7 +220,7 @@ The first is **whose text the model is learning from**. In SFT, the training tex
   state="lens=grid&cell=tl,bl&hl=m-sft,m-offdistill,m-opd"
   desc="the grid's left column lit: SFT, offline distillation and on-policy distillation, which give a signal on every token.">
 
-The second is **how much each example tells the model**. A demonstration or a teacher distribution says something about every token. An RL reward is one number for a whole response, sometimes for a whole hour-long agent run, and the model has to work out which of its thousands of choices earned it.
+The second is **how much each example tells the model**. A demonstration or a teacher distribution says something about every token, so the signal is dense. An RL reward is one number for a whole response, sometimes for a whole hour-long agent run, so the signal is sparse, and the model has to work out which of its thousands of choices earned it.
 
 </MapStep>
 
@@ -274,7 +274,7 @@ To see what these signals actually say, I ran one example with real models. A sm
   caption="One prompt, four learning signals, with real numbers from Qwen2.5-0.5B-Instruct (student) and Qwen2.5-7B-Instruct (teacher). Distillation flags the student's mistake, but also its wording, since the teacher scores phrasing as well as reasoning; RL gives every token the same number."
 />
 
-The student divides 42 cows by 3 and calls the result the number left, when 14 is the number he sold. RL gives the whole answer one score, about −0.7 relative to the student's other attempts, so the correct multiplication at the start is pushed down as hard as the mistake. On-policy distillation points at the mistake. At the division sign the teacher would have written a minus, and at "left" it would have written "sold". It also scores wording it wouldn't have used, like "There were", even more negatively, which is a reminder that a teacher passes on its style along with its reasoning. SFT trains on the teacher's own correct answer, which never contains the student's wrong step, so it has nothing to say about that step at all.
+The student divides 42 cows by 3 and calls the result the number left, when 14 is the number he sold. RL gives the whole answer one score. Five of the student's 16 attempts at this prompt were right, so this wrong one scores about −0.7 relative to the others, and the correct multiplication at the start is pushed down as hard as the mistake. On-policy distillation points at the mistake. At the division sign the teacher would have written a minus, and at "left" it would have written "sold". It also scores wording it wouldn't have used, like "There were", even more negatively, which is a reminder that a teacher passes on its style along with its reasoning. SFT trains on the teacher's own correct answer, which never contains the student's wrong step, so it has nothing to say about that step at all.
 
 The last view isn't a training signal, but it shows where the learning happens. The student is nearly certain about most tokens and is only really choosing at a minority of them, and the mistaken division sign is one of those forks. Wang et al. found that RL with verifiable rewards mostly changes these high-uncertainty tokens, and that on an 8B model, updating only the most uncertain 20% of tokens works about as well as updating all of them [@wang2025highentropy].
 
@@ -324,7 +324,7 @@ Demonstrations are prompts with target responses: single answers, multi-turn con
   state="hl=d-pairs,d-ratings,d-critiques,d-steps,d-rubrics,f-pref,s-rm,s-prm,s-judge&zoom=data,scorer,family"
   desc="preference pairs, ratings, critiques, step labels and rubrics lit, with the preferences signal and the reward model, process reward model and LLM judge they train or feed.">
 
-Evaluative annotations say how good a response is, without supplying a better one: pairwise preferences, rankings, ratings on a scale, rubrics, critiques, and labels on specific spans or reasoning steps. Step-level labels are what process reward models train on [@lightman2023verify].
+Evaluative annotations say how good a response is, without supplying a better one: pairwise preferences, rankings, ratings on a scale, rubrics, critiques, and labels on specific spans or reasoning steps. Step-level labels are what process reward models train on: reward models that score each step of a solution, not just the final answer [@lightman2023verify].
 
 </MapStep>
 
@@ -350,7 +350,7 @@ Here's what real rows from public datasets look like, one per shape except teach
 
 <DataExamplesFigure
   id="data-examples"
-  caption="Real examples from public post-training data. The first three rows are copied verbatim from their datasets; the environment card summarizes one task from ART·E and its grader. Teacher supervision is left out because it's usually computed during training rather than stored."
+  caption="Real examples from public post-training data. The first three rows are copied verbatim from their datasets; the environment card summarizes one task from ART·E, an email-search environment described below, and its grader. Teacher supervision is left out because it's usually computed during training rather than stored."
 />
 
 Real data is messier than the categories suggest. The preference pair above is typical of Anthropic's HH-RLHF dataset: two short, imperfect answers, with a crowdworker's judgment of which is better. Single labels are noisy too. In another pair from the same dataset, someone asks for Cardi B's real name, and the *rejected* answer is the one that gets it right (Belcalis Almanzar). Preference data works in bulk because the noise averages out over many comparisons.
