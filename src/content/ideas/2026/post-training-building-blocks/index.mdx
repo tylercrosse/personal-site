@@ -267,7 +267,7 @@ Kevin Lu's post on on-policy distillation places SFT, RL, and on-policy distilla
   state="lens=grid&hl=m-rs,m-odpo"
   desc="rejection sampling and online DPO lit, sitting on the line between the grid's two rows.">
 
-The cells blur at the edges. Rejection-sampling SFT trains on the model's own text with one pass/fail judgment per response, which puts it close to RL.
+The cells blur at the edges. Rejection-sampling SFT trains on the model's own text with one pass/fail judgment per response, which puts it close to RL. Online DPO does the same with preference pairs, built from the model's own fresh samples. Both sit on the line because the text is the model's own but is gathered in batches or rounds, so by the time it's trained on, the model has already moved a little.
 
 </MapStep>
 
