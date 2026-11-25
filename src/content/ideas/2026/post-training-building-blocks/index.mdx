@@ -177,7 +177,7 @@ There are dozens of named post-training algorithms, and most of the names descri
   state="hl=f-pref,m-dpo,m-ipo,m-kto,m-simpo,s-rm&zoom=scorer,family,method"
   desc="preferences lit, leading to DPO, IPO, KTO and SimPO, with the reward model also lit.">
 
-**Preferences: "this one, not that one."** The model sees a prompt with two responses, one marked better. Direct preference optimization (DPO) and its relatives push up the probability of the chosen response relative to the rejected one [@rafailov2023dpo]. You don't have to say what a perfect answer looks like, only which of two is better, which is often much easier for a person to judge. KTO, one of those relatives, works from single responses labelled good or bad, with no pairing. The same comparisons can instead train a separate reward model, which is how classical RLHF used them.
+**Preferences: "this one, not that one."** The model sees a prompt with two responses, one marked better. Direct preference optimization (DPO) and its relatives push up the probability of the chosen response relative to the rejected one [@rafailov2023dpo]. This is preference tuning. You don't have to say what a perfect answer looks like, only which of two is better, which is often much easier for a person to judge. KTO, one of those relatives, works from single responses labelled good or bad, with no pairing. The same comparisons can instead train a separate reward model, which is how classical RLHF used them.
 
 </MapStep>
 
@@ -238,7 +238,7 @@ Kevin Lu's post on on-policy distillation places SFT, RL, and on-policy distilla
 
 | | Signal on every token | One signal per response |
 | --- | --- | --- |
-| **Someone else's text (off-policy)** | SFT, offline distillation | DPO and other preference methods (usually) |
+| **Someone else's text (off-policy)** | SFT, offline distillation | DPO and other preference-tuning methods (usually) |
 | **The model's own text (on-policy)** | On-policy distillation | RL (PPO, GRPO, and the rest) |
 
 </Table>
@@ -524,7 +524,7 @@ The table below is the full compatibility picture. It's meant for reference, and
 
 <Table id="data-method" caption="Which data shapes feed which methods. ● direct use, ◐ needs a transformation or an extra ingredient, — atypical. Reward modeling trains a scorer, not the policy.">
 
-| Data | SFT | Direct alignment (DPO etc.) | Reward modeling | RL | Distillation |
+| Data | SFT | Preference tuning (DPO etc.) | Reward modeling | RL | Distillation |
 | --- | :-: | :-: | :-: | :-: | :-: |
 | Prompts and task sets | ◐ | ◐ | — | ● | ● |
 | Demonstrations | ● | ◐ | — | — | ◐ |
