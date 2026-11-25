@@ -1135,7 +1135,9 @@ const state = { lens: "flow", sel: null, alias: null, hover: null, recipes: [], 
   // what to frame, and whether to label the lit edges
   hl: null, reveal: null, zoom: null, labels: false,
   // also host-only: kinds to hold back, named but faint (mute=), and grid-lens cells to light (cell=tl,tr,bl,br)
-  mute: null, cell: null };
+  mute: null, cell: null,
+  // and how recipes are drawn outside the pipelines lens: null (one route from stage to stage) or "stages"
+  route: null };
 const EMBED = document.documentElement.classList.contains("embed");
 const REDUCED = matchMedia("(prefers-reduced-motion: reduce)");
 const GHOST = 0.07;   // opacity of parts a reveal hasn't reached yet
@@ -1269,6 +1271,8 @@ function computeSets() {
   if (state.recipes.length) {
     recipeUsed = new Set();
     state.recipes.forEach(rid => RECIPE[rid].stages.forEach(st => [st.u, ...st.d, ...st.r].forEach(id => recipeUsed.add(id))));
+    // drawn stage by stage, a recipe also passes through each stage's learning signal
+    if (state.route === "stages") state.recipes.forEach(rid => RECIPE[rid].stages.forEach(st => { const f = stageFamily(st); if (f) recipeUsed.add(f); }));
   }
 }
 
@@ -1387,9 +1391,59 @@ function ensureMarker(r) {
   el("path", { d: "M0,1 L9,5 L0,9 z", fill: r.color }, m);
 }
 
+// route=stages: each stage of a recipe drawn left to right through its own parts (the data, what scores it,
+// the learning signal, the update rule), instead of one route hopping from stage to stage. A stage that
+// trains a scorer ends at the scorer; one whose update rule isn't named ends at its learning signal.
+const stageFamily = st => { const u = byId[st.u]; return u.kind === "family" ? u.id : u.kind === "method" ? "f-" + u.group : null; };
+function stageSegs(st) {
+  const u = byId[st.u];
+  const D = st.d.filter(id => byId[id].kind === "data");
+  const R = [...st.r, ...(u.kind === "scorer" ? [u.id] : [])];
+  const F = stageFamily(st), M = u.kind === "method" ? u.id : null, next = F || M;
+  const segs = [];
+  for (const d of D) {
+    // the model's own rollouts go to every scorer in the stage; other data only where the map joins them
+    const to = R.filter(r => d === "d-rollouts" || outE[d].some(e => e.to === r));
+    if (to.length) to.forEach(r => segs.push([d, r]));
+    else if (next) segs.push([d, next]);
+  }
+  if (next) R.forEach(r => segs.push([r, next]));
+  if (F && M) segs.push([F, M]);
+  return { segs, end: M || F || u.id };
+}
+function drawStageRoutes() {
+  const badgeSlots = {}, n = state.recipes.length;
+  state.recipes.forEach((rid, ri) => {
+    const r = RECIPE[rid]; ensureMarker(r);
+    const dy = (ri - (n - 1) / 2) * 5, fade = state.sel ? 0.35 : 1;   // two recipes on one segment sit side by side
+    const nums = {}, seen = new Set();
+    r.stages.forEach((st, i) => {
+      const { segs, end } = stageSegs(st);
+      (nums[end] ||= []).push(i + 1);
+      for (const [f, t] of segs) {
+        if (seen.has(f + ">" + t) || Math.min(cur[f].o, cur[t].o) < 0.5) continue;
+        seen.add(f + ">" + t);
+        const attrs = { d: anchorPath(byId[f], byId[t], true).d, transform: `translate(0,${dy})`, fill: "none", stroke: r.color,
+          "stroke-width": 2, opacity: 0.85 * fade };
+        if (t === end) attrs["marker-end"] = `url(#arr-${r.id})`;
+        el("path", attrs, G.routes);
+      }
+    });
+    for (const [id, list] of Object.entries(nums)) {
+      const nd = byId[id], c = cur[id]; if (c.o < 0.5) continue;
+      const k = (badgeSlots[id] = (badgeSlots[id] || 0) + 1) - 1;
+      const txt = list.join("·"), w = Math.max(17, txt.length * 6.2 + 9);
+      const g = el("g", { class: "badge", transform: `translate(${c.x + nd.w / 2 - w / 2 + 4 - k * (w + 3)},${c.y - nd.h / 2 - 2})`, opacity: fade }, G.overlay);
+      el("rect", { x: -w / 2, y: -8.5, width: w, height: 17, rx: 8.5, fill: r.color }, g);
+      el("text", { x: 0, y: 0.5, "text-anchor": "middle", "dominant-baseline": "central" }, g).textContent = txt;
+    }
+  });
+}
+
 function drawRoutes() {
   G.routes.innerHTML = ""; G.overlay.innerHTML = "";
   if (state.lens === "pipes") return drawLanes();
+  if (state.route === "stages") return drawStageRoutes();
   const badgeSlots = {}, dotSlots = {};
   state.recipes.forEach((rid, ri) => {
     const r = RECIPE[rid]; ensureMarker(r);
@@ -1553,7 +1607,7 @@ function fitFor(pos, deco, roomRight = true) {
   // (an embed needs it only when its view draws them: recipe routes, or a selection's substitutes)
   // (a recipe needs it only when two of its stages in a row sit in the same column, so its route arcs out to the right)
   const sameCol = rid => RECIPE[rid].stages.some((st, i, a) => i && st.u !== a[i - 1].u && byId[st.u].kind === byId[a[i - 1].u].kind);
-  const arcs = !EMBED || state.recipes.some(sameCol) || byId[viewParams.get("sel")]?.subs;
+  const arcs = !EMBED || (state.route !== "stages" && state.recipes.some(sameCol)) || byId[viewParams.get("sel")]?.subs;
   if (roomRight && arcs && (state.lens === "flow" || state.lens === "time")) x1 += 110;
   const legend = state.recipes.length && state.lens !== "pipes";   // an embed shows only the recipe legend
   const W = svg.clientWidth, H = svg.clientHeight - (EMBED ? (legend ? 40 : 8) : 56), pad = EMBED ? 18 : 36;   // 56: the recipe bar
@@ -2858,6 +2912,7 @@ function hashFor() {
   if (state.zoom) p.push("zoom=" + state.zoom.join(","));
   if (state.mute) p.push("mute=" + state.mute.join(","));
   if (state.cell) p.push("cell=" + state.cell.join(","));
+  if (state.route) p.push("route=" + state.route);
   const c = state.compare;
   if (c) p.push("cmp=" + (c.fam || (c.mix ? "mix" : "pair-" + c.rel)), "cols=" + c.ids.join(","), "ref=" + c.ref);
   return p.join("&");
@@ -2885,10 +2940,11 @@ function applyHash(str) {
     // routes are drawn for up to three recipes; the pipelines lens can show any number of lanes
     const recipes = list("recipes").filter(r => RECIPE[r]).slice(0, lens === "pipes" ? RECIPES.length : 3);
     const relayout = lens !== state.lens || String(reveal) !== String(state.reveal || "") || String(zoom) !== String(state.zoom || "")
-      || String(recipes) !== String(state.recipes)
+      || String(recipes) !== String(state.recipes) || (p.get("route") === "stages") !== (state.route === "stages")
       || (zoom.includes("hl") && String(hl) !== String(state.hl || ""));   // framing the highlight follows it           // lanes in the pipelines lens; room for the legend elsewhere
     state.hl = hl.length ? hl : null; state.labels = p.get("labels") === "1";
     state.mute = list("mute").length ? list("mute") : null; state.cell = list("cell").length ? list("cell") : null;
+    state.route = p.get("route") === "stages" ? "stages" : null;
     state.reveal = reveal.length ? reveal : null; state.zoom = zoom.length ? zoom : null;
     state.recipes = recipes; syncChips();                     // before the layout: the pipelines lens filters by them
     if (relayout) applyLens(lens);
@@ -2913,7 +2969,8 @@ window.addEventListener("popstate", () => applyHash());
 //   frame.contentWindow.postMessage({ type: "pt-explorer:state", state: "lens=flow&hl=d-pairs,s-rm&zoom=hl" }, "*")
 // using the same params as the hash, plus hl= (light these parts, or whole kinds), labels=1 (name the lit edges),
 // reveal= (kinds to show; the rest are ghosted), mute= (kinds to name faintly, or "all"), cell= (grid-lens
-// cells to light: tl, tr, bl, br) and zoom= (ids, kinds or "hl" to frame). In the pipelines lens, recipes=
+// cells to light: tl, tr, bl, br), zoom= (ids, kinds or "hl" to frame) and route=stages (draw each recipe stage
+// left to right through its parts, rather than one route from stage to stage). In the pipelines lens, recipes=
 // picks the lanes, any number of them. An embed frames what zoom= names whole: parts its frame would cut
 // through are left out rather than clipped.
 // The map says { type: "pt-explorer:ready" } to its parent once it can take a state.

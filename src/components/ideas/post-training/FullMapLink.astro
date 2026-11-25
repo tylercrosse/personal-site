@@ -1,0 +1,45 @@
+---
+/**
+ * A quiet link to the full interactive map, for readers coming back to it.
+ * Opens in a new tab, like the "Open this view in the full map" links under
+ * each pinned map.
+ */
+interface Props {
+  href?: string;
+}
+
+const { href = "/ideas/2026/post-training-building-blocks/map.html" } = Astro.props;
+---
+
+<p class="full-map-link">
+  <a href={href} target="_blank" rel="noopener">Explore the full map<span aria-hidden="true"> ↗</span><span
+      class="sr-only"> (opens in a new tab)</span></a>
+</p>
+
+<style>
+  .full-map-link {
+    margin: 0 0 1.25rem;
+    font-size: 0.8rem;
+    line-height: 1.4;
+  }
+
+  .full-map-link a {
+    color: var(--sol-1);
+    text-decoration: none;
+  }
+
+  .full-map-link a:hover,
+  .full-map-link a:focus-visible {
+    color: var(--blue);
+    text-decoration: underline;
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+</style>

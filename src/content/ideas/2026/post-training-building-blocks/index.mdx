@@ -23,6 +23,8 @@ import DataExamplesFigure from "../../../../components/ideas/post-training/DataE
 import TokenSignalFigure from "../../../../components/ideas/post-training/TokenSignalFigure.astro";
 import ScrollyMap from "../../../../components/ideas/post-training/ScrollyMap.astro";
 import MapStep from "../../../../components/ideas/post-training/MapStep.astro";
+import FullMapLink from "../../../../components/ideas/post-training/FullMapLink.astro";
+import SignalSketch from "../../../../components/ideas/post-training/SignalSketch.astro";
 import mapParts from "./figures/map-parts.png";
 import mapPipelines from "./figures/map-pipelines.png";
 import mapSignals from "./figures/map-signals.png";
@@ -31,11 +33,14 @@ import mapData from "./figures/map-data.png";
 import mapSources from "./figures/map-sources.png";
 import mapRatings from "./figures/map-ratings.png";
 
+
 A pretrained language model has read much of the internet and still can't take a request. It completes documents. If you type "What is the capital of France?", a reasonable continuation is another quiz question, since on the web that line usually appears in a list of them. The model probably knows the answer. Answering you just isn't what it's been trained to do.
 
 Post-training is everything done after pretraining to change that. It turns a document completer into something you can hand a task to: a model that answers the question, follows instructions, holds a conversation, calls tools, works through a hard problem step by step, and declines some requests. InstructGPT made the point early: labelers preferred outputs from a 1.3B-parameter post-trained model over those from the 175B-parameter GPT-3, a model more than 100 times larger [@ouyang2022instructgpt].
 
 For a while the short version was that post-training *elicits* what pretraining already put there. A thin layer of instruction tuning and preference tuning chose which of the many voices in the base model you'd hear. That story is less true now. Reinforcement learning (RL) on problems with checkable answers has become a main way that models get better at math, code, and long agentic tasks [@deepseek2025r1], so post-training is increasingly where the model learns to do the task as well as how to present it.
+
+<FullMapLink />
 
 <ScrollyMap
   fallback={mapParts}
@@ -45,37 +50,38 @@ For a while the short version was that post-training *elicits* what pretraining 
   state="mute=all&zoom=data,method"
   desc="four columns headed data shape, turned into a reward by, learning signal, and update rule, with the parts in each column named faintly.">
 
-I've been working through Nathan Lambert's RLHF book [@lambert2025rlhfbook] and a pile of technical reports, and what took me longest to see is that the named algorithms are assembled from a small set of interchangeable parts. I've come to think of them as lego: standard pieces that snap together in different ways. Each training stage combines three of them:
+I've been working through Nathan Lambert's book on RLHF, reinforcement learning from human feedback [@lambert2025rlhfbook], and a pile of technical reports, and what took me longest to see is that the named algorithms are assembled from a small set of interchangeable parts. I've come to think of them as lego: standard pieces that snap together in different ways. Each training stage combines three of them:
 
 </MapStep>
 
 <MapStep
   state="hl=source,data&zoom=source,data"
-  desc="the first two columns named and lit. Five sources: human experts, real users, programs, the model itself and teacher models. Fourteen data shapes, from demonstrations and preference pairs to verifiable tasks and teacher token probabilities.">
+  desc="a sources column appears left of the data shapes, and both are lit. Five sources: human experts, real users, programs, the model itself and teacher models. Fourteen data shapes, from demonstrations and preference pairs to verifiable tasks and teacher token probabilities.">
 
 - **Data**, which comes from somewhere (people, other models, programs, the model itself) and has some shape (a demonstration, a comparison, a task with a grader).
 
 </MapStep>
 
 <MapStep
-  state="hl=data,family&zoom=data,family"
-  desc="the learning-signal column named and lit: demonstrations, preferences, scalar rewards and teacher distributions, each fed by some of the data shapes.">
+  state="hl=data,scorer,family&zoom=data,family"
+  desc="the learning-signal column named and lit: demonstrations, preferences, scalar rewards and teacher distributions. Some data shapes feed a signal directly; others pass first through the column between them, the parts that turn data into a reward: a reward model, a process reward model, an LLM judge with a rubric, a program verifier and a live teacher.">
 
-- **A learning signal** derived from that data, which tells the model what better looks like.
+- **A learning signal** derived from that data, which tells the model what better looks like. For a reward, something has to do the scoring, such as a reward model, a model judge or a program. That's the map's "turned into a reward by" column.
 
 </MapStep>
 
 <MapStep
-  state="hl=family,method&mute=method&zoom=family,method"
-  desc="the update-rule column lit: seventeen update rules, named faintly, each joined to one of the four learning signals.">
+  state="hl=family,method&zoom=family,method"
+  desc="the update-rule column lit: fifteen update rules, from SFT and DPO to PPO, GRPO and on-policy distillation, each joined to the learning signal it mainly uses.">
 
 - **An update rule** that turns the signal into a change in the weights.
 
 </MapStep>
 
 <MapStep
-  state="recipes=instructgpt,k3&mute=scorer,method&zoom=data,method"
-  desc="two recipes, InstructGPT and Kimi K3, traced as numbered routes through the same parts. Each takes a different path.">
+  dwell="long"
+  state="recipes=instructgpt,k3&route=stages&zoom=data,method"
+  desc="two recipes traced left to right through the parts, one line per stage, each numbered where it ends. InstructGPT: 1, demonstrations to the demonstrations signal and SFT; 2, ratings and rankings train a reward model; 3, prompts and the model's own rollouts, scored by that reward model, give scalar rewards for PPO. Kimi K3: 1, agent trajectories to SFT; 2, verifiable tasks, interactive environments and rollouts, scored by a program verifier and an LLM judge, give scalar rewards; 3, the model's own rollouts, scored by a live teacher, give teacher distributions for on-policy distillation.">
 
 A recipe is a particular assembly of those parts. Labs rearrange them every few months, a growing industry sells them, and the choices show up in how the finished model behaves.
 
@@ -101,7 +107,7 @@ The top row is pretraining and its tail end. Midtraining, which some recipes add
 
 <MapStep
   state="lens=pipes&recipes=r1,k3,nemotron&hl=m-sft"
-  desc="the pipelines of DeepSeek-R1, Kimi K3 and Nemotron 3 Ultra as rows of stages, with the SFT stages lit. Each pipeline starts with one.">
+  desc="the map switches to rows of stages: the pipelines of DeepSeek-R1, Kimi K3 and Nemotron 3 Ultra, with the SFT stages lit. Each pipeline starts with one, and Nemotron has a second, a brief SFT warmup before distillation.">
 
 Everything below the base model is post-training, and it has three broad moves.
 
@@ -126,29 +132,41 @@ The third is consolidation by distillation. The specialists are merged back into
 </MapStep>
 
 <MapStep
+  dwell="long"
   state="lens=pipes&recipes=instructgpt,r1,qwen3,k2,olmo3,k3,nemotron&hl=m-sft"
-  desc="the seven pipelines in the table below, one per row. All start with a lit SFT stage, then differ in length and order.">
+  desc="seven published pipelines, InstructGPT to Nemotron 3 Ultra, one per row. Each starts with a lit SFT stage, and Qwen3 and Nemotron light a later SFT stage too. After that they differ in length and order.">
 
-Not every recent recipe looks like this. The table below lines up a few published ones. They all start with SFT and then diverge.
+Not every recent recipe looks like this. Here are seven published ones, simplified. They all start with SFT and then diverge.
+
+</MapStep>
+
+<MapStep
+  state="lens=pipes&recipes=instructgpt,r1,qwen3,k2,olmo3,k3,nemotron&hl=p-instructgpt-0,p-instructgpt-1,p-instructgpt-2,p-r1-0,p-r1-1,p-r1-2,p-r1-3,p-r1-4"
+  desc="the InstructGPT and DeepSeek-R1 rows lit. InstructGPT: SFT, a reward model, then PPO against it. DeepSeek-R1: cold-start SFT, GRPO with a verifier, rejection sampling, GRPO again, then distillation into small models.">
+
+InstructGPT (2022) has the classic RLHF shape: humans write demonstrations and compare outputs [@ouyang2022instructgpt]. DeepSeek-R1 (2025) alternates imitation and exploration, and its middle SFT stage is built from the RL model's own best outputs [@deepseek2025r1].
+
+</MapStep>
+
+<MapStep
+  state="lens=pipes&recipes=instructgpt,r1,qwen3,k2,olmo3,k3,nemotron&hl=p-qwen3-0,p-qwen3-1,p-qwen3-2,p-qwen3-3,p-qwen3-4,p-qwen3-5,p-k2-0,p-k2-1"
+  desc="the Qwen3 and Kimi K2 rows lit. Qwen3: SFT, GRPO with a verifier, SFT for mode fusion, RL with a verifier, judge and reward model, then offline and on-policy distillation into smaller models. Kimi K2: SFT on tool-use data, then one RL stage with a verifier and self-critique.">
+
+Qwen3 (2025) merges thinking and non-thinking behavior, answering with or without a reasoning trace, into one model, and its smaller models are distilled from larger ones [@qwen2025qwen3]. Kimi K2 (2025) has one RL stage mixing verifiable rewards with rubric-based self-critique, where the model grades its own answers [@kimi2025k2].
+
+</MapStep>
+
+<MapStep
+  state="lens=pipes&recipes=instructgpt,r1,qwen3,k2,olmo3,k3,nemotron&hl=p-olmo3-0,p-olmo3-1,p-olmo3-2,p-k3-0,p-k3-1,p-k3-2,p-nemotron-0,p-nemotron-1,p-nemotron-2,p-nemotron-3,p-nemotron-4,p-nemotron-5"
+  desc="the Olmo 3 Think, Kimi K3 and Nemotron 3 Ultra rows lit. Olmo 3 Think: SFT, DPO, then RLVR. Kimi K3: SFT, nine specialists trained with RL, then multi-teacher distillation. Nemotron 3 Ultra: SFT, RL over all environments, ten or more specialists, an SFT warmup, then two rounds of distillation.">
+
+Olmo 3 Think (2025) has fully open data and code, and keeps a preference-tuning stage before RL [@olmo2025olmo3]. Kimi K3 and Nemotron 3 Ultra (2026) train narrow experts, then consolidate them; Nemotron also runs one RL stage over all environments first [@kimi2026k3; @nvidia2026nemotron3ultra].
 
 </MapStep>
 
 </ScrollyMap>
 
-<Table id="recipes" caption="Simplified post-training recipes from published reports. Each row omits stages and details.">
-
-| Model | Recipe | What's distinctive |
-| --- | --- | --- |
-| InstructGPT (2022) | SFT → reward model → PPO | The classic RLHF shape: humans write demonstrations and compare outputs [@ouyang2022instructgpt] |
-| DeepSeek-R1 (2025) | Cold-start SFT → reasoning RL → filtered SFT → RL | Alternates imitation and exploration; the middle SFT stage is built from the RL model's own best outputs [@deepseek2025r1] |
-| Qwen3 (2025) | Cold-start SFT → reasoning RL → mode fusion → general RL | Merges thinking and non-thinking behavior into one model; smaller models are distilled from larger ones [@qwen2025qwen3] |
-| Kimi K2 (2025) | SFT → joint RL | One RL stage mixing verifiable rewards with rubric-based self-critique [@kimi2025k2] |
-| Olmo 3 Think (2025) | SFT → DPO → RLVR | Fully open data and code; keeps a preference-tuning stage before RL [@olmo2025olmo3] |
-| Kimi K3, Nemotron 3 Ultra (2026) | SFT → specialist RL → multi-teacher distillation | Train narrow experts, then consolidate; Nemotron also runs one RL stage over all environments first [@kimi2026k3; @nvidia2026nemotron3ultra] |
-
-</Table>
-
-The labels in that table (SFT, DPO, RL, distillation) are names for the parts. To see why they can be swapped and recombined, it helps to sort them by what the model is learning from and how it updates.
+The labels in those recipes (SFT, DPO, RL, distillation) are names for the parts. To see why they can be swapped and recombined, it helps to sort them by what the model is learning from and how it updates.
 
 ## Methods, sorted by what the model learns from
 
@@ -157,6 +175,7 @@ The labels in that table (SFT, DPO, RL, distillation) are names for the parts. T
   fallbackAlt="The four learning signals and the update rules each feeds: demonstrations to SFT; preferences to DPO, IPO, KTO and SimPO; scalar rewards to REINFORCE, RLOO, PPO, GRPO, GSPO and CISPO, fed by a reward model (RLHF), an LLM judge (RLAIF) and a program verifier (RLVR); teacher distributions to offline and on-policy distillation.">
 
 <MapStep
+  dwell="long"
   state="hl=family&zoom=scorer,family,method"
   desc="the four learning signals lit, with the update rules each one feeds to the right and the scorers to the left.">
 
@@ -170,13 +189,17 @@ There are dozens of named post-training algorithms, and most of the names descri
 
 **Demonstrations: "respond like this."** The model sees a prompt and a target response, and the update raises the probability of each token in the target. This is SFT, and it's the same next-token objective as pretraining, applied to curated text. Rejection sampling is a variant: generate several candidates, keep the ones a grader likes, and run SFT on the keepers. The grader chooses the data, but it never enters the gradient.
 
+<SignalSketch kind="demo" />
+
 </MapStep>
 
 <MapStep
   state="hl=f-pref,m-dpo,m-ipo,m-kto,m-simpo,s-rm&zoom=scorer,family,method"
   desc="preferences lit, leading to DPO, IPO, KTO and SimPO, with the reward model also lit.">
 
-**Preferences: "this one, not that one."** The model sees a prompt with two responses, one marked better. Direct preference optimization (DPO) and its relatives push up the probability of the chosen response relative to the rejected one [@rafailov2023dpo]. You don't have to say what a perfect answer looks like, only which of two is better, which is often much easier for a person to judge. KTO, one of those relatives, works from single responses labelled good or bad, with no pairing. The same comparisons can instead train a separate reward model, which is how classical RLHF used them.
+**Preferences: "this one, not that one."** The model sees a prompt with two responses, one marked better. Direct preference optimization (DPO) and its relatives push up the probability of the chosen response relative to the rejected one [@rafailov2023dpo]. This is preference tuning. You don't have to say what a perfect answer looks like, only which of two is better, which is often much easier for a person to judge. KTO, one of those relatives, works from single responses labelled good or bad, with no pairing [@ethayarajh2024kto]. The same comparisons can instead train a separate reward model, which is how classical RLHF used them.
+
+<SignalSketch kind="pref" />
 
 </MapStep>
 
@@ -184,7 +207,9 @@ There are dozens of named post-training algorithms, and most of the names descri
   state="hl=f-reward,m-reinforce,m-rloo,m-ppo,m-grpo,m-gspo,m-cispo,s-rm,s-judge,s-verifier&labels=1&zoom=scorer,family,method"
   desc="scalar rewards lit, leading to REINFORCE, RLOO, PPO, GRPO, GSPO and CISPO. Three scorers feed it: a reward model (labelled RLHF), an LLM judge with a rubric (RLAIF, rubric rewards) and a program verifier (RLVR).">
 
-**Scalar rewards: "that attempt scored 0.7."** Now the model generates its own attempts, something scores each one, and the update makes above-average attempts more likely and below-average ones less likely. This is reinforcement learning. In RL terms the model being trained is the policy, and each attempt is a rollout. The scorer can be a reward model trained on human preferences (RLHF), a model acting as judge (RLAIF [@bai2022constitutional]), or a program that checks the answer, such as unit tests or a math answer key (RLVR [@lambert2024tulu3]). Those three acronyms name where the reward comes from. The optimizer can be the same in all three.
+**Scalar rewards: "that attempt scored 0.7."** Now the model generates its own attempts, something scores each one, and the update makes above-average attempts more likely and below-average ones less likely. This is reinforcement learning. In RL terms the model being trained is the policy, and each attempt is a rollout. The scorer can be a reward model trained on human preferences (RLHF), a model acting as judge (RL from AI feedback, or RLAIF [@bai2022constitutional]), or a program that checks the answer, such as unit tests or a math answer key (RLVR [@lambert2024tulu3]). Those three acronyms name where the reward comes from. The optimizer can be the same in all three.
+
+<SignalSketch kind="reward" />
 
 </MapStep>
 
@@ -194,11 +219,14 @@ There are dozens of named post-training algorithms, and most of the names descri
 
 **Teacher distributions: "here's what I would have said, token by token."** A stronger model, the teacher, supplies its probabilities for each next token, and the student learns to match them. In offline distillation the student trains on text the teacher wrote, which amounts to SFT on teacher outputs. In on-policy distillation the student writes the text, and the teacher scores each token by how likely the teacher would have been to write it. Kimi K3, for example, uses the log of the ratio between the teacher's and the student's probability for each token as a per-token reward [@kimi2026k3].
 
+<SignalSketch kind="teacher" />
+
 </MapStep>
 
 <MapStep
+  dwell="long"
   state="lens=grid"
-  desc="a two-by-two grid. Columns: signal on every token, one signal per response. Rows: someone else's text (off-policy), the model's own text (on-policy). Each update rule sits in its cell.">
+  desc="the map switches to a two-by-two grid. Columns: signal on every token (dense), one signal per response (sparse). Rows: someone else's text (off-policy), the model's own text (on-policy). Each update rule sits in its cell, except rejection sampling and online DPO, which sit on the line between the rows. Notes under the grid say why: they train on the model's own samples, but in batches or rounds. They also say density partly belongs to the scorer: a process reward model makes any RL method step-dense.">
 
 ### The update rule: whose text, and how much signal
 
@@ -210,7 +238,7 @@ The third part, the update rule, is where I expected the differences to be: diff
   state="lens=grid&cell=bl,br&hl=m-opd,m-reinforce,m-rloo,m-ppo,m-grpo,m-gspo,m-cispo"
   desc="the grid's bottom row lit: on-policy distillation and the RL methods, which learn from the model's own text.">
 
-The first is **whose text the model is learning from**. In SFT, the training text was written by someone else: a person, a teacher model, or an earlier version of the model. That's called off-policy. In RL, the model learns from its own fresh attempts, which is on-policy. On-policy learning matters because the model gets feedback on the mistakes it actually makes, including the ones that only show up halfway through a long answer it wrote itself. DPO usually trains on a fixed set of pairs, so I file it as off-policy, but that depends on where the pairs come from. Tülu 3 builds some of its pairs from the model's own samples [@lambert2024tulu3], and online variants of DPO generate fresh pairs as training goes.
+The first is **whose text the model is learning from**. In SFT, the training text was written by someone else: a person, a teacher model, or an earlier version of the model. That's called off-policy. In RL, the model learns from its own fresh attempts, which is on-policy. On-policy learning matters because the model gets feedback on the mistakes it actually makes, including the ones that only show up halfway through a long answer it wrote itself. DPO usually trains on a fixed set of pairs, so I file it as off-policy, but that depends on where the pairs come from. Tülu 3, a fully open post-training recipe from Ai2, builds some of its pairs from the model's own samples [@lambert2024tulu3], and online variants of DPO generate fresh pairs as training goes.
 
 </MapStep>
 
@@ -218,7 +246,7 @@ The first is **whose text the model is learning from**. In SFT, the training tex
   state="lens=grid&cell=tl,bl&hl=m-sft,m-offdistill,m-opd"
   desc="the grid's left column lit: SFT, offline distillation and on-policy distillation, which give a signal on every token.">
 
-The second is **how much each example tells the model**. A demonstration or a teacher distribution says something about every token. An RL reward is one number for a whole response, sometimes for a whole hour-long agent run, and the model has to work out which of its thousands of choices earned it.
+The second is **how much each example tells the model**. A demonstration or a teacher distribution says something about every token, so the signal is dense. An RL reward is one number for a whole response, sometimes for a whole hour-long agent run, so the signal is sparse, and the model has to work out which of its thousands of choices earned it.
 
 </MapStep>
 
@@ -226,17 +254,17 @@ The second is **how much each example tells the model**. A demonstration or a te
   state="lens=grid&cell=tr&hl=m-dpo,m-ipo,m-kto,m-simpo"
   desc="the grid's top-right cell lit: DPO, IPO, KTO and SimPO, off-policy with one signal per response.">
 
-Kevin Lu's post on on-policy distillation places SFT, RL, and on-policy distillation on these two axes [@lu2025onpolicy]. Adding DPO, with the caveat above, fills the fourth cell:
+Kevin Lu's post on on-policy distillation places SFT, RL, and on-policy distillation on these two axes [@lu2025onpolicy]. Adding DPO, with the caveat above, fills the fourth cell.
 
 </MapStep>
 
 </ScrollyMap>
 
-<Table id="signal-grid" caption="Whose text is trained on, against how much each example says. SFT, RL, and on-policy distillation follow Lu (2025); the DPO cell is my addition.">
+<Table numbered={false} class="scrolly-text-only" caption="Whose text is trained on, against how much each example says. SFT, RL, and on-policy distillation follow Lu (2025); the DPO cell is my addition.">
 
 | | Signal on every token | One signal per response |
 | --- | --- | --- |
-| **Someone else's text (off-policy)** | SFT, offline distillation | DPO and other preference methods (usually) |
+| **Someone else's text (off-policy)** | SFT, offline distillation | DPO and other preference-tuning methods (usually) |
 | **The model's own text (on-policy)** | On-policy distillation | RL (PPO, GRPO, and the rest) |
 
 </Table>
@@ -246,10 +274,11 @@ Kevin Lu's post on on-policy distillation places SFT, RL, and on-policy distilla
   fallbackAlt="A two-by-two grid of update rules: signal on every token or one per response, against someone else's text or the model's own. SFT and offline distillation top left, DPO and its relatives top right, on-policy distillation bottom left, the RL methods bottom right.">
 
 <MapStep
+  dwell="long"
   state="lens=grid&hl=m-rs,m-odpo"
   desc="rejection sampling and online DPO lit, sitting on the line between the grid's two rows.">
 
-The cells blur at the edges. Rejection-sampling SFT trains on the model's own text with one pass/fail judgment per response, which puts it close to RL.
+The cells blur at the edges. Rejection-sampling SFT trains on the model's own text with one pass/fail judgment per response, which puts it close to RL. Online DPO does the same with preference pairs, built from the model's own fresh samples. Both sit on the line because the text is the model's own but is gathered in batches or rounds, so by the time it's trained on, the model has already moved a little.
 
 </MapStep>
 
@@ -263,24 +292,24 @@ The bottom-left cell explains the pipeline in [fig:pipeline]. RL is on-policy bu
 
 </ScrollyMap>
 
-To see what these signals actually say, I ran one example with real models. A small model, Qwen2.5-0.5B-Instruct, answers a word problem and gets it wrong. A larger model from the same family, Qwen2.5-7B-Instruct, plays the teacher. Each button in the figure is laid out like the table above.
+To see what these signals actually say, I ran one example with real models. A small model, Qwen2.5-0.5B-Instruct, answers a word problem and gets it wrong. A larger model from the same family, Qwen2.5-7B-Instruct, plays the teacher. Each button in the figure is laid out like the grid above.
 
 <TokenSignalFigure
   id="token-signals"
-  alt="A word problem about a farmer's cows, with a toggle laid out like the 2×2 table. SFT tints a teacher-written correct answer by how surprising each token is to the student. DPO tints a preferred answer all blue and the student's wrong answer all orange. On-policy distillation tints the student's own wrong answer token by token; the mistake '42 / 3 = 14 cows left' is orange, along with wording the teacher wouldn't use. RL tints every token of the same answer one shade of orange. A fifth view shades where the student was most uncertain."
+  alt="A word problem about a farmer's cows, with a toggle laid out like the 2×2 grid. SFT tints a teacher-written correct answer by how surprising each token is to the student. DPO tints a preferred answer all blue and the student's wrong answer all orange. On-policy distillation tints the student's own wrong answer token by token; the mistake '42 / 3 = 14 cows left' is orange, along with wording the teacher wouldn't use. RL tints every token of the same answer one shade of orange. A fifth view shades where the student was most uncertain."
   caption="One prompt, four learning signals, with real numbers from Qwen2.5-0.5B-Instruct (student) and Qwen2.5-7B-Instruct (teacher). Distillation flags the student's mistake, but also its wording, since the teacher scores phrasing as well as reasoning; RL gives every token the same number."
 />
 
-The student divides 42 cows by 3 and calls the result the number left, when 14 is the number he sold. RL gives the whole answer one score, about −0.7 relative to the student's other attempts, so the correct multiplication at the start is pushed down as hard as the mistake. On-policy distillation points at the mistake. At the division sign the teacher would have written a minus, and at "left" it would have written "sold". It also scores wording it wouldn't have used, like "There were", even more negatively, which is a reminder that a teacher passes on its style along with its reasoning. SFT trains on the teacher's own correct answer, which never contains the student's wrong step, so it has nothing to say about that step at all.
+The student divides 42 cows by 3 and calls the result the number left, when 14 is the number he sold. RL gives the whole answer one score. Five of the student's 16 attempts at this prompt were right, so this wrong one scores about −0.7 relative to the others, and the correct multiplication at the start is pushed down as hard as the mistake. On-policy distillation points at the mistake. At the division sign the teacher would have written a minus, and at "left" it would have written "sold". It also scores wording it wouldn't have used, like "There were", even more negatively, which is a reminder that a teacher passes on its style along with its reasoning. SFT trains on the teacher's own correct answer, which never contains the student's wrong step, so it has nothing to say about that step at all.
 
 The last view isn't a training signal, but it shows where the learning happens. The student is nearly certain about most tokens and is only really choosing at a minority of them, and the mistaken division sign is one of those forks. Wang et al. found that RL with verifiable rewards mostly changes these high-uncertainty tokens, and that on an 8B model, updating only the most uncertain 20% of tokens works about as well as updating all of them [@wang2025highentropy].
 
 > [!note]- Inside the RL box: what separates PPO, GRPO, and the rest
 > Most of the algorithm zoo lives in the scalar-reward family, and it's where I got lost first. What helped was noticing that the named algorithms mostly differ on two design choices.
 >
-> **"Better than what?"** A reward of 0.7 doesn't say much on its own. The model needs a baseline, an estimate of what's typical for this prompt, to tell whether 0.7 was good. PPO trains a second network, a critic, to predict it. GRPO [@shao2024deepseekmath] and RLOO [@ahmadian2024backtobasics] drop the critic and use the scores of other attempts at the same prompt as the baseline. Dropping the critic saves a lot of memory and engineering, which is a big part of why GRPO spread so fast after DeepSeek used it.
+> **"Better than what?"** A reward of 0.7 doesn't say much on its own. The model needs a baseline, an estimate of what's typical for this prompt, to tell whether 0.7 was good. PPO trains a second network, a critic, to predict it [@schulman2017ppo]. GRPO [@shao2024deepseekmath] and RLOO [@ahmadian2024backtobasics] drop the critic and use the scores of other attempts at the same prompt as the baseline. Dropping the critic saves a lot of memory and engineering, which is a big part of why GRPO spread so fast after DeepSeek used it.
 >
-> **"How far should one update move the model?"** PPO, GRPO, GSPO, and CISPO all clip something to keep one batch of rollouts from pushing the model too far, and they differ mostly in what they clip. PPO and GRPO clip each token's update, GSPO clips per sequence, and CISPO clips the importance-sampling weights (the correction for rollouts coming from a slightly older copy of the model) while still letting every token contribute to the gradient.
+> **"How far should one update move the model?"** PPO, GRPO, GSPO, and CISPO all clip something to keep one batch of rollouts from pushing the model too far, and they differ mostly in what they clip. PPO and GRPO clip each token's update, GSPO clips per sequence [@zheng2025gspo], and CISPO clips the importance-sampling weights (the correction for rollouts coming from a slightly older copy of the model) while still letting every token contribute to the gradient [@minimax2025m1].
 >
 > That's about as deep as I think you need to go to read a technical report. The RLHF book's policy-gradient chapter has the details [@lambert2025rlhfbook].
 
@@ -291,6 +320,7 @@ The last view isn't a training signal, but it shows where the learning happens. 
   fallbackAlt="The fourteen data shapes, the scorers that turn some of them into rewards, and the four learning signals they feed.">
 
 <MapStep
+  dwell="long"
   state="hl=source,data&zoom=source,data"
   desc="the five sources and the fourteen data shapes lit.">
 
@@ -299,8 +329,8 @@ If the methods turn signals into updates, the data is where the signals come fro
 </MapStep>
 
 <MapStep
-  state="hl=data,family&zoom=data,scorer,family"
-  desc="every data shape lit, with the four learning signals they feed.">
+  state="hl=data,scorer,family&zoom=data,scorer,family"
+  desc="every data shape lit, with lines to the four learning signals: some shapes feed a signal directly, others through a scorer in the middle column. Teacher distributions has no line in: teacher data feeds the distillation update rules directly.">
 
 ### Shape
 
@@ -320,7 +350,7 @@ Demonstrations are prompts with target responses: single answers, multi-turn con
   state="hl=d-pairs,d-ratings,d-critiques,d-steps,d-rubrics,f-pref,s-rm,s-prm,s-judge&zoom=data,scorer,family"
   desc="preference pairs, ratings, critiques, step labels and rubrics lit, with the preferences signal and the reward model, process reward model and LLM judge they train or feed.">
 
-Evaluative annotations say how good a response is, without supplying a better one: pairwise preferences, rankings, ratings on a scale, rubrics, critiques, and labels on specific spans or reasoning steps. Step-level labels are what process reward models train on [@lightman2023verify].
+Evaluative annotations say how good a response is, without supplying a better one: pairwise preferences, rankings, ratings on a scale, rubrics, critiques, and labels on specific spans or reasoning steps. Step-level labels are what process reward models train on: reward models that score each step of a solution, not just the final answer [@lightman2023verify].
 
 </MapStep>
 
@@ -342,11 +372,11 @@ Teacher supervision is output from a stronger model, either sampled text or full
 
 </ScrollyMap>
 
-Here's what real rows from public datasets look like, one per shape except teacher supervision, which is mostly generated on the fly.
+Here's what real rows from public datasets look like: one each for demonstrations and evaluative annotations, and two kinds of reward-ready task. Teacher supervision is left out because it's mostly generated on the fly.
 
 <DataExamplesFigure
   id="data-examples"
-  caption="Real examples from public post-training data. The first three rows are copied verbatim from their datasets; the environment card summarizes one task from ART·E and its grader. Teacher supervision is left out because it's usually computed during training rather than stored."
+  caption="Real examples from public post-training data. The first three cards are copied verbatim from their datasets; the environment card summarizes one task from ART·E, an email-search environment described below, and its grader. Teacher supervision is left out because it's usually computed during training rather than stored."
 />
 
 Real data is messier than the categories suggest. The preference pair above is typical of Anthropic's HH-RLHF dataset: two short, imperfect answers, with a crowdworker's judgment of which is better. Single labels are noisy too. In another pair from the same dataset, someone asks for Cardi B's real name, and the *rejected* answer is the one that gets it right (Belcalis Almanzar). Preference data works in bulk because the noise averages out over many comparisons.
@@ -441,8 +471,9 @@ The amount of data has grown a lot, even though post-training data is still tiny
   fallbackAlt="Ratings, preference pairs and the model's own rollouts, linked to the reward model and three learning signals by edges named for the transformation each makes.">
 
 <MapStep
+  dwell="long"
   state="zoom=data,method"
-  desc="data shapes on the left and update rules on the right, with every connection between them drawn. Most shapes reach several methods, and most methods take several shapes.">
+  desc="data shapes on the left and update rules on the right, with the scorers and learning signals between them and every connection drawn. Most shapes reach several methods, and most methods take several shapes.">
 
 Here's where the lego metaphor earns its keep. Data and methods don't pair up one-to-one. A single pool of data can feed several methods, and a single method can eat data from very different sources, because data gets transformed from one shape into another along the way.
 
@@ -452,7 +483,7 @@ Here's where the lego metaphor earns its keep. Data and methods don't pair up on
   state="sel=d-ratings&zoom=data,method"
   desc="ratings and rankings selected, with everything they can reach lit: scorers, learning signals and most of the update rules.">
 
-Suppose you want a model that summarizes scientific papers accurately. You sample four summaries from your current model and have an expert rate them: A gets 5/5, B gets 4/5, C overstates the findings and gets 2/5, D makes up a result and gets 1/5. That one batch of ratings can drive almost every method in the previous section.
+Suppose you want a model that summarizes scientific papers accurately. You sample four summaries from your current model and have an expert rate them: A gets 5/5, B gets 4/5, C overstates the findings and gets 2/5, D makes up a result and gets 1/5. That one batch of ratings can drive almost every method on the map.
 
 </MapStep>
 
@@ -505,10 +536,11 @@ Distillation is the odd one out. It doesn't use the ratings at all. Offline dist
 </MapStep>
 
 <MapStep
+  dwell="long"
   state="hl=d-ratings,d-pairs,d-rollouts,f-demo,f-pref,s-rm,f-reward&labels=1&zoom=data,method"
   desc="ratings, preference pairs and the model's rollouts lit, with the reward model and three learning signals, and each edge between them named for the transformation it makes.">
 
-Four transformations do most of this work: **filtering** turns scored samples into demonstrations, **comparing** turns them into preference pairs, **training a reward model** turns preferences into a scorer that generalizes, and **scoring fresh samples** turns that scorer into on-policy rewards. This is why a company that sells preference labels can end up powering an RL run, even though its annotators never produce a reward.
+Four transformations do most of this work: **filtering** turns scored samples into demonstrations, **comparing** turns them into preference pairs, **training a reward model** turns ratings or preferences into a scorer that generalizes, and **scoring fresh samples** turns that scorer into on-policy rewards. This is why a company that sells preference labels can end up powering an RL run, even though its annotators never produce a reward.
 
 </MapStep>
 
@@ -518,7 +550,7 @@ The table below is the full compatibility picture. It's meant for reference, and
 
 <Table id="data-method" caption="Which data shapes feed which methods. ● direct use, ◐ needs a transformation or an extra ingredient, — atypical. Reward modeling trains a scorer, not the policy.">
 
-| Data | SFT | Direct alignment (DPO etc.) | Reward modeling | RL | Distillation |
+| Data | SFT | Preference tuning (DPO etc.) | Reward modeling | RL | Distillation |
 | --- | :-: | :-: | :-: | :-: | :-: |
 | Prompts and task sets | ◐ | ◐ | — | ● | ● |
 | Demonstrations | ● | ◐ | — | — | ◐ |

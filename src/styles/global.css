@@ -96,7 +96,7 @@
 
   --font-heading: "Source Serif 4", serif;
   --font-body: "IBM Plex Sans", sans-serif;
-  --font-mono: "IBM Plex Mono", monospace;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
 }
 
 /* KaTeX Math Styling */
