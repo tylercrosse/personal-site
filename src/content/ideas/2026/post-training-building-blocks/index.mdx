@@ -18,12 +18,14 @@ import learningSignals from "./figures/learning-signals.png";
 import dataFormats from "./figures/data-formats.png";
 import annotatedExample from "./figures/annotated-example.png";
 import oneTaskManyMethods from "./figures/one-task-many-methods.png";
+import DataExamples from "../../../../components/ideas/post-training/DataExamples.astro";
+import TokenSignalFigure from "../../../../components/ideas/post-training/TokenSignalFigure.astro";
 
 A pretrained language model has read much of the internet and still can't take a request. It completes documents. If you type "What is the capital of France?", a reasonable continuation is another quiz question, since on the web that line usually appears in a list of them. The model probably knows the answer. Answering you just isn't what it's been trained to do.
 
 Post-training is everything done after pretraining to change that. It turns a document completer into something you can hand a task to: a model that answers the question, follows instructions, holds a conversation, calls tools, works through a hard problem step by step, and declines some requests. InstructGPT made the point early: labelers preferred outputs from a 1.3B-parameter post-trained model over those from the 175B-parameter GPT-3, a model more than 100 times larger [@ouyang2022instructgpt].
 
-For a while the short version was that post-training *elicits* what pretraining already put there. A thin layer of instruction tuning and preference tuning chose which of the many voices in the base model you'd hear. That story is less true now. Reinforcement learning (RL) on problems with checkable answers has become a main way that models get better at math, code, and long agentic tasks [@deepseek2025r1], so post-training is increasingly where the model learns to do the task as well as how to present it. How much of that is new capability is still debated. One study found that RL-trained models beat their base models when each gets one try, but the base models catch up when each gets many tries, which suggests RL mostly makes answers the base model could already find more likely [@yue2025rlreasoning].
+For a while the short version was that post-training *elicits* what pretraining already put there. A thin layer of instruction tuning and preference tuning chose which of the many voices in the base model you'd hear. That story is less true now. Reinforcement learning (RL) on problems with checkable answers has become a main way that models get better at math, code, and long agentic tasks [@deepseek2025r1], so post-training is increasingly where the model learns to do the task as well as how to present it.
 
 I've been working through Nathan Lambert's RLHF book [@lambert2025rlhfbook] and a pile of technical reports, and what took me longest to see is that the named algorithms are assembled from a small set of interchangeable parts. I've come to think of them as lego: standard pieces that snap together in different ways. Each training stage combines three of them:
 
@@ -31,7 +33,7 @@ I've been working through Nathan Lambert's RLHF book [@lambert2025rlhfbook] and 
 - **A learning signal** derived from that data, which tells the model what better looks like.
 - **An update rule** that turns the signal into a change in the weights.
 
-A recipe is a particular assembly of those parts. Labs rearrange them every few months, a growing industry sells them, and the choices show up in how the finished model behaves. The rest of this post starts with what a pipeline looks like today, then sorts the methods by learning signal and by how they update the model, then covers the data and how it connects to the methods, and ends with the market for the parts and what the choices do to the model.
+A recipe is a particular assembly of those parts. Labs rearrange them every few months, a growing industry sells them, and the choices show up in how the finished model behaves.
 
 ## What a pipeline looks like in 2026
 
@@ -113,14 +115,26 @@ The cells blur at the edges. Rejection-sampling SFT trains on the model's own te
 
 The bottom-left cell explains the pipeline in [fig:pipeline]. RL is on-policy but sparse, so it's expensive per bit learned. SFT is dense but off-policy, so the model never practices recovering from its own mistakes. On-policy distillation gets both: the student writes the text, and the teacher scores every token of it. It needs a teacher that's already good, which is why it shows up at the end, after RL has trained the specialists.
 
-### Inside the RL box
+To see what these signals actually say, I ran one example with real models. A small model, Qwen2.5-0.5B-Instruct, answers a word problem and gets it wrong. A larger model from the same family, Qwen2.5-7B-Instruct, plays the teacher. Each button in the figure is laid out like the table above.
 
-Most of the algorithm zoo lives in the scalar-reward family, and it's where I got lost first. What helped was noticing that the named algorithms mostly differ on two design choices:
+<TokenSignalFigure
+  id="token-signals"
+  alt="A word problem about a farmer's cows, with a toggle laid out like the 2×2 table. SFT tints a teacher-written correct answer by how surprising each token is to the student. DPO tints a preferred answer all blue and the student's wrong answer all orange. On-policy distillation tints the student's own wrong answer token by token; the mistake '42 / 3 = 14 cows left' is orange, along with wording the teacher wouldn't use. RL tints every token of the same answer one shade of orange. A fifth view shades where the student was most uncertain."
+  caption="One prompt, four learning signals, with real numbers from Qwen2.5-0.5B-Instruct (student) and Qwen2.5-7B-Instruct (teacher). Distillation flags the student's mistake, but also its wording, since the teacher scores phrasing as well as reasoning; RL gives every token the same number."
+/>
 
-- **"Better than what?"** A reward of 0.7 doesn't say much on its own. The model needs a baseline, an estimate of what's typical for this prompt, to tell whether 0.7 was good. PPO trains a second network, a critic, to predict it. GRPO [@shao2024deepseekmath] and RLOO [@ahmadian2024backtobasics] drop the critic and use the scores of other attempts at the same prompt as the baseline. Dropping the critic saves a lot of memory and engineering, which is a big part of why GRPO spread so fast after DeepSeek used it.
-- **"How far should one update move the model?"** PPO, GRPO, GSPO, and CISPO all clip something to keep one batch of rollouts from pushing the model too far, and they differ mostly in what they clip. PPO and GRPO clip each token's update, GSPO clips per sequence, and CISPO clips the importance-sampling weights (the correction for rollouts coming from a slightly older copy of the model) while still letting every token contribute to the gradient.
+The student divides 42 cows by 3 and calls the result the number left, when 14 is the number he sold. RL gives the whole answer one score, about −0.7 relative to the student's other attempts, so the correct multiplication at the start is pushed down as hard as the mistake. On-policy distillation points at the mistake. At the division sign the teacher would have written a minus, and at "left" it would have written "sold". It also scores wording it wouldn't have used, like "There were", even more negatively, which is a reminder that a teacher passes on its style along with its reasoning. SFT trains on the teacher's own correct answer, which never contains the student's wrong step, so it has nothing to say about that step at all.
 
-That's about as deep as I think you need to go to read a technical report. The RLHF book's policy-gradient chapter has the details [@lambert2025rlhfbook].
+The last view isn't a training signal, but it shows where the learning happens. The student is nearly certain about most tokens and is only really choosing at a minority of them, and the mistaken division sign is one of those forks. Wang et al. found that RL with verifiable rewards mostly changes these high-uncertainty tokens, and that on an 8B model, updating only the most uncertain 20% of tokens works about as well as updating all of them [@wang2025highentropy].
+
+> [!note]- Inside the RL box: what separates PPO, GRPO, and the rest
+> Most of the algorithm zoo lives in the scalar-reward family, and it's where I got lost first. What helped was noticing that the named algorithms mostly differ on two design choices.
+>
+> **"Better than what?"** A reward of 0.7 doesn't say much on its own. The model needs a baseline, an estimate of what's typical for this prompt, to tell whether 0.7 was good. PPO trains a second network, a critic, to predict it. GRPO [@shao2024deepseekmath] and RLOO [@ahmadian2024backtobasics] drop the critic and use the scores of other attempts at the same prompt as the baseline. Dropping the critic saves a lot of memory and engineering, which is a big part of why GRPO spread so fast after DeepSeek used it.
+>
+> **"How far should one update move the model?"** PPO, GRPO, GSPO, and CISPO all clip something to keep one batch of rollouts from pushing the model too far, and they differ mostly in what they clip. PPO and GRPO clip each token's update, GSPO clips per sequence, and CISPO clips the importance-sampling weights (the correction for rollouts coming from a slightly older copy of the model) while still letting every token contribute to the gradient.
+>
+> That's about as deep as I think you need to go to read a technical report. The RLHF book's policy-gradient chapter has the details [@lambert2025rlhfbook].
 
 ## The data
 
@@ -146,6 +160,17 @@ Evaluative annotations say how good a response is, without supplying a better on
 Reward-ready tasks come with a way to score any attempt: a math problem with an answer key, a coding task with tests, or a whole interactive environment with a grader at the end.
 
 Teacher supervision is output from a stronger model, either sampled text or full token-level probabilities.
+
+Here's what real rows from public datasets look like, one per shape except teacher supervision, which is mostly generated on the fly.
+
+<DataExamples
+  id="data-examples"
+  caption="Real examples from public post-training data. The first three rows are copied verbatim from their datasets; the environment card summarizes one task from ART·E and its grader. Teacher supervision is left out because it's usually computed during training rather than stored."
+/>
+
+Real data is messier than the categories suggest. The preference pair above is typical of Anthropic's HH-RLHF dataset: two short, imperfect answers, with a crowdworker's judgment of which is better. Single labels are noisy too. In another pair from the same dataset, someone asks for Cardi B's real name, and the *rejected* answer is the one that gets it right (Belcalis Almanzar). Preference data works in bulk because the noise averages out over many comparisons.
+
+Rows also move between shapes. GSM8K's answer key is a full worked solution that ends in the number, so the same row can be an SFT demonstration if you keep the whole solution, or a verifiable problem if you keep only the final number.
 
 The formats differ a lot in how much information they carry. Take one bad summary of a paper and look at the annotations you could attach to it.
 
@@ -176,6 +201,42 @@ Separately from shape, data has a source, and each source comes with its own tra
 
 Real pipelines mix these. A common pattern is for experts to write the task specifications and grading criteria, a teacher model to generate candidate solutions, and automated checks to filter them. Kimi K3's cold-start data, for instance, is trajectories generated by earlier specialist Kimi models, then verified in several stages and annotated by humans [@kimi2026k3].
 
+### What it teaches, and how much
+
+The third axis is what behavior the data is for, and this is how a training mix is actually planned. A lab decides how much math, code, safety, multilingual, and conversational data to include, and the proportions show up in the model. Tülu 3's SFT mixture is fully public, so you can count [@lambert2024tulu3]:
+
+<Table id="tulu-mix" caption="The Tülu 3 SFT mixture by target behavior, counted from the released dataset's source column. Groupings are mine, following the categories in the Tülu 3 report.">
+
+| Behavior | Examples | Share | Main sources |
+| --- | --: | --: | --- |
+| Math | 334,252 | 36% | Persona-generated math problems, NuminaMath, GSM8K-style problems |
+| General chat | 206,613 | 22% | WildChat, FLAN, No Robots, OpenAssistant |
+| Code | 142,275 | 15% | Evol-CodeAlpaca, persona-generated code |
+| Safety and refusals | 110,983 | 12% | WildGuardMix, WildJailbreak, CoCoNot |
+| Multilingual | 100,000 | 11% | Aya |
+| Precise instruction following | 29,980 | 3% | Persona-generated prompts with constraints |
+| Science and tables | 15,000 | 2% | SciRIFF, TableGPT |
+| The model's own identity | 240 | 0.03% | 24 hand-written prompts, repeated 10 times |
+
+</Table>
+
+Most of the mix is synthetic or adapted from earlier datasets, and more than a third is math. The last row is my favorite. Models trained heavily on other models' outputs have a habit of answering "who are you?" with someone else's name, so the mix includes a couple dozen hard-coded examples (asking it to draw its own logo, how it compares to ChatGPT, what to do with an empty message), each repeated ten times so they stick.
+
+The amount of data has grown a lot, even though post-training data is still tiny next to the trillions of tokens used in pretraining.
+
+<Table id="data-scale" caption="Approximate post-training data sizes from published reports and released datasets. Counts are examples, pairs, or prompts, not tokens.">
+
+| Model | SFT | Preferences | RL prompts |
+| --- | --: | --: | --: |
+| InstructGPT (2022) | ~13k prompts | ~33k prompts, ranked | ~31k |
+| Tülu 3 8B (2024) | ~939k | ~273k pairs | ~30k |
+| DeepSeek-R1 (2025) | ~800k in the filtered SFT stage | not reported here | not reported here |
+| Olmo 3 Think 7B (2025) | ~2.27M | 150k pairs | ~102k |
+
+</Table>
+
+{/* CHECK (review): InstructGPT figures are rounded from Table 6 of the paper; Tülu 3 and Olmo 3 rows are row counts of the released HF datasets (allenai/tulu-3-sft-mixture, allenai/Dolci-Think-{SFT,DPO,RL}-7B), which may differ slightly from what was trained on. R1: ~600k reasoning + ~200k non-reasoning samples. Tülu 3 rows: allenai/llama-3.1-tulu-3-8b-preference-mixture (272,898) and allenai/RLVR-GSM-MATH-IF-Mixed-Constraints (29,946). Identity-row claim about "someone else's name" is the common motivation, not quoted from the Tülu 3 report; check its wording. */}
+
 ## Connecting the data to the methods
 
 Here's where the lego metaphor earns its keep. Data and methods don't pair up one-to-one. A single pool of data can feed several methods, and a single method can eat data from very different sources, because data gets transformed from one shape into another along the way.
@@ -199,7 +260,7 @@ Distillation is the odd one out. It doesn't use the ratings at all. Offline dist
 
 Four transformations do most of this work: **filtering** turns scored samples into demonstrations, **comparing** turns them into preference pairs, **training a reward model** turns preferences into a scorer that generalizes, and **scoring fresh samples** turns that scorer into on-policy rewards. This is why a company that sells preference labels can end up powering an RL run, even though its annotators never produce a reward.
 
-The full compatibility picture looks something like this:
+The table below is the full compatibility picture. It's meant for reference, and the argument doesn't depend on any single cell.
 
 <Table id="data-method" caption="Which data shapes feed which methods. ● direct use, ◐ needs a transformation or an extra ingredient, — atypical. Reward modeling trains a scorer, not the policy.">
 
@@ -219,7 +280,12 @@ The full compatibility picture looks something like this:
 
 </Table>
 
-A few cells need a word. Prompts on their own are the main input to RL and on-policy distillation, which generate their own responses and need only a reward source or a teacher to go with them. A revision paired with the original is already a preference pair, while critiques and step labels mostly train judges and process reward models rather than the policy. Ratings have to be turned into pairs before DPO can use them, except with KTO, which takes good and bad labels directly. Rubrics become RL rewards when a model judge scores against them. Recorded agent trajectories are someone else's text, so RL can use them only indirectly, for example as cold-start data, and they count as distillation data only in the offline sense, when a teacher produced them.
+> [!note]- Notes on a few cells
+> - **Prompts** on their own are the main input to RL and on-policy distillation, which generate their own responses and need only a reward source or a teacher to go with them.
+> - **A revision** paired with the original is already a preference pair. **Critiques and step labels** mostly train judges and process reward models rather than the policy.
+> - **Ratings** have to be turned into pairs before DPO can use them, except with KTO, which takes good and bad labels directly.
+> - **Rubrics** become RL rewards when a model judge scores against them.
+> - **Recorded agent trajectories** are someone else's text, so RL can use them only indirectly, for example as cold-start data. They count as distillation data only in the offline sense, when a teacher produced them.
 
 In practice the data you can get often decides the method more than the task does. If you know what a great answer looks like and can write it down, start with SFT. If you can judge outputs more easily than you can write them, use preferences. If a program can check the answer, use RLVR. If someone already has a model that does the thing well, distill from it.
 
@@ -238,7 +304,16 @@ Because the parts are interchangeable, they can be bought. Data vendors have sol
 
 </Table>
 
-The last row is the new business. An RL environment for, say, financial analysis might include a simulated company with spreadsheets, emails, and records; a task like reconciling a quarterly report; tools for editing spreadsheets and searching documents; and a grader that checks the numbers and scores the deliverable against a rubric. One environment supports many tasks, and each task supports many rollouts, so a lab is buying a reusable source of practice rather than a fixed set of answers.
+The last row is the new business. An environment is a small world the model can act in, a set of tasks to do there, and a grader. One that's open to inspect is ART·E, built by OpenPipe ([blog post](https://openpipe.ai/blog/art-e-mail-agent)) and packaged in Prime Intellect's [environments repo](https://github.com/PrimeIntellect-ai/prime-environments/tree/main/environments/art_e), with its last card shown in [fig:data-examples]:
+
+- **The world** is the Enron email corpus, loaded into a searchable database, with one employee's inbox per task.
+- **The tasks** are about 44,000 synthetic questions generated from those emails, such as "When will the new Weekly Report be delivered each week?"
+- **The tools** are `search_inbox` and `read_email`, with up to ten turns to use them.
+- **The grader** is a model judge that compares the final answer with a reference answer. A correct answer scores +1, "I don't know" scores 0, and a wrong answer scores −1, with a small bonus for using fewer tool calls.
+
+That scoring scheme is a behavior specification. Because a wrong answer scores below an abstention, the model learns that guessing is worse than admitting it couldn't find the answer. Score them the same and it loses any reason to abstain, even though the emails and questions haven't changed.
+
+Commercial environments apply the same idea to more of a job: a simulated company with spreadsheets, emails, and records, a task like reconciling a quarterly report, and graders that check the numbers and score the deliverable against an expert's rubric. One environment supports many tasks, and each task supports many rollouts, so a lab is buying a reusable source of practice rather than a fixed set of answers.
 
 The ecosystem around this has grown fast. Expert-data companies like Scale AI, Surge AI, Mercor, and Turing now build environments, rubrics, and graders alongside demonstrations. Scale advertises tools and applications that "behave like real-world systems in a stable environment", along with environments rebuilt from real companies' anonymized operating histories ([Scale RL environments](https://scale.com/rlenvironments)), and Mercor publishes some of its expert-authored professional tasks as the APEX benchmarks ([APEX](https://www.mercor.com/apex/)). Smaller companies specialize in a single domain such as software engineering or finance. Infrastructure companies sell the sandboxes the rollouts run in. On the open side, Prime Intellect's [Environments Hub](https://app.primeintellect.ai/dashboard/environments) collects community-built environments you can read and train on.
 
@@ -247,6 +322,8 @@ The ecosystem around this has grown fast. Expert-data companies like Scale AI, S
 The grading is changing too. A math problem is graded by checking the final answer. An enterprise workflow is graded by checking the state of the world afterward: whether the right records changed, whether the document exists, whether the constraints were respected. Many professional tasks can't be fully checked by a program, so their graders mix automated checks with rubric-following model judges. For tasks it can't verify, Kimi K3 uses a generative reward model that writes a rubric for each task and uses it to compare candidate answers head to head [@kimi2026k3].
 
 ## The parts change the model
+
+The biggest open question is how much post-training adds and how much it brings out. One study found that RL-trained models beat their base models when each gets one try, but the base models catch up when each gets many tries. That suggests RL mostly makes answers the base model could already find more likely, rather than teaching new ones [@yue2025rlreasoning]. However that debate settles, the choice of parts clearly changes how a model behaves.
 
 Where the data comes from can shape a model's personality. In April 2025 OpenAI rolled back a GPT-4o update that had become noticeably sycophantic. Its postmortem listed several changes that "may have played a part" in combination, among them a new reward signal from users' thumbs-up and thumbs-down, along with changes involving memory and fresher data. OpenAI noted that this kind of user feedback "can sometimes favor more agreeable responses," and that together the changes weakened the reward signal that had been holding sycophancy in check [@openai2025sycophancy]. Sycophancy from human-preference training had been documented well before that [@sharma2023sycophancy].
 

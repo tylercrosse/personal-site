@@ -1,0 +1,110 @@
+---
+/**
+ * Numbered figure wrapper for the TokenSignals widget.
+ *
+ *   <TokenSignalFigure id="token-signals" alt="…" caption="…" />
+ *
+ * Name ends in "Figure" so remarkCrossRefs counts it in the figure sequence;
+ * it shares Astro.locals.figureCounter with Figure/SvgFigure so the printed
+ * number matches. Unlike SvgFigure it doesn't put role="img" on the content,
+ * which would hide the widget's buttons from screen readers; `alt` becomes an
+ * aria-label on the figure instead.
+ */
+import TokenSignals from "./TokenSignals.jsx";
+
+interface Props {
+  alt: string;
+  caption?: string;
+  numbered?: boolean;
+  /** Cross-reference target; `id="foo"` is reachable as `[fig:foo]`. */
+  id?: string;
+}
+
+const { alt, caption, numbered = true, id } = Astro.props;
+const figureId = id ? `fig-${id}` : undefined;
+
+let figureNumber: number | undefined;
+if (numbered) {
+  if (!Astro.locals.figureCounter) Astro.locals.figureCounter = 0;
+  Astro.locals.figureCounter++;
+  figureNumber = Astro.locals.figureCounter;
+}
+---
+
+<figure id={figureId} class="figure ts-figure" aria-label={alt}>
+  <TokenSignals client:visible />
+  {
+    caption && (
+      <figcaption class="caption">
+        {numbered && figureNumber && <strong>Figure {figureNumber}: </strong>}
+        {caption}
+      </figcaption>
+    )
+  }
+</figure>
+
+<style>
+  /* Caption and :target styling mirror SvgFigure.astro (scoped styles don't
+     carry over between components). */
+  .figure {
+    margin: 1.5rem 0;
+    scroll-margin-top: 5rem;
+    border-radius: 8px;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .figure:target {
+      animation: ts-figure-target-flash 2s ease-out;
+    }
+
+    @keyframes ts-figure-target-flash {
+      0% {
+        background: color-mix(in srgb, var(--blue) 16%, transparent);
+        box-shadow: 0 0 0 0.5rem color-mix(in srgb, var(--blue) 16%, transparent);
+      }
+      100% {
+        background: transparent;
+        box-shadow: 0 0 0 0.5rem transparent;
+      }
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .figure:target {
+      outline: 2px solid color-mix(in srgb, var(--blue) 55%, transparent);
+      outline-offset: 0.4rem;
+    }
+  }
+
+  .caption {
+    margin-top: 0.75rem;
+    font-size: 0.9rem;
+    font-style: italic;
+    color: var(--sol-1);
+    line-height: 1.4;
+    max-width: min(90%, 800px);
+    margin-left: auto;
+    margin-right: auto;
+    text-align: center;
+  }
+
+  .caption strong {
+    font-style: normal;
+    color: var(--sol-9);
+  }
+
+  [data-effective-theme="dark"] .caption {
+    color: var(--sol-0);
+  }
+
+  [data-effective-theme="dark"] .caption strong {
+    color: var(--sol-10);
+  }
+
+  @media (max-width: 720px) {
+    .caption {
+      font-size: 0.85rem;
+      max-width: 90%;
+    }
+  }
+</style>
