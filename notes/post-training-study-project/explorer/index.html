@@ -184,7 +184,11 @@ a.cite:hover { color: var(--text); text-decoration-color: currentColor; }
 .colhead { font-size: 11px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; fill: var(--faint); }
 .axislbl { font-size: 12px; font-weight: 600; fill: var(--muted); }
 .axissub { font-size: 11px; fill: var(--faint); }
-.quad { fill: var(--quad); stroke: var(--quad-line); }
+.quad { fill: var(--quad); stroke: var(--quad-line); transition: fill .3s, stroke .3s; }
+.quad.on { fill: color-mix(in srgb, var(--gold) 12%, var(--quad)); stroke: var(--gold); stroke-width: 1.5; }   /* cell= */
+/* mute=: parts the reader hasn't met yet, shown but held back */
+.node.muted .state:not(.dim):not(.soft) { opacity: .55; }
+.node.muted text, .embed .node.muted text { fill: var(--faint); }
 .axis { stroke: var(--line); stroke-width: 1; }
 .caption { font-size: 11.5px; fill: var(--faint); font-style: italic; }
 .tick { font-size: 11px; fill: var(--faint); }
@@ -352,6 +356,11 @@ aside .prof li, .prof li { margin: 0 0 2px; color: var(--text-2); white-space: n
 .embed .recipes .chip { cursor: default; }
 .embed .app { grid-template-columns: 1fr; grid-template-rows: minmax(0, 1fr); }
 .embed svg#map { pointer-events: none; cursor: default; touch-action: auto; }
+/* Headings a size up, so they stay readable when a host frames the whole map. Text in the host's colours when it
+   shares them (--host-text, --host-muted; see the theme script), so the labels read as part of the article. */
+.embed .colhead { font-size: 13px; fill: var(--host-muted, var(--faint)); }
+.embed .node text, .embed .elabel text { fill: var(--host-text, var(--text)); }
+.embed .node text.sub, .embed .axislbl, .embed .axissub, .embed .caption, .embed .rmark { fill: var(--host-muted, var(--muted)); }
 .embed .node .state { transition: opacity .45s ease; }
 .embed .edge { transition: opacity .45s ease; }
 @media (prefers-reduced-motion: reduce) {
@@ -379,7 +388,16 @@ aside .prof li, .prof li { margin: 0 0 2px; color: var(--text-2); white-space: n
   if (param) { T.hosted = true; T.set(param); }
   else if (host) {
     T.hosted = true;
-    const follow = () => T.set(host.dataset.effectiveTheme);
+    // Text takes the host's own colours (the site's body text, --sol-8, and its muted caption text, --sol-1),
+    // so an embedded map's labels read as part of the article rather than in the map's own palette
+    const follow = () => {
+      T.set(host.dataset.effectiveTheme);
+      const cs = getComputedStyle(host);
+      [["--host-text", "--sol-8"], ["--host-muted", "--sol-1"]].forEach(([to, from]) => {
+        const v = cs.getPropertyValue(from).trim();
+        v ? root.style.setProperty(to, v) : root.style.removeProperty(to);
+      });
+    };
     follow();
     new MutationObserver(follow).observe(host, { attributes: true, attributeFilter: ["data-effective-theme"] });
   } else {
@@ -986,18 +1004,28 @@ function place(pos, ids, cx, cy, cols, dx = 160, dy = 42) {
 }
 
 function layoutGrid() {
-  const pos = {}, deco = []; const W = 440, H = 270;
-  [[0, 0], [W, 0], [0, H], [W, H]].forEach(([x, y]) => deco.push({ t: "rect", x, y, w: W, h: H, cls: "quad" }));
+  // An embed's frame is about square: narrower cells, row names turned on their side, captions on four lines
+  const pos = {}, deco = []; const W = EMBED ? 370 : 440, H = EMBED ? 300 : 270;
+  [[0, 0, "tl"], [W, 0, "tr"], [0, H, "bl"], [W, H, "br"]].forEach(([x, y, cell]) => deco.push({ t: "rect", x, y, w: W, h: H, cls: "quad", cell }));
   deco.push({ t: "text", x: W / 2, y: -34, s: "Signal on every token", cls: "axislbl", anchor: "middle" });
   deco.push({ t: "text", x: W / 2, y: -17, s: "dense", cls: "axissub", anchor: "middle" });
   deco.push({ t: "text", x: 1.5 * W, y: -34, s: "One signal per response", cls: "axislbl", anchor: "middle" });
   deco.push({ t: "text", x: 1.5 * W, y: -17, s: "sparse", cls: "axissub", anchor: "middle" });
-  deco.push({ t: "text", x: -18, y: H / 2 - 8, s: "Someone else's text", cls: "axislbl", anchor: "end" });
-  deco.push({ t: "text", x: -18, y: H / 2 + 10, s: "off-policy", cls: "axissub", anchor: "end" });
-  deco.push({ t: "text", x: -18, y: 1.5 * H - 8, s: "The model's own text", cls: "axislbl", anchor: "end" });
-  deco.push({ t: "text", x: -18, y: 1.5 * H + 10, s: "on-policy", cls: "axissub", anchor: "end" });
-  deco.push({ t: "text", x: W, y: 2 * H + 30, s: "Rejection sampling and online DPO train on the model's own samples, but usually in batches or rounds, so they sit on the line.", cls: "caption", anchor: "middle" });
-  deco.push({ t: "text", x: W, y: 2 * H + 50, s: "Density really belongs to the scorer: a process reward model makes any RL method step-dense, and PPO's critic spreads one reward across tokens.", cls: "caption", anchor: "middle" });
+  if (EMBED) [["Someone else's text", "off-policy", H / 2], ["The model's own text", "on-policy", 1.5 * H]].forEach(([a, b, y]) => {
+    deco.push({ t: "text", x: -26, y, s: a, cls: "axislbl", anchor: "middle", rot: -90 });
+    deco.push({ t: "text", x: -10, y, s: b, cls: "axissub", anchor: "middle", rot: -90 });
+  });
+  else {
+    deco.push({ t: "text", x: -18, y: H / 2 - 8, s: "Someone else's text", cls: "axislbl", anchor: "end" });
+    deco.push({ t: "text", x: -18, y: H / 2 + 10, s: "off-policy", cls: "axissub", anchor: "end" });
+    deco.push({ t: "text", x: -18, y: 1.5 * H - 8, s: "The model's own text", cls: "axislbl", anchor: "end" });
+    deco.push({ t: "text", x: -18, y: 1.5 * H + 10, s: "on-policy", cls: "axissub", anchor: "end" });
+  }
+  (EMBED ? ["Rejection sampling and online DPO train on the model's own samples,", "but usually in batches or rounds, so they sit on the line.",
+    "Density really belongs to the scorer: a process reward model makes any RL", "method step-dense, and PPO's critic spreads one reward across tokens."]
+    : ["Rejection sampling and online DPO train on the model's own samples, but usually in batches or rounds, so they sit on the line.",
+      "Density really belongs to the scorer: a process reward model makes any RL method step-dense, and PPO's critic spreads one reward across tokens."])
+    .forEach((c, i) => deco.push({ t: "text", x: W, y: 2 * H + 30 + i * 20 + (EMBED && i > 1 ? 6 : 0), s: c, cls: "caption", anchor: "middle" }));
   place(pos, ["m-sft", "m-offdistill"], W / 2, H / 2, 1);
   place(pos, ["m-dpo", "m-ipo", "m-kto", "m-simpo"], 1.5 * W, H / 2 - 10, 2);
   place(pos, ["m-opd"], W / 2, 1.5 * H, 1);
@@ -1057,19 +1085,31 @@ function layoutTime() {
 
 function layoutPipes() {
   const pos = {}, deco = [];
-  const LANE = 82, GAP = 46;
+  // An embed names each lane above its first stage instead of in a column to the left, and packs stages closer,
+  // so the widest lane fits a frame beside an article's text
+  const LANE = EMBED ? 92 : 82, GAP = EMBED ? 30 : 46;
   const lanes = state.recipes.length ? RECIPES.filter(r => state.recipes.includes(r.id)) : RECIPES;
-  lanes.forEach((r, li) => {
-    const y = li * LANE;
+  let next = 0;   // an embed's lane titles sit above the lanes, so a lane's loop note (Llama 3) gets room before the next title
+  lanes.forEach(r => {
+    const y = next;
+    next += LANE + (EMBED && r.loop ? 26 : 0);
     let x = 0;
     STAGES.filter(s => s.rid === r.id).forEach(s => { pos[s.id] = { x: x + s.w / 2, y }; x += s.w + GAP; });
+    if (EMBED) {
+      deco.push({ t: "dot", x: 4, y: y - 40, c: r.color });
+      deco.push({ t: "text", x: 14, y: y - 36, s: r.name + " \u00b7 " + r.year, cls: "axislbl", anchor: "start" });
+      return;
+    }
     deco.push({ t: "dot", x: -196, y: y - 5, c: r.color });
     deco.push({ t: "text", x: -186, y: y - 1, s: r.name, cls: "axislbl", anchor: "start" });
     deco.push({ t: "text", x: -186, y: y + 15, s: String(r.year), cls: "axissub", anchor: "start" });
   });
-  const ly = lanes.length * LANE + 10;
-  deco.push({ t: "text", x: -196, y: ly, s: "Filled box: learns from its own text. Dashed: its own samples, gathered in rounds. Outline only: someone else's text.", cls: "caption", anchor: "start" });
-  deco.push({ t: "text", x: -196, y: ly + 20, s: "Strip under the label: ticks = feedback on every token, a few ticks = each reasoning step, one mark at the end = one judgment per response.", cls: "caption", anchor: "start" });
+  const ly = next + (EMBED ? -14 : 10), lx = EMBED ? 0 : -196;
+  (EMBED ? ["Filled box: learns from its own text. Dashed: its own samples, gathered in rounds.", "Outline only: someone else's text.",
+    "Strip under the label: ticks = feedback on every token, a few ticks = each reasoning step,", "one mark at the end = one judgment per response."]
+    : ["Filled box: learns from its own text. Dashed: its own samples, gathered in rounds. Outline only: someone else's text.",
+      "Strip under the label: ticks = feedback on every token, a few ticks = each reasoning step, one mark at the end = one judgment per response."])
+    .forEach((c, i) => deco.push({ t: "text", x: lx, y: ly + i * 20 + (EMBED && i > 1 ? 6 : 0), s: c, cls: "caption", anchor: "start" }));
   return { pos, deco };
 }
 
@@ -1093,7 +1133,9 @@ const G = { bg: $("bg"), edges: $("edges"), relarcs: $("relarcs"), relmarks: $("
 const state = { lens: "flow", sel: null, alias: null, hover: null, recipes: [], showRel: false, compare: null,
   // Set only from the URL or a host page: a set of parts to light, kinds to show (the rest ghosted),
   // what to frame, and whether to label the lit edges
-  hl: null, reveal: null, zoom: null, labels: false };
+  hl: null, reveal: null, zoom: null, labels: false,
+  // also host-only: kinds to hold back, named but faint (mute=), and grid-lens cells to light (cell=tl,tr,bl,br)
+  mute: null, cell: null };
 const EMBED = document.documentElement.classList.contains("embed");
 const REDUCED = matchMedia("(prefers-reduced-motion: reduce)");
 const GHOST = 0.07;   // opacity of parts a reveal hasn't reached yet
@@ -1145,7 +1187,10 @@ function buildNodes() {
       el("rect", { ...box, rx: 5, fill: "var(--surface)", stroke: "var(--line-weak)" }, s);
       el("rect", { x: -n.w / 2, y: -n.h / 2, width: 4, height: n.h, fill: c, rx: 1 }, s);
     } else if (n.kind === "scorer") el("rect", { ...box, rx: 5, fill: "var(--surface)", stroke: c, "stroke-dasharray": "3 2.5" }, s);
-    else if (fam) el("rect", { ...box, rx: 8, fill: tint(c, 15), stroke: c }, s);
+    else if (fam) {
+      el("rect", { ...box, rx: 8, fill: "var(--surface)", class: "" }, s);   // opaque under the tint, so edges passing behind don't show through the label
+      el("rect", { ...box, rx: 8, fill: tint(c, 15), stroke: c }, s);
+    }
     else el("rect", { ...box, rx: 5, fill: "var(--surface)", stroke: n.also ? splitGradient(n.group, n.also) : c, "stroke-width": n.also ? 1.6 : 1.3 }, s);
     if (stg) { /* label drawn above */ }
     else if (fam) {
@@ -1236,7 +1281,9 @@ function refresh() {
     else if (recipeUsed && !recipeUsed.has(n.id) && state.lens !== "pipes") cls += " soft";
     n.s.setAttribute("class", cls);
     n.g.classList.toggle("sel", n.id === state.sel);
+    n.g.classList.toggle("muted", !!state.mute && (state.mute.includes("all") || state.mute.includes(n.kind)));
   }
+  G.bg.querySelectorAll("[data-cell]").forEach(r => r.classList.toggle("on", !!state.cell && state.cell.includes(r.dataset.cell)));
   frame();
   renderLabels();
 }
@@ -1482,8 +1529,8 @@ function renderDeco(deco) {
   G.bg.innerHTML = "";
   for (const d of deco) {
     let e;
-    if (d.t === "text") { e = el("text", { x: d.x, y: d.y, class: d.cls + " fadein", "text-anchor": d.anchor || "start" }, G.bg); e.textContent = d.s; }
-    else if (d.t === "rect") e = el("rect", { x: d.x, y: d.y, width: d.w, height: d.h, class: d.cls + " fadein" }, G.bg);
+    if (d.t === "text") { e = el("text", { x: d.x, y: d.y, class: d.cls + " fadein", "text-anchor": d.anchor || "start", ...(d.rot ? { transform: `rotate(${d.rot} ${d.x} ${d.y})` } : {}) }, G.bg); e.textContent = d.s; }
+    else if (d.t === "rect") { e = el("rect", { x: d.x, y: d.y, width: d.w, height: d.h, class: d.cls + " fadein" }, G.bg); if (d.cell) e.dataset.cell = d.cell; }
     else if (d.t === "line") e = el("line", { x1: d.x1, y1: d.y1, x2: d.x2, y2: d.y2, class: d.cls + " fadein" }, G.bg);
     else if (d.t === "dot") e = el("circle", { cx: d.x, cy: d.y, r: 4.5, fill: d.c, class: "fadein" }, G.bg);
   }
@@ -1494,7 +1541,8 @@ function fitFor(pos, deco, roomRight = true) {
   const add = (a, b, c, d) => { x0 = Math.min(x0, a); y0 = Math.min(y0, b); x1 = Math.max(x1, c); y1 = Math.max(y1, d); };
   for (const id in pos) { const n = byId[id], p = pos[id]; add(p.x - n.w / 2, p.y - n.h / 2 - 12, p.x + n.w / 2, p.y + n.h / 2); }
   for (const d of deco) {
-    if (d.t === "text") {
+    if (d.t === "text" && d.rot) add(d.x - 16, d.y - d.s.length * 3.3, d.x + 4, d.y + d.s.length * 3.3);   // turned on its side
+    else if (d.t === "text") {
       const w = d.s.length * 6.3;
       const xa = d.anchor === "middle" ? d.x - w / 2 : d.anchor === "end" ? d.x - w : d.x;
       add(xa, d.y - 14, xa + w, d.y + 4);
@@ -1503,13 +1551,18 @@ function fitFor(pos, deco, roomRight = true) {
   }
   // room on the right for substitute arcs and same-column recipe routes
   // (an embed needs it only when its view draws them: recipe routes, or a selection's substitutes)
-  const arcs = !EMBED || state.recipes.length || byId[viewParams.get("sel")]?.subs;
+  // (a recipe needs it only when two of its stages in a row sit in the same column, so its route arcs out to the right)
+  const sameCol = rid => RECIPE[rid].stages.some((st, i, a) => i && st.u !== a[i - 1].u && byId[st.u].kind === byId[a[i - 1].u].kind);
+  const arcs = !EMBED || state.recipes.some(sameCol) || byId[viewParams.get("sel")]?.subs;
   if (roomRight && arcs && (state.lens === "flow" || state.lens === "time")) x1 += 110;
   const legend = state.recipes.length && state.lens !== "pipes";   // an embed shows only the recipe legend
   const W = svg.clientWidth, H = svg.clientHeight - (EMBED ? (legend ? 40 : 8) : 56), pad = EMBED ? 18 : 36;   // 56: the recipe bar
   const bw = x1 - x0 + pad * 2, bh = y1 - y0 + pad * 2;
   const k = Math.max(EMBED ? 0.2 : 0.3, Math.min(W / bw, H / bh, 1.3));
-  return { k, tx: (W - (x1 - x0) * k) / 2 - x0 * k, ty: (H - (y1 - y0) * k) / 2 - y0 * k + 4 };
+  // An embed beside an article's text keeps what it frames against its left edge when the frame is wider than
+  // that needs, so the map starts next to the text instead of across an empty band
+  const free = W - (x1 - x0) * k;
+  return { k, tx: (EMBED ? Math.min(free / 2, pad) : free / 2) - x0 * k, ty: (H - (y1 - y0) * k) / 2 - y0 * k + 4, W, H };
 }
 // The view for the current lens: the whole layout, or just what zoom= names (node ids, kinds, or "hl"),
 // with any column headings that sit over it
@@ -1517,7 +1570,10 @@ function fitView(pos, deco) {
   if (!state.zoom) return fitFor(pos, deco);
   const want = new Set();
   for (const z of state.zoom) {
-    if (z === "hl") (state.hl || []).forEach(id => pos[id] && want.add(id));
+    if (z === "hl") (state.hl || []).forEach(id => {
+      if (pos[id]) want.add(id);
+      else if (state.lens === "pipes") stagesMatching(id).forEach(st => pos[st.id] && want.add(st.id));   // a part frames its stages
+    });
     else if (pos[z]) want.add(z);
     else for (const id in pos) if (byId[id].kind === z) want.add(id);
   }
@@ -1557,6 +1613,19 @@ function applyLens(id, animate = true) {
     target[n.id] = p ? { x: p.x, y: p.y, o: shown(n) ? 1 : GHOST } : { x: c.x, y: c.y, o: 0 };
   }
   const tv = fitView(pos, deco);
+  if (EMBED) {
+    // A frame shows its framed parts whole. Anything the frame would cut through at its edges is left out,
+    // so no label is ever clipped: nodes fade with their edges, headings simply aren't drawn.
+    const inside = (x0, y0, x1, y1) => x0 * tv.k + tv.tx >= 1 && x1 * tv.k + tv.tx <= tv.W - 1 && y0 * tv.k + tv.ty >= 1 && y1 * tv.k + tv.ty <= tv.H - 1;
+    for (const n of NODES) {
+      const p = pos[n.id];
+      if (p && !inside(p.x - n.w / 2 - (n.stacked ? 0 : 0), p.y - n.h / 2 - (n.stacked ? 8 : 0), p.x + n.w / 2 + (n.stacked ? 8 : 0), p.y + n.h / 2)) target[n.id].o = 0;
+    }
+    G.bg.querySelectorAll("text").forEach(t => {
+      const b = t.getBBox();
+      t.style.visibility = !b.width || inside(b.x, b.y, b.x + b.width, b.y + b.height) ? "" : "hidden";
+    });
+  }
   // an embed showing a fixed view (a figure) lands on it; one a host page drives moves between views
   if (!animate || REDUCED.matches || (EMBED && !driven)) { cancelAnimationFrame(raf); animating = false; Object.assign(cur, target); view = tv; refresh(); return; }
   tween(target, tv);
@@ -2787,6 +2856,8 @@ function hashFor() {
   if (state.labels) p.push("labels=1");
   if (state.reveal) p.push("reveal=" + state.reveal.join(","));
   if (state.zoom) p.push("zoom=" + state.zoom.join(","));
+  if (state.mute) p.push("mute=" + state.mute.join(","));
+  if (state.cell) p.push("cell=" + state.cell.join(","));
   const c = state.compare;
   if (c) p.push("cmp=" + (c.fam || (c.mix ? "mix" : "pair-" + c.rel)), "cols=" + c.ids.join(","), "ref=" + c.ref);
   return p.join("&");
@@ -2808,12 +2879,16 @@ function applyHash(str) {
     if (TRY_BY[p.get("try")]) return runTry(p.get("try"));
     state.tryOn = null;
     const lens = LAYOUT[p.get("lens")] ? p.get("lens") : "flow";
-    const hl = list("hl").filter(id => byId[id]), reveal = list("reveal"), zoom = list("zoom");
-    const recipes = list("recipes").filter(r => RECIPE[r]).slice(0, 3);
+    // hl= takes part ids or whole kinds (source, data, scorer, family, method)
+    const hl = [...new Set(list("hl").flatMap(id => byId[id] ? [id] : KIND[id] && id !== "stage" ? NODES.filter(n => n.kind === id).map(n => n.id) : []))];
+    const reveal = list("reveal"), zoom = list("zoom");
+    // routes are drawn for up to three recipes; the pipelines lens can show any number of lanes
+    const recipes = list("recipes").filter(r => RECIPE[r]).slice(0, lens === "pipes" ? RECIPES.length : 3);
     const relayout = lens !== state.lens || String(reveal) !== String(state.reveal || "") || String(zoom) !== String(state.zoom || "")
       || String(recipes) !== String(state.recipes)
       || (zoom.includes("hl") && String(hl) !== String(state.hl || ""));   // framing the highlight follows it           // lanes in the pipelines lens; room for the legend elsewhere
     state.hl = hl.length ? hl : null; state.labels = p.get("labels") === "1";
+    state.mute = list("mute").length ? list("mute") : null; state.cell = list("cell").length ? list("cell") : null;
     state.reveal = reveal.length ? reveal : null; state.zoom = zoom.length ? zoom : null;
     state.recipes = recipes; syncChips();                     // before the layout: the pipelines lens filters by them
     if (relayout) applyLens(lens);
@@ -2836,8 +2911,11 @@ window.addEventListener("popstate", () => applyHash());
 
 // ---- Host pages. An embedding page (?embed=1) drives the view with
 //   frame.contentWindow.postMessage({ type: "pt-explorer:state", state: "lens=flow&hl=d-pairs,s-rm&zoom=hl" }, "*")
-// using the same params as the hash, plus hl= (light these parts), labels=1 (name the lit edges),
-// reveal= (kinds to show; the rest are ghosted) and zoom= (ids, kinds or "hl" to frame).
+// using the same params as the hash, plus hl= (light these parts, or whole kinds), labels=1 (name the lit edges),
+// reveal= (kinds to show; the rest are ghosted), mute= (kinds to name faintly, or "all"), cell= (grid-lens
+// cells to light: tl, tr, bl, br) and zoom= (ids, kinds or "hl" to frame). In the pipelines lens, recipes=
+// picks the lanes, any number of them. An embed frames what zoom= names whole: parts its frame would cut
+// through are left out rather than clipped.
 // The map says { type: "pt-explorer:ready" } to its parent once it can take a state.
 let ready = false, pendingState = null;
 window.addEventListener("message", ev => {
@@ -2954,7 +3032,10 @@ document.addEventListener("keydown", ev => {
   T.onchange = sync; sync();
 })();
 
-let rz; window.addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => { if (lastLayout) { view = fitView(lastLayout.pos, lastLayout.deco); frame(); renderLabels(); } }, 150); });
+let rz; window.addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => {
+  if (EMBED && lastLayout) return applyLens(state.lens, false);   // what fits whole depends on the frame's size
+  if (lastLayout) { view = fitView(lastLayout.pos, lastLayout.deco); frame(); renderLabels(); }
+}, 150); });
 
 /* ============================================================
    INIT
