@@ -14,7 +14,7 @@ audience: "Technical readers who know roughly how LLMs are pretrained"
 import Figure from "../../../../components/Figure.astro";
 import Table from "../../../../components/Table.astro";
 import PipelineFigure from "../../../../components/ideas/post-training/PipelineFigure.astro";
-import annotatedExample from "./figures/annotated-example.png";
+import AnnotatedExampleFigure from "../../../../components/ideas/post-training/AnnotatedExample.astro";
 import DataExamplesFigure from "../../../../components/ideas/post-training/DataExamples.astro";
 import TokenSignalFigure from "../../../../components/ideas/post-training/TokenSignalFigure.astro";
 import ScrollyMap from "../../../../components/ideas/post-training/ScrollyMap.astro";
@@ -276,10 +276,8 @@ Rows also move between shapes. GSM8K's answer key is a full worked solution that
 
 The formats differ a lot in how much information they carry. Take one bad summary of a paper and look at the annotations you could attach to it.
 
-<Figure
+<AnnotatedExampleFigure
   id="annotated-example"
-  src={annotatedExample}
-  alt="A prompt asks for a summary of a study. The response says the study proves X causes Y; the source evidence shows only a correlation. Six annotations of that response: a binary label (incorrect), a rating (factuality 2 out of 5), a pairwise preference (corrected answer preferred), a span label highlighting 'proves X causes Y', a critique (confuses correlation with causation), and a revision (X and Y were correlated)."
   caption="One response, six kinds of annotation. Each says something different about what went wrong."
 />
 

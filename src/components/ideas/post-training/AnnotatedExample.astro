@@ -1,0 +1,379 @@
+---
+/**
+ * One bad summary and six annotations of it, as cards in the DataExamples
+ * family. Import under a name ending in "Figure" (AnnotatedExampleFigure) so
+ * remarkCrossRefs counts it; it shares Astro.locals.figureCounter with
+ * Figure.astro so the printed number matches.
+ *
+ * The five graded annotations run in the order the paragraph after the
+ * figure walks them (binary → rating → span → critique → revision), each
+ * costing the annotator more and telling the model more. The pairwise
+ * preference sits apart below them: the paragraph doesn't place it on that
+ * scale, so the figure doesn't either.
+ *
+ * Colours follow the post-training map: preferences amber (binary labels,
+ * ratings, pairs, span labels and critiques are judgments of a response),
+ * demonstrations green (a revision is a corrected response to imitate).
+ */
+interface Props {
+  caption?: string;
+  numbered?: boolean;
+  /** Cross-reference target; `id="foo"` is reachable as `[fig:foo]`. */
+  id?: string;
+}
+
+const { caption, numbered = true, id } = Astro.props;
+const figureId = id ? `fig-${id}` : undefined;
+
+let figureNumber: number | undefined;
+if (numbered) {
+  if (!Astro.locals.figureCounter) Astro.locals.figureCounter = 0;
+  Astro.locals.figureCounter++;
+  figureNumber = Astro.locals.figureCounter;
+}
+---
+
+<figure id={figureId} class="figure annotated-example">
+  <div class="ae-card ae-example">
+    <dl class="ae-context">
+      <div class="line">
+        <dt>Prompt</dt>
+        <dd>Summarize the study.</dd>
+      </div>
+      <div class="line">
+        <dt>Source evidence</dt>
+        <dd>The study reports a correlation, not causation.</dd>
+      </div>
+      <div class="line bad">
+        <dt>Response</dt>
+        <dd>The study <mark class="ae-span">proves X causes Y</mark>.</dd>
+      </div>
+    </dl>
+  </div>
+
+  <div class="ae-card ae-annotations">
+    <div class="ae-kind-row">
+      <span class="ae-kind">Six annotations of that response</span>
+      <span class="ae-scale" aria-hidden="true">Costs more, tells more ↓</span>
+    </div>
+
+    <ol class="ae-list">
+      <li class="ae-row pref">
+        <span class="ae-label">Binary label</span>
+        <span class="ae-value"><span class="ae-verdict">✕</span> Incorrect</span>
+      </li>
+      <li class="ae-row pref">
+        <span class="ae-label">Rating</span>
+        <span class="ae-value">
+          <span class="ae-pips" aria-hidden="true"
+            ><i class="on"></i><i class="on"></i><i></i><i></i><i></i></span
+          >
+          Factuality: 2/5
+        </span>
+      </li>
+      <li class="ae-row pref">
+        <span class="ae-label">Span label</span>
+        <span class="ae-value">
+          <mark class="ae-span">proves X causes Y</mark>
+        </span>
+      </li>
+      <li class="ae-row pref">
+        <span class="ae-label">Critique</span>
+        <span class="ae-value">Confuses correlation with causation.</span>
+      </li>
+      <li class="ae-row demo">
+        <span class="ae-label">Revision</span>
+        <span class="ae-value">X and Y were correlated.</span>
+      </li>
+    </ol>
+
+    <div class="ae-row pref ae-aside">
+      <span class="ae-label">Pairwise preference</span>
+      <span class="ae-value">Corrected answer preferred</span>
+    </div>
+  </div>
+
+  {
+    caption && (
+      <figcaption class="caption">
+        {numbered && figureNumber && <strong>Figure {figureNumber}: </strong>}
+        {caption}
+      </figcaption>
+    )
+  }
+</figure>
+
+<style>
+  /* Family colours: the post-training map's light and dark values. */
+  .annotated-example {
+    --ae-pref: #b7791f;
+    --ae-demo: #2e8b57;
+    --ae-bad: #d95c5c;
+    --ae-border: color-mix(in srgb, rgb(var(--gray-dark)) 20%, rgb(var(--gray-light)));
+  }
+
+  :global([data-effective-theme="dark"]) .annotated-example {
+    --ae-pref: #e8b04a;
+    --ae-demo: #6fbf8e;
+  }
+
+  .annotated-example {
+    margin: 1.5rem 0;
+    scroll-margin-top: 5rem;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  /* ---- cards, as in DataExamples.astro */
+  .ae-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+    padding: 0.75rem 0.9rem;
+    border: 1px solid var(--ae-border);
+    border-top: 3px solid var(--ae-accent);
+    border-radius: 6px;
+    background: var(--bg-1);
+    font-size: 0.85rem;
+    line-height: 1.45;
+    text-align: left;
+  }
+
+  .ae-example {
+    --ae-accent: color-mix(in srgb, rgb(var(--gray-dark)) 35%, rgb(var(--gray-light)));
+  }
+
+  .ae-annotations {
+    --ae-accent: var(--ae-pref);
+  }
+
+  .ae-kind {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ae-accent);
+  }
+
+  .ae-kind-row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 0.25rem 1rem;
+  }
+
+  .ae-scale {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    opacity: 0.6;
+  }
+
+  /* ---- the example: prompt, evidence, response */
+  .ae-context {
+    margin: 0;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+
+  @media (min-width: 40rem) {
+    .ae-context {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.75rem;
+    }
+  }
+
+  .line {
+    padding-left: 0.5rem;
+    border-left: 2px solid transparent;
+  }
+
+  .line.bad {
+    border-left-color: color-mix(in srgb, var(--ae-bad) 70%, transparent);
+  }
+
+  dt {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    opacity: 0.7;
+  }
+
+  dd {
+    margin: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .ae-span {
+    color: inherit;
+    background: color-mix(in srgb, var(--ae-pref) 22%, transparent);
+    border-bottom: 2px solid var(--ae-pref);
+    border-radius: 2px 2px 0 0;
+    padding: 0 0.15em;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+  }
+
+  /* ---- annotation rows */
+  .ae-list {
+    list-style: none;
+    margin: 0;
+    padding: 0 0 0 0.85rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    position: relative;
+  }
+
+  /* The cost cue: a rail that strengthens down the list. */
+  .ae-list::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0.35rem;
+    bottom: 0.35rem;
+    width: 3px;
+    border-radius: 2px;
+    background: linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--ae-pref) 15%, transparent),
+      var(--ae-pref) 75%,
+      var(--ae-demo)
+    );
+  }
+
+  .ae-row {
+    --c: var(--ae-pref);
+    display: grid;
+    grid-template-columns: 10.5rem minmax(0, 1fr);
+    align-items: baseline;
+    gap: 0.15rem 0.75rem;
+    padding: 0.3rem 0;
+    margin: 0;
+  }
+
+  .ae-list .ae-row + .ae-row {
+    border-top: 1px dashed var(--ae-border);
+  }
+
+  .ae-row.demo {
+    --c: var(--ae-demo);
+  }
+
+  .ae-label {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--c);
+  }
+
+  .ae-value {
+    overflow-wrap: anywhere;
+  }
+
+  .ae-verdict {
+    color: var(--ae-bad);
+    font-weight: 700;
+    margin-right: 0.15rem;
+  }
+
+  .ae-pips {
+    display: inline-flex;
+    gap: 3px;
+    margin-right: 0.35rem;
+    vertical-align: 0.05em;
+  }
+
+  .ae-pips i {
+    width: 0.55rem;
+    height: 0.55rem;
+    border-radius: 50%;
+    border: 1.5px solid var(--ae-pref);
+    box-sizing: border-box;
+  }
+
+  .ae-pips i.on {
+    background: var(--ae-pref);
+  }
+
+  .ae-row.demo .ae-value {
+    padding-left: 0.5rem;
+    border-left: 2px solid color-mix(in srgb, #46b37b 70%, transparent);
+  }
+
+  .ae-aside {
+    margin-top: 0.15rem;
+    padding: 0.55rem 0 0 0.85rem;
+    border-top: 1px solid var(--ae-border);
+  }
+
+  @media (max-width: 34rem) {
+    .ae-row {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  /* ---- :target flash and caption, as in Figure.astro */
+  @media (prefers-reduced-motion: no-preference) {
+    .annotated-example:target {
+      animation: ae-target-flash 2s ease-out;
+    }
+
+    @keyframes ae-target-flash {
+      0% {
+        background: color-mix(in srgb, var(--blue) 16%, transparent);
+        box-shadow: 0 0 0 0.5rem color-mix(in srgb, var(--blue) 16%, transparent);
+      }
+      100% {
+        background: transparent;
+        box-shadow: 0 0 0 0.5rem transparent;
+      }
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .annotated-example:target {
+      outline: 2px solid color-mix(in srgb, var(--blue) 55%, transparent);
+      outline-offset: 0.4rem;
+    }
+  }
+
+  .caption {
+    margin-top: 0;
+    font-size: 0.9rem;
+    font-style: italic;
+    color: var(--sol-1);
+    line-height: 1.4;
+    max-width: min(90%, 800px);
+    margin-left: auto;
+    margin-right: auto;
+    text-align: center;
+  }
+
+  .caption strong {
+    font-style: normal;
+    color: var(--sol-9);
+  }
+
+  :global([data-effective-theme="dark"]) .caption {
+    color: var(--sol-0);
+  }
+
+  :global([data-effective-theme="dark"]) .caption strong {
+    color: var(--sol-10);
+  }
+
+  @media (max-width: 720px) {
+    .caption {
+      font-size: 0.85rem;
+      max-width: 90%;
+    }
+  }
+</style>
