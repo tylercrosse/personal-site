@@ -1,0 +1,223 @@
+---
+/**
+ * Real rows from public post-training datasets, one per data shape.
+ * Text is copied verbatim from the sources linked in each card (fetched
+ * 2026-11-23 via the Hugging Face datasets-server and the Prime Intellect
+ * environments repo). Numbered like Figure.astro / SvgFigure.astro.
+ */
+interface Props {
+  caption?: string;
+  numbered?: boolean;
+  id?: string;
+}
+
+const { caption, numbered = true, id } = Astro.props;
+const figureId = id ? `fig-${id}` : undefined;
+
+let figureNumber: number | undefined;
+if (numbered) {
+  if (!Astro.locals.figureCounter) Astro.locals.figureCounter = 0;
+  Astro.locals.figureCounter++;
+  figureNumber = Astro.locals.figureCounter;
+}
+
+type Line = { label: string; text: string; tone?: "good" | "bad" | "plain" };
+type Card = {
+  kind: string;
+  accent: string;
+  source: string;
+  href: string;
+  lines: Line[];
+  note: string;
+};
+
+const cards: Card[] = [
+  {
+    kind: "Demonstration",
+    accent: "#46b37b",
+    source: "Tülu 3 SFT mixture (precise instruction following)",
+    href: "https://huggingface.co/datasets/allenai/tulu-3-sft-mixture",
+    lines: [
+      {
+        label: "User",
+        text: "Create a slogan advocating for the ethical treatment of animals in scientific research, ensuring the slogan is in English and all capital letters.",
+      },
+      { label: "Target", text: "RESPECT LIFE: INNOVATE WITH COMPASSION", tone: "good" },
+    ],
+    note: "SFT raises the probability of every target token.",
+  },
+  {
+    kind: "Preference pair",
+    accent: "#d99032",
+    source: "Anthropic HH-RLHF",
+    href: "https://huggingface.co/datasets/Anthropic/hh-rlhf",
+    lines: [
+      { label: "Human", text: "Do you like homeless people?" },
+      {
+        label: "Chosen",
+        text: "I think they are people who need our help, and to keep them safe.",
+        tone: "good",
+      },
+      { label: "Rejected", text: "I’m not sure.", tone: "bad" },
+    ],
+    note: "Neither answer is ideal. The label only says which is better.",
+  },
+  {
+    kind: "Verifiable problem",
+    accent: "#9b6bd3",
+    source: "GSM8K",
+    href: "https://huggingface.co/datasets/openai/gsm8k",
+    lines: [
+      {
+        label: "Question",
+        text: "James writes a 3-page letter to 2 different friends twice a week. How many pages does he write a year?",
+      },
+      { label: "Answer key (final line)", text: "#### 624", tone: "good" },
+    ],
+    note: "A checker compares the model’s final number with the key.",
+  },
+  {
+    kind: "Environment task",
+    accent: "#9b6bd3",
+    source: "ART·E, in Prime Intellect’s environments repo",
+    href: "https://github.com/PrimeIntellect-ai/prime-environments/tree/main/environments/art_e",
+    lines: [
+      {
+        label: "Task",
+        text: "When will the new Weekly Report be delivered each week? (Answer from louise.kitchen@enron.com’s inbox.)",
+      },
+      { label: "Tools", text: "search_inbox, read_email" },
+      {
+        label: "Grader",
+        text: "A model judge compares the answer with “8am Monday mornings.” Correct: +1. “I don’t know”: 0. Wrong: −1.",
+        tone: "good",
+      },
+    ],
+    note: "The model has to search before it can answer, and guessing costs more than abstaining.",
+  },
+];
+---
+
+<figure id={figureId} class="figure data-examples">
+  <div class="cards">
+    {
+      cards.map((card) => (
+        <div class="card" style={`--card-accent: ${card.accent}`}>
+          <div class="kind">{card.kind}</div>
+          <dl>
+            {card.lines.map((line) => (
+              <div class:list={["line", line.tone]}>
+                <dt>{line.label}</dt>
+                <dd>{line.text}</dd>
+              </div>
+            ))}
+          </dl>
+          <p class="note">{card.note}</p>
+          <a class="source" href={card.href}>
+            {card.source}
+          </a>
+        </div>
+      ))
+    }
+  </div>
+  {
+    caption && (
+      <figcaption class="caption">
+        {numbered && figureNumber && <strong>Figure {figureNumber}: </strong>}
+        {caption}
+      </figcaption>
+    )
+  }
+</figure>
+
+<style>
+  .data-examples {
+    margin: 1.5rem 0;
+    scroll-margin-top: 5rem;
+  }
+
+  .cards {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  @media (min-width: 40rem) {
+    .cards {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  .card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.75rem 0.9rem;
+    border: 1px solid
+      color-mix(in srgb, rgb(var(--gray-dark)) 20%, rgb(var(--gray-light)));
+    border-top: 3px solid var(--card-accent);
+    border-radius: 6px;
+    background: var(--bg-1);
+    font-size: 0.85rem;
+    line-height: 1.45;
+    text-align: left;
+  }
+
+  .kind {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--card-accent);
+  }
+
+  dl {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .line {
+    padding-left: 0.5rem;
+    border-left: 2px solid transparent;
+  }
+
+  .line.good {
+    border-left-color: color-mix(in srgb, #46b37b 70%, transparent);
+  }
+
+  .line.bad {
+    border-left-color: color-mix(in srgb, #d95c5c 70%, transparent);
+  }
+
+  dt {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    opacity: 0.7;
+  }
+
+  dd {
+    margin: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .note {
+    margin: auto 0 0;
+    font-size: 0.78rem;
+    font-style: italic;
+    opacity: 0.8;
+  }
+
+  .source {
+    font-size: 0.72rem;
+    opacity: 0.75;
+  }
+
+  .caption {
+    margin-top: 0.75rem;
+    text-align: center;
+  }
+</style>

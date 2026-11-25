@@ -1,0 +1,1146 @@
+{
+ "meta": {
+  "generated": "2026-11-23",
+  "script": "src/content/ideas/2026/post-training-building-blocks/viz/token_signals.py",
+  "student": "Qwen/Qwen2.5-0.5B-Instruct",
+  "teacher": "Qwen/Qwen2.5-7B-Instruct",
+  "teacherDtype": "bfloat16",
+  "system": "Solve the problem in plain text, with no LaTeX and no markdown. Keep it short, like this example.\nProblem: Ann has 4 bags of 5 apples and eats 3. How many are left?\nSolution: 4 bags of 5 apples is 4 * 5 = 20 apples. She eats 3, so 20 - 3 = 17.\nAnswer: 17",
+  "device": "mps",
+  "dtype": "float32 (student)",
+  "seed": 0,
+  "sampling": {
+   "temperature": 0.7,
+   "top_p": 0.8,
+   "top_k": 20,
+   "max_new_tokens": 100
+  },
+  "nSamples": 16,
+  "pick": 1,
+  "pickRule": "shortest wrong sample",
+  "units": {
+   "surprise": "nats",
+   "opd": "nats",
+   "entropy": "bits"
+  },
+  "samples": [
+   {
+    "text": "He originally had 3 * 14 = 42 cows. After selling 1/3 of them, he has 42 / 3 = 14 cows left. Then he adds 5 more to his herd, making him 14 + 5 = 19 cows.",
+    "answer": 19.0,
+    "correct": false,
+    "nTokens": 63
+   },
+   {
+    "text": "There were originally 3 * 14 = 42 cows. After selling 1/3, there are 42 / 3 = 14 cows left. Then 14 + 5 = 19 cows.",
+    "answer": 19.0,
+    "correct": false,
+    "nTokens": 50
+   },
+   {
+    "text": "There were originally 3 x 14 = 42 cows. After selling 1/3, there are 42 / 3 = 14 cows left. Then 14 + 5 = 19. Therefore, the answer is 19.",
+    "answer": 19.0,
+    "correct": false,
+    "nTokens": 58
+   },
+   {
+    "text": "He had a total of 3 * 14 = 42 cows. After selling 42 * (1/3) = 14 cows, he was left with 42 - 14 = 28 cows. Then he bought 5 more, making his new count 28 + 5 = 33.",
+    "answer": 33.0,
+    "correct": true,
+    "nTokens": 73
+   },
+   {
+    "text": "He had a total of 3 * 14 = 42 cows. After selling 1/3 they were 1/3 * 42 = 14 cows. Then he bought another 5, for a total of 14 + 5 = 19 cows.",
+    "answer": 19.0,
+    "correct": false,
+    "nTokens": 62
+   },
+   {
+    "text": "He had a total of 3 * 14 = 42 cows. After selling 1 / 3 of them, he had 42 * (2/3) = 28 cows left. Then he bought 5 more, making him 28 + 5 = 33.",
+    "answer": 33.0,
+    "correct": true,
+    "nTokens": 65
+   },
+   {
+    "text": "The total number of cows before selling any is 3 * 14 = 42. After selling 1/3 of them, there are 42 / 3 = 14 remaining.\n\nThen, adding 5 more cows, the farmer now has 14 + 5 = 19 cows.",
+    "answer": 19.0,
+    "correct": false,
+    "nTokens": 67
+   },
+   {
+    "text": "There were originally 3 * 14 = 42 cows. After selling 1 / 3 of them, there were 42 * (1 - 1/3) = 34 cows left. Then he bought 5 more, so he had 34 + 5 = 39 cows.",
+    "answer": 39.0,
+    "correct": false,
+    "nTokens": 68
+   },
+   {
+    "text": "He started with 3 * 14 = 42 cows. After selling 1/3, there are 42 / 3 = 14 cows left. Then he adds 5 to his herd, making 14 + 5 = 19.",
+    "answer": 19.0,
+    "correct": false,
+    "nTokens": 58
+   },
+   {
+    "text": "He had a total of 3 * 14 = 42 cows. After selling 42 * 1/3 = 14 cows, he has 42 - 14 = 28 cows. Then he buys 5 more, for a total of 28 + 5 = 33 cows.",
+    "answer": 33.0,
+    "correct": true,
+    "nTokens": 71
+   },
+   {
+    "text": "He had a total of 3 x 14 = 42 cows. After selling 1/3 of them, he has 42 / 3 = 14 cows left. Then he buys 5 more, making him 14 + 5 = 19.",
+    "answer": 19.0,
+    "correct": false,
+    "nTokens": 61
+   },
+   {
+    "text": "He had 3 x 14 = 42 cows. After selling 1 / 3 they were left with 42 - 14 = 28. Then he bought 5 more for a total of 28 + 5 = 33.",
+    "answer": 33.0,
+    "correct": true,
+    "nTokens": 58
+   },
+   {
+    "text": "He originally had 3 * 14 = 42 cows. After selling 1/3, there were 42 / 3 = 14 cows left. Then he bought 5 more, for a total of 14 + 5 = 19.",
+    "answer": 19.0,
+    "correct": false,
+    "nTokens": 59
+   },
+   {
+    "text": "He had a total of 3 * 14 = 42 cows. After selling 1/3 they would be 42 / 3 = 14. Then he bought 5 more, for a total of 14 + 5 = 19.",
+    "answer": 19.0,
+    "correct": false,
+    "nTokens": 59
+   },
+   {
+    "text": "There were initially \\( 3 \\times 14 = 42 \\) cows. After selling \\( \\frac{1}{3} \\) of them, he had \\( 42 \\div 3 = 14 \\) cows left. Then he bought 5 more, so he now has \\( 14 + 5 = 19 \\) cows.",
+    "answer": 19.0,
+    "correct": false,
+    "nTokens": 79
+   },
+   {
+    "text": "He originally had 3 x 14 = 42 cows. After selling 1/3 of them, he has 42 - (1/3) x 42 = 42 - 14 = 28 cows. Then he buys 5 more, so he has a total of 28 + 5 = 33 cows.",
+    "answer": 33.0,
+    "correct": true,
+    "nTokens": 78
+   }
+  ]
+ },
+ "question": "A farmer has 3 fields with 14 cows each. He sells 1/3 of all the cows and then buys 5 more. How many cows does he have now?",
+ "gold": 33,
+ "demo": {
+  "text": "The farmer has 3 fields with 14 cows each, so he has 3 * 14 = 42 cows. He sells 1/3 of all the cows, which is 42 / 3 = 14 cows. After selling, he has 42 - 14 = 28 cows. Then he buys 5 more, so he now has 28 + 5 = 33 cows.\nAnswer: 33",
+  "answer": 33.0,
+  "tokens": [
+   {
+    "t": "The",
+    "p": 0.1493,
+    "surprise": 1.902,
+    "studentTop": "He"
+   },
+   {
+    "t": " farmer",
+    "p": 0.7854,
+    "surprise": 0.242,
+    "studentTop": " farmer"
+   },
+   {
+    "t": " has",
+    "p": 0.0936,
+    "surprise": 2.369,
+    "studentTop": " initially"
+   },
+   {
+    "t": " ",
+    "p": 0.6596,
+    "surprise": 0.416,
+    "studentTop": " "
+   },
+   {
+    "t": "3",
+    "p": 0.8219,
+    "surprise": 0.196,
+    "studentTop": "3"
+   },
+   {
+    "t": " fields",
+    "p": 0.3938,
+    "surprise": 0.932,
+    "studentTop": " *"
+   },
+   {
+    "t": " with",
+    "p": 0.4139,
+    "surprise": 0.882,
+    "studentTop": " *"
+   },
+   {
+    "t": " ",
+    "p": 0.9954,
+    "surprise": 0.005,
+    "studentTop": " "
+   },
+   {
+    "t": "1",
+    "p": 0.9993,
+    "surprise": 0.001,
+    "studentTop": "1"
+   },
+   {
+    "t": "4",
+    "p": 0.9999,
+    "surprise": 0.0,
+    "studentTop": "4"
+   },
+   {
+    "t": " cows",
+    "p": 0.9949,
+    "surprise": 0.005,
+    "studentTop": " cows"
+   },
+   {
+    "t": " each",
+    "p": 0.9968,
+    "surprise": 0.003,
+    "studentTop": " each"
+   },
+   {
+    "t": ",",
+    "p": 0.991,
+    "surprise": 0.009,
+    "studentTop": ","
+   },
+   {
+    "t": " so",
+    "p": 0.9697,
+    "surprise": 0.031,
+    "studentTop": " so"
+   },
+   {
+    "t": " he",
+    "p": 0.9063,
+    "surprise": 0.098,
+    "studentTop": " he"
+   },
+   {
+    "t": " has",
+    "p": 0.9033,
+    "surprise": 0.102,
+    "studentTop": " has"
+   },
+   {
+    "t": " ",
+    "p": 0.2133,
+    "surprise": 1.545,
+    "studentTop": " a"
+   },
+   {
+    "t": "3",
+    "p": 0.9952,
+    "surprise": 0.005,
+    "studentTop": "3"
+   },
+   {
+    "t": " *",
+    "p": 0.9861,
+    "surprise": 0.014,
+    "studentTop": " *"
+   },
+   {
+    "t": " ",
+    "p": 0.9999,
+    "surprise": 0.0,
+    "studentTop": " "
+   },
+   {
+    "t": "1",
+    "p": 1.0,
+    "surprise": 0.0,
+    "studentTop": "1"
+   },
+   {
+    "t": "4",
+    "p": 1.0,
+    "surprise": 0.0,
+    "studentTop": "4"
+   },
+   {
+    "t": " =",
+    "p": 0.9982,
+    "surprise": 0.002,
+    "studentTop": " ="
+   },
+   {
+    "t": " ",
+    "p": 0.999,
+    "surprise": 0.001,
+    "studentTop": " "
+   },
+   {
+    "t": "4",
+    "p": 1.0,
+    "surprise": 0.0,
+    "studentTop": "4"
+   },
+   {
+    "t": "2",
+    "p": 1.0,
+    "surprise": 0.0,
+    "studentTop": "2"
+   },
+   {
+    "t": " cows",
+    "p": 0.9976,
+    "surprise": 0.002,
+    "studentTop": " cows"
+   },
+   {
+    "t": ".",
+    "p": 0.4209,
+    "surprise": 0.865,
+    "studentTop": " in"
+   },
+   {
+    "t": " He",
+    "p": 0.8138,
+    "surprise": 0.206,
+    "studentTop": " He"
+   },
+   {
+    "t": " sells",
+    "p": 0.9988,
+    "surprise": 0.001,
+    "studentTop": " sells"
+   },
+   {
+    "t": " ",
+    "p": 0.9969,
+    "surprise": 0.003,
+    "studentTop": " "
+   },
+   {
+    "t": "1",
+    "p": 0.9526,
+    "surprise": 0.049,
+    "studentTop": "1"
+   },
+   {
+    "t": "/",
+    "p": 0.9819,
+    "surprise": 0.018,
+    "studentTop": "/"
+   },
+   {
+    "t": "3",
+    "p": 1.0,
+    "surprise": 0.0,
+    "studentTop": "3"
+   },
+   {
+    "t": " of",
+    "p": 0.9091,
+    "surprise": 0.095,
+    "studentTop": " of"
+   },
+   {
+    "t": " all",
+    "p": 0.2176,
+    "surprise": 1.525,
+    "studentTop": " them"
+   },
+   {
+    "t": " the",
+    "p": 0.9883,
+    "surprise": 0.012,
+    "studentTop": " the"
+   },
+   {
+    "t": " cows",
+    "p": 0.9999,
+    "surprise": 0.0,
+    "studentTop": " cows"
+   },
+   {
+    "t": ",",
+    "p": 0.9882,
+    "surprise": 0.012,
+    "studentTop": ","
+   },
+   {
+    "t": " which",
+    "p": 0.7806,
+    "surprise": 0.248,
+    "studentTop": " which"
+   },
+   {
+    "t": " is",
+    "p": 0.9843,
+    "surprise": 0.016,
+    "studentTop": " is"
+   },
+   {
+    "t": " ",
+    "p": 0.9825,
+    "surprise": 0.018,
+    "studentTop": " "
+   },
+   {
+    "t": "4",
+    "p": 0.3716,
+    "surprise": 0.99,
+    "studentTop": "1"
+   },
+   {
+    "t": "2",
+    "p": 0.9997,
+    "surprise": 0.0,
+    "studentTop": "2"
+   },
+   {
+    "t": " /",
+    "p": 0.2518,
+    "surprise": 1.379,
+    "studentTop": " *"
+   },
+   {
+    "t": " ",
+    "p": 0.9985,
+    "surprise": 0.002,
+    "studentTop": " "
+   },
+   {
+    "t": "3",
+    "p": 0.9999,
+    "surprise": 0.0,
+    "studentTop": "3"
+   },
+   {
+    "t": " =",
+    "p": 0.9619,
+    "surprise": 0.039,
+    "studentTop": " ="
+   },
+   {
+    "t": " ",
+    "p": 0.9981,
+    "surprise": 0.002,
+    "studentTop": " "
+   },
+   {
+    "t": "1",
+    "p": 0.9996,
+    "surprise": 0.0,
+    "studentTop": "1"
+   },
+   {
+    "t": "4",
+    "p": 1.0,
+    "surprise": 0.0,
+    "studentTop": "4"
+   },
+   {
+    "t": " cows",
+    "p": 0.9372,
+    "surprise": 0.065,
+    "studentTop": " cows"
+   },
+   {
+    "t": ".",
+    "p": 0.9139,
+    "surprise": 0.09,
+    "studentTop": "."
+   },
+   {
+    "t": " After",
+    "p": 0.4133,
+    "surprise": 0.884,
+    "studentTop": " After"
+   },
+   {
+    "t": " selling",
+    "p": 0.8978,
+    "surprise": 0.108,
+    "studentTop": " selling"
+   },
+   {
+    "t": ",",
+    "p": 0.8426,
+    "surprise": 0.171,
+    "studentTop": ","
+   },
+   {
+    "t": " he",
+    "p": 0.9625,
+    "surprise": 0.038,
+    "studentTop": " he"
+   },
+   {
+    "t": " has",
+    "p": 0.9402,
+    "surprise": 0.062,
+    "studentTop": " has"
+   },
+   {
+    "t": " ",
+    "p": 0.9995,
+    "surprise": 0.001,
+    "studentTop": " "
+   },
+   {
+    "t": "4",
+    "p": 0.9935,
+    "surprise": 0.006,
+    "studentTop": "4"
+   },
+   {
+    "t": "2",
+    "p": 1.0,
+    "surprise": 0.0,
+    "studentTop": "2"
+   },
+   {
+    "t": " -",
+    "p": 0.9996,
+    "surprise": 0.0,
+    "studentTop": " -"
+   },
+   {
+    "t": " ",
+    "p": 0.9998,
+    "surprise": 0.0,
+    "studentTop": " "
+   },
+   {
+    "t": "1",
+    "p": 0.9999,
+    "surprise": 0.0,
+    "studentTop": "1"
+   },
+   {
+    "t": "4",
+    "p": 1.0,
+    "surprise": 0.0,
+    "studentTop": "4"
+   },
+   {
+    "t": " =",
+    "p": 0.9983,
+    "surprise": 0.002,
+    "studentTop": " ="
+   },
+   {
+    "t": " ",
+    "p": 0.9997,
+    "surprise": 0.0,
+    "studentTop": " "
+   },
+   {
+    "t": "2",
+    "p": 0.9907,
+    "surprise": 0.009,
+    "studentTop": "2"
+   },
+   {
+    "t": "8",
+    "p": 0.9999,
+    "surprise": 0.0,
+    "studentTop": "8"
+   },
+   {
+    "t": " cows",
+    "p": 0.9993,
+    "surprise": 0.001,
+    "studentTop": " cows"
+   },
+   {
+    "t": ".",
+    "p": 0.6555,
+    "surprise": 0.422,
+    "studentTop": "."
+   },
+   {
+    "t": " Then",
+    "p": 0.7456,
+    "surprise": 0.294,
+    "studentTop": " Then"
+   },
+   {
+    "t": " he",
+    "p": 0.7168,
+    "surprise": 0.333,
+    "studentTop": " he"
+   },
+   {
+    "t": " buys",
+    "p": 0.9973,
+    "surprise": 0.003,
+    "studentTop": " buys"
+   },
+   {
+    "t": " ",
+    "p": 0.9993,
+    "surprise": 0.001,
+    "studentTop": " "
+   },
+   {
+    "t": "5",
+    "p": 0.9999,
+    "surprise": 0.0,
+    "studentTop": "5"
+   },
+   {
+    "t": " more",
+    "p": 0.9929,
+    "surprise": 0.007,
+    "studentTop": " more"
+   },
+   {
+    "t": ",",
+    "p": 0.7363,
+    "surprise": 0.306,
+    "studentTop": ","
+   },
+   {
+    "t": " so",
+    "p": 0.9261,
+    "surprise": 0.077,
+    "studentTop": " so"
+   },
+   {
+    "t": " he",
+    "p": 0.9258,
+    "surprise": 0.077,
+    "studentTop": " he"
+   },
+   {
+    "t": " now",
+    "p": 0.3784,
+    "surprise": 0.972,
+    "studentTop": " has"
+   },
+   {
+    "t": " has",
+    "p": 0.9999,
+    "surprise": 0.0,
+    "studentTop": " has"
+   },
+   {
+    "t": " ",
+    "p": 0.9963,
+    "surprise": 0.004,
+    "studentTop": " "
+   },
+   {
+    "t": "2",
+    "p": 0.9999,
+    "surprise": 0.0,
+    "studentTop": "2"
+   },
+   {
+    "t": "8",
+    "p": 1.0,
+    "surprise": 0.0,
+    "studentTop": "8"
+   },
+   {
+    "t": " +",
+    "p": 0.9997,
+    "surprise": 0.0,
+    "studentTop": " +"
+   },
+   {
+    "t": " ",
+    "p": 0.9997,
+    "surprise": 0.0,
+    "studentTop": " "
+   },
+   {
+    "t": "5",
+    "p": 1.0,
+    "surprise": 0.0,
+    "studentTop": "5"
+   },
+   {
+    "t": " =",
+    "p": 0.9999,
+    "surprise": 0.0,
+    "studentTop": " ="
+   },
+   {
+    "t": " ",
+    "p": 0.9997,
+    "surprise": 0.0,
+    "studentTop": " "
+   },
+   {
+    "t": "3",
+    "p": 1.0,
+    "surprise": 0.0,
+    "studentTop": "3"
+   },
+   {
+    "t": "3",
+    "p": 1.0,
+    "surprise": 0.0,
+    "studentTop": "3"
+   },
+   {
+    "t": " cows",
+    "p": 0.9992,
+    "surprise": 0.001,
+    "studentTop": " cows"
+   },
+   {
+    "t": ".\n",
+    "p": 0.0015,
+    "surprise": 6.523,
+    "studentTop": "."
+   },
+   {
+    "t": "Answer",
+    "p": 0.993,
+    "surprise": 0.007,
+    "studentTop": "Answer"
+   },
+   {
+    "t": ":",
+    "p": 0.9999,
+    "surprise": 0.0,
+    "studentTop": ":"
+   },
+   {
+    "t": " ",
+    "p": 0.9766,
+    "surprise": 0.024,
+    "studentTop": " "
+   },
+   {
+    "t": "3",
+    "p": 0.9999,
+    "surprise": 0.0,
+    "studentTop": "3"
+   },
+   {
+    "t": "3",
+    "p": 0.9997,
+    "surprise": 0.0,
+    "studentTop": "3"
+   }
+  ]
+ },
+ "student": {
+  "text": "There were originally 3 * 14 = 42 cows. After selling 1/3, there are 42 / 3 = 14 cows left. Then 14 + 5 = 19 cows.",
+  "answer": 19.0,
+  "mistake": {
+   "text": "42 / 3 = 14 cows left",
+   "start": 25,
+   "end": 36
+  },
+  "tokens": [
+   {
+    "t": "There",
+    "pStudent": 0.1704,
+    "pTeacher": 0.0,
+    "opd": -9.482,
+    "entropy": 2.983,
+    "teacherTop": "The"
+   },
+   {
+    "t": " were",
+    "pStudent": 0.94,
+    "pTeacher": 0.0,
+    "opd": -15.063,
+    "entropy": 0.357,
+    "teacherTop": " are"
+   },
+   {
+    "t": " originally",
+    "pStudent": 0.3002,
+    "pTeacher": 0.0052,
+    "opd": -4.052,
+    "entropy": 1.573,
+    "teacherTop": " "
+   },
+   {
+    "t": " ",
+    "pStudent": 0.9496,
+    "pTeacher": 1.0,
+    "opd": 0.052,
+    "entropy": 0.407,
+    "teacherTop": " "
+   },
+   {
+    "t": "3",
+    "pStudent": 0.8584,
+    "pTeacher": 0.9999,
+    "opd": 0.153,
+    "entropy": 0.703,
+    "teacherTop": "3"
+   },
+   {
+    "t": " *",
+    "pStudent": 0.8026,
+    "pTeacher": 0.0036,
+    "opd": -5.409,
+    "entropy": 1.114,
+    "teacherTop": " fields"
+   },
+   {
+    "t": " ",
+    "pStudent": 0.9997,
+    "pTeacher": 1.0,
+    "opd": 0.0,
+    "entropy": 0.004,
+    "teacherTop": " "
+   },
+   {
+    "t": "1",
+    "pStudent": 1.0,
+    "pTeacher": 1.0,
+    "opd": 0.0,
+    "entropy": 0.001,
+    "teacherTop": "1"
+   },
+   {
+    "t": "4",
+    "pStudent": 1.0,
+    "pTeacher": 1.0,
+    "opd": 0.0,
+    "entropy": 0.0,
+    "teacherTop": "4"
+   },
+   {
+    "t": " =",
+    "pStudent": 0.953,
+    "pTeacher": 1.0,
+    "opd": 0.048,
+    "entropy": 0.344,
+    "teacherTop": " ="
+   },
+   {
+    "t": " ",
+    "pStudent": 0.9868,
+    "pTeacher": 1.0,
+    "opd": 0.013,
+    "entropy": 0.122,
+    "teacherTop": " "
+   },
+   {
+    "t": "4",
+    "pStudent": 1.0,
+    "pTeacher": 1.0,
+    "opd": 0.0,
+    "entropy": 0.001,
+    "teacherTop": "4"
+   },
+   {
+    "t": "2",
+    "pStudent": 1.0,
+    "pTeacher": 1.0,
+    "opd": 0.0,
+    "entropy": 0.0,
+    "teacherTop": "2"
+   },
+   {
+    "t": " cows",
+    "pStudent": 0.996,
+    "pTeacher": 1.0,
+    "opd": 0.004,
+    "entropy": 0.054,
+    "teacherTop": " cows"
+   },
+   {
+    "t": ".",
+    "pStudent": 0.9241,
+    "pTeacher": 0.9977,
+    "opd": 0.077,
+    "entropy": 0.599,
+    "teacherTop": "."
+   },
+   {
+    "t": " After",
+    "pStudent": 0.5234,
+    "pTeacher": 0.0269,
+    "opd": -2.969,
+    "entropy": 1.805,
+    "teacherTop": " He"
+   },
+   {
+    "t": " selling",
+    "pStudent": 0.9543,
+    "pTeacher": 0.9998,
+    "opd": 0.047,
+    "entropy": 0.365,
+    "teacherTop": " selling"
+   },
+   {
+    "t": " ",
+    "pStudent": 0.9507,
+    "pTeacher": 1.0,
+    "opd": 0.051,
+    "entropy": 0.469,
+    "teacherTop": " "
+   },
+   {
+    "t": "1",
+    "pStudent": 0.8195,
+    "pTeacher": 1.0,
+    "opd": 0.199,
+    "entropy": 0.795,
+    "teacherTop": "1"
+   },
+   {
+    "t": "/",
+    "pStudent": 0.9319,
+    "pTeacher": 1.0,
+    "opd": 0.071,
+    "entropy": 0.386,
+    "teacherTop": "/"
+   },
+   {
+    "t": "3",
+    "pStudent": 0.9999,
+    "pTeacher": 1.0,
+    "opd": 0.0,
+    "entropy": 0.002,
+    "teacherTop": "3"
+   },
+   {
+    "t": ",",
+    "pStudent": 0.4825,
+    "pTeacher": 0.4378,
+    "opd": -0.097,
+    "entropy": 1.977,
+    "teacherTop": " of"
+   },
+   {
+    "t": " there",
+    "pStudent": 0.4538,
+    "pTeacher": 0.0003,
+    "opd": -7.347,
+    "entropy": 1.854,
+    "teacherTop": " he"
+   },
+   {
+    "t": " are",
+    "pStudent": 0.6816,
+    "pTeacher": 0.7533,
+    "opd": 0.1,
+    "entropy": 1.043,
+    "teacherTop": " are"
+   },
+   {
+    "t": " ",
+    "pStudent": 0.8796,
+    "pTeacher": 0.9997,
+    "opd": 0.128,
+    "entropy": 0.619,
+    "teacherTop": " "
+   },
+   {
+    "t": "4",
+    "pStudent": 0.8947,
+    "pTeacher": 0.9797,
+    "opd": 0.091,
+    "entropy": 0.613,
+    "teacherTop": "4"
+   },
+   {
+    "t": "2",
+    "pStudent": 0.999,
+    "pTeacher": 1.0,
+    "opd": 0.001,
+    "entropy": 0.014,
+    "teacherTop": "2"
+   },
+   {
+    "t": " /",
+    "pStudent": 0.3245,
+    "pTeacher": 0.0005,
+    "opd": -6.381,
+    "entropy": 1.784,
+    "teacherTop": " -"
+   },
+   {
+    "t": " ",
+    "pStudent": 0.9646,
+    "pTeacher": 1.0,
+    "opd": 0.036,
+    "entropy": 0.234,
+    "teacherTop": " "
+   },
+   {
+    "t": "3",
+    "pStudent": 0.9997,
+    "pTeacher": 1.0,
+    "opd": 0.0,
+    "entropy": 0.004,
+    "teacherTop": "3"
+   },
+   {
+    "t": " =",
+    "pStudent": 0.9884,
+    "pTeacher": 0.9995,
+    "opd": 0.011,
+    "entropy": 0.109,
+    "teacherTop": " ="
+   },
+   {
+    "t": " ",
+    "pStudent": 0.9982,
+    "pTeacher": 1.0,
+    "opd": 0.002,
+    "entropy": 0.026,
+    "teacherTop": " "
+   },
+   {
+    "t": "1",
+    "pStudent": 0.9997,
+    "pTeacher": 1.0,
+    "opd": 0.0,
+    "entropy": 0.006,
+    "teacherTop": "1"
+   },
+   {
+    "t": "4",
+    "pStudent": 1.0,
+    "pTeacher": 1.0,
+    "opd": 0.0,
+    "entropy": 0.001,
+    "teacherTop": "4"
+   },
+   {
+    "t": " cows",
+    "pStudent": 0.8123,
+    "pTeacher": 0.9665,
+    "opd": 0.174,
+    "entropy": 1.121,
+    "teacherTop": " cows"
+   },
+   {
+    "t": " left",
+    "pStudent": 0.7146,
+    "pTeacher": 0.0067,
+    "opd": -4.671,
+    "entropy": 1.157,
+    "teacherTop": " sold"
+   },
+   {
+    "t": ".",
+    "pStudent": 0.962,
+    "pTeacher": 0.8111,
+    "opd": -0.171,
+    "entropy": 0.337,
+    "teacherTop": "."
+   },
+   {
+    "t": " Then",
+    "pStudent": 0.5377,
+    "pTeacher": 0.0923,
+    "opd": -1.763,
+    "entropy": 2.223,
+    "teacherTop": " So"
+   },
+   {
+    "t": " ",
+    "pStudent": 0.1219,
+    "pTeacher": 0.0185,
+    "opd": -1.888,
+    "entropy": 1.9,
+    "teacherTop": " he"
+   },
+   {
+    "t": "1",
+    "pStudent": 0.841,
+    "pTeacher": 0.9958,
+    "opd": 0.169,
+    "entropy": 0.768,
+    "teacherTop": "1"
+   },
+   {
+    "t": "4",
+    "pStudent": 0.9973,
+    "pTeacher": 1.0,
+    "opd": 0.003,
+    "entropy": 0.035,
+    "teacherTop": "4"
+   },
+   {
+    "t": " +",
+    "pStudent": 0.8931,
+    "pTeacher": 0.5168,
+    "opd": -0.547,
+    "entropy": 0.547,
+    "teacherTop": " +"
+   },
+   {
+    "t": " ",
+    "pStudent": 0.9979,
+    "pTeacher": 0.9999,
+    "opd": 0.002,
+    "entropy": 0.023,
+    "teacherTop": " "
+   },
+   {
+    "t": "5",
+    "pStudent": 0.9996,
+    "pTeacher": 1.0,
+    "opd": 0.0,
+    "entropy": 0.006,
+    "teacherTop": "5"
+   },
+   {
+    "t": " =",
+    "pStudent": 0.9971,
+    "pTeacher": 0.9994,
+    "opd": 0.002,
+    "entropy": 0.037,
+    "teacherTop": " ="
+   },
+   {
+    "t": " ",
+    "pStudent": 0.9981,
+    "pTeacher": 1.0,
+    "opd": 0.002,
+    "entropy": 0.026,
+    "teacherTop": " "
+   },
+   {
+    "t": "1",
+    "pStudent": 0.9982,
+    "pTeacher": 1.0,
+    "opd": 0.002,
+    "entropy": 0.023,
+    "teacherTop": "1"
+   },
+   {
+    "t": "9",
+    "pStudent": 1.0,
+    "pTeacher": 1.0,
+    "opd": 0.0,
+    "entropy": 0.001,
+    "teacherTop": "9"
+   },
+   {
+    "t": " cows",
+    "pStudent": 0.7728,
+    "pTeacher": 0.9869,
+    "opd": 0.245,
+    "entropy": 1.171,
+    "teacherTop": " cows"
+   },
+   {
+    "t": ".",
+    "pStudent": 0.9032,
+    "pTeacher": 0.0224,
+    "opd": -3.696,
+    "entropy": 0.843,
+    "teacherTop": " after"
+   }
+  ]
+ },
+ "rl": {
+  "reward": 0.0,
+  "nCorrect": 5,
+  "nSamples": 16,
+  "groupMean": 0.3125,
+  "groupStd": 0.4635,
+  "advantage": -0.674
+ }
+}
