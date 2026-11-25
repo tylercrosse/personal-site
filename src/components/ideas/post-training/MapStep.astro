@@ -19,6 +19,9 @@
  * cells to light: tl, tr, bl, br), zoom (ids, kinds or "hl" to frame). Node
  * and recipe ids are in the explorer's NODES and RECIPES.
  *
+ * `dwell="long"` holds the step's view for more scroll, for a dense view that
+ * takes longer to read (see ScrollyMap).
+ *
  * `desc` says in words what the map shows at this step. The map itself is
  * hidden from assistive technology, so this is what screen readers, reader
  * modes and readers without the map get instead.
@@ -26,12 +29,13 @@
 interface Props {
   state: string;
   desc?: string;
+  dwell?: "long";
 }
 
-const { state, desc } = Astro.props;
+const { state, desc, dwell } = Astro.props;
 ---
 
-<div class="map-step" data-map-state={state}>
+<div class="map-step" data-map-state={state} data-dwell={dwell}>
   <slot />
   {desc && <p class="map-desc">Map: {desc}</p>}
 </div>
