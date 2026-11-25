@@ -13,7 +13,7 @@ audience: "Technical readers who know roughly how LLMs are pretrained"
 
 import Figure from "../../../../components/Figure.astro";
 import Table from "../../../../components/Table.astro";
-import pipeline2026 from "./figures/pipeline-2026.svg";
+import PipelineFigure from "../../../../components/ideas/post-training/PipelineFigure.astro";
 import annotatedExample from "./figures/annotated-example.png";
 import DataExamplesFigure from "../../../../components/ideas/post-training/DataExamples.astro";
 import TokenSignalFigure from "../../../../components/ideas/post-training/TokenSignalFigure.astro";
@@ -62,9 +62,8 @@ A recipe is a particular assembly of those parts. Labs rearrange them every few 
 
 ## What a pipeline looks like in 2026
 
-<Figure
+<PipelineFigure
   id="pipeline"
-  src={pipeline2026}
   alt="Flow diagram. A generic pretraining row (pretraining, later pretraining, an optional midtraining stage, long-context extension) produces a base model, which goes through general SFT as a cold start for RL. One arrow leads to the student, trained with mixed-environment RLVR; another leads to a group of specialist teachers, one per domain (reasoning, agentic, general, and more), which start from the SFT model, the student, or each other. The student passes through an optional warmup of light SFT on the teachers' data. Teachers and student feed multi-teacher on-policy distillation, where the student writes and the matching teacher scores every token, producing the shipped model. A dashed iteration-2 arrow loops from distillation back to the whole teacher group."
   caption="A simplified composite of recent open recipes; no single lab's pipeline looks exactly like this. The specialists-then-distillation shape follows Kimi K3 and Nemotron 3 Ultra. In Nemotron 3 Ultra, more than ten teachers start from different checkpoints, the student gets a brief SFT warmup on data from the teachers' training distributions, and the second round adds teachers initialized from the distilled student. Dashed boxes are steps only some recipes use."
 />
