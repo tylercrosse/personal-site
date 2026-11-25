@@ -131,28 +131,39 @@ The third is consolidation by distillation. The specialists are merged back into
 <MapStep
   dwell="long"
   state="lens=pipes&recipes=instructgpt,r1,qwen3,k2,olmo3,k3,nemotron&hl=m-sft"
-  desc="the seven pipelines in the table below, one per row. All start with a lit SFT stage, then differ in length and order.">
+  desc="seven published pipelines, InstructGPT to Nemotron 3 Ultra, one per row. Each starts with a lit SFT stage, and Qwen3 and Nemotron light a later SFT stage too. After that they differ in length and order.">
 
-Not every recent recipe looks like this. The table below lines up a few published ones. They all start with SFT and then diverge.
+Not every recent recipe looks like this. The map now shows seven published ones, simplified. They all start with SFT and then diverge.
+
+</MapStep>
+
+<MapStep
+  state="lens=pipes&recipes=instructgpt,r1,qwen3,k2,olmo3,k3,nemotron&hl=p-instructgpt-0,p-instructgpt-1,p-instructgpt-2,p-r1-0,p-r1-1,p-r1-2,p-r1-3,p-r1-4"
+  desc="the InstructGPT and DeepSeek-R1 rows lit. InstructGPT: SFT, a reward model, then PPO against it. DeepSeek-R1: cold-start SFT, GRPO with a verifier, rejection sampling, GRPO again, then distillation into small models.">
+
+InstructGPT (2022) has the classic RLHF shape: humans write demonstrations and compare outputs [@ouyang2022instructgpt]. DeepSeek-R1 (2025) alternates imitation and exploration, and its middle SFT stage is built from the RL model's own best outputs [@deepseek2025r1].
+
+</MapStep>
+
+<MapStep
+  state="lens=pipes&recipes=instructgpt,r1,qwen3,k2,olmo3,k3,nemotron&hl=p-qwen3-0,p-qwen3-1,p-qwen3-2,p-qwen3-3,p-qwen3-4,p-qwen3-5,p-k2-0,p-k2-1"
+  desc="the Qwen3 and Kimi K2 rows lit. Qwen3: SFT, GRPO with a verifier, SFT for mode fusion, RL with a verifier, judge and reward model, then offline and on-policy distillation into smaller models. Kimi K2: SFT on tool-use data, then one RL stage with a verifier and self-critique.">
+
+Qwen3 (2025) merges thinking and non-thinking behavior, answering with or without a reasoning trace, into one model, and its smaller models are distilled from larger ones [@qwen2025qwen3]. Kimi K2 (2025) has one RL stage mixing verifiable rewards with rubric-based self-critique, where the model grades its own answers [@kimi2025k2].
+
+</MapStep>
+
+<MapStep
+  state="lens=pipes&recipes=instructgpt,r1,qwen3,k2,olmo3,k3,nemotron&hl=p-olmo3-0,p-olmo3-1,p-olmo3-2,p-k3-0,p-k3-1,p-k3-2,p-nemotron-0,p-nemotron-1,p-nemotron-2,p-nemotron-3,p-nemotron-4,p-nemotron-5"
+  desc="the Olmo 3 Think, Kimi K3 and Nemotron 3 Ultra rows lit. Olmo 3 Think: SFT, DPO, then RLVR. Kimi K3: SFT, nine specialists trained with RL, then multi-teacher distillation. Nemotron 3 Ultra: SFT, RL over all environments, ten or more specialists, an SFT warmup, then two rounds of distillation.">
+
+Olmo 3 Think (2025) has fully open data and code, and keeps a preference-tuning stage before RL [@olmo2025olmo3]. Kimi K3 and Nemotron 3 Ultra (2026) train narrow experts, then consolidate them; Nemotron also runs one RL stage over all environments first [@kimi2026k3; @nvidia2026nemotron3ultra].
 
 </MapStep>
 
 </ScrollyMap>
 
-<Table id="recipes" caption="Simplified post-training recipes from published reports. Each row omits stages and details.">
-
-| Model | Recipe | What's distinctive |
-| --- | --- | --- |
-| InstructGPT (2022) | SFT → reward model → PPO | The classic RLHF shape: humans write demonstrations and compare outputs [@ouyang2022instructgpt] |
-| DeepSeek-R1 (2025) | Cold-start SFT → reasoning RL → filtered SFT → RL | Alternates imitation and exploration; the middle SFT stage is built from the RL model's own best outputs [@deepseek2025r1] |
-| Qwen3 (2025) | Cold-start SFT → reasoning RL → mode fusion → general RL | Merges thinking and non-thinking behavior into one model; smaller models are distilled from larger ones [@qwen2025qwen3] |
-| Kimi K2 (2025) | SFT → joint RL | One RL stage mixing verifiable rewards with rubric-based self-critique [@kimi2025k2] |
-| Olmo 3 Think (2025) | SFT → DPO → RLVR | Fully open data and code; keeps a preference-tuning stage before RL [@olmo2025olmo3] |
-| Kimi K3, Nemotron 3 Ultra (2026) | SFT → specialist RL → multi-teacher distillation | Train narrow experts, then consolidate; Nemotron also runs one RL stage over all environments first [@kimi2026k3; @nvidia2026nemotron3ultra] |
-
-</Table>
-
-The labels in that table (SFT, DPO, RL, distillation) are names for the parts. To see why they can be swapped and recombined, it helps to sort them by what the model is learning from and how it updates.
+The labels in those recipes (SFT, DPO, RL, distillation) are names for the parts. To see why they can be swapped and recombined, it helps to sort them by what the model is learning from and how it updates.
 
 ## Methods, sorted by what the model learns from
 
