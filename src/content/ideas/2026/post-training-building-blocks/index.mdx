@@ -24,6 +24,7 @@ import TokenSignalFigure from "../../../../components/ideas/post-training/TokenS
 import ScrollyMap from "../../../../components/ideas/post-training/ScrollyMap.astro";
 import MapStep from "../../../../components/ideas/post-training/MapStep.astro";
 import FullMapLink from "../../../../components/ideas/post-training/FullMapLink.astro";
+import SignalSketch from "../../../../components/ideas/post-training/SignalSketch.astro";
 import mapParts from "./figures/map-parts.png";
 import mapPipelines from "./figures/map-pipelines.png";
 import mapSignals from "./figures/map-signals.png";
@@ -186,6 +187,8 @@ There are dozens of named post-training algorithms, and most of the names descri
 
 **Demonstrations: "respond like this."** The model sees a prompt and a target response, and the update raises the probability of each token in the target. This is SFT, and it's the same next-token objective as pretraining, applied to curated text. Rejection sampling is a variant: generate several candidates, keep the ones a grader likes, and run SFT on the keepers. The grader chooses the data, but it never enters the gradient.
 
+<SignalSketch kind="demo" />
+
 </MapStep>
 
 <MapStep
@@ -193,6 +196,8 @@ There are dozens of named post-training algorithms, and most of the names descri
   desc="preferences lit, leading to DPO, IPO, KTO and SimPO, with the reward model also lit.">
 
 **Preferences: "this one, not that one."** The model sees a prompt with two responses, one marked better. Direct preference optimization (DPO) and its relatives push up the probability of the chosen response relative to the rejected one [@rafailov2023dpo]. This is preference tuning. You don't have to say what a perfect answer looks like, only which of two is better, which is often much easier for a person to judge. KTO, one of those relatives, works from single responses labelled good or bad, with no pairing [@ethayarajh2024kto]. The same comparisons can instead train a separate reward model, which is how classical RLHF used them.
+
+<SignalSketch kind="pref" />
 
 </MapStep>
 
@@ -202,6 +207,8 @@ There are dozens of named post-training algorithms, and most of the names descri
 
 **Scalar rewards: "that attempt scored 0.7."** Now the model generates its own attempts, something scores each one, and the update makes above-average attempts more likely and below-average ones less likely. This is reinforcement learning. In RL terms the model being trained is the policy, and each attempt is a rollout. The scorer can be a reward model trained on human preferences (RLHF), a model acting as judge (RL from AI feedback, or RLAIF [@bai2022constitutional]), or a program that checks the answer, such as unit tests or a math answer key (RLVR [@lambert2024tulu3]). Those three acronyms name where the reward comes from. The optimizer can be the same in all three.
 
+<SignalSketch kind="reward" />
+
 </MapStep>
 
 <MapStep
@@ -209,6 +216,8 @@ There are dozens of named post-training algorithms, and most of the names descri
   desc="teacher distributions lit, fed by a live teacher and leading to offline and on-policy distillation.">
 
 **Teacher distributions: "here's what I would have said, token by token."** A stronger model, the teacher, supplies its probabilities for each next token, and the student learns to match them. In offline distillation the student trains on text the teacher wrote, which amounts to SFT on teacher outputs. In on-policy distillation the student writes the text, and the teacher scores each token by how likely the teacher would have been to write it. Kimi K3, for example, uses the log of the ratio between the teacher's and the student's probability for each token as a per-token reward [@kimi2026k3].
+
+<SignalSketch kind="teacher" />
 
 </MapStep>
 
