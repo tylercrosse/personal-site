@@ -243,13 +243,13 @@ The second is **how much each example tells the model**. A demonstration or a te
   state="lens=grid&cell=tr&hl=m-dpo,m-ipo,m-kto,m-simpo"
   desc="the grid's top-right cell lit: DPO, IPO, KTO and SimPO, off-policy with one signal per response.">
 
-Kevin Lu's post on on-policy distillation places SFT, RL, and on-policy distillation on these two axes [@lu2025onpolicy]. Adding DPO, with the caveat above, fills the fourth cell:
+Kevin Lu's post on on-policy distillation places SFT, RL, and on-policy distillation on these two axes [@lu2025onpolicy]. Adding DPO, with the caveat above, fills the fourth cell.
 
 </MapStep>
 
 </ScrollyMap>
 
-<Table id="signal-grid" caption="Whose text is trained on, against how much each example says. SFT, RL, and on-policy distillation follow Lu (2025); the DPO cell is my addition.">
+<Table numbered={false} class="scrolly-text-only" caption="Whose text is trained on, against how much each example says. SFT, RL, and on-policy distillation follow Lu (2025); the DPO cell is my addition.">
 
 | | Signal on every token | One signal per response |
 | --- | --- | --- |
@@ -281,11 +281,11 @@ The bottom-left cell explains the pipeline in [fig:pipeline]. RL is on-policy bu
 
 </ScrollyMap>
 
-To see what these signals actually say, I ran one example with real models. A small model, Qwen2.5-0.5B-Instruct, answers a word problem and gets it wrong. A larger model from the same family, Qwen2.5-7B-Instruct, plays the teacher. Each button in the figure is laid out like the table above.
+To see what these signals actually say, I ran one example with real models. A small model, Qwen2.5-0.5B-Instruct, answers a word problem and gets it wrong. A larger model from the same family, Qwen2.5-7B-Instruct, plays the teacher. Each button in the figure is laid out like the grid above.
 
 <TokenSignalFigure
   id="token-signals"
-  alt="A word problem about a farmer's cows, with a toggle laid out like the 2×2 table. SFT tints a teacher-written correct answer by how surprising each token is to the student. DPO tints a preferred answer all blue and the student's wrong answer all orange. On-policy distillation tints the student's own wrong answer token by token; the mistake '42 / 3 = 14 cows left' is orange, along with wording the teacher wouldn't use. RL tints every token of the same answer one shade of orange. A fifth view shades where the student was most uncertain."
+  alt="A word problem about a farmer's cows, with a toggle laid out like the 2×2 grid. SFT tints a teacher-written correct answer by how surprising each token is to the student. DPO tints a preferred answer all blue and the student's wrong answer all orange. On-policy distillation tints the student's own wrong answer token by token; the mistake '42 / 3 = 14 cows left' is orange, along with wording the teacher wouldn't use. RL tints every token of the same answer one shade of orange. A fifth view shades where the student was most uncertain."
   caption="One prompt, four learning signals, with real numbers from Qwen2.5-0.5B-Instruct (student) and Qwen2.5-7B-Instruct (teacher). Distillation flags the student's mistake, but also its wording, since the teacher scores phrasing as well as reasoning; RL gives every token the same number."
 />
 

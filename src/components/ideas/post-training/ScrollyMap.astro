@@ -53,6 +53,9 @@ const noscript = still
   : "";
 ---
 
+<!-- Before anything below renders: maps will be drawn, so text stand-ins for them can step aside (see .scrolly-text-only). -->
+<script is:inline>document.documentElement.classList.add("scrolly-maps");</script>
+
 <section class="scrolly" data-scrolly>
   <div class="scrolly-graphic">
     <div class="scrolly-sticky">
@@ -343,6 +346,14 @@ const noscript = still
 </style>
 
 <style is:global>
+  /* A text stand-in for a map view, such as a table that repeats the map's grid (add class="scrolly-text-only"):
+     shown only where no map is drawn, on phones and to readers without JavaScript. */
+  @media (min-width: 600px) {
+    html.scrolly-maps .scrolly-text-only {
+      display: none;
+    }
+  }
+
   /* While a map is beside the text, the desktop table of contents shrinks to its toggle in the top-right
      corner; the toggle opens it over the map until the map scrolls away. */
   /* (in the right margin, beside the map rather than over it) */
