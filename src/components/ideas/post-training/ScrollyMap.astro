@@ -97,12 +97,21 @@ const noscript = still
     grid-template-areas: "steps graphic";
     column-gap: clamp(1.5rem, 2.2vw, 2.5rem);
     margin: 1rem 0 1.5rem;
+    /* How long each step's view holds, in scroll: --step-hold with the map pinned and settled, plus
+       --step-settle for the scroll a reader covers while it moves there (a 0.6s tween). A step marked
+       dwell="long" holds longer, for the denser views. */
+    --step-hold: 40vh;
+    --step-settle: 100px;
+    --step-gap: 1.25rem;
   }
 
   .scrolly-steps {
     grid-area: steps;
     min-width: 0;
-    padding: 6vh 0 20vh;
+    /* A step's view starts when its top passes 55% of the window (the reading line in the script below).
+       The top padding puts the first step just above that line as the map pins, so its view is still
+       there, whole, while it's read; the bottom padding keeps the map pinned through the last step's hold. */
+    padding: calc(55vh - var(--step-settle)) 0 calc(45vh + var(--step-gap));
     /* A short block (two steps) still runs long enough for the map to pin and be seen whole. */
     min-height: 125vh;
     box-sizing: border-box;
@@ -162,29 +171,19 @@ const noscript = still
 
   /* The active-step bar sits in the margin, so the text starts right at it. */
   .scrolly :global(.map-step) {
-    min-height: 30vh;
+    min-height: calc(var(--step-hold) + var(--step-settle) - var(--step-gap));
     padding: 0.25rem 0 0.25rem 12px;
     margin-left: -14px;
     border-left: 2px solid transparent;
     box-sizing: border-box;
   }
 
+  .scrolly :global(.map-step[data-dwell="long"]) {
+    --step-hold: 55vh;
+  }
+
   .scrolly :global(.map-step + .map-step) {
-    margin-top: 1.25rem;
-  }
-
-  /* A list split into steps should still read as one list: short steps, close together. */
-  .scrolly :global(.map-step:has(> ul:first-child)) {
-    min-height: 18vh;
-  }
-
-  .scrolly :global(.map-step:has(> ul:first-child) + .map-step:has(> ul:first-child)) {
-    margin-top: 0;
-  }
-
-  /* …and the sentence that introduces the list runs straight into it. */
-  .scrolly :global(.map-step:not(:has(> ul:first-child)):has(+ .map-step > ul:first-child)) {
-    min-height: 0;
+    margin-top: var(--step-gap);
   }
 
   .scrolly :global(.map-step.is-active) {

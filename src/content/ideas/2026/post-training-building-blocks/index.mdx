@@ -74,6 +74,7 @@ I've been working through Nathan Lambert's RLHF book [@lambert2025rlhfbook] and 
 </MapStep>
 
 <MapStep
+  dwell="long"
   state="recipes=instructgpt,k3&route=stages&zoom=data,method"
   desc="two recipes traced left to right through the parts, one line per stage, each numbered where it ends. InstructGPT: 1, demonstrations to the demonstrations signal and SFT; 2, ratings and rankings train a reward model; 3, prompts and the model's own rollouts, scored by that reward model, give scalar rewards for PPO. Kimi K3: 1, agent trajectories to SFT; 2, verifiable tasks, interactive environments and rollouts, scored by a program verifier and an LLM judge, give scalar rewards; 3, the model's own rollouts, scored by a live teacher, give teacher distributions for on-policy distillation.">
 
@@ -124,6 +125,7 @@ The third is consolidation by distillation. The specialists are merged back into
 </MapStep>
 
 <MapStep
+  dwell="long"
   state="lens=pipes&recipes=instructgpt,r1,qwen3,k2,olmo3,k3,nemotron&hl=m-sft"
   desc="the seven pipelines in the table below, one per row. All start with a lit SFT stage, then differ in length and order.">
 
@@ -155,6 +157,7 @@ The labels in that table (SFT, DPO, RL, distillation) are names for the parts. T
   fallbackAlt="The four learning signals and the update rules each feeds: demonstrations to SFT; preferences to DPO, IPO, KTO and SimPO; scalar rewards to REINFORCE, RLOO, PPO, GRPO, GSPO and CISPO, fed by a reward model (RLHF), an LLM judge (RLAIF) and a program verifier (RLVR); teacher distributions to offline and on-policy distillation.">
 
 <MapStep
+  dwell="long"
   state="hl=family&zoom=scorer,family,method"
   desc="the four learning signals lit, with the update rules each one feeds to the right and the scorers to the left.">
 
@@ -195,6 +198,7 @@ There are dozens of named post-training algorithms, and most of the names descri
 </MapStep>
 
 <MapStep
+  dwell="long"
   state="lens=grid"
   desc="a two-by-two grid. Columns: signal on every token, one signal per response. Rows: someone else's text (off-policy), the model's own text (on-policy). Each update rule sits in its cell.">
 
@@ -244,6 +248,7 @@ Kevin Lu's post on on-policy distillation places SFT, RL, and on-policy distilla
   fallbackAlt="A two-by-two grid of update rules: signal on every token or one per response, against someone else's text or the model's own. SFT and offline distillation top left, DPO and its relatives top right, on-policy distillation bottom left, the RL methods bottom right.">
 
 <MapStep
+  dwell="long"
   state="lens=grid&hl=m-rs,m-odpo"
   desc="rejection sampling and online DPO lit, sitting on the line between the grid's two rows.">
 
@@ -289,6 +294,7 @@ The last view isn't a training signal, but it shows where the learning happens. 
   fallbackAlt="The fourteen data shapes, the scorers that turn some of them into rewards, and the four learning signals they feed.">
 
 <MapStep
+  dwell="long"
   state="hl=source,data&zoom=source,data"
   desc="the five sources and the fourteen data shapes lit.">
 
@@ -439,6 +445,7 @@ The amount of data has grown a lot, even though post-training data is still tiny
   fallbackAlt="Ratings, preference pairs and the model's own rollouts, linked to the reward model and three learning signals by edges named for the transformation each makes.">
 
 <MapStep
+  dwell="long"
   state="zoom=data,method"
   desc="data shapes on the left and update rules on the right, with every connection between them drawn. Most shapes reach several methods, and most methods take several shapes.">
 
@@ -503,6 +510,7 @@ Distillation is the odd one out. It doesn't use the ratings at all. Offline dist
 </MapStep>
 
 <MapStep
+  dwell="long"
   state="hl=d-ratings,d-pairs,d-rollouts,f-demo,f-pref,s-rm,f-reward&labels=1&zoom=data,method"
   desc="ratings, preference pairs and the model's rollouts lit, with the reward model and three learning signals, and each edge between them named for the transformation it makes.">
 
