@@ -1,0 +1,323 @@
+---
+/**
+ * A scrollytelling block: the post-training explorer stays pinned beside the
+ * prose, and each <MapStep> drives it to the view that passage describes.
+ *
+ *   <ScrollyMap>
+ *
+ *   <MapStep state="lens=flow&reveal=source,data">
+ *
+ *   Prose…
+ *
+ *   </MapStep>
+ *
+ *   </ScrollyMap>
+ *
+ * Wide screens: steps in a left column (~40%), the map sticky on the right
+ * (~60%), breaking out of the article column. Narrow screens: the map becomes
+ * a short sticky strip above the text and frames each step's parts (the
+ * steps' zoom= params), so the labels stay legible.
+ *
+ * The map is the explorer page (notes/post-training-study-project/explorer,
+ * served by src/pages/ideas/2026/post-training-building-blocks/[file].ts) in
+ * its embed mode: no chrome, no pointer or wheel input, nothing focusable. It
+ * follows the site theme on its own. The frame is aria-hidden and out of the
+ * tab order; the prose carries the argument without it, and a link under the
+ * map opens the current view in the full explorer.
+ *
+ * Steps contain only Markdown, so figures and tables numbered by
+ * remarkCrossRefs still count in document order. Wide figures belong between
+ * ScrollyMap blocks, where the map has un-stuck.
+ */
+interface Props {
+  /** Explorer URL (same origin). */
+  src?: string;
+}
+
+const { src = "/ideas/2026/post-training-building-blocks/map.html" } = Astro.props;
+---
+
+<section class="scrolly" data-scrolly>
+  <div class="scrolly-graphic">
+    <div class="scrolly-sticky">
+      <iframe
+        class="scrolly-frame"
+        src={`${src}?embed=1`}
+        title="Post-training map, following the text"
+        tabindex="-1"
+        aria-hidden="true"
+        loading="lazy"></iframe>
+      <a class="scrolly-open" href={src} data-base={src} target="_blank" rel="noopener"
+        >Open this view in the full map ↗</a
+      >
+    </div>
+  </div>
+  <div class="scrolly-steps">
+    <slot />
+  </div>
+</section>
+
+<style>
+  .scrolly {
+    /* Break out of the 800px column to the width of the article grid. */
+    grid-column: 1 / -1 !important;
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+    grid-template-areas: "steps graphic";
+    column-gap: clamp(1.5rem, 3vw, 3rem);
+    padding-left: clamp(0.5rem, 5vw - 1.5rem, 5rem);
+    margin: 1rem 0 2rem;
+  }
+
+  .scrolly-steps {
+    grid-area: steps;
+    width: 100%;
+    max-width: 34rem;
+    justify-self: end;
+    padding: 12vh 0 30vh;
+  }
+
+  .scrolly-graphic {
+    grid-area: graphic;
+  }
+
+  .scrolly-sticky {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    height: 100svh;
+    display: flex;
+    flex-direction: column;
+    padding: 1.25rem 0 0.75rem;
+    box-sizing: border-box;
+  }
+
+  .scrolly-frame {
+    flex: 1;
+    width: 100%;
+    min-height: 0;
+    border: 0;
+    background: transparent;
+    color-scheme: normal;
+  }
+
+  .scrolly-open {
+    align-self: flex-end;
+    font-size: 0.7rem;
+    line-height: 1.4;
+    color: var(--sol-1);
+    text-decoration: none;
+    padding-top: 0.35rem;
+  }
+
+  .scrolly-open:hover,
+  .scrolly-open:focus-visible {
+    color: var(--blue);
+    text-decoration: underline;
+  }
+
+  .scrolly :global(.map-step) {
+    min-height: 62vh;
+    padding: 0.25rem 0 0.25rem 1.1rem;
+    margin-left: -1.1rem;
+    border-left: 2px solid transparent;
+    box-sizing: border-box;
+  }
+
+  .scrolly :global(.map-step + .map-step) {
+    margin-top: 1rem;
+  }
+
+  /* Short steps (a single bullet) don't need a full screen each. */
+  .scrolly :global(.map-step:has(> ul:only-child)) {
+    min-height: 42vh;
+  }
+
+  .scrolly :global(.map-step.is-active) {
+    border-left-color: color-mix(in srgb, var(--blue) 55%, transparent);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .scrolly :global(.map-step) {
+      transition: border-color 0.3s ease;
+    }
+  }
+
+  .scrolly :global(.map-step > :first-child) {
+    margin-top: 0;
+  }
+
+  .scrolly :global(.map-step > :last-child) {
+    margin-bottom: 0;
+  }
+
+  /* Narrow screens: a sticky strip over the text. */
+  @media (max-width: 959px) {
+    .scrolly {
+      grid-column: 2 !important;
+      display: block;
+      margin: 1.5rem 0 2rem;
+    }
+
+    .scrolly-graphic {
+      position: sticky;
+      top: var(--scrolly-top, 0px);
+      z-index: 3;
+      height: 42vh;
+      height: 42svh;
+      min-height: 240px;
+      margin: 0 -1rem;
+      padding: 0 0.5rem;
+      background: #fff;
+      border-bottom: 1px solid var(--main-border-color);
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+      .scrolly-graphic {
+        transition: top 0.3s ease;
+      }
+    }
+
+    :global([data-effective-theme="dark"]) .scrolly-graphic {
+      background: #002b36;
+      border-bottom-color: var(--sol-3);
+    }
+
+    .scrolly-sticky {
+      position: static;
+      height: 100%;
+      padding: 0.25rem 0 0.15rem;
+    }
+
+    .scrolly-open {
+      font-size: 0.65rem;
+      padding-top: 0.1rem;
+    }
+
+    .scrolly-steps {
+      max-width: none;
+      padding: 2rem 0 35vh;
+    }
+
+    .scrolly :global(.map-step) {
+      min-height: 50vh;
+      padding-left: 0.85rem;
+      margin-left: -0.85rem;
+    }
+
+    .scrolly :global(.map-step:has(> ul:only-child)) {
+      min-height: 32vh;
+    }
+  }
+</style>
+
+<style is:global>
+  /* The map sits where the desktop table of contents does; step it aside while a map is on screen. */
+  .desktop-toc {
+    transition: opacity 0.25s ease;
+  }
+
+  html.scrolly-in-view .desktop-toc {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  html.scrolly-in-view .desktop-toc :is(a, button) {
+    visibility: hidden;
+  }
+</style>
+
+<script>
+  const STACKED = matchMedia("(max-width: 959px)");
+  const sections: Array<{ el: HTMLElement; update: () => void }> = [];
+
+  // Which explorer params a "full map" link keeps: the camera and reveal are for the pinned view only.
+  const forLink = (state: string) => {
+    const p = new URLSearchParams(state);
+    p.delete("reveal");
+    p.delete("zoom");
+    return p.toString().replace(/%2C/g, ",");
+  };
+
+  function setup(el: HTMLElement) {
+    const frame = el.querySelector<HTMLIFrameElement>(".scrolly-frame")!;
+    const link = el.querySelector<HTMLAnchorElement>(".scrolly-open")!;
+    const steps = [...el.querySelectorAll<HTMLElement>(".map-step")];
+    if (!steps.length) return;
+    let ready = false;
+    let active = -1;
+    let sent: string | null = null;
+
+    const send = () => {
+      if (!ready || active < 0 || !frame.contentWindow) return;
+      const state = steps[active].dataset.mapState ?? "";
+      if (state === sent) return;
+      sent = state;
+      frame.contentWindow.postMessage({ type: "pt-explorer:state", state }, location.origin);
+    };
+
+    window.addEventListener("message", (ev) => {
+      if (ev.source !== frame.contentWindow || ev.data?.type !== "pt-explorer:ready") return;
+      ready = true;
+      sent = null;
+      send();
+    });
+
+    // The active step is the last one whose top has passed a reading line: mid-screen beside the
+    // map, lower down when the map is a strip across the top.
+    const update = () => {
+      const line = innerHeight * (STACKED.matches ? 0.7 : 0.55);
+      let i = 0;
+      steps.forEach((s, k) => {
+        if (s.getBoundingClientRect().top < line) i = k;
+      });
+      if (i === active) return;
+      steps[active]?.classList.remove("is-active");
+      active = i;
+      steps[i].classList.add("is-active");
+      const state = forLink(steps[i].dataset.mapState ?? "");
+      link.href = link.dataset.base + (state ? "#" + state : "");
+      send();
+    };
+
+    sections.push({ el, update });
+    update();
+  }
+
+  document.querySelectorAll<HTMLElement>("[data-scrolly]").forEach(setup);
+
+  let queued = false;
+  const onScroll = () => {
+    if (queued) return;
+    queued = true;
+    requestAnimationFrame(() => {
+      queued = false;
+      let inView = false;
+      for (const s of sections) {
+        s.update();
+        const r = s.el.getBoundingClientRect();
+        if (r.top < innerHeight * 0.85 && r.bottom > innerHeight * 0.15) inView = true;
+      }
+      document.documentElement.classList.toggle("scrolly-in-view", inView && !STACKED.matches);
+    });
+  };
+
+  if (sections.length) {
+    addEventListener("scroll", onScroll, { passive: true });
+    addEventListener("resize", onScroll);
+    onScroll();
+
+    // On narrow screens the site's reading header slides in over the top of the page; keep the map
+    // strip below it while it's showing.
+    const header = document.getElementById("mobile-toc-header");
+    if (header) {
+      const place = () => {
+        const shown = STACKED.matches && header.classList.contains("visible");
+        document.documentElement.style.setProperty("--scrolly-top", shown ? `${header.offsetHeight}px` : "0px");
+      };
+      new MutationObserver(place).observe(header, { attributes: true, attributeFilter: ["class"] });
+      STACKED.addEventListener("change", place);
+      place();
+    }
+  }
+</script>

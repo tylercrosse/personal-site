@@ -1,0 +1,28 @@
+---
+/**
+ * One passage of a ScrollyMap. While this passage is the one being read, the
+ * pinned map shows `state`: the explorer's hash params, e.g.
+ *
+ *   <MapStep state="lens=flow&hl=d-pairs,f-pref,m-dpo&zoom=data,family,method">
+ *
+ *   Prose, with blank lines around it so the Markdown parses.
+ *
+ *   </MapStep>
+ *
+ * Params: lens (flow, grid, gran, time, pipes), sel (one part, traced up and
+ * down), q (rlhf, rlaif, rlvr), recipes (up to three ids), hl (parts to light;
+ * in the pipelines lens a part lights its stages), labels=1 (name the lit
+ * edges), reveal (kinds to show, the rest ghosted: source, data, scorer,
+ * family, method), zoom (ids, kinds or "hl" to frame). Node and recipe ids are
+ * in the explorer's NODES and RECIPES.
+ */
+interface Props {
+  state: string;
+}
+
+const { state } = Astro.props;
+---
+
+<div class="map-step" data-map-state={state}>
+  <slot />
+</div>
