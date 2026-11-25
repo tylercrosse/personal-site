@@ -3,26 +3,35 @@
  * One passage of a ScrollyMap. While this passage is the one being read, the
  * pinned map shows `state`: the explorer's hash params, e.g.
  *
- *   <MapStep state="lens=flow&hl=d-pairs,f-pref,m-dpo&zoom=data,family,method">
+ *   <MapStep state="lens=flow&hl=d-pairs,f-pref,m-dpo&zoom=data,family,method"
+ *     desc="Preference pairs lit, feeding the preferences signal and DPO.">
  *
  *   Prose, with blank lines around it so the Markdown parses.
  *
  *   </MapStep>
  *
  * Params: lens (flow, grid, gran, time, pipes), sel (one part, traced up and
- * down), q (rlhf, rlaif, rlvr), recipes (up to three ids), hl (parts to light;
- * in the pipelines lens a part lights its stages), labels=1 (name the lit
- * edges), reveal (kinds to show, the rest ghosted: source, data, scorer,
- * family, method), zoom (ids, kinds or "hl" to frame). Node and recipe ids are
- * in the explorer's NODES and RECIPES.
+ * down), q (rlhf, rlaif, rlvr), recipes (route up to three ids; in the
+ * pipelines lens, the lanes to show), hl (parts or whole kinds to light; in the
+ * pipelines lens a part lights its stages), labels=1 (name the lit edges),
+ * reveal (kinds to show, the rest ghosted: source, data, scorer, family,
+ * method), mute (kinds named faintly, not yet explained, or "all"), cell (grid-lens
+ * cells to light: tl, tr, bl, br), zoom (ids, kinds or "hl" to frame). Node
+ * and recipe ids are in the explorer's NODES and RECIPES.
+ *
+ * `desc` says in words what the map shows at this step. The map itself is
+ * hidden from assistive technology, so this is what screen readers, reader
+ * modes and readers without the map get instead.
  */
 interface Props {
   state: string;
+  desc?: string;
 }
 
-const { state } = Astro.props;
+const { state, desc } = Astro.props;
 ---
 
 <div class="map-step" data-map-state={state}>
   <slot />
+  {desc && <p class="map-desc">Map: {desc}</p>}
 </div>
