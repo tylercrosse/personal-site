@@ -23,6 +23,7 @@ import DataExamplesFigure from "../../../../components/ideas/post-training/DataE
 import TokenSignalFigure from "../../../../components/ideas/post-training/TokenSignalFigure.astro";
 import ScrollyMap from "../../../../components/ideas/post-training/ScrollyMap.astro";
 import MapStep from "../../../../components/ideas/post-training/MapStep.astro";
+import FullMapLink from "../../../../components/ideas/post-training/FullMapLink.astro";
 import mapParts from "./figures/map-parts.png";
 import mapPipelines from "./figures/map-pipelines.png";
 import mapSignals from "./figures/map-signals.png";
@@ -31,11 +32,14 @@ import mapData from "./figures/map-data.png";
 import mapSources from "./figures/map-sources.png";
 import mapRatings from "./figures/map-ratings.png";
 
+
 A pretrained language model has read much of the internet and still can't take a request. It completes documents. If you type "What is the capital of France?", a reasonable continuation is another quiz question, since on the web that line usually appears in a list of them. The model probably knows the answer. Answering you just isn't what it's been trained to do.
 
 Post-training is everything done after pretraining to change that. It turns a document completer into something you can hand a task to: a model that answers the question, follows instructions, holds a conversation, calls tools, works through a hard problem step by step, and declines some requests. InstructGPT made the point early: labelers preferred outputs from a 1.3B-parameter post-trained model over those from the 175B-parameter GPT-3, a model more than 100 times larger [@ouyang2022instructgpt].
 
 For a while the short version was that post-training *elicits* what pretraining already put there. A thin layer of instruction tuning and preference tuning chose which of the many voices in the base model you'd hear. That story is less true now. Reinforcement learning (RL) on problems with checkable answers has become a main way that models get better at math, code, and long agentic tasks [@deepseek2025r1], so post-training is increasingly where the model learns to do the task as well as how to present it.
+
+<FullMapLink />
 
 <ScrollyMap
   fallback={mapParts}
