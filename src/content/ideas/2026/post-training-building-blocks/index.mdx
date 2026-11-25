@@ -51,7 +51,7 @@ I've been working through Nathan Lambert's RLHF book [@lambert2025rlhfbook] and 
 
 <MapStep
   state="hl=source,data&zoom=source,data"
-  desc="the first two columns named and lit. Five sources: human experts, real users, programs, the model itself and teacher models. Fourteen data shapes, from demonstrations and preference pairs to verifiable tasks and teacher token probabilities.">
+  desc="a sources column appears left of the data shapes, and both are lit. Five sources: human experts, real users, programs, the model itself and teacher models. Fourteen data shapes, from demonstrations and preference pairs to verifiable tasks and teacher token probabilities.">
 
 - **Data**, which comes from somewhere (people, other models, programs, the model itself) and has some shape (a demonstration, a comparison, a task with a grader).
 
@@ -100,7 +100,7 @@ The top row is pretraining and its tail end. Midtraining, which some recipes add
 
 <MapStep
   state="lens=pipes&recipes=r1,k3,nemotron&hl=m-sft"
-  desc="the pipelines of DeepSeek-R1, Kimi K3 and Nemotron 3 Ultra as rows of stages, with the SFT stages lit. Each pipeline starts with one.">
+  desc="the map switches to rows of stages: the pipelines of DeepSeek-R1, Kimi K3 and Nemotron 3 Ultra, with the SFT stages lit. Each pipeline starts with one, and Nemotron has a second, a brief SFT warmup before distillation.">
 
 Everything below the base model is post-training, and it has three broad moves.
 
@@ -200,7 +200,7 @@ There are dozens of named post-training algorithms, and most of the names descri
 <MapStep
   dwell="long"
   state="lens=grid"
-  desc="a two-by-two grid. Columns: signal on every token, one signal per response. Rows: someone else's text (off-policy), the model's own text (on-policy). Each update rule sits in its cell.">
+  desc="the map switches to a two-by-two grid. Columns: signal on every token (dense), one signal per response (sparse). Rows: someone else's text (off-policy), the model's own text (on-policy). Each update rule sits in its cell, except rejection sampling and online DPO, which sit on the line between the rows. Notes under the grid say why: they train on the model's own samples, but in batches or rounds. They also say density partly belongs to the scorer: a process reward model makes any RL method step-dense.">
 
 ### The update rule: whose text, and how much signal
 
@@ -303,8 +303,8 @@ If the methods turn signals into updates, the data is where the signals come fro
 </MapStep>
 
 <MapStep
-  state="hl=data,family&zoom=data,scorer,family"
-  desc="every data shape lit, with the four learning signals they feed.">
+  state="hl=data,scorer,family&zoom=data,scorer,family"
+  desc="every data shape lit, with lines to the four learning signals: some shapes feed a signal directly, others through a scorer in the middle column. Teacher distributions has no line in: teacher data feeds the distillation update rules directly.">
 
 ### Shape
 
@@ -447,7 +447,7 @@ The amount of data has grown a lot, even though post-training data is still tiny
 <MapStep
   dwell="long"
   state="zoom=data,method"
-  desc="data shapes on the left and update rules on the right, with every connection between them drawn. Most shapes reach several methods, and most methods take several shapes.">
+  desc="data shapes on the left and update rules on the right, with the scorers and learning signals between them and every connection drawn. Most shapes reach several methods, and most methods take several shapes.">
 
 Here's where the lego metaphor earns its keep. Data and methods don't pair up one-to-one. A single pool of data can feed several methods, and a single method can eat data from very different sources, because data gets transformed from one shape into another along the way.
 
