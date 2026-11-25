@@ -1445,12 +1445,12 @@ function renderLabels() {
   for (const e of todo) {
     const w = textW(e.via, "400 10.5px Inter, system-ui, sans-serif") + 10, h = 16;
     const nIn = fanIn[e.to], nOut = fanOut[e.from];
-    const pref = nIn > 1 && nIn >= nOut ? 0.22 : nOut > 1 ? 0.78 : 0.5;
+    const pref = nIn > 1 && nOut > 1 ? 0.5 : nIn > 1 ? 0.22 : nOut > 1 ? 0.78 : 0.5;   // both ends shared: the middle
     const [x1, y1, , , , , x2, y2] = e.bz, dir = Math.sign(x2 - x1);
     const spots = [];   // [t, x, y, bonus]
     if (sideways(e) && litOut[e.from] === 1) spots.push([0, x1 + dir * (4 + w / 2), y1, 25]);
     if (sideways(e) && litIn[e.to] === 1) spots.push([1, x2 - dir * (4 + w / 2), y2, 25]);
-    for (const dy of [0, 17, -17]) for (let t = 0.06; t < 0.95; t += 0.04) { const p = at(e.bz, t); spots.push([t, p.x, p.y + dy, dy ? -14 : 0]); }
+    for (const dy of [0, 17, -17, 27, -27]) for (let t = 0.06; t < 0.95; t += 0.04) { const p = at(e.bz, t); spots.push([t, p.x, p.y + dy, -1.2 * Math.abs(dy)]); }
     let best = null, least = null;   // the best clear spot; failing that, the one covering the least
     for (const [t, sx, sy, bonus] of spots) {
       const r = { x: sx, y: sy, w, h };
@@ -1470,7 +1470,7 @@ function renderLabels() {
       if (!best || score > best.score) best = { ...r, score };
     }
     const { x, y } = best || least;
-    placed.push({ x, y, w, h });
+    placed.push({ x, y, w: w + 4, h: h + 3 });   // keep a hair of space between labels
     const g = el("g", { class: "elabel", transform: `translate(${x},${y})` }, G.labels);
     const t = el("text", { x: 0, y: 0.5, "text-anchor": "middle", "dominant-baseline": "central" }, g);
     t.textContent = e.via;
