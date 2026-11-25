@@ -337,6 +337,27 @@ aside .prof li, .prof li { margin: 0 0 2px; color: var(--text-2); white-space: n
   padding: 4px 6px; font-size: 12.5px; cursor: pointer; }
 .themesel:hover { color: var(--text); border-color: var(--faint); }
 .themesel[hidden] { display: none; }
+
+/* Embed mode (?embed=1): the bare map, for an article to drive with postMessage (see "Host pages" in the script).
+   No header, panel, chips or controls, nothing focusable, and the map doesn't take pointer or wheel input,
+   so the page around it keeps scrolling and keyboard focus never lands inside the frame. */
+:root.embed { color-scheme: normal; }          /* match the host so the frame stays transparent */
+:root.embed, .embed body { background: transparent; }
+.embed header, .embed aside, .embed .zoom, .embed .hint, .embed .reltoggle,
+.embed .resizer, .embed .compare, .embed .search, .embed #deftip { display: none !important; }
+/* the recipe bar stays only as a legend for the recipes drawn on the map */
+.embed .recipes { bottom: 6px; left: 8px; right: 8px; pointer-events: none; }
+.embed body[data-lens="pipes"] .recipes { display: none; }
+.embed .recipes .lbl, .embed .recipes .chip:not(.on) { display: none; }
+.embed .recipes .chip { cursor: default; }
+.embed .app { grid-template-columns: 1fr; grid-template-rows: minmax(0, 1fr); }
+.embed svg#map { pointer-events: none; cursor: default; touch-action: auto; }
+.embed .node .state { transition: opacity .45s ease; }
+.embed .edge { transition: opacity .45s ease; }
+@media (prefers-reduced-motion: reduce) {
+  .embed .node .state, .embed .edge { transition: none; }
+  .fadein { animation: none; }
+}
 </style>
 <script>
 /* Which theme. In order:
@@ -351,6 +372,7 @@ aside .prof li, .prof li { margin: 0 0 2px; color: var(--text-2); white-space: n
   const T = window.ptTheme = { THEMES, KEY: "pt-explorer-theme", hosted: false, onchange: null,
     set(t) { t = ALIAS[t] || t; if (!THEMES.includes(t)) return; root.dataset.theme = t; T.onchange && T.onchange(); } };
   const param = new URLSearchParams(location.search).get("theme");
+  if (new URLSearchParams(location.search).get("embed") === "1") root.classList.add("embed");
   let host = null;
   try { if (window.parent !== window && window.parent.document.documentElement.dataset.effectiveTheme) host = window.parent.document.documentElement; } catch (e) {}
   if (param) { T.hosted = true; T.set(param); }
@@ -1056,7 +1078,13 @@ function el(tag, attrs = {}, parent) {
 const svg = $("map"), vp = $("vp");
 const G = { bg: $("bg"), edges: $("edges"), relarcs: $("relarcs"), relmarks: $("relmarks"), subarcs: $("subarcs"), routes: $("routes"), nodes: $("nodes"), overlay: $("overlay"), labels: $("labels") };
 
-const state = { lens: "flow", sel: null, alias: null, hover: null, recipes: [], showRel: false, compare: null };
+const state = { lens: "flow", sel: null, alias: null, hover: null, recipes: [], showRel: false, compare: null,
+  // Set only from the URL or a host page: a set of parts to light, kinds to show (the rest ghosted),
+  // what to frame, and whether to label the lit edges
+  hl: null, reveal: null, zoom: null, labels: false };
+const EMBED = document.documentElement.classList.contains("embed");
+const REDUCED = matchMedia("(prefers-reduced-motion: reduce)");
+const GHOST = 0.07;   // opacity of parts a reveal hasn't reached yet
 const cur = {}; // id -> {x,y,o}
 let view = { k: 1, tx: 0, ty: 0 };
 let animating = false;
@@ -1112,7 +1140,7 @@ function buildNodes() {
     } else {
       el("text", { x: n.kind === "data" ? 2 : 0, y: 0.5, "text-anchor": "middle", "dominant-baseline": "central" }, s).textContent = n.label;
     }
-    g.addEventListener("click", ev => { ev.stopPropagation(); select(n.id); });
+    g.addEventListener("click", ev => { ev.stopPropagation(); clearGuide(); select(n.id); });
     g.addEventListener("pointerenter", () => { state.hover = n.id; refresh(); });
     g.addEventListener("pointerleave", () => { if (state.hover === n.id) { state.hover = null; refresh(); } });
     n.g = g; n.s = s;
@@ -1163,6 +1191,11 @@ function computeSets() {
     const A = ALIAS_BY_ID[state.alias];
     litNodes = new Set(A.path);
     EDGES.forEach(e => { if (litNodes.has(e.from) && litNodes.has(e.to) && e.type !== "member2") litEdges.add(e); });
+  } else if (state.hl) {
+    // A highlight set: these parts and the edges among them. In the pipelines lens a part lights its stages.
+    litNodes = new Set(state.hl);
+    if (state.lens === "pipes") state.hl.forEach(id => byId[id].kind !== "stage" && stagesMatching(id).forEach(s => litNodes.add(s.id)));
+    EDGES.forEach(e => { if (litNodes.has(e.from) && litNodes.has(e.to) && e.type !== "member2") litEdges.add(e); });
   } else if (state.hover) {
     litNodes = new Set([state.hover]);
     [...outE[state.hover], ...inE[state.hover]].forEach(e => { litEdges.add(e); litNodes.add(e.from); litNodes.add(e.to); });
@@ -1185,7 +1218,7 @@ function refresh() {
   computeSets();
   for (const n of NODES) {
     let cls = "state";
-    if (litNodes) { if (!litNodes.has(n.id)) cls += state.sel || state.alias ? " dim" : " soft"; }
+    if (litNodes) { if (!litNodes.has(n.id)) cls += state.sel || state.alias || state.hl ? " dim" : " soft"; }
     else if (recipeUsed && !recipeUsed.has(n.id) && state.lens !== "pipes") cls += " soft";
     n.s.setAttribute("class", cls);
     n.g.classList.toggle("sel", n.id === state.sel);
@@ -1368,8 +1401,9 @@ function renderLabels() {
   G.labels.innerHTML = "";
   if (animating) return;
   const focus = state.sel || state.hover;
-  if (!focus) return;
-  for (const e of adjEdges) {
+  const which = focus ? adjEdges : state.hl && state.labels ? litEdges : null;   // labels=1 names a highlight's edges
+  if (!which) return;
+  for (const e of which) {
     if (!e.via || !litEdges.has(e)) continue;
     if (Math.min(cur[e.from].o, cur[e.to].o) < 0.5) continue;
     if (e.mx == null) continue;
@@ -1392,7 +1426,7 @@ function renderDeco(deco) {
   }
 }
 
-function fitFor(pos, deco) {
+function fitFor(pos, deco, roomRight = true) {
   let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
   const add = (a, b, c, d) => { x0 = Math.min(x0, a); y0 = Math.min(y0, b); x1 = Math.max(x1, c); y1 = Math.max(y1, d); };
   for (const id in pos) { const n = byId[id], p = pos[id]; add(p.x - n.w / 2, p.y - n.h / 2 - 12, p.x + n.w / 2, p.y + n.h / 2); }
@@ -1405,16 +1439,37 @@ function fitFor(pos, deco) {
     else if (d.t === "line") add(Math.min(d.x1, d.x2), d.y1 - 2, Math.max(d.x1, d.x2), d.y2 + 2);
   }
   // room on the right for substitute arcs and same-column recipe routes
-  if (state.lens === "flow" || state.lens === "time") x1 += 110;
-  const W = svg.clientWidth, H = svg.clientHeight - 56, pad = 36;
+  if (roomRight && (state.lens === "flow" || state.lens === "time")) x1 += 110;
+  const legend = state.recipes.length && state.lens !== "pipes";   // an embed shows only the recipe legend
+  const W = svg.clientWidth, H = svg.clientHeight - (EMBED ? (legend ? 40 : 8) : 56), pad = EMBED ? 18 : 36;
   const bw = x1 - x0 + pad * 2, bh = y1 - y0 + pad * 2;
-  const k = Math.max(0.3, Math.min(W / bw, H / bh, 1.3));
+  const k = Math.max(EMBED ? 0.2 : 0.3, Math.min(W / bw, H / bh, 1.3));
   return { k, tx: (W - (x1 - x0) * k) / 2 - x0 * k, ty: (H - (y1 - y0) * k) / 2 - y0 * k + 4 };
+}
+// The view for the current lens: the whole layout, or just what zoom= names (node ids, kinds, or "hl"),
+// with any column headings that sit over it
+function fitView(pos, deco) {
+  if (!state.zoom) return fitFor(pos, deco);
+  const want = new Set();
+  for (const z of state.zoom) {
+    if (z === "hl") (state.hl || []).forEach(id => pos[id] && want.add(id));
+    else if (pos[z]) want.add(z);
+    else for (const id in pos) if (byId[id].kind === z) want.add(id);
+  }
+  if (!want.size) return fitFor(pos, deco);
+  const sub = {}; let xa = Infinity, xb = -Infinity;
+  want.forEach(id => { sub[id] = pos[id]; xa = Math.min(xa, pos[id].x - byId[id].w / 2); xb = Math.max(xb, pos[id].x + byId[id].w / 2); });
+  const heads = deco.filter(d => d.t === "text" && d.cls === "colhead" && d.x >= xa - 1 && d.x <= xb + 1);
+  // never frame tighter than about two columns, so a small set keeps some context around it
+  let ya = Infinity, yb = -Infinity; want.forEach(id => { ya = Math.min(ya, pos[id].y); yb = Math.max(yb, pos[id].y); });
+  const MW = 560, MH = 300, cx = (xa + xb) / 2, cy = (ya + yb) / 2;
+  heads.push({ t: "rect", x: cx - Math.max(MW, xb - xa) / 2, y: cy - Math.max(MH, yb - ya) / 2, w: Math.max(MW, xb - xa), h: Math.max(MH, yb - ya) });
+  return fitFor(sub, heads, want.size === Object.keys(pos).length || [...want].some(id => byId[id].kind === "method"));
 }
 
 let lastLayout = null;
 function applyLens(id, animate = true) {
-  state.lens = id;
+  state.lens = id; document.body.dataset.lens = id;
   if (state.tryOn) placeTry();                               // a Try answer belongs to the lens it landed in
   if (state.sel && PLAIN[state.sel] && P.firstChild) setTimeout(renderPanel);   // the plain-terms lead depends on the lens
   const { pos, deco } = LAYOUT[id]();
@@ -1426,16 +1481,18 @@ function applyLens(id, animate = true) {
   if (P.firstChild && !state.sel) setTimeout(renderPanel);
   document.querySelectorAll("#tabs button").forEach(b => b.classList.toggle("on", b.dataset.lens === id));
   $("lensdesc").textContent = LENSES.find(l => l.id === id).desc;
-  lastLayout = { pos, deco };
-  renderDeco(deco);
+  const decoKey = JSON.stringify(deco);
+  if (!lastLayout || lastLayout.decoKey !== decoKey) renderDeco(deco);   // don't re-fade unchanged headings
+  lastLayout = { pos, deco, decoKey };
   const target = {};
+  const shown = n => !state.reveal || state.reveal.includes(n.kind);
   for (const n of NODES) {
     const p = pos[n.id];
     const c = cur[n.id] || { x: p ? p.x : 0, y: p ? p.y : 0, o: 0 };
-    target[n.id] = p ? { x: p.x, y: p.y, o: 1 } : { x: c.x, y: c.y, o: 0 };
+    target[n.id] = p ? { x: p.x, y: p.y, o: shown(n) ? 1 : GHOST } : { x: c.x, y: c.y, o: 0 };
   }
-  const tv = fitFor(pos, deco);
-  if (!animate) { Object.assign(cur, target); view = tv; refresh(); return; }
+  const tv = fitView(pos, deco);
+  if (!animate || REDUCED.matches) { cancelAnimationFrame(raf); animating = false; Object.assign(cur, target); view = tv; refresh(); return; }
   tween(target, tv);
 }
 
@@ -1446,8 +1503,9 @@ function tween(target, tv, dur = 620) {
   animating = true; G.labels.innerHTML = "";
   cancelAnimationFrame(raf);
   const ease = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-  const step = now => {
-    const t = Math.min(1, (now - t0) / dur), k = ease(t);
+  const step = () => {
+    const now = performance.now();                           // not the frame stamp, which can predate t0
+    const t = Math.max(0, Math.min(1, (now - t0) / dur)), k = ease(t);
     for (const id in target) {
       const a = from[id], b = target[id];
       cur[id] = { x: a.x + (b.x - a.x) * k, y: a.y + (b.y - a.y) * k, o: a.o + (b.o - a.o) * k };
@@ -1691,8 +1749,16 @@ function select(id) {
   }
   refresh(); renderPanel();
 }
+// A reader's own click ends a guided view (hl/reveal/zoom from a link); relayout unless the caller will
+function clearGuide(relayout = true) {
+  if (!state.hl && !state.reveal && !state.zoom && !state.labels) return;
+  const moved = state.reveal || state.zoom;
+  state.hl = state.reveal = state.zoom = null; state.labels = false;
+  if (moved && relayout) applyLens(state.lens);
+}
 
 function toggleRecipe(rid) {
+  clearGuide();
   state.sel = null; state.alias = null;   // whatever was clicked last owns the panel
   const i = state.recipes.indexOf(rid);
   if (i >= 0) state.recipes.splice(i, 1);
@@ -2601,6 +2667,7 @@ function renderSearch() {
 function openSearch() { SRCH.hidden = false; SQ.value = ""; srchAct = 0; renderSearch(); SQ.focus(); }
 function closeSearch() { SRCH.hidden = true; }
 function goHit(h) {
+  clearGuide();
   closeSearch();
   if (state.compare) closeCompare();
   if (h.t === "alias") return openAlias(h.id);
@@ -2650,29 +2717,42 @@ function hashFor() {
   else if (state.sel) p.push("sel=" + state.sel);
   if (state.recipes.length) p.push("recipes=" + state.recipes.join(","));
   if (state.showRel) p.push("rel=1");
+  if (state.hl) p.push("hl=" + state.hl.join(","));
+  if (state.labels) p.push("labels=1");
+  if (state.reveal) p.push("reveal=" + state.reveal.join(","));
+  if (state.zoom) p.push("zoom=" + state.zoom.join(","));
   const c = state.compare;
   if (c) p.push("cmp=" + (c.fam || (c.mix ? "mix" : "pair-" + c.rel)), "cols=" + c.ids.join(","), "ref=" + c.ref);
   return p.join("&");
 }
 function syncHash() {
-  if (hashLock) return;
+  if (hashLock || EMBED) return;                              // an embedded map never touches the host's history
   clearTimeout(hashT);
   hashT = setTimeout(() => {                                  // one history entry per interaction, not per step
     const h = hashFor();
     if (h !== location.hash.slice(1)) history.pushState(null, "", h ? "#" + h : location.pathname + location.search);
   }, 0);
 }
-function applyHash() {
-  const p = new URLSearchParams(location.hash.slice(1));
+// Applies a view given as hash-style params; the URL hash by default, or a string from a host page
+function applyHash(str) {
+  const p = new URLSearchParams(typeof str === "string" ? str : location.hash.slice(1));
+  const list = k => (p.get(k) || "").split(",").filter(Boolean);
   hashLock = true;
   try {
     if (TRY_BY[p.get("try")]) return runTry(p.get("try"));
     state.tryOn = null;
-    const lens = p.get("lens") || "flow";
-    if (LAYOUT[lens] && lens !== state.lens) applyLens(lens);
+    const lens = LAYOUT[p.get("lens")] ? p.get("lens") : "flow";
+    const hl = list("hl").filter(id => byId[id]), reveal = list("reveal"), zoom = list("zoom");
+    const recipes = list("recipes").filter(r => RECIPE[r]).slice(0, 3);
+    const relayout = lens !== state.lens || String(reveal) !== String(state.reveal || "") || String(zoom) !== String(state.zoom || "")
+      || String(recipes) !== String(state.recipes)
+      || (zoom.includes("hl") && String(hl) !== String(state.hl || ""));   // framing the highlight follows it           // lanes in the pipelines lens; room for the legend elsewhere
+    state.hl = hl.length ? hl : null; state.labels = p.get("labels") === "1";
+    state.reveal = reveal.length ? reveal : null; state.zoom = zoom.length ? zoom : null;
+    state.recipes = recipes; syncChips();                     // before the layout: the pipelines lens filters by them
+    if (relayout) applyLens(lens);
     if (p.get("rel") === "1" !== state.showRel) setRel(p.get("rel") === "1");
     const q = p.get("q"), sel = p.get("sel");
-    state.recipes = (p.get("recipes") || "").split(",").filter(r => RECIPE[r]).slice(0, 3); syncChips();
     if (q && ALIAS_BY_ID[q]) { state.sel = null; state.alias = q; refresh(); renderPanel(); }
     else { state.alias = null; select(sel && byId[sel] ? sel : null); }
     const cmp = p.get("cmp"), cols = (p.get("cols") || "").split(",").filter(id => MECH[id] && !MECH[id].generic);
@@ -2686,7 +2766,18 @@ function applyHash() {
     } else if (state.compare) closeCompare();
   } finally { hashLock = false; }
 }
-window.addEventListener("popstate", applyHash);
+window.addEventListener("popstate", () => applyHash());
+
+// ---- Host pages. An embedding page (?embed=1) drives the view with
+//   frame.contentWindow.postMessage({ type: "pt-explorer:state", state: "lens=flow&hl=d-pairs,s-rm&zoom=hl" }, "*")
+// using the same params as the hash, plus hl= (light these parts), labels=1 (name the lit edges),
+// reveal= (kinds to show; the rest are ghosted) and zoom= (ids, kinds or "hl" to frame).
+// The map says { type: "pt-explorer:ready" } to its parent once it can take a state.
+let ready = false, pendingState = null;
+window.addEventListener("message", ev => {
+  if (!ev.data || ev.data.type !== "pt-explorer:state" || typeof ev.data.state !== "string") return;
+  if (ready) applyHash(ev.data.state); else pendingState = ev.data.state;
+});
 
 // ---- Mix & match: any methods, any family, compared on their profile strips
 function openMix(ids) {
@@ -2696,6 +2787,7 @@ function openMix(ids) {
 }
 
 P.addEventListener("click", ev => {
+  if (ev.target.closest("button")) clearGuide();
   const t = ev.target.closest("button"); if (!t) return;
   if ("mechPin" in t.dataset) {                              // pin a swap (a second tap on the pinned one unpins)
     const card = P.querySelector(".mech"), id = t.dataset.mechPin;
@@ -2746,7 +2838,7 @@ svg.addEventListener("wheel", ev => {
 }, { passive: false });
 $("zin").onclick = () => zoomAt(svg.clientWidth / 2, svg.clientHeight / 2, 1.25);
 $("zout").onclick = () => zoomAt(svg.clientWidth / 2, svg.clientHeight / 2, 0.8);
-$("zfit").onclick = () => { if (lastLayout) tween(Object.fromEntries(NODES.map(n => [n.id, { ...cur[n.id] }])), fitFor(lastLayout.pos, lastLayout.deco), 400); };
+$("zfit").onclick = () => { if (lastLayout) tween(Object.fromEntries(NODES.map(n => [n.id, { ...cur[n.id] }])), fitView(lastLayout.pos, lastLayout.deco), 400); };
 document.addEventListener("keydown", ev => {
   if (ev.key !== "Escape") return;
   if (!SRCH.hidden) closeSearch(); else if (state.compare) closeCompare(); else select(null);
@@ -2795,15 +2887,16 @@ document.addEventListener("keydown", ev => {
   T.onchange = sync; sync();
 })();
 
-let rz; window.addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => { if (lastLayout) { view = fitFor(lastLayout.pos, lastLayout.deco); frame(); renderLabels(); } }, 150); });
+let rz; window.addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => { if (lastLayout) { view = fitView(lastLayout.pos, lastLayout.deco); frame(); renderLabels(); } }, 150); });
 
 /* ============================================================
    INIT
    ============================================================ */
 function init() {
+  if (EMBED) document.body.inert = true;                     // nothing in an embedded map takes focus or clicks
   LENSES.forEach(l => {
     const b = document.createElement("button"); b.textContent = l.label; b.dataset.lens = l.id;
-    b.onclick = () => { if (state.compare) closeCompare(); applyLens(l.id); };   // a lens click should never look dead
+    b.onclick = () => { if (state.compare) closeCompare(); clearGuide(false); applyLens(l.id); };   // a lens click should never look dead
     if (l.id === "time") { const d = document.createElement("span"); d.className = "tabsep"; d.setAttribute("aria-hidden", "true"); $("tabs").appendChild(d); }
     $("tabs").appendChild(b);
   });
@@ -2817,6 +2910,9 @@ function init() {
   renderPanel();
   if (location.hash.length > 1) applyHash();                 // arriving from a link
   history.replaceState(null, "", location.hash || location.pathname + location.search);
+  ready = true;
+  if (pendingState != null) applyHash(pendingState);
+  if (window.parent !== window) window.parent.postMessage({ type: "pt-explorer:ready" }, "*");
 }
 Promise.race([document.fonts.ready, new Promise(r => setTimeout(r, 1500))]).then(init);
 </script>
