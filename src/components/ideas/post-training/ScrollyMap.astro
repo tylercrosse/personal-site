@@ -1,0 +1,528 @@
+---
+/**
+ * A scrollytelling block: the post-training explorer stays pinned beside the
+ * prose, and each <MapStep> drives it to the view that passage describes.
+ *
+ *   <ScrollyMap>
+ *
+ *   <MapStep state="lens=flow&reveal=source,data" desc="What the map shows, in words.">
+ *
+ *   Prose…
+ *
+ *   </MapStep>
+ *
+ *   </ScrollyMap>
+ *
+ * Wide screens: the block takes the width of the window less a margin each
+ * side (capped at 1680px). The steps start at the left margin at a reading
+ * measure (about 27–33rem) and the map, sticky, takes the rest. The site's
+ * table of contents shrinks to its toggle in the right margin while a map is
+ * beside it; the toggle opens it over the map. Narrow screens: the map
+ * becomes a short sticky strip above the text. Phones (below 600px) drop the
+ * strip and keep a link to the full map under each block: at that width no
+ * framing makes the map's labels legible.
+ *
+ * The map is the explorer page (notes/post-training-study-project/explorer,
+ * served by src/pages/ideas/2026/post-training-building-blocks/[file].ts) in
+ * its embed mode: no chrome, no pointer or wheel input, nothing focusable. It
+ * follows the site theme on its own. The frame is aria-hidden and out of the
+ * tab order. Each step's `desc` carries what the map shows in words, and
+ * `fallback` is a still of the block's map for readers without JavaScript.
+ *
+ * Steps contain only Markdown, so figures and tables numbered by
+ * remarkCrossRefs still count in document order. Tables and wide figures
+ * belong between ScrollyMap blocks, where they get the full column.
+ */
+import { getImage } from "astro:assets";
+import type { ImageMetadata } from "astro";
+
+interface Props {
+  /** Explorer URL (same origin). */
+  src?: string;
+  /** A still of this block's map, shown when scripts don't run. */
+  fallback?: ImageMetadata;
+  fallbackAlt?: string;
+}
+
+const { src = "/ideas/2026/post-training-building-blocks/map.html", fallback, fallbackAlt = "" } = Astro.props;
+const still = fallback ? await getImage({ src: fallback, format: "webp", width: 1100 }) : null;
+// Without scripts the frame would show the explorer's bare page, so the still takes its place.
+const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+const noscript = still
+  ? `<style>.scrolly-frame { display: none; }</style><img class="scrolly-still" src="${esc(still.src)}" alt="${esc(fallbackAlt)}" width="${still.attributes.width}" height="${still.attributes.height}" loading="lazy">`
+  : "";
+---
+
+<!-- Before anything below renders: maps will be drawn, so text stand-ins for them can step aside (see .scrolly-text-only). -->
+<script is:inline>document.documentElement.classList.add("scrolly-maps");</script>
+
+<section class="scrolly" data-scrolly>
+  <div class="scrolly-graphic">
+    <div class="scrolly-sticky">
+      <iframe
+        class="scrolly-frame"
+        src={`${src}?embed=1`}
+        title="Post-training map, following the text"
+        tabindex="-1"
+        aria-hidden="true"
+        inert
+        loading="lazy"></iframe>
+      {
+        still && (
+          <noscript set:html={noscript} />
+        )
+      }
+      <a class="scrolly-open" href={src} data-base={src} target="_blank" rel="noopener"
+        ><span class="open-view">Open this view in the full map</span><span class="open-map"
+          >Explore this section in the interactive map</span
+        > ↗</a
+      >
+    </div>
+  </div>
+  <div class="scrolly-steps">
+    <slot />
+  </div>
+</section>
+
+<style>
+  .scrolly {
+    /* Break out of the 800px column, and out of the article's own max width, to the window less a margin on
+       each side about as wide as the site header's inset (capped at 1680px and centred on very wide screens).
+       The text starts at the left margin at a reading measure; the map takes the rest, up to the right margin.
+       --scrolly-vw is the window without its scrollbar (set by the script below). */
+    --scrolly-gutter: clamp(24px, 3.5vw, 72px);
+    --scrolly-width: min(var(--scrolly-vw, 100vw) - 2 * var(--scrolly-gutter), 1680px);
+    --scrolly-measure: clamp(26rem, 20vw + 11rem, 33rem);
+    grid-column: 1 / -1 !important;
+    margin-inline: calc(50% - var(--scrolly-width) / 2) !important;
+    display: grid;
+    grid-template-columns: var(--scrolly-measure) minmax(0, 1fr);
+    grid-template-areas: "steps graphic";
+    column-gap: clamp(1.5rem, 2.2vw, 2.5rem);
+    margin: 1rem 0 1.5rem;
+    /* How long each step's view holds, in scroll: --step-hold with the map pinned and settled, plus
+       --step-settle for the scroll a reader covers while it moves there (a 0.6s tween). A step marked
+       dwell="long" holds longer, for the denser views. */
+    --step-hold: 40vh;
+    --step-settle: 100px;
+    --step-gap: 1.25rem;
+  }
+
+  .scrolly-steps {
+    grid-area: steps;
+    min-width: 0;
+    /* A step's view starts when its top passes 55% of the window (the reading line in the script below).
+       The top padding puts the first step just above that line as the map pins, so its view is still
+       there, whole, while it's read; the bottom padding keeps the map pinned through the last step's hold. */
+    padding: calc(55vh - var(--step-settle)) 0 calc(45vh + var(--step-gap));
+    /* A short block (two steps) still runs long enough for the map to pin and be seen whole. */
+    min-height: 125vh;
+    box-sizing: border-box;
+  }
+
+  .scrolly-graphic {
+    grid-area: graphic;
+    min-width: 0;
+  }
+
+  .scrolly-sticky {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    height: 100svh;
+    display: flex;
+    flex-direction: column;
+    padding: 1rem 0 0.6rem;
+    box-sizing: border-box;
+  }
+
+  .scrolly-frame {
+    flex: 1;
+    width: 100%;
+    min-height: 0;
+    border: 0;
+    background: transparent;
+    color-scheme: normal;
+  }
+
+  .scrolly :global(.scrolly-still) {
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    height: auto;
+    object-fit: contain;
+  }
+
+  .scrolly-open {
+    align-self: flex-end;
+    font-size: 0.7rem;
+    line-height: 1.4;
+    color: var(--sol-1);
+    text-decoration: none;
+    padding-top: 0.35rem;
+  }
+
+  .open-map {
+    display: none;
+  }
+
+  .scrolly-open:hover,
+  .scrolly-open:focus-visible {
+    color: var(--blue);
+    text-decoration: underline;
+  }
+
+  /* The active-step bar sits in the margin, so the text starts right at it. */
+  .scrolly :global(.map-step) {
+    min-height: calc(var(--step-hold) + var(--step-settle) - var(--step-gap));
+    padding: 0.25rem 0 0.25rem 12px;
+    margin-left: -14px;
+    border-left: 2px solid transparent;
+    box-sizing: border-box;
+  }
+
+  .scrolly :global(.map-step[data-dwell="long"]) {
+    --step-hold: 55vh;
+  }
+
+  .scrolly :global(.map-step + .map-step) {
+    margin-top: var(--step-gap);
+  }
+
+  .scrolly :global(.map-step.is-active) {
+    border-left-color: color-mix(in srgb, var(--blue) 55%, transparent);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .scrolly :global(.map-step) {
+      transition: border-color 0.3s ease;
+    }
+  }
+
+  .scrolly :global(.map-step > :first-child) {
+    margin-top: 0;
+  }
+
+  .scrolly :global(.map-step > :nth-last-child(2)),
+  .scrolly :global(.map-step > :last-child) {
+    margin-bottom: 0;
+  }
+
+  /* What the map shows, for readers who can't see it. */
+  .scrolly :global(.map-desc) {
+    position: absolute !important;
+    width: 1px;
+    height: 1px;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  /* Narrow screens: a sticky strip over the text. */
+  @media (max-width: 959px) {
+    .scrolly {
+      grid-column: 2 !important;
+      display: block;
+      margin: 1.5rem 0 2rem;
+      margin-inline: 0 !important;
+    }
+
+    .scrolly-graphic {
+      position: sticky;
+      top: var(--scrolly-top, 0px);
+      z-index: 3;
+      height: 46vh;
+      height: 46svh;
+      min-height: 300px;
+      margin: 0 -1rem;
+      padding: 0 0.5rem;
+      background: var(--bg-0, #fff);
+      border-bottom: 1px solid color-mix(in srgb, currentColor 14%, transparent);
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+      .scrolly-graphic {
+        transition: top 0.3s ease;
+      }
+    }
+
+    .scrolly-sticky {
+      position: static;
+      height: 100%;
+      padding: 0.25rem 0 0.15rem;
+    }
+
+    .scrolly-open {
+      font-size: 0.65rem;
+      padding-top: 0.1rem;
+    }
+
+    .scrolly-steps {
+      padding: 1.5rem 0 30vh;
+      min-height: 0;
+    }
+
+    .scrolly :global(.map-step) {
+      min-height: 0;
+      padding-left: 12px;
+      margin-left: -14px;
+    }
+
+    .scrolly :global(.map-step + .map-step) {
+      margin-top: 1.25rem;
+    }
+
+    .scrolly :global(.map-step:has(> ul:first-child)) {
+      min-height: 0;
+    }
+  }
+
+  /* Phones: no map strip; the steps read as plain prose, with a link to the full map at the end of the block. */
+  @media (max-width: 599px) {
+    .scrolly {
+      display: flex;
+      flex-direction: column-reverse;
+      margin: 0;
+    }
+
+    .scrolly-graphic {
+      position: static;
+      height: auto;
+      min-height: 0;
+      margin: 0 0 1.5rem;
+      padding: 0;
+      background: none;
+      border: 0;
+    }
+
+    .scrolly-sticky {
+      padding: 0;
+    }
+
+    .scrolly-frame {
+      display: none;
+    }
+
+    .scrolly-open {
+      align-self: flex-start;
+      font-size: 0.8rem;
+      padding: 0;
+    }
+
+    .open-view {
+      display: none;
+    }
+
+    .open-map {
+      display: inline;
+    }
+
+    .scrolly-steps {
+      padding: 0;
+    }
+
+    .scrolly :global(.map-step) {
+      padding: 0;
+      margin-left: 0;
+      border-left: 0;
+    }
+
+    .scrolly :global(.map-step + .map-step) {
+      margin-top: 0;
+    }
+
+    .scrolly :global(.map-step > :first-child) {
+      margin-top: revert;
+    }
+
+    .scrolly :global(.map-step > :nth-last-child(2)),
+    .scrolly :global(.map-step > :last-child) {
+      margin-bottom: revert;
+    }
+  }
+</style>
+
+<style is:global>
+  /* A text stand-in for a map view, such as a table that repeats the map's grid (add class="scrolly-text-only"):
+     shown only where no map is drawn, on phones and to readers without JavaScript. */
+  @media (min-width: 600px) {
+    html.scrolly-maps .scrolly-text-only {
+      display: none;
+    }
+  }
+
+  /* While a map is beside the text, the desktop table of contents shrinks to its toggle in the top-right
+     corner; the toggle opens it over the map until the map scrolls away. */
+  /* (in the right margin, beside the map rather than over it) */
+  html.scrolly-in-view .desktop-toc {
+    position: fixed;
+    top: 0.25rem;
+    right: max(0px, calc(clamp(24px, 3.5vw, 72px) / 2 - 26px));
+  }
+
+  html.scrolly-in-view .desktop-toc:not(.scrolly-peek) {
+    width: 20px;
+    min-width: 20px;
+  }
+
+  html.scrolly-in-view .desktop-toc:not(.scrolly-peek) :is(.toc-header h4, .toc-list) {
+    display: none;
+  }
+
+  html.scrolly-in-view .desktop-toc:not(.scrolly-peek) .toc-collapse-btn {
+    transform: rotate(180deg);
+  }
+
+  html.scrolly-in-view .desktop-toc:not(.scrolly-peek) .toc-header {
+    border-bottom: 0;
+  }
+
+  html.scrolly-in-view .desktop-toc.scrolly-peek {
+    z-index: 10;
+    height: auto;
+    max-height: calc(100vh - 6rem);
+    overflow-y: auto;
+    background: var(--bg-0, #fff);
+    border: 1px solid color-mix(in srgb, currentColor 14%, transparent);
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgb(0 0 0 / 12%);
+  }
+
+  html.scrolly-in-view .desktop-toc.scrolly-peek .toc-list {
+    display: block;
+  }
+</style>
+
+<script>
+  const STACKED = matchMedia("(max-width: 959px)");
+  const PHONE = matchMedia("(max-width: 599px)");
+  const sections: Array<{ el: HTMLElement; graphic: HTMLElement; update: () => void }> = [];
+
+  // Which explorer params a "full map" link keeps: the camera, reveal and drawing modes are for the pinned view only.
+  const forLink = (state: string) => {
+    const p = new URLSearchParams(state);
+    ["reveal", "zoom", "mute", "cell"].forEach((k) => p.delete(k));
+    return p.toString().replace(/%2C/g, ",");
+  };
+
+  function setup(el: HTMLElement) {
+    const frame = el.querySelector<HTMLIFrameElement>(".scrolly-frame")!;
+    const link = el.querySelector<HTMLAnchorElement>(".scrolly-open")!;
+    const graphic = el.querySelector<HTMLElement>(".scrolly-graphic")!;
+    const steps = [...el.querySelectorAll<HTMLElement>(".map-step")];
+    if (!steps.length) return;
+    let ready = false;
+    let active = -1;
+    let sent: string | null = null;
+
+    const send = () => {
+      if (!ready || active < 0 || !frame.contentWindow) return;
+      const state = steps[active].dataset.mapState ?? "";
+      if (state === sent) return;
+      sent = state;
+      frame.contentWindow.postMessage({ type: "pt-explorer:state", state }, location.origin);
+    };
+
+    window.addEventListener("message", (ev) => {
+      if (ev.source !== frame.contentWindow || ev.data?.type !== "pt-explorer:ready") return;
+      ready = true;
+      sent = null;
+      send();
+    });
+
+    // The active step is the last one whose top has passed a reading line: mid-screen beside the
+    // map, lower down when the map is a strip across the top.
+    const update = () => {
+      const line = innerHeight * (STACKED.matches ? 0.7 : 0.55);
+      let i = 0;
+      steps.forEach((s, k) => {
+        if (s.getBoundingClientRect().top < line) i = k;
+      });
+      if (i === active) return;
+      steps[active]?.classList.remove("is-active");
+      active = i;
+      if (!PHONE.matches) steps[i].classList.add("is-active");
+      const state = forLink(steps[i].dataset.mapState ?? "");
+      link.href = link.dataset.base + (state ? "#" + state : "");
+      send();
+    };
+
+    sections.push({ el, graphic, update });
+    update();
+  }
+
+  document.querySelectorAll<HTMLElement>("[data-scrolly]").forEach(setup);
+
+  const root = document.documentElement;
+  const toc = document.querySelector<HTMLElement>(".desktop-toc");
+  const tocToggle = document.getElementById("desktop-toc-toggle");
+
+  let queued = false;
+  const onScroll = () => {
+    if (queued) return;
+    queued = true;
+    requestAnimationFrame(() => {
+      queued = false;
+      // The table of contents gives way only while a pinned map is actually under it.
+      // (A fixed band where the open contents would sit, not the contents' own box, which moves when they give way.)
+      const band = !!toc && !STACKED.matches && getComputedStyle(toc).display !== "none";
+      const top = 48, bottom = 440;
+      let under = false;
+      for (const s of sections) {
+        s.update();
+        if (!band) continue;
+        const r = s.graphic.getBoundingClientRect();
+        if (r.top < bottom && r.bottom > top) under = true;
+      }
+      if (!under) toc?.classList.remove("scrolly-peek");
+      root.classList.toggle("scrolly-in-view", under);
+    });
+  };
+
+  if (sections.length) {
+    const measure = () => root.style.setProperty("--scrolly-vw", `${root.clientWidth}px`);
+    measure();
+    addEventListener("resize", measure);
+    addEventListener("scroll", onScroll, { passive: true });
+    addEventListener("resize", onScroll);
+    onScroll();
+
+    // Beside a map, the toggle opens the contents over it (and closes them) without touching the reader's
+    // own collapsed/expanded choice for the rest of the page.
+    tocToggle?.addEventListener(
+      "click",
+      (ev) => {
+        if (!root.classList.contains("scrolly-in-view") || !toc) return;
+        ev.stopImmediatePropagation();
+        const open = toc.classList.toggle("scrolly-peek");
+        tocToggle.setAttribute("aria-expanded", String(open));
+      },
+      { capture: true },
+    );
+    toc?.addEventListener("click", (ev) => {
+      if ((ev.target as HTMLElement).closest("a")) toc.classList.remove("scrolly-peek");
+    });
+    addEventListener("keydown", (ev) => {
+      if (ev.key === "Escape" && toc?.classList.contains("scrolly-peek")) {
+        toc.classList.remove("scrolly-peek");
+        tocToggle?.focus();
+      }
+    });
+
+    // On narrow screens the site's reading header slides in over the top of the page; keep the map
+    // strip below it while it's showing.
+    const header = document.getElementById("mobile-toc-header");
+    if (header) {
+      const place = () => {
+        const shown = STACKED.matches && header.classList.contains("visible");
+        root.style.setProperty("--scrolly-top", shown ? `${header.offsetHeight}px` : "0px");
+      };
+      new MutationObserver(place).observe(header, { attributes: true, attributeFilter: ["class"] });
+      STACKED.addEventListener("change", place);
+      place();
+    }
+  }
+</script>
