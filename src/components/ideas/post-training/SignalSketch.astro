@@ -265,7 +265,7 @@ const cross = `<svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8"
     --bad: #c94a4a;
     --sig-border: color-mix(in srgb, rgb(var(--gray-dark)) 11%, rgb(var(--gray-light)));
     --ink-faint: color-mix(in srgb, currentColor 26%, transparent);
-    --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+    --mono: var(--font-mono);
   }
 
   :global([data-effective-theme="dark"]) .sig {
