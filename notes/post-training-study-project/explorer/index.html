@@ -8,10 +8,54 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
+/* Themes. Every colour on the page, including the ones the script draws, is one of these tokens.
+   Pick a theme with <html data-theme="graphite | black | solarized | light"> (see the theme script below),
+   or override single tokens from a host page. */
 :root {
-  --bg: #0f1115; --surface: #171a21; --surface2: #20242d; --panel: #12141a;
-  --border: #2a2f3a; --text: #e8e8e8; --muted: #9a9fa7; --faint: #6b7079;
+  color-scheme: dark;
+  /* chrome */
+  --bg: #0f1115; --surface: #171a21; --surface2: #20242d; --panel: #12141a; --tip: #1a1d24;
+  --border: #2a2f3a; --line-weak: #2f3440; --line: #3a3f4a; --line-strong: #4a4f5a;
+  --quad: #14171d; --quad-line: #262a33;
+  --scrim: rgba(5, 6, 8, .55); --shadow: rgba(0, 0, 0, .45);
+  /* text */
+  --text: #e8e8e8; --text-2: #cfd2d7; --ink-2: #b9bdc4; --muted: #9a9fa7; --faint: #6b7079;
+  --sel: #fff; --on-accent: #0f1115;
+  /* marks */
+  --sub: #f2f2f2; --gold: #e9d8a6; --warn: #d9a35b; --warn-line: #5c4630;
   --demo: #6fbf8e; --pref: #e8b04a; --reward: #b48ad8; --teacher: #6aa2e0; --neutral: #8c919a;
+  --r-instructgpt: #ff7a6b; --r-cai: #c77dff; --r-llama3: #48cae4; --r-r1: #4fd1c5; --r-qwen3: #f7e463; --r-k2: #ff8fd0;
+  --r-olmo3: #9be15d; --r-glm45: #b08968; --r-k3: #f2f2f2; --r-glm5: #ddb892; --r-nemotron: #ffa95c;
+}
+:root[data-theme="black"] {
+  --bg: #000; --surface: #0e0e0f; --surface2: #1b1b1d; --panel: #060606; --tip: #121213;
+  --border: #232325; --line-weak: #262628; --line: #333336; --line-strong: #444448;
+  --quad: #09090a; --quad-line: #1e1e20;
+  --scrim: rgba(0, 0, 0, .6); --shadow: rgba(0, 0, 0, .6);
+  --text: #ededed; --text-2: #cacaca; --ink-2: #b8b8b8; --muted: #999; --faint: #6c6c6e;
+  --on-accent: #000;
+}
+:root[data-theme="solarized"] {   /* the site's dark theme: Solarized base03 background */
+  --bg: #002b36; --surface: #073642; --surface2: #0c4352; --panel: #00252f; --tip: #073642;
+  --border: #0f4756; --line-weak: #124b59; --line: #1e5866; --line-strong: #2d6775;
+  --quad: #00303c; --quad-line: #0d4351;
+  --scrim: rgba(0, 18, 23, .6); --shadow: rgba(0, 0, 0, .45);
+  --text: #eee8d5; --text-2: #cfd0c3; --ink-2: #b6bfba; --muted: #93a1a1; --faint: #6f8a8f;
+  --sel: #fdf6e3; --on-accent: #002b36;
+  --sub: #eee8d5; --r-k3: #eee8d5;
+}
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #fff; --surface: #f5f5f5; --surface2: #e8e8e9; --panel: #fbfbfb; --tip: #fff;
+  --border: #e0e0e2; --line-weak: #d9dadd; --line: #c7c9cd; --line-strong: #a7abb1;
+  --quad: #f8f8f7; --quad-line: #e5e5e5;
+  --scrim: rgba(20, 22, 26, .28); --shadow: rgba(0, 0, 0, .14);
+  --text: #1c1e22; --text-2: #3b3e44; --ink-2: #4b4e55; --muted: #5d6168; --faint: #878b92;
+  --sel: #000; --on-accent: #fff;
+  --sub: #2a2d32; --gold: #9a7a14; --warn: #a3601a; --warn-line: #e5cba5;
+  --demo: #2e8b57; --pref: #b7791f; --reward: #8a55c2; --teacher: #2f6fb8; --neutral: #7a7f87;
+  --r-instructgpt: #dd4a39; --r-cai: #9a4fd8; --r-llama3: #0d8db3; --r-r1: #13948a; --r-qwen3: #9c8200; --r-k2: #d23f97;
+  --r-olmo3: #47921a; --r-glm45: #8a6343; --r-k3: #2a2d32; --r-glm5: #a07a42; --r-nemotron: #db6c16;
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
@@ -47,22 +91,22 @@ svg#map.grabbing { cursor: grabbing; }
   flex-wrap: wrap; align-items: center; pointer-events: none; }
 .recipes > * { pointer-events: auto; }
 .recipes .lbl { color: var(--faint); font-size: 11.5px; margin-right: 2px; pointer-events: none; }
-.chip { border: 1px solid var(--border); background: rgba(23,26,33,.92); color: var(--muted);
+.chip { border: 1px solid var(--border); background: color-mix(in srgb, var(--surface) 92%, transparent); color: var(--muted);
   border-radius: 999px; padding: 4px 10px; font-size: 12px; cursor: pointer;
   display: inline-flex; align-items: center; gap: 6px; }
 .chip:hover { color: var(--text); }
 .chip .sw { width: 8px; height: 8px; border-radius: 50%; flex: none; }
-.chip.on { color: var(--text); border-color: var(--c); background: color-mix(in srgb, var(--c) 14%, #171a21); }
+.chip.on { color: var(--text); border-color: var(--c); background: color-mix(in srgb, var(--c) 14%, var(--surface)); }
 
 .zoom { position: absolute; right: 12px; top: 12px; display: flex; flex-direction: column; gap: 4px; }
 .zoom button { width: 32px; height: 32px; border-radius: 7px; border: 1px solid var(--border);
-  background: rgba(23,26,33,.92); color: var(--muted); cursor: pointer; font-size: 15px; }
+  background: color-mix(in srgb, var(--surface) 92%, transparent); color: var(--muted); cursor: pointer; font-size: 15px; }
 .zoom button:hover { color: var(--text); }
 .hint { position: absolute; right: 54px; top: 18px; color: var(--faint); font-size: 11px; pointer-events: none; }
 .reltoggle { position: absolute; left: 12px; top: 12px; }
-.relarc { fill: none; stroke: #e9d8a6; stroke-width: 1.4; }
-.relmark circle { fill: #0f1115; stroke: #e9d8a6; stroke-width: 1.2; }
-.relmark text { font-size: 11px; font-weight: 600; fill: #e9d8a6; }
+.relarc { fill: none; stroke: var(--gold); stroke-width: 1.4; }
+.relmark circle { fill: var(--bg); stroke: var(--gold); stroke-width: 1.2; }
+.relmark text { font-size: 11px; font-weight: 600; fill: var(--gold); }
 .relmark .rl { font-size: 10.5px; font-weight: 400; }
 
 aside { border-left: 1px solid var(--border); overflow: auto; padding: 18px 20px 48px; background: var(--panel);
@@ -70,7 +114,7 @@ aside { border-left: 1px solid var(--border); overflow: auto; padding: 18px 20px
 aside h2, .cmp-body h2 { font-size: 18px; margin: 2px 0 8px; font-weight: 600; }
 aside h3, .cmp-body h3 { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--faint);
   margin: 20px 0 8px; font-weight: 600; }
-aside p, .cmp-body p { margin: 0 0 10px; color: #cfd2d7; }
+aside p, .cmp-body p { margin: 0 0 10px; color: var(--text-2); }
 aside ul, .cmp-body ul { margin: 0; padding: 0; list-style: none; }
 aside li, .cmp-body li { margin: 0 0 8px; }
 .kind { font-size: 11.5px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
@@ -80,10 +124,10 @@ aside li, .cmp-body li { margin: 0 0 8px; }
 .ref:hover { border-bottom-color: var(--text); }
 .note { color: var(--muted); }
 .cite { color: var(--faint); font-size: 12px; }
-a.cite { text-decoration: underline; text-decoration-color: #3a3f4a; text-underline-offset: 2px; }
+a.cite { text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 2px; }
 a.cite:hover { color: var(--text); text-decoration-color: currentColor; }
 .origin { font-size: 12px; } .origin .k { color: var(--faint); margin-right: 8px; } .origin .note { font-size: 11.5px; }
-.verify { font-size: 10.5px; color: #d9a35b; border: 1px solid #5c4630; border-radius: 4px; padding: 0 4px;
+.verify { font-size: 10.5px; color: var(--warn); border: 1px solid var(--warn-line); border-radius: 4px; padding: 0 4px;
   margin-left: 4px; white-space: nowrap; }
 .pills { display: flex; flex-wrap: wrap; gap: 5px; }
 .pill { border: 1px solid var(--border); background: var(--surface); color: var(--text); border-radius: 6px;
@@ -95,7 +139,7 @@ a.cite:hover { color: var(--text); text-decoration-color: currentColor; }
   color: var(--text); border-radius: 8px; padding: 8px 10px; margin-bottom: 6px; cursor: pointer; font-size: 13px; }
 .try:hover { border-color: var(--faint); }
 .try-grp { font-size: 12px; color: var(--muted); margin: 12px 0 6px; }
-.try-ans { position: relative; background: var(--surface); border: 1px solid var(--border); border-left: 2px solid #e9d8a6;
+.try-ans { position: relative; background: var(--surface); border: 1px solid var(--border); border-left: 2px solid var(--gold);
   border-radius: 8px; padding: 10px 30px 10px 12px; margin: 4px 0 16px; font-size: 13px; line-height: 1.5; }
 .try-ans .try-q { color: var(--muted); font-size: 12px; margin-bottom: 4px; }
 .try-ans p { margin: 0 0 6px; color: var(--text); }
@@ -104,11 +148,11 @@ a.cite:hover { color: var(--text); text-decoration-color: currentColor; }
 .try-x { position: absolute; top: 6px; right: 6px; background: none; border: 0; color: var(--faint); cursor: pointer;
   font-size: 12px; padding: 2px 6px; border-radius: 4px; }
 .try-x:hover { color: var(--text); background: var(--surface2); }
-.try-more { background: none; border: 0; padding: 0; color: #e9d8a6; cursor: pointer; font-size: 12.5px; }
+.try-more { background: none; border: 0; padding: 0; color: var(--gold); cursor: pointer; font-size: 12.5px; }
 .try-more:hover { text-decoration: underline; }
 /* the section a Try answer points to: a gold bar in the panel's left gutter */
 .tryhl { position: relative; }
-.tryhl::before { content: ""; position: absolute; left: -11px; top: -3px; bottom: -3px; width: 2px; background: #e9d8a6; border-radius: 1px; }
+.tryhl::before { content: ""; position: absolute; left: -11px; top: -3px; bottom: -3px; width: 2px; background: var(--gold); border-radius: 1px; }
 .legend { display: grid; grid-template-columns: 34px 1fr; gap: 6px 10px; align-items: center; font-size: 12.5px; color: var(--muted); }
 .legend svg { display: block; }
 .stage { border-left: 2px solid var(--c); padding: 2px 0 2px 10px; margin-bottom: 10px; }
@@ -130,24 +174,24 @@ a.cite:hover { color: var(--text); text-decoration-color: currentColor; }
 .node .state.dim { opacity: .13; }
 .node .state.soft { opacity: .38; }
 .node .box { transition: stroke .15s, stroke-width .15s; }
-.node.sel .box { stroke: #fff !important; stroke-width: 2; }
+.node.sel .box { stroke: var(--sel) !important; stroke-width: 2; }
 .node:hover .box { stroke-width: 2; }
 .edge { fill: none; stroke-width: 1.25; }
 .edge.t { stroke-dasharray: 4 4; }
-.subarc { fill: none; stroke: #f2f2f2; stroke-width: 1.3; stroke-dasharray: 2 4; opacity: .8; }
-.elabel text { font-size: 10.5px; fill: #d5d8dd; }
-.elabel rect { fill: #0f1115; opacity: .92; }
+.subarc { fill: none; stroke: var(--sub); stroke-width: 1.3; stroke-dasharray: 2 4; opacity: .8; }
+.elabel text { font-size: 10.5px; fill: var(--text-2); }
+.elabel rect { fill: var(--bg); opacity: .92; }
 .colhead { font-size: 11px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; fill: var(--faint); }
 .axislbl { font-size: 12px; font-weight: 600; fill: var(--muted); }
 .axissub { font-size: 11px; fill: var(--faint); }
-.quad { fill: #14171d; stroke: #262a33; }
-.axis { stroke: #3a3f4a; stroke-width: 1; }
+.quad { fill: var(--quad); stroke: var(--quad-line); }
+.axis { stroke: var(--line); stroke-width: 1; }
 .caption { font-size: 11.5px; fill: var(--faint); font-style: italic; }
 .tick { font-size: 11px; fill: var(--faint); }
 .rmark { font-size: 11.5px; fill: var(--muted); }
 .fadein { animation: fadein .5s ease both; }
 @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
-.badge text { font-size: 10px; font-weight: 700; fill: #0f1115; }
+.badge text { font-size: 10px; font-weight: 700; fill: var(--on-accent); }
 
 /* Mechanism cards: one training step, drawn with the article figures' vocabulary */
 .mech { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 10px 6px 8px; }
@@ -159,12 +203,12 @@ a.cite:hover { color: var(--text); text-decoration-color: currentColor; }
 .mech .mt { font-size: 12px; font-weight: 600; fill: var(--text); }
 .mech .ms { font-size: 10.5px; fill: var(--muted); }
 .mech .mtag { font-size: 8.5px; letter-spacing: .12em; fill: var(--muted); }
-.mech .mnum { font-size: 10px; font-family: "IBM Plex Mono", Menlo, monospace; fill: #e8e8e8; text-anchor: middle;
-  paint-order: stroke; stroke: #0f1115; stroke-width: 2.5px; }
-.mech .mnum.dk { fill: #0f1115; stroke: none; font-weight: 600; }
-.mech .off { fill: #6b7079; }
+.mech .mnum { font-size: 10px; font-family: "IBM Plex Mono", Menlo, monospace; fill: var(--text); text-anchor: middle;
+  paint-order: stroke; stroke: var(--bg); stroke-width: 2.5px; }
+.mech .mnum.dk { fill: var(--bg); stroke: none; font-weight: 600; }
+.mech .off { fill: var(--faint); }
 .mech .mdef { cursor: help; outline: none; }
-.mech .mdef .dl { stroke: #5d626b; stroke-width: 1; stroke-dasharray: 1.5 2; }
+.mech .mdef .dl { stroke: var(--line-strong); stroke-width: 1; stroke-dasharray: 1.5 2; }
 .mech .mdef:hover .dl, .mech .mdef:focus-visible .dl, .mech .mdef.open .dl { stroke: var(--fc, var(--text)); }
 .mech .mdef .hit { fill: transparent; }
 .mech .mdef:focus-visible .hit { stroke: var(--fc, var(--text)); stroke-width: 1; }
@@ -179,17 +223,17 @@ a.cite:hover { color: var(--text); text-decoration-color: currentColor; }
 .ex-k { color: var(--faint); }
 .ex-sep { border-top: 1px solid var(--border); margin: 4px 0; }
 .ex .note { margin: 6px 0 2px; }
-.pdef { cursor: help; text-decoration: underline dotted #4d525a; text-underline-offset: 3px; }
-[data-def].k { cursor: help; text-decoration: underline dotted #4d525a; text-underline-offset: 3px; }
-#deftip { position: fixed; z-index: 60; max-width: 300px; padding: 8px 10px; background: #1a1d24; border: 1px solid #3a3f4a;
-  border-radius: 6px; box-shadow: 0 6px 20px rgba(0,0,0,.45); font-size: 12px; line-height: 1.45; color: #cfd2d7; pointer-events: none; }
+.pdef { cursor: help; text-decoration: underline dotted var(--line-strong); text-underline-offset: 3px; }
+[data-def].k { cursor: help; text-decoration: underline dotted var(--line-strong); text-underline-offset: 3px; }
+#deftip { position: fixed; z-index: 60; max-width: 300px; padding: 8px 10px; background: var(--tip); border: 1px solid var(--line);
+  border-radius: 6px; box-shadow: 0 6px 20px var(--shadow); font-size: 12px; line-height: 1.45; color: var(--text-2); pointer-events: none; }
 #deftip[hidden] { display: none; }
 #deftip p { margin: 0; }
 #deftip p + p { margin-top: 6px; }
 #deftip b { color: var(--text); font-weight: 600; }
-.mech .mcode { font-size: 11px; font-weight: 700; font-family: Menlo, monospace; fill: #8c919a; text-anchor: middle; }
+.mech .mcode { font-size: 11px; font-weight: 700; font-family: Menlo, monospace; fill: var(--neutral); text-anchor: middle; }
 .mech-diff { list-style: none; padding: 0; margin: 8px 6px 0; min-height: 108px; font-size: 12px; }
-.mech-diff li { margin: 0 0 3px; color: #cfd2d7; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mech-diff li { margin: 0 0 3px; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mech-diff .k { color: var(--faint); display: inline-block; width: 74px; }
 .mech-diff .was { color: var(--faint); text-decoration: line-through; }
 .mech-diff .now { color: var(--fc, var(--reward)); }
@@ -225,7 +269,7 @@ aside li.mech-sub:hover { background: var(--surface); }
 /* Profile strip: five questions every method answers, so cards from different families can be compared */
 .prof-h { font-size: 10px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--faint); margin: 0 6px 4px; }
 .prof { list-style: none; padding: 0 0 8px; margin: 0 6px 8px; font-size: 12px; border-bottom: 1px solid var(--border); }
-aside .prof li, .prof li { margin: 0 0 2px; color: #cfd2d7; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+aside .prof li, .prof li { margin: 0 0 2px; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .prof .k { color: var(--faint); display: inline-block; width: 82px; }
 .prof li.d { color: var(--fc, var(--text)); }
 .prof li.s { color: var(--faint); }
@@ -243,13 +287,13 @@ aside .prof li, .prof li { margin: 0 0 2px; color: #cfd2d7; white-space: nowrap;
 .cmp-tabs { margin-bottom: 14px; display: inline-flex; }
 .cmp-pairs { margin-top: 10px; }
 .relmark.cmp { cursor: pointer; }
-.relmark.cmp:hover circle { fill: #2a2615; }
+.relmark.cmp:hover circle { fill: color-mix(in srgb, var(--gold) 16%, var(--bg)); }
 /* Swap switcher inside a card: hover previews, click or tap pins (works on touch) */
 .mech-sw { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 6px 10px; }
 .mech-sw button { background: none; border: 1px solid var(--border); color: var(--muted); border-radius: 6px; padding: 2px 8px;
   font-size: 11.5px; cursor: pointer; }
 .mech-sw button:hover { color: var(--text); }
-.mech-sw button.on { color: var(--text); border-color: var(--fc, var(--faint)); background: color-mix(in srgb, var(--fc, #888) 14%, transparent); }
+.mech-sw button.on { color: var(--text); border-color: var(--fc, var(--faint)); background: color-mix(in srgb, var(--fc, var(--neutral)) 14%, transparent); }
 .mech-sw button.pinned { box-shadow: inset 0 -2px 0 var(--fc, var(--faint)); }
 /* Search */
 .srchbtn { background: var(--surface); border: 1px solid var(--border); color: var(--muted); border-radius: 8px; padding: 5px 10px;
@@ -257,10 +301,10 @@ aside .prof li, .prof li { margin: 0 0 2px; color: #cfd2d7; white-space: nowrap;
 .srchbtn:hover { color: var(--text); border-color: var(--faint); }
 .srchbtn kbd, .search-foot kbd { font: 11px/1 Menlo, monospace; color: var(--faint); border: 1px solid var(--border); border-radius: 4px; padding: 1px 4px; margin-left: 6px; }
 .cmpbtn { margin-left: 0; }
-.search { position: fixed; inset: 0; z-index: 50; background: rgba(5, 6, 8, .55); }
+.search { position: fixed; inset: 0; z-index: 50; background: var(--scrim); }
 .search[hidden] { display: none; }
 .search-box { width: min(580px, 92vw); margin: 9vh auto 0; background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
-  box-shadow: 0 20px 60px rgba(0,0,0,.5); overflow: hidden; }
+  box-shadow: 0 20px 60px var(--shadow); overflow: hidden; }
 .search-box input { width: 100%; background: none; border: 0; border-bottom: 1px solid var(--border); color: var(--text);
   font: 15px Inter, system-ui, sans-serif; padding: 14px 16px; outline: none; }
 .search-res { list-style: none; margin: 0; padding: 6px; max-height: 56vh; overflow: auto; }
@@ -289,7 +333,41 @@ aside .prof li, .prof li { margin: 0 0 2px; color: #cfd2d7; white-space: nowrap;
   .recipes .chip { flex: none; }
   .lensdesc { display: none; }
 }
+.themesel { background: var(--surface); border: 1px solid var(--border); color: var(--muted); border-radius: 8px;
+  padding: 4px 6px; font-size: 12.5px; cursor: pointer; }
+.themesel:hover { color: var(--text); border-color: var(--faint); }
+.themesel[hidden] { display: none; }
 </style>
+<script>
+/* Which theme. In order:
+   1. ?theme=graphite|black|solarized|light in the URL (a host page pinning it; "dark" means solarized),
+   2. inside a same-origin page that sets data-effective-theme on <html> (the site), follow that page live,
+   3. the reader's last pick from the header menu,
+   4. the OS preference.
+   A host page can also switch it at any time: iframe.contentWindow.postMessage({ type: "pt-explorer:theme", theme }, "*"). */
+(() => {
+  const THEMES = ["graphite", "black", "solarized", "light"], ALIAS = { dark: "solarized" };
+  const root = document.documentElement;
+  const T = window.ptTheme = { THEMES, KEY: "pt-explorer-theme", hosted: false, onchange: null,
+    set(t) { t = ALIAS[t] || t; if (!THEMES.includes(t)) return; root.dataset.theme = t; T.onchange && T.onchange(); } };
+  const param = new URLSearchParams(location.search).get("theme");
+  let host = null;
+  try { if (window.parent !== window && window.parent.document.documentElement.dataset.effectiveTheme) host = window.parent.document.documentElement; } catch (e) {}
+  if (param) { T.hosted = true; T.set(param); }
+  else if (host) {
+    T.hosted = true;
+    const follow = () => T.set(host.dataset.effectiveTheme);
+    follow();
+    new MutationObserver(follow).observe(host, { attributes: true, attributeFilter: ["data-effective-theme"] });
+  } else {
+    let saved = null; try { saved = localStorage.getItem(T.KEY); } catch (e) {}
+    T.set(THEMES.includes(saved) ? saved : matchMedia("(prefers-color-scheme: light)").matches ? "light" : "graphite");
+  }
+  window.addEventListener("message", ev => {
+    if (ev.data && ev.data.type === "pt-explorer:theme") { T.hosted = true; T.set(ev.data.theme); }
+  });
+})();
+</script>
 </head>
 <body>
 <header>
@@ -298,12 +376,16 @@ aside .prof li, .prof li { margin: 0 0 2px; color: #cfd2d7; white-space: nowrap;
   <div class="lensdesc" id="lensdesc"></div>
   <button class="srchbtn" id="srchbtn" title="Search (⌘K or /)">⌕ Search<kbd>⌘K</kbd></button>
   <button class="cmpbtn" id="cmpbtn" title="Compare update rules side by side">⇆ Compare methods</button>
+  <select class="themesel" id="themesel" aria-label="Theme" title="Theme">
+    <option value="graphite">Graphite</option><option value="black">Black</option>
+    <option value="solarized">Solarized</option><option value="light">Light</option>
+  </select>
 </header>
 <div class="app">
   <div class="canvas" id="canvas">
     <div class="resizer" id="resizer" role="separator" aria-orientation="vertical" aria-label="Resize the side panel" tabindex="0" title="Drag to resize · double-click to reset"></div>
     <svg id="map">
-      <defs id="defs"><marker id="arr-lane" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,1 L9,5 L0,9 z" fill="#6b7079"/></marker></defs>
+      <defs id="defs"><marker id="arr-lane" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,1 L9,5 L0,9 z" style="fill:var(--faint)"/></marker></defs>
       <g id="vp">
         <g id="bg"></g>
         <g id="edges"></g>
@@ -317,7 +399,7 @@ aside .prof li, .prof li { margin: 0 0 2px; color: #cfd2d7; white-space: nowrap;
       </g>
     </svg>
     <div class="hint">drag to pan · pinch or ⌘/ctrl-scroll to zoom</div>
-    <button class="chip reltoggle" id="reltoggle" style="--c:#e9d8a6"><span class="sw" style="background:#e9d8a6"></span>≈ Show how methods relate</button>
+    <button class="chip reltoggle" id="reltoggle" style="--c:var(--gold)"><span class="sw" style="background:var(--gold)"></span>≈ Show how methods relate</button>
     <div class="zoom">
       <button id="zin" title="Zoom in">+</button>
       <button id="zout" title="Zoom out">−</button>
@@ -616,21 +698,21 @@ const RAW_EDGES = [
 ];
 
 const RECIPES = [
-  { id: "instructgpt", name: "InstructGPT", year: 2022, color: "#ff7a6b", cite: "ouyang2022instructgpt",
+  { id: "instructgpt", name: "InstructGPT", year: 2022, color: "var(--r-instructgpt)", cite: "ouyang2022instructgpt",
     distinct: "The classic RLHF shape: humans write demonstrations and compare outputs.",
     stages: [
       { s: "SFT on demonstrations written by human labelers", u: "m-sft", d: ["d-demos", "src-experts"], r: [] },
       { s: "A reward model trained on labelers' rankings of model outputs", u: "s-rm", d: ["d-ratings"], r: [] },
       { s: "PPO on prompts, with the policy's rollouts scored by the reward model", u: "m-ppo", d: ["d-prompts", "d-rollouts"], r: ["s-rm"] },
     ] },
-  { id: "cai", name: "Constitutional AI", year: 2022, color: "#c77dff", cite: "bai2022constitutional",
+  { id: "cai", name: "Constitutional AI", year: 2022, color: "var(--r-cai)", cite: "bai2022constitutional",
     distinct: "Harmlessness is supervised by AI feedback alone: the model critiques and revises its own answers against a written constitution, and a feedback model labels harmlessness comparisons. Starts from a helpful-only RLHF model, and helpfulness labels stay human.",
     stages: [
       { s: "SL-CAI: the helpful RLHF model critiques and revises its own answers to red-team prompts, one sampled principle at a time; a pretrained model is fine-tuned on the revisions plus helpfulness samples", u: "m-sft", d: ["d-revisions", "d-critiques", "src-self"], r: [] },
       { s: "Preference model trained on human helpfulness labels and AI harmlessness labels, produced by a separate feedback model comparing pairs of answers", u: "s-rm", d: ["d-pairs"], r: ["s-judge"] },
       { s: "RL-CAI: RL from the SL-CAI model against that preference model (RLAIF)", u: "f-reward", d: ["d-prompts", "d-rollouts"], r: ["s-rm"] },
     ] },
-  { id: "llama3", name: "Llama 3", year: 2024, color: "#48cae4", cite: "llama2024llama3",
+  { id: "llama3", name: "Llama 3", year: 2024, color: "var(--r-llama3)", cite: "llama2024llama3",
     loop: "repeated for 6 rounds · models averaged at each stage",
     distinct: "No PPO: a reward model, rejection-sampled SFT and DPO, repeated over six rounds with fresh human preference data each round. Models trained with different data or settings are averaged at each stage.",
     stages: [
@@ -638,7 +720,7 @@ const RECIPES = [
       { s: "Rejection-sampled SFT: the reward model picks the best of K samples from the latest model, mixed with synthetic and human-curated data", u: "m-rs", d: ["d-prompts", "d-rollouts", "d-demos"], r: ["s-rm"] },
       { s: "DPO on the most recent preference batches, with formatting tokens masked out and an extra likelihood term on the chosen response", u: "m-dpo", d: ["d-pairs"], r: [] },
     ] },
-  { id: "r1", name: "DeepSeek-R1", year: 2025, color: "#4fd1c5", cite: "deepseek2025r1",
+  { id: "r1", name: "DeepSeek-R1", year: 2025, color: "var(--r-r1)", cite: "deepseek2025r1",
     distinct: "Alternates imitation and exploration. The middle SFT stage is built from the RL model's own best outputs but trains a fresh copy of the base model; the same data then distills small models.",
     stages: [
       { s: "Cold-start SFT on a small set of long chain-of-thought examples", u: "m-sft", d: ["d-demos"], r: [] },
@@ -647,7 +729,7 @@ const RECIPES = [
       { s: "RL across all scenarios: rule-based rewards for reasoning, reward models for general behavior", u: "m-grpo", d: ["d-prompts", "d-rollouts"], r: ["s-verifier", "s-rm"] },
       { s: "Small dense models fine-tuned on the same ~800k samples (offline distillation), which beat RL on those models directly", u: "m-offdistill", d: ["d-teachertext"], r: [] },
     ] },
-  { id: "qwen3", name: "Qwen3", year: 2025, color: "#f7e463", cite: "qwen2025qwen3",
+  { id: "qwen3", name: "Qwen3", year: 2025, color: "var(--r-qwen3)", cite: "qwen2025qwen3",
     distinct: "Fuses thinking and non-thinking behavior into one model; smaller models are distilled from larger ones.",
     stages: [
       { s: "Cold-start SFT on reasoning data", u: "m-sft", d: ["d-demos"], r: [] },
@@ -657,34 +739,34 @@ const RECIPES = [
       { s: "Smaller models: offline distillation from the large ones…", u: "m-offdistill", d: ["d-teachertext"], r: [] },
       { s: "…then on-policy distillation", u: "m-opd", d: ["d-rollouts"], r: ["s-teacher"] },
     ] },
-  { id: "k2", name: "Kimi K2", year: 2025, color: "#ff8fd0", cite: "kimi2025k2",
+  { id: "k2", name: "Kimi K2", year: 2025, color: "var(--r-k2)", cite: "kimi2025k2",
     distinct: "One RL stage mixing verifiable rewards with rubric-based self-critique.",
     stages: [
       { s: "SFT, including large-scale synthetic tool-use trajectories", u: "m-sft", d: ["d-traj"], r: [] },
       { s: "Joint RL mixing verifiable rewards with rubric-based self-critique", u: "f-reward", d: ["d-tasks", "d-envs", "d-rollouts"], r: ["s-verifier", "s-judge"] },
     ] },
-  { id: "olmo3", name: "Olmo 3 Think", year: 2025, color: "#9be15d", cite: "olmo2025olmo3",
+  { id: "olmo3", name: "Olmo 3 Think", year: 2025, color: "var(--r-olmo3)", cite: "olmo2025olmo3",
     distinct: "Fully open data and code; keeps a preference-tuning stage before RL.",
     stages: [
       { s: "SFT on reasoning traces", u: "m-sft", d: ["d-demos"], r: [] },
       { s: "DPO on preference pairs", u: "m-dpo", d: ["d-pairs"], r: [] },
       { s: "RLVR on math, code, and instruction-following tasks", u: "m-grpo", d: ["d-tasks", "d-rollouts"], r: ["s-verifier"] },
     ] },
-  { id: "glm45", name: "GLM-4.5", year: 2025, color: "#b08968", cite: "glm2025glm45",
+  { id: "glm45", name: "GLM-4.5", year: 2025, color: "var(--r-glm45)", cite: "glm2025glm45",
     distinct: "Three experts (reasoning, agent, general chat) trained separately, then merged with plain SFT on millions of their outputs. Whether RL runs after the merge isn't clear from what we read. The same lab's GLM-5 switches to on-policy distillation.",
     stages: [
       { s: "Cold-start SFT on a small set of long chain-of-thought responses", u: "m-sft", d: ["d-demos"], r: [] },
       { s: "Expert RL, one expert each for reasoning, agents and general chat: answer checks and unit tests for the first two, reward models and AI rubric scoring for chat", u: "f-reward", d: ["d-tasks", "d-envs", "d-rollouts"], r: ["s-verifier", "s-rm", "s-judge"] },
       { s: "Unified SFT on millions of expert outputs, filtered by format and correctness checks and reward models, mixing thinking and non-thinking answers", u: "m-offdistill", d: ["d-teachertext"], r: [] },
     ] },
-  { id: "k3", name: "Kimi K3", year: 2026, color: "#f2f2f2", cite: "kimi2026k3",
+  { id: "k3", name: "Kimi K3", year: 2026, color: "var(--r-k3)", cite: "kimi2026k3",
     distinct: "Nine specialists (general, general agent, coding agent, each at three effort levels), consolidated by on-policy distillation. Effort levels come from shrinking the token budget of a max-effort expert.",
     stages: [
       { s: "Cold-start SFT on trajectories from earlier specialist Kimi models, verified in several stages and annotated by humans", u: "m-sft", d: ["d-traj", "src-teachers", "src-experts"], r: [] },
       { s: "Specialist RL: a max-budget expert per domain, then lower budgets for the high- and low-effort experts. Verifiers plus a generative reward model that writes a rubric per task", u: "f-reward", d: ["d-envs", "d-tasks", "d-rollouts"], r: ["s-verifier", "s-judge"] },
       { s: "Multi-teacher on-policy distillation: the student writes, the matching specialist scores every token by log ratio", u: "m-opd", d: ["d-rollouts"], r: ["s-teacher"] },
     ] },
-  { id: "glm5", name: "GLM-5", year: 2026, color: "#ddb892", cite: "glm2026glm5",
+  { id: "glm5", name: "GLM-5", year: 2026, color: "var(--r-glm5)", cite: "glm2026glm5",
     distinct: "Trains capabilities one after another instead of as parallel specialists, then uses on-policy distillation from its own earlier checkpoints to undo the forgetting (“cumulative degradation”) that training in sequence causes. Agentic RL runs fully asynchronously.",
     stages: [
       { s: "SFT on chat, reasoning and agent data built with expert RL and rejection sampling; erroneous trajectory segments are masked out of the loss", u: "m-sft", d: ["d-demos", "d-traj"], r: [] },
@@ -693,7 +775,7 @@ const RECIPES = [
       { s: "General RL with rule-based rewards, outcome reward models and generative reward models", u: "f-reward", d: ["d-prompts", "d-rollouts"], r: ["s-verifier", "s-rm", "s-judge"] },
       { s: "On-policy cross-stage distillation: the final checkpoints of the earlier stages act as teachers for one student", u: "m-opd", d: ["d-rollouts"], r: ["s-teacher"] },
     ] },
-  { id: "nemotron", name: "Nemotron 3 Ultra", year: 2026, color: "#ffa95c", cite: "nvidia2026nemotron3ultra",
+  { id: "nemotron", name: "Nemotron 3 Ultra", year: 2026, color: "var(--r-nemotron)", cite: "nvidia2026nemotron3ultra",
     distinct: "Same specialists-then-distill shape as K3, but runs one RL stage over every environment first, warms the student up on teacher data, and distills twice.",
     stages: [
       { s: "SFT", u: "m-sft", d: ["d-demos"], r: [] },
@@ -708,7 +790,8 @@ const RECIPES = [
 /* ============================================================
    GRAPH
    ============================================================ */
-const COLORS = { demo: "#6fbf8e", pref: "#e8b04a", reward: "#b48ad8", teacher: "#6aa2e0", neutral: "#8c919a" };
+const COLORS = { demo: "var(--demo)", pref: "var(--pref)", reward: "var(--reward)", teacher: "var(--teacher)", neutral: "var(--neutral)" };
+const tint = (c, pct) => `color-mix(in srgb, ${c} ${pct}%, transparent)`;   // a theme colour at partial strength
 const FAM_NAME = { demo: "demonstrations", pref: "preferences", reward: "scalar rewards", teacher: "teacher distributions", neutral: "" };
 const byId = Object.fromEntries(NODES.map(n => [n.id, n]));
 const EDGES = RAW_EDGES.map(([from, to, type, s, via]) => ({ from, to, type, s, via: via || "" }));
@@ -963,9 +1046,10 @@ const LAYOUT = { flow: layoutFlow, pipes: layoutPipes, grid: layoutGrid, gran: l
    ============================================================ */
 const NS = "http://www.w3.org/2000/svg";
 const $ = id => document.getElementById(id);
+const PAINT = new Set(["fill", "stroke", "stop-color"]);       // set as style so theme var()s resolve
 function el(tag, attrs = {}, parent) {
   const e = document.createElementNS(NS, tag);
-  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  for (const k in attrs) PAINT.has(k) ? e.style.setProperty(k, attrs[k]) : e.setAttribute(k, attrs[k]);
   if (parent) parent.appendChild(e);
   return e;
 }
@@ -1003,8 +1087,8 @@ function buildNodes() {
     if (stg) {
       // Fill encodes whose text: own fresh = filled, own in rounds = light + dashed, someone else's = outline
       const stroke = n.also ? splitGradient(n.group, n.also) : c;
-      const fill = n.pol === "on" ? c + "38" : n.pol === "rounds" ? c + "18" : "#171a21";
-      if (n.stacked) [8, 4].forEach(d => el("rect", { ...box, x: box.x + d, y: box.y - d, rx: 6, fill: "#171a21", stroke, "stroke-width": 1, opacity: 0.6, class: "" }, s));
+      const fill = n.pol === "on" ? tint(c, 22) : n.pol === "rounds" ? tint(c, 9) : "var(--surface)";
+      if (n.stacked) [8, 4].forEach(d => el("rect", { ...box, x: box.x + d, y: box.y - d, rx: 6, fill: "var(--surface)", stroke, "stroke-width": 1, opacity: 0.6, class: "" }, s));
       el("rect", { ...box, rx: 6, fill, stroke, "stroke-width": 1.5, ...(n.pol === "rounds" ? { "stroke-dasharray": "5 3" } : {}) }, s);
       el("text", { x: 0, y: -5, "text-anchor": "middle", "dominant-baseline": "central" }, s).textContent = n.label;
       // Strip encodes where feedback lands
@@ -1014,13 +1098,13 @@ function buildNodes() {
       else if (n.at === "step") for (let k = 1; k <= 5; k++) el("rect", { x: x0 + (x1 - x0) * k / 5 - 2, y: sy - 1, width: 3, height: 6, fill: c }, s);
       else if (n.at === "response") el("rect", { x: x1 - 12, y: sy - 1, width: 12, height: 6, rx: 1, fill: c }, s);
       else el("circle", { cx: x1 - 3, cy: sy + 2, r: 3.5, fill: c }, s);
-    } else if (n.kind === "source") el("rect", { ...box, rx: n.h / 2, fill: "#171a21", stroke: "#4a4f5a" }, s);
+    } else if (n.kind === "source") el("rect", { ...box, rx: n.h / 2, fill: "var(--surface)", stroke: "var(--line-strong)" }, s);
     else if (n.kind === "data") {
-      el("rect", { ...box, rx: 5, fill: "#171a21", stroke: "#2f3440" }, s);
+      el("rect", { ...box, rx: 5, fill: "var(--surface)", stroke: "var(--line-weak)" }, s);
       el("rect", { x: -n.w / 2, y: -n.h / 2, width: 4, height: n.h, fill: c, rx: 1 }, s);
-    } else if (n.kind === "scorer") el("rect", { ...box, rx: 5, fill: "#171a21", stroke: c, "stroke-dasharray": "3 2.5" }, s);
-    else if (fam) el("rect", { ...box, rx: 8, fill: c + "26", stroke: c }, s);
-    else el("rect", { ...box, rx: 5, fill: "#171a21", stroke: n.also ? splitGradient(n.group, n.also) : c, "stroke-width": n.also ? 1.6 : 1.3 }, s);
+    } else if (n.kind === "scorer") el("rect", { ...box, rx: 5, fill: "var(--surface)", stroke: c, "stroke-dasharray": "3 2.5" }, s);
+    else if (fam) el("rect", { ...box, rx: 8, fill: tint(c, 15), stroke: c }, s);
+    else el("rect", { ...box, rx: 5, fill: "var(--surface)", stroke: n.also ? splitGradient(n.group, n.also) : c, "stroke-width": n.also ? 1.6 : 1.3 }, s);
     if (stg) { /* label drawn above */ }
     else if (fam) {
       el("text", { class: "fam", x: 0, y: -7, "text-anchor": "middle", "dominant-baseline": "central" }, s).textContent = n.label;
@@ -1132,7 +1216,7 @@ function frame() {
     e.mx = mx; e.my = my;
     e.p.setAttribute("d", d);
     e.p.setAttribute("opacity", op);
-    e.p.setAttribute("stroke", lit ? (e.type === "make" ? "#b9bdc4" : colorOf(b.kind === "family" || b.kind === "method" ? b : (b.kind === "scorer" ? b : a))) : "#6b7079");
+    e.p.style.stroke = (lit ? (e.type === "make" ? "var(--ink-2)" : colorOf(b.kind === "family" || b.kind === "method" ? b : (b.kind === "scorer" ? b : a))) : "var(--faint)");
   }
   drawRelArcs();
   drawSubArcs();
@@ -1175,7 +1259,7 @@ function drawRelArcs() {
     el("text", { x: 0, y: 0.5, "text-anchor": "middle", "dominant-baseline": "central" }, m).textContent = "≈";
     if (on && !animating) {
       const s = `${a.label} is ${r.rel} ${b.label}`, w = textW(s, "400 10.5px Inter, system-ui, sans-serif") + 10;
-      el("rect", { x: -12 - w, y: -8, width: w, height: 16, rx: 3, fill: "#0f1115", opacity: 0.92 }, m);
+      el("rect", { x: -12 - w, y: -8, width: w, height: 16, rx: 3, fill: "var(--bg)", opacity: 0.92 }, m);
       el("text", { class: "rl", x: -17, y: 0.5, "text-anchor": "end", "dominant-baseline": "central" }, m).textContent = s;
     }
   }
@@ -1252,7 +1336,7 @@ function drawRoutes() {
     used.forEach(id => {
       const n = byId[id], c = cur[id]; if (c.o < 0.5) return;
       const k = (dotSlots[id] = (dotSlots[id] || 0) + 1) - 1;
-      el("circle", { cx: c.x - n.w / 2 + 10 + k * 11, cy: c.y - n.h / 2, r: 4.5, fill: r.color, stroke: "#0f1115", "stroke-width": 1.5, opacity: fade }, G.overlay);
+      el("circle", { cx: c.x - n.w / 2 + 10 + k * 11, cy: c.y - n.h / 2, r: 4.5, fill: r.color, stroke: "var(--bg)", "stroke-width": 1.5, opacity: fade }, G.overlay);
     });
   });
 }
@@ -1264,7 +1348,7 @@ function drawLanes() {
       const a = lane[i], b = lane[i + 1], A = cur[a.id], B = cur[b.id];
       const o = Math.min(A.o, B.o); if (o < 0.05) continue;
       el("line", { x1: A.x + a.w / 2 + (a.stacked ? 9 : 2), y1: A.y, x2: B.x - b.w / 2 - 4, y2: B.y,
-        stroke: "#6b7079", "stroke-width": 1.4, opacity: o, "marker-end": "url(#arr-lane)" }, G.routes);
+        stroke: "var(--faint)", "stroke-width": 1.4, opacity: o, "marker-end": "url(#arr-lane)" }, G.routes);
     }
     if (r.loop && lane.length > 1) {
       const a = lane[lane.length - 1], b = lane[0], A = cur[a.id], B = cur[b.id];
@@ -1481,7 +1565,7 @@ function renderPanel() {
 }
 
 function renderIntro() {
-  const sw = c => `<svg width="34" height="12"><line x1="2" y1="6" x2="32" y2="6" stroke="${c}" stroke-width="1.6"/></svg>`;
+  const sw = c => `<svg width="34" height="12"><line x1="2" y1="6" x2="32" y2="6" style="stroke:${c}" stroke-width="1.6"/></svg>`;
   P.innerHTML = `
     <h2>Post-training, as a graph</h2>
     <p>Every training stage combines data from somewhere, a learning signal derived from it, and an update rule that changes the weights. Most of these can be substituted for one another along the edges here, but each substitution changes what the model learns, and published pipelines combine them differently.</p>
@@ -1490,15 +1574,15 @@ function renderIntro() {
       .map(t => `<button class="try" data-try="${t.id}">${t.q}</button>`).join("")}`).join("")}
     <h3>Legend</h3>
     <div class="legend">
-      ${sw("#9a9fa7")}<span>direct use</span>
-      <svg width="34" height="12"><line x1="2" y1="6" x2="32" y2="6" stroke="#9a9fa7" stroke-width="1.6" stroke-dasharray="4 4"/></svg><span>needs a transformation: filter, compare, train a scorer, or generate first</span>
-      <svg width="34" height="12"><line x1="2" y1="6" x2="32" y2="6" stroke="#f2f2f2" stroke-width="1.4" stroke-dasharray="2 4"/></svg><span>substitute (shown when an update rule is selected)</span>
+      ${sw("var(--muted)")}<span>direct use</span>
+      <svg width="34" height="12"><line x1="2" y1="6" x2="32" y2="6" style="stroke:var(--muted)" stroke-width="1.6" stroke-dasharray="4 4"/></svg><span>needs a transformation: filter, compare, train a scorer, or generate first</span>
+      <svg width="34" height="12"><line x1="2" y1="6" x2="32" y2="6" style="stroke:var(--sub)" stroke-width="1.4" stroke-dasharray="2 4"/></svg><span>substitute (shown when an update rule is selected)</span>
       ${sw(COLORS.demo)}<span>demonstrations</span>
       ${sw(COLORS.pref)}<span>preferences</span>
       ${sw(COLORS.reward)}<span>scalar rewards</span>
       ${sw(COLORS.teacher)}<span>teacher distributions</span>
-      <svg width="34" height="14"><rect x="3" y="2" width="28" height="10" rx="3" fill="none" stroke="${splitGradient("demo", "reward")}" stroke-width="1.6"/></svg><span>two-colour border: straddles two families</span>
-      <svg width="34" height="16"><line x1="2" y1="8" x2="32" y2="8" stroke="#e9d8a6" stroke-width="1.4"/><circle cx="17" cy="8" r="6.5" fill="#0f1115" stroke="#e9d8a6"/><text x="17" y="8.5" text-anchor="middle" dominant-baseline="central" font-size="10" fill="#e9d8a6">≈</text></svg><span>one method is a special case or form of another; click ≈ to compare them</span>
+      <svg width="34" height="14"><rect x="3" y="2" width="28" height="10" rx="3" fill="none" style="stroke:${splitGradient("demo", "reward")}" stroke-width="1.6"/></svg><span>two-colour border: straddles two families</span>
+      <svg width="34" height="16"><line x1="2" y1="8" x2="32" y2="8" style="stroke:var(--gold)" stroke-width="1.4"/><circle cx="17" cy="8" r="6.5" style="fill:var(--bg);stroke:var(--gold)"/><text x="17" y="8.5" text-anchor="middle" dominant-baseline="central" font-size="10" style="fill:var(--gold)">≈</text></svg><span>one method is a special case or form of another; click ≈ to compare them</span>
     </div>
     <p class="foot">Prototype. Content comes from the building-blocks draft and the study notes. Citations link to their sources.</p>`;
 }
@@ -2172,28 +2256,28 @@ function mechSVG(id, fromId) {
   const net = (cx, cy, trained) => {
     const L = [2, 3, 2].map((k, i) => [...Array(k)].map((_, j) => [cx + (i - 1) * 10, cy + (j - (k - 1) / 2) * 8]));
     for (let i = 0; i < 2; i++) for (const a of L[i]) for (const b of L[i + 1])
-      o.push(`<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="${trained ? "#6b7079" : "#3d4249"}" stroke-width="1"/>`);
+      o.push(`<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" style="stroke:${trained ? "var(--faint)" : "var(--line)"}" stroke-width="1"/>`);
     for (const l of L) for (const [x, y] of l)
-      o.push(`<circle cx="${x}" cy="${y}" r="2.6" fill="${trained ? "#e8e8e8" : "#0f1115"}" stroke="${trained ? "#e8e8e8" : "#8c919a"}" stroke-width="1.1"/>`);
+      o.push(`<circle cx="${x}" cy="${y}" r="2.6" style="${trained ? "fill:var(--text);stroke:var(--text)" : "fill:var(--bg);stroke:var(--neutral)"}" stroke-width="1.1"/>`);
   };
-  const card = (x, y, w, h, dim) => o.push(`<g opacity="${dim ? 0.4 : 1}"><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="2.5" fill="#0f1115" stroke="#b8bcc3" stroke-width="1.3"/>`
-    + [0.35, 0.62].map((t, i) => `<line x1="${x + 4}" y1="${y + h * t}" x2="${x + 4 + (w - 8) * (i ? 0.55 : 0.8)}" y2="${y + h * t}" stroke="#8c919a" stroke-width="1.6" stroke-linecap="round"/>`).join("") + `</g>`);
-  const back = (x, y, w, h, dim) => o.push(`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="2.5" fill="#0f1115" stroke="#4a4f57" stroke-width="1.2" opacity="${dim ? 0.4 : 1}"/>`);
+  const card = (x, y, w, h, dim) => o.push(`<g opacity="${dim ? 0.4 : 1}"><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="2.5" style="fill:var(--bg);stroke:var(--ink-2)" stroke-width="1.3"/>`
+    + [0.35, 0.62].map((t, i) => `<line x1="${x + 4}" y1="${y + h * t}" x2="${x + 4 + (w - 8) * (i ? 0.55 : 0.8)}" y2="${y + h * t}" style="stroke:var(--neutral)" stroke-width="1.6" stroke-linecap="round"/>`).join("") + `</g>`);
+  const back = (x, y, w, h, dim) => o.push(`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="2.5" style="fill:var(--bg);stroke:var(--line-strong)" stroke-width="1.2" opacity="${dim ? 0.4 : 1}"/>`);
   // signed values: light = made more likely, hatched = less likely (hue-free, so they can't be read as a family colour)
-  const vfill = v => v == null ? "#12141a" : v >= 0 ? `rgba(232,232,232,${(0.4 + 0.45 * Math.min(1, Math.abs(v))).toFixed(2)})` : "url(#mech-hatch)";
+  const vfill = v => v == null ? "var(--panel)" : v >= 0 ? tint("var(--text)", Math.round(40 + 45 * Math.min(1, Math.abs(v)))) : "url(#mech-hatch)";
   const chip = (x, y, w, h, label, v, dim) =>
-    o.push(`<g opacity="${dim ? 0.4 : 1}"><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="4" fill="${vfill(v)}" stroke="#8c919a" stroke-width="1"/>`
+    o.push(`<g opacity="${dim ? 0.4 : 1}"><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="4" style="fill:${vfill(v)};stroke:var(--neutral)" stroke-width="1"/>`
       + (label ? `<text class="mnum${v != null && v >= 0 ? " dk" : ""}" x="${x + w / 2}" y="${y + h / 2 + 3.5}">${label}</text>` : "") + `</g>`);
-  const arrow = (x1, y1, x2, y2) => o.push(`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#9a9fa7" stroke-width="1.3" marker-end="url(#mech-arr)"/>`);
+  const arrow = (x1, y1, x2, y2) => o.push(`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" style="stroke:var(--muted)" stroke-width="1.3" marker-end="url(#mech-arr)"/>`);
   const right = (n, w, gap) => X1 - 8 - n * w - (n - 1) * gap;
 
   let y = 2, from = null; const to = [];
   FAM_MECH[m.fam].rows(m, gen).forEach((r, i) => {
     if (i) { arrow(CX, y + 1, CX, y + 11); y += 14; }
     const hot = changed(r.slot), mid = y + r.h / 2;
-    const base = r.off ? "fill:none;stroke:#3a3f4a;stroke-width:1.2"
-      : r.type === "model" ? (r.trained ? "fill:#161a22;stroke:#e8e8e8;stroke-width:2" : "fill:#14161b;stroke:#8c919a;stroke-width:1.2")
-      : r.slot ? "fill:none;stroke:#6b7079;stroke-width:1.2" : "fill:#12141a;stroke:#3a3f4a;stroke-width:1.2";
+    const base = r.off ? "fill:none;stroke:var(--line);stroke-width:1.2"
+      : r.type === "model" ? (r.trained ? "fill:var(--surface);stroke:var(--text);stroke-width:2" : "fill:var(--panel);stroke:var(--neutral);stroke-width:1.2")
+      : r.slot ? "fill:none;stroke:var(--faint);stroke-width:1.2" : "fill:var(--panel);stroke:var(--line);stroke-width:1.2";
     const st = hot ? "fill:color-mix(in srgb, var(--fc) 13%, transparent);stroke:var(--fc);stroke-width:2" : base + (r.slot ? ";stroke-dasharray:4 3" : "");
     o.push(`<rect x="${X0}" y="${y}" width="${X1 - X0}" height="${r.h}" rx="6" style="${st}"/>`);
     if (r.prompt) { card(6, mid - 9, 14, 18); arrow(21, mid, X0 - 1, mid); }
@@ -2230,15 +2314,15 @@ function mechSVG(id, fromId) {
     y += r.h;
   });
   // gradient: up (or down) the right side into the trained weights
-  if (from != null) to.forEach(t => o.push(`<path d="M${X1},${from} L${GX},${from} L${GX},${t} L${X1 + 3},${t}" fill="none" stroke="#e8e8e8" stroke-width="1.3" stroke-dasharray="5 4" marker-end="url(#mech-arr-w)"/>`));
+  if (from != null) to.forEach(t => o.push(`<path d="M${X1},${from} L${GX},${from} L${GX},${t} L${X1 + 3},${t}" fill="none" style="stroke:var(--text)" stroke-width="1.3" stroke-dasharray="5 4" marker-end="url(#mech-arr-w)"/>`));
   if (from != null && to.length) o.push(`<g class="mdef" data-def="gradient" tabindex="0" role="button" aria-label="Define: gradient"><rect class="hit" x="${GX + 1}" y="${(from + to[0]) / 2 - 26}" width="14" height="52"/><text class="ms" transform="translate(${GX + 11},${(from + to[0]) / 2}) rotate(90)" text-anchor="middle">gradient</text></g>`);
 
   return `<svg viewBox="0 0 320 ${y + 4}" role="img" aria-label="One training step of ${byId[id].label}">
     <defs>
-      <marker id="mech-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,1 L9,5 L0,9 z" fill="#9a9fa7"/></marker>
-      <marker id="mech-arr-w" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,1 L9,5 L0,9 z" fill="#e8e8e8"/></marker>
+      <marker id="mech-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,1 L9,5 L0,9 z" style="fill:var(--muted)"/></marker>
+      <marker id="mech-arr-w" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,1 L9,5 L0,9 z" style="fill:var(--text)"/></marker>
       <pattern id="mech-hatch" width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-        <rect width="4" height="4" fill="#1b1e25"/><line x1="0" y1="0" x2="0" y2="4" stroke="#8c919a" stroke-width="1.6"/></pattern>
+        <rect width="4" height="4" style="fill:var(--surface)"/><line x1="0" y1="0" x2="0" y2="4" style="stroke:var(--neutral)" stroke-width="1.6"/></pattern>
     </defs>${o.join("")}</svg>`;
 }
 
@@ -2413,7 +2497,7 @@ function renderCompare() {
       return `<button class="chip${on ? " on" : ""}" style="--c:${FAM_MECH[f].color}" data-cmp-mixtoggle="${id}"${!on && full ? " disabled" : ""}><span class="sw" style="background:${FAM_MECH[f].color}"></span>${byId[id].label}</button>`; }).join("")}</div>`).join("")}</div>
     <div class="cmp-mix-note">Up to four at once${full ? " · remove one to add another" : ""}.</div>` : "";
   const pairs = mixed && !c.mix ? `<div class="pills cmp-pairs">${CROSS_PAIRS().map(i => { const r = RELATIONS[i];
-    return `<button class="chip${i === c.rel ? " on" : ""}" style="--c:#e9d8a6" data-cmp-rel="${i}">${byId[r.from].label} ≈ ${byId[r.to].label}</button>`; }).join("")}</div>` : "";
+    return `<button class="chip${i === c.rel ? " on" : ""}" style="--c:var(--gold)" data-cmp-rel="${i}">${byId[r.from].label} ≈ ${byId[r.to].label}</button>`; }).join("")}</div>` : "";
   CMP.innerHTML = `${tabs}
     <div class="cmp-bar">
       <div class="cmp-intro">${intro}${pairs}${mixPick}</div>
@@ -2701,6 +2785,14 @@ document.addEventListener("keydown", ev => {
   });
   // keep the width legal when the window shrinks
   window.addEventListener("resize", () => setW(parseInt(app.style.getPropertyValue("--panel-w")) || DEF));
+})();
+
+// ---- theme menu (hidden when a host page sets the theme)
+(() => {
+  const sel = $("themesel"), T = window.ptTheme;
+  const sync = () => { sel.value = document.documentElement.dataset.theme; sel.hidden = T.hosted; };
+  sel.onchange = () => { T.set(sel.value); try { localStorage.setItem(T.KEY, sel.value); } catch (e) {} };
+  T.onchange = sync; sync();
 })();
 
 let rz; window.addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => { if (lastLayout) { view = fitFor(lastLayout.pos, lastLayout.deco); frame(); renderLabels(); } }, 150); });
